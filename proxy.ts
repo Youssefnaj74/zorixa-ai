@@ -8,7 +8,7 @@ function copyResponseCookies(from: NextResponse, to: NextResponse) {
   });
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { response, user } = await updateSession(request);
 
   const pathname = request.nextUrl.pathname;
