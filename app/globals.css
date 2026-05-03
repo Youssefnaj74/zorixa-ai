@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --zorixa-bg: #0a0a0f;
+  --zorixa-bg-secondary: #111118;
+  --zorixa-card: #16161f;
+  --zorixa-accent: #8338eb;
+  --zorixa-accent-secondary: #9b5cf6;
+  --zorixa-glow: rgba(131, 56, 235, 0.3);
+  --zorixa-text: #ffffff;
+  --zorixa-muted: #6b7280;
+  --zorixa-border: rgba(131, 56, 235, 0.15);
+  --zorixa-tab: #2563eb;
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  body {
+    @apply bg-zorixa-bg text-white;
+  }
+}
+
+.landing-grid {
+  background-image:
+    linear-gradient(to right, rgba(131, 56, 235, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(131, 56, 235, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 25%, transparent 75%);
+}
+
+.zorixa-card-border {
+  border: 1px solid rgba(131, 56, 235, 0.15);
+}
+
+.studio-scrollbar {
+  scrollbar-gutter: stable;
+}
+.studio-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.studio-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+.particles-canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@layer utilities {
+  /** Scroll still works; thumb/track hidden (Chrome + Firefox). */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
