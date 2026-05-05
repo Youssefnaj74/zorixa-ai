@@ -112,7 +112,7 @@ export async function POST(request: Request) {
       user_id: user.id,
       type: "usage",
       credits_amount: -enhanceCost,
-      stripe_payment_id: null,
+      lemonsqueezy_order_id: null,
       feature_used: "enhance"
     });
   }

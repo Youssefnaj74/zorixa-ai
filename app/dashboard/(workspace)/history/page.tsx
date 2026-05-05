@@ -14,7 +14,7 @@ export default async function HistoryPage() {
 
   const { data: transactions } = await supabase
     .from("transactions")
-    .select("id, type, credits_amount, feature_used, stripe_payment_id, created_at")
+    .select("id, type, credits_amount, feature_used, lemonsqueezy_order_id, created_at")
     .order("created_at", { ascending: false })
     .limit(20);
 

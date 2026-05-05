@@ -16,12 +16,15 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("users_profiles")
-    .select("credits_balance")
+    .select("credits_balance, is_premium")
     .eq("id", user.id)
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ credits_balance: data.credits_balance });
+  return NextResponse.json({
+    credits_balance: data.credits_balance,
+    is_premium: data.is_premium ?? false
+  });
 }
 

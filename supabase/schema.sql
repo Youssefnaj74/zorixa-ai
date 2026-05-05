@@ -6,6 +6,7 @@ create table if not exists public.users_profiles (
   email text,
   full_name text,
   credits_balance integer not null default 10,
+  is_premium boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -15,7 +16,7 @@ create table if not exists public.transactions (
   user_id uuid not null references public.users_profiles (id) on delete cascade,
   type text not null check (type in ('purchase', 'usage')),
   credits_amount integer not null,
-  stripe_payment_id text,
+  lemonsqueezy_order_id text,
   feature_used text check (feature_used in ('enhance', 'video')),
   created_at timestamptz not null default now()
 );
@@ -83,3 +84,7 @@ create policy "generations_select_own"
 on public.generations for select
 using (auth.uid() = user_id);
 
+-- Storage bucket for app/api/upload (public read for getPublicUrl; writes use service role)
+insert into storage.buckets (id, name, public)
+values ('uploads', 'uploads', true)
+on conflict (id) do nothing;

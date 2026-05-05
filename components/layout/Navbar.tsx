@@ -7,6 +7,9 @@ import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 
+import { DashboardHomeLink } from "@/components/layout/DashboardHomeLink";
+import { DashboardNavbarExtras } from "@/components/layout/DashboardNavbarExtras";
+import { NavbarAccountMenu } from "@/components/layout/NavbarAccountMenu";
 import { NavbarToolsMenu } from "@/components/layout/NavbarToolsMenu";
 
 type NavItem = {
@@ -33,11 +36,17 @@ const NAV_ENTRIES: NavEntry[] = [
 
 export function Navbar({
   avatarLetter,
-  fixed
+  fixed,
+  dashboardAuthBar
 }: {
   avatarLetter?: string;
   /** Pin navbar to viewport top (use with main content `pt-14`). */
   fixed?: boolean;
+  /**
+   * Landing link, live credits, and sign-out — matches `createSupabaseBrowserClient` flow used in
+   * `components/dashboard/sidebar.tsx` and `lib/supabase/client.ts`.
+   */
+  dashboardAuthBar?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -49,11 +58,14 @@ export function Navbar({
       )}
     >
       <div className="mx-auto flex h-14 max-w-[1920px] items-center gap-4 px-4 lg:px-6">
-        <Link href="/dashboard" className="flex shrink-0 items-center gap-2">
-          <span className="bg-gradient-brand bg-clip-text font-display text-lg font-bold tracking-tight text-transparent">
-            Zorixa AI
-          </span>
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <span className="bg-gradient-brand bg-clip-text font-display text-lg font-bold tracking-tight text-transparent">
+              Zorixa AI
+            </span>
+          </Link>
+          {dashboardAuthBar ? <DashboardHomeLink /> : null}
+        </div>
 
         <nav className="studio-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto lg:gap-2">
           {NAV_ENTRIES.map((entry) => {
@@ -91,6 +103,7 @@ export function Navbar({
         </nav>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
+          {dashboardAuthBar ? <DashboardNavbarExtras /> : null}
           <button
             type="button"
             className="grid size-9 place-items-center rounded-full border border-white/10 text-zorixa-muted transition-colors hover:bg-white/5 hover:text-white"
@@ -98,17 +111,7 @@ export function Navbar({
           >
             <Search className="size-4" />
           </button>
-          <button
-            type="button"
-            className="grid size-9 place-items-center rounded-full border border-brand/40 bg-gradient-brand/25 font-display text-sm font-bold text-white ring-1 ring-brand/50"
-            aria-label="Account"
-          >
-            {avatarLetter ? (
-              <span>{avatarLetter.slice(0, 1).toUpperCase()}</span>
-            ) : (
-              <span className="text-xs">?</span>
-            )}
-          </button>
+          <NavbarAccountMenu avatarLetter={avatarLetter} dashboardAuthBar={dashboardAuthBar} />
         </div>
       </div>
     </header>

@@ -62,7 +62,7 @@ export function DashboardNavbar({ credits, userEmail, displayName, avatarUrl }: 
             href="/dashboard/billing"
             className="rounded-full bg-brand px-5 py-2 font-heading text-sm font-semibold text-white transition-colors hover:bg-brand-light"
           >
-            Subscribe
+            Buy credits
           </Link>
 
           <div

@@ -7,7 +7,7 @@ import { CreditCard, History, Image, LayoutGrid, LogOut, Palette, Sparkles, Vide
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCredits } from "@/lib/hooks/use-credits";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const nav = [
   { href: "/dashboard", label: "Overview", icon: LayoutGrid },

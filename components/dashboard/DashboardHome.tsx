@@ -1,57 +1,96 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, Cpu, Sparkles, Zap } from "lucide-react";
+import { Clapperboard, Image as ImageIcon, Sparkles, Wand2 } from "lucide-react";
 
 import { GenerationGrid, type GenerationTile } from "@/components/dashboard/GenerationGrid";
 import { Navbar } from "@/components/layout/Navbar";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 
-const MOCK_GRID: GenerationTile[] = [
-  {
-    id: "g1",
-    src: "https://picsum.photos/seed/a1/800/600",
-    title: "Campaign still — lavender chrome"
-  },
-  {
-    id: "g2",
-    src: "https://picsum.photos/seed/a2/800/900",
-    title: "Portrait loop — soft bloom"
-  },
-  {
-    id: "g3",
-    src: "https://picsum.photos/seed/a3/800/500",
-    title: "Product macro — crisp edges"
-  },
-  {
-    id: "g4",
-    src: "https://picsum.photos/seed/a4/800/700",
-    title: "Social clip — kinetic type"
-  },
-  {
-    id: "g5",
-    src: "https://picsum.photos/seed/a5/800/550",
-    title: "Lookbook — runway lighting"
-  },
-  {
-    id: "g6",
-    src: "https://picsum.photos/seed/a6/800/650",
-    title: "UGC clean-up — noise aware"
-  }
-];
+type GenerationRow = {
+  id: number;
+  feature_type: "image" | "video";
+  input_url: string;
+  output_url: string | null;
+  status: string;
+  created_at: string;
+};
+
+function isLikelyVideoFile(url: string): boolean {
+  const path = url.split("?")[0]?.toLowerCase() ?? "";
+  return [".mp4", ".webm", ".mov", ".m4v"].some((ext) => path.endsWith(ext));
+}
+
+function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
+  return items.map((g) => {
+    const dateLabel = new Date(g.created_at).toLocaleString();
+
+    if (g.feature_type === "video") {
+      const out = g.output_url;
+      const inn = g.input_url;
+      let src: string | undefined;
+      if (out && !isLikelyVideoFile(out)) src = out;
+      else if (inn && !isLikelyVideoFile(inn)) src = inn;
+      return {
+        id: String(g.id),
+        title: g.status === "completed" ? `UGC video · ${dateLabel}` : `Video (${g.status}) · ${dateLabel}`,
+        kind: "video" as const,
+        src
+      };
+    }
+
+    const pick = g.output_url ?? g.input_url;
+    if (pick && isLikelyVideoFile(pick)) {
+      return {
+        id: String(g.id),
+        title: `Output · ${dateLabel}`,
+        kind: "video",
+        src: undefined
+      };
+    }
+
+    return {
+      id: String(g.id),
+      title: `Enhancement · ${dateLabel}`,
+      kind: "image" as const,
+      src: pick
+    };
+  });
+}
+
+function avatarLetter(displayName: string | null, email: string | null): string {
+  const n = displayName?.trim();
+  if (n) return n.charAt(0).toUpperCase();
+  const e = email?.trim();
+  if (e) return e.charAt(0).toUpperCase();
+  return "?";
+}
 
 export function DashboardHome({
   creditsDisplay,
-  displayName
+  displayName,
+  userEmail,
+  isPremium,
+  upgradeHref,
+  generations
 }: {
   creditsDisplay: string;
   displayName: string | null;
+  userEmail: string | null;
+  isPremium: boolean;
+  upgradeHref: string;
+  generations: GenerationRow[];
 }) {
+  const historyItems = mapGenerationsToTiles(generations);
+  const initial = avatarLetter(displayName, userEmail);
+
   return (
     <div className="min-h-dvh bg-zorixa-bg font-sans text-white">
-      <Navbar />
-      <main className="mx-auto max-w-[1600px] space-y-10 px-4 py-8 lg:px-8">
+      <Navbar dashboardAuthBar avatarLetter={initial} />
+
+      <main className="mx-auto max-w-[1600px] space-y-10 px-4 py-8 pt-20 lg:px-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-medium text-brand-light">Zorixa AI</p>
@@ -59,85 +98,125 @@ export function DashboardHome({
               Dashboard{displayName ? `, ${displayName.split(" ")[0]}` : ""}
             </h1>
             <p className="mt-2 max-w-xl text-sm text-zorixa-muted">
-              Generate stunning images and videos, monitor credits, and jump back into recent work.
+              Image enhancement, UGC video generation, and your recent AI results in one place.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/image"
+              href="/dashboard/enhance"
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold shadow-generate-pulse hover:opacity-95"
             >
-              <Sparkles className="size-4" />
-              New generation
+              <Wand2 className="size-4" />
+              Enhance image
+            </Link>
+            <Link
+              href="/video"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold hover:bg-white/10"
+            >
+              <Clapperboard className="size-4" />
+              New UGC video
             </Link>
             <Link
               href="/dashboard/billing"
-              className="rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold hover:bg-white/10"
+              className="rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold tabular-nums hover:bg-white/10"
             >
-              Credits: {creditsDisplay}
+              Balance: {creditsDisplay}
             </Link>
           </div>
         </div>
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatsCard title="Total generations" value="1,248" hint="Last 30 days" />
-          <StatsCard title="Credits used" value={creditsDisplay} hint="Including bonus grants" />
-          <StatsCard title="Active models" value="12" hint="Image + video stacks" />
-          <StatsCard title="Recent activity" value="Live" hint="Queues healthy" />
-        </section>
+        {!isPremium ? <UpgradeBanner checkoutHref={upgradeHref} /> : null}
 
-        <section>
-          <h2 className="font-display text-lg font-semibold text-white">Quick actions</h2>
-          <QuickActions className="mt-4" />
-        </section>
+        <div className="space-y-10">
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatsCard title="Your results" value={String(generations.length)} hint="Saved in Supabase" />
+            <StatsCard title="Credits available" value={creditsDisplay} hint="For AI generations" />
+            <StatsCard
+              title="Image runs"
+              value={String(generations.filter((g) => g.feature_type === "image").length)}
+              hint="Enhancement & stills"
+            />
+            <StatsCard
+              title="Video runs"
+              value={String(generations.filter((g) => g.feature_type === "video").length)}
+              hint="UGC & motion"
+            />
+          </section>
 
-        <section className="grid gap-8 lg:grid-cols-[1fr_320px]">
-          <div>
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="font-display text-lg font-semibold text-white">Recent generations</h2>
-              <Link href="/dashboard/history" className="text-sm font-medium text-brand-light hover:text-white">
-                View gallery
+          <section className="space-y-4">
+            <h2 className="font-display text-lg font-semibold text-white">Image enhancement</h2>
+            <p className="text-sm text-zorixa-muted">
+              Upscale, clean up, and prepare stills for campaigns and product pages.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Link
+                href="/dashboard/enhance"
+                className="zorixa-card-border group flex flex-col gap-3 rounded-2xl bg-zorixa-card p-5 shadow-glow transition-all hover:shadow-glow-lg"
+              >
+                <span className="grid size-12 place-items-center rounded-xl bg-brand/15 text-brand-light ring-1 ring-brand/30">
+                  <Sparkles className="size-6" />
+                </span>
+                <div>
+                  <h3 className="font-display text-base font-semibold text-white">Studio enhance</h3>
+                  <p className="mt-1 text-sm text-zorixa-muted">Before/after workspace with model presets.</p>
+                </div>
+              </Link>
+              <Link
+                href="/image"
+                className="zorixa-card-border group flex flex-col gap-3 rounded-2xl bg-zorixa-card p-5 shadow-glow transition-all hover:shadow-glow-lg"
+              >
+                <span className="grid size-12 place-items-center rounded-xl bg-brand/15 text-brand-light ring-1 ring-brand/30">
+                  <ImageIcon className="size-6" />
+                </span>
+                <div>
+                  <h3 className="font-display text-base font-semibold text-white">Image create</h3>
+                  <p className="mt-1 text-sm text-zorixa-muted">Open the full image studio and library.</p>
+                </div>
               </Link>
             </div>
-            <GenerationGrid className="mt-4" items={MOCK_GRID} />
-          </div>
+          </section>
 
-          <aside className="zorixa-card-border h-fit rounded-2xl bg-zorixa-card p-5 shadow-glow">
-            <h3 className="flex items-center gap-2 font-display text-sm font-semibold text-white">
-              <Activity className="size-4 text-brand-light" />
-              Activity feed
-            </h3>
-            <ul className="mt-4 space-y-4 text-sm">
-              <li className="flex gap-3">
-                <span className="mt-1 grid size-8 place-items-center rounded-lg bg-brand/15 text-brand-light">
-                  <Zap className="size-4" />
+          <section className="space-y-4">
+            <h2 className="font-display text-lg font-semibold text-white">UGC video generation</h2>
+            <p className="text-sm text-zorixa-muted">Short-form and UGC-style clips for social and ads.</p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Link
+                href="/video"
+                className="zorixa-card-border group flex flex-col gap-3 rounded-2xl bg-zorixa-card p-5 shadow-glow transition-all hover:shadow-glow-lg"
+              >
+                <span className="grid size-12 place-items-center rounded-xl bg-brand/15 text-brand-light ring-1 ring-brand/30">
+                  <Clapperboard className="size-6" />
                 </span>
                 <div>
-                  <p className="font-medium text-white">Batch export completed</p>
-                  <p className="text-xs text-zorixa-muted">Skin retouch pack • 2m ago</p>
+                  <h3 className="font-display text-base font-semibold text-white">Video studio</h3>
+                  <p className="mt-1 text-sm text-zorixa-muted">Models, motion, and export for UGC workflows.</p>
                 </div>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-1 grid size-8 place-items-center rounded-lg bg-brand/15 text-brand-light">
-                  <Cpu className="size-4" />
-                </span>
-                <div>
-                  <p className="font-medium text-white">Model warm cache hit</p>
-                  <p className="text-xs text-zorixa-muted">Nano Banana 2 • 14m ago</p>
-                </div>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-1 grid size-8 place-items-center rounded-lg bg-brand/15 text-brand-light">
-                  <Sparkles className="size-4" />
-                </span>
-                <div>
-                  <p className="font-medium text-white">New preset synced</p>
-                  <p className="text-xs text-zorixa-muted">University track • 1h ago</p>
-                </div>
-              </li>
-            </ul>
-          </aside>
-        </section>
+              </Link>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="font-display text-lg font-semibold text-white">Quick actions</h2>
+            <QuickActions className="mt-4" />
+          </section>
+
+          <section>
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="font-display text-lg font-semibold text-white">History</h2>
+              <Link href="/dashboard/history" className="text-sm font-medium text-brand-light hover:text-white">
+                View all
+              </Link>
+            </div>
+            <p className="mt-1 text-sm text-zorixa-muted">Recent AI outputs from your account (Supabase `generations`).</p>
+            {historyItems.length === 0 ? (
+              <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-6 py-12 text-center text-sm text-zorixa-muted">
+                No generations yet. Start with image enhancement or a UGC video.
+              </div>
+            ) : (
+              <GenerationGrid className="mt-4" items={historyItems} />
+            )}
+          </section>
+        </div>
       </main>
     </div>
   );
