@@ -7,20 +7,46 @@ import { ArrowRight, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type Props = {
-  avatarLetter?: string;
-  dashboardAuthBar?: boolean;
-};
-
-export function NavbarAccountMenu({ avatarLetter, dashboardAuthBar }: Props) {
+export function NavbarAccountMenu() {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [letter, setLetter] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+
+    function syncUser() {
+      void supabase.auth.getUser().then(({ data: { user } }) => {
+        setSignedIn(!!user);
+        const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
+        const fromMeta = meta?.full_name ?? meta?.name;
+        const raw = (typeof fromMeta === "string" ? fromMeta : user?.email) ?? "";
+        const ch = raw.trim().slice(0, 1).toUpperCase();
+        setLetter(ch || null);
+      });
+    }
+
+    syncUser();
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange(() => {
+      syncUser();
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (!open) return;
 
     function onDocMouseDown(e: MouseEvent) {
-      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (triggerRef.current?.contains(t)) return;
+      if (menuRef.current?.contains(t)) return;
+      setOpen(false);
     }
 
     function onKeyDown(e: KeyboardEvent) {
@@ -41,11 +67,10 @@ export function NavbarAccountMenu({ avatarLetter, dashboardAuthBar }: Props) {
     window.location.href = "/";
   }
 
-  const initial = avatarLetter?.trim().slice(0, 1).toUpperCase();
-
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative shrink-0">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
@@ -53,10 +78,11 @@ export function NavbarAccountMenu({ avatarLetter, dashboardAuthBar }: Props) {
         aria-label="Account menu"
         className="grid size-9 place-items-center rounded-full border border-brand/40 bg-gradient-brand/25 font-display text-sm font-bold text-white ring-1 ring-brand/50 transition-opacity hover:opacity-90"
       >
-        {initial ? <span>{initial}</span> : <span className="text-xs">?</span>}
+        {letter ? <span>{letter}</span> : <span className="text-xs">?</span>}
       </button>
 
       <div
+        ref={menuRef}
         role="menu"
         aria-hidden={!open}
         className={cn(
@@ -66,13 +92,12 @@ export function NavbarAccountMenu({ avatarLetter, dashboardAuthBar }: Props) {
             : "pointer-events-none -translate-y-1.5 opacity-0"
         )}
       >
-        {/* Top row: View Plans + Settings */}
         <div className="flex items-center gap-2 px-5 pb-2 pt-4">
           <Link
             href="/dashboard/billing"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="rounded-[20px] bg-white px-4 py-1.5 text-sm font-normal text-black transition-opacity hover:opacity-90"
+            className="rounded-[20px] bg-white px-4 py-1.5 text-sm font-normal leading-none text-black transition-opacity hover:opacity-90"
           >
             View Plans
           </Link>
@@ -121,7 +146,7 @@ export function NavbarAccountMenu({ avatarLetter, dashboardAuthBar }: Props) {
             Support
           </Link>
 
-          {dashboardAuthBar ? (
+          {signedIn ? (
             <button
               type="button"
               role="menuitem"

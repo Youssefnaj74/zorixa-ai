@@ -94,7 +94,7 @@ export function VideoGenerationPage() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-zorixa-bg">
-      <Navbar avatarLetter="N" fixed />
+      <Navbar fixed />
 
       <div
         className="box-border flex min-h-0 flex-1 flex-col px-4 pt-0"

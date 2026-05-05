@@ -60,35 +60,24 @@ function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
   });
 }
 
-function avatarLetter(displayName: string | null, email: string | null): string {
-  const n = displayName?.trim();
-  if (n) return n.charAt(0).toUpperCase();
-  const e = email?.trim();
-  if (e) return e.charAt(0).toUpperCase();
-  return "?";
-}
-
 export function DashboardHome({
   creditsDisplay,
   displayName,
-  userEmail,
   isPremium,
   upgradeHref,
   generations
 }: {
   creditsDisplay: string;
   displayName: string | null;
-  userEmail: string | null;
   isPremium: boolean;
   upgradeHref: string;
   generations: GenerationRow[];
 }) {
   const historyItems = mapGenerationsToTiles(generations);
-  const initial = avatarLetter(displayName, userEmail);
 
   return (
     <div className="min-h-dvh bg-zorixa-bg font-sans text-white">
-      <Navbar dashboardAuthBar avatarLetter={initial} />
+      <Navbar dashboardAuthBar />
 
       <main className="mx-auto max-w-[1600px] space-y-10 px-4 py-8 pt-20 lg:px-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

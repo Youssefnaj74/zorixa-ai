@@ -9,8 +9,9 @@ import { cn } from "@/lib/utils";
 
 import { DashboardHomeLink } from "@/components/layout/DashboardHomeLink";
 import { DashboardNavbarExtras } from "@/components/layout/DashboardNavbarExtras";
-import { NavbarAccountMenu } from "@/components/layout/NavbarAccountMenu";
 import { NavbarToolsMenu } from "@/components/layout/NavbarToolsMenu";
+
+import { NavbarAccountMenu } from "./NavbarAccountMenu";
 
 type NavItem = {
   href: string;
@@ -35,11 +36,9 @@ const NAV_ENTRIES: NavEntry[] = [
 ];
 
 export function Navbar({
-  avatarLetter,
   fixed,
   dashboardAuthBar
 }: {
-  avatarLetter?: string;
   /** Pin navbar to viewport top (use with main content `pt-14`). */
   fixed?: boolean;
   /**
@@ -111,7 +110,7 @@ export function Navbar({
           >
             <Search className="size-4" />
           </button>
-          <NavbarAccountMenu avatarLetter={avatarLetter} dashboardAuthBar={dashboardAuthBar} />
+          <NavbarAccountMenu />
         </div>
       </div>
     </header>

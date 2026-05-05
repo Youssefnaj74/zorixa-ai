@@ -38,13 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`min-h-dvh bg-zorixa-bg font-body text-white antialiased ${display.variable} ${body.variable}`}>
-        <Script
-          src="https://app.lemonsqueezy.com/js/lemon.js"
-          strategy="afterInteractive"
-          onLoad={() => {
-            if (typeof window !== "undefined") window.createLemonSqueezy?.();
-          }}
-        />
+        <Script src="https://app.lemonsqueezy.com/js/lemon.js" strategy="afterInteractive" />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

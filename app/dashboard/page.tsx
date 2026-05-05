@@ -43,7 +43,6 @@ export default async function DashboardPage() {
     <DashboardHome
       creditsDisplay={creditsDisplay}
       displayName={displayName}
-      userEmail={user.email ?? null}
       isPremium={isPremium}
       upgradeHref={upgradeHref}
       generations={generations ?? []}
