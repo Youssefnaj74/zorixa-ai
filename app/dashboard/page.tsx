@@ -41,8 +41,10 @@ export default async function DashboardPage() {
 
   return (
     <DashboardHome
+      credits={credits}
       creditsDisplay={creditsDisplay}
       displayName={displayName}
+      userEmail={user.email ?? null}
       isPremium={isPremium}
       upgradeHref={upgradeHref}
       generations={generations ?? []}

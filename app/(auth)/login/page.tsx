@@ -4,11 +4,16 @@ import { LoginForm } from "./login-form";
 
 function LoginFallback() {
   return (
-    <div className="min-h-dvh bg-zinc-950">
-      <div className="mx-auto flex max-w-md flex-col px-6 py-14">
-        <div className="h-6 w-32 animate-pulse rounded bg-white/10" />
-        <div className="mt-8 h-8 w-48 animate-pulse rounded bg-white/10" />
-        <div className="mt-8 h-64 animate-pulse rounded-2xl bg-white/5" />
+    <div className="min-h-dvh bg-[#0a0a0a] text-white">
+      <div className="grid min-h-dvh lg:grid-cols-2">
+        <div className="flex flex-col justify-center px-6 py-16 sm:px-10 lg:px-14">
+          <div className="h-3 w-20 animate-pulse rounded bg-neutral-800" />
+          <div className="mt-12 h-16 max-w-md animate-pulse rounded bg-neutral-800" />
+          <div className="mt-4 h-16 max-w-md animate-pulse rounded bg-neutral-800" />
+        </div>
+        <div className="flex items-center justify-center border-t border-neutral-800 px-6 py-14 lg:border-l lg:border-t-0">
+          <div className="h-72 w-full max-w-md animate-pulse rounded-2xl bg-neutral-900/80" />
+        </div>
       </div>
     </div>
   );

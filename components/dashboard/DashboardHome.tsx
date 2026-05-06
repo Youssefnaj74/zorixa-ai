@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Clapperboard, Image as ImageIcon, Sparkles, Wand2 } from "lucide-react";
 
 import { GenerationGrid, type GenerationTile } from "@/components/dashboard/GenerationGrid";
-import { Navbar } from "@/components/layout/Navbar";
+import { DashboardNavbar } from "@/components/layout/Navbar";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
@@ -61,23 +64,40 @@ function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
 }
 
 export function DashboardHome({
+  credits,
   creditsDisplay,
   displayName,
+  userEmail,
   isPremium,
   upgradeHref,
   generations
 }: {
+  credits: number;
   creditsDisplay: string;
   displayName: string | null;
+  userEmail: string | null;
   isPremium: boolean;
   upgradeHref: string;
   generations: GenerationRow[];
 }) {
+  const router = useRouter();
   const historyItems = mapGenerationsToTiles(generations);
+
+  const onSignOut = useCallback(async () => {
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    router.push("/");
+  }, [router]);
 
   return (
     <div className="min-h-dvh bg-zorixa-bg font-sans text-white">
-      <Navbar dashboardAuthBar />
+      <DashboardNavbar
+        credits={credits}
+        userEmail={userEmail}
+        displayName={displayName}
+        avatarUrl={null}
+        onSignOut={onSignOut}
+      />
 
       <main className="mx-auto max-w-[1600px] space-y-10 px-4 py-8 pt-20 lg:px-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
