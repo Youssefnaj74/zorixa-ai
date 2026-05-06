@@ -1,11 +1,15 @@
+/**
+ * Reusable sign-in (email + password + Google OAuth). The root landing page
+ * no longer embeds this — users go to /login to authenticate.
+ */
 "use client";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Chrome } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { getPublicSiteUrl } from "@/lib/public-site-url";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
@@ -39,59 +43,90 @@ export function LoginForm({ className }: { className?: string }) {
     });
   }
 
+  async function onGoogleLogin() {
+    setLoading(true);
+    setError(null);
+
+    const supabase = createSupabaseBrowserClient();
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${getPublicSiteUrl()}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`
+      }
+    });
+
+    setLoading(false);
+    if (oauthError) setError(oauthError.message);
+  }
+
+  const inputClass =
+    "mt-2 w-full rounded-lg border border-[#333333] bg-[#1a1a1a] px-4 py-3.5 text-[15px] font-normal text-white outline-none placeholder:text-neutral-600 transition-colors focus:border-neutral-500 focus:outline-none";
+
   return (
-    <form
-      onSubmit={onSubmit}
-      className={cn("w-full max-w-md space-y-4 rounded-2xl zorixa-card-border bg-zorixa-card/90 p-6 shadow-glow-lg backdrop-blur", className)}
-    >
-      <div className="mb-2 flex items-center justify-center gap-2">
-        <span className="grid size-10 place-items-center rounded-xl bg-gradient-brand/20 ring-1 ring-brand/30">
-          <Sparkles className="size-5 text-brand-light" />
-        </span>
-      </div>
-      <p className="text-center text-sm text-zorixa-muted">Sign in to open the Zorixa AI studio.</p>
-
-      <label className="block">
-        <span className="text-xs font-medium text-zorixa-muted">Email</span>
-        <input
-          className="mt-1.5 w-full rounded-xl border border-white/10 bg-zorixa-bg px-3 py-2.5 text-sm text-white outline-none ring-0 placeholder:text-zorixa-muted focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-      </label>
-      <label className="block">
-        <span className="text-xs font-medium text-zorixa-muted">Password</span>
-        <input
-          className="mt-1.5 w-full rounded-xl border border-white/10 bg-zorixa-bg px-3 py-2.5 text-sm text-white outline-none ring-0 placeholder:text-zorixa-muted focus:border-brand/50 focus:ring-2 focus:ring-brand/30"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-      </label>
-
-      {error ? (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">{error}</div>
-      ) : null}
-
-      <Button
-        type="submit"
+    <div className={cn("w-full max-w-[22rem]", className)}>
+      <button
+        type="button"
+        onClick={onGoogleLogin}
         disabled={loading}
-        className="h-12 w-full rounded-xl bg-gradient-brand text-base font-semibold shadow-generate-pulse hover:opacity-95"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-[#333333] bg-[#1a1a1a] text-sm font-semibold text-white transition-colors hover:border-neutral-500 hover:bg-[#222222] disabled:opacity-45"
       >
-        {loading ? "Signing in…" : "Sign In"}
-      </Button>
+        <Chrome className="size-4 text-neutral-300" strokeWidth={1.75} aria-hidden />
+        Continue with Google
+      </button>
 
-      <p className="text-center text-sm text-zorixa-muted">
+      <div className="my-8 flex items-center gap-4">
+        <div className="h-px flex-1 bg-[#333333]" />
+        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-600">or email</span>
+        <div className="h-px flex-1 bg-[#333333]" />
+      </div>
+
+      <form onSubmit={onSubmit} className="space-y-5">
+        <label className="block">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">Email</span>
+          <input
+            className={inputClass}
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            required
+          />
+        </label>
+        <label className="block">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">Password</span>
+          <input
+            className={inputClass}
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+          />
+        </label>
+
+        {error ? (
+          <div className="rounded-lg border border-red-900/50 bg-red-950/25 px-4 py-3 text-xs font-normal leading-snug text-red-100/95">
+            {error}
+          </div>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="h-12 w-full rounded-full bg-[#2563eb] text-xs font-bold uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-90 disabled:opacity-45"
+        >
+          {loading ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
+
+      <p className="mt-10 text-center text-xs font-normal text-neutral-500">
         Don&apos;t have an account?{" "}
-        <Link href="/signup" className="font-medium text-brand-light hover:text-white">
-          Sign Up
+        <Link href="/signup" className="font-semibold text-white underline-offset-4 transition-colors hover:underline">
+          Sign up
         </Link>
       </p>
-    </form>
+    </div>
   );
 }
