@@ -1,8 +1,9 @@
 import { createBrowserClient } from "@supabase/ssr";
 
-import { env } from "@/lib/env";
+import { requirePublicSupabaseEnv } from "@/lib/env";
 
 export function createSupabaseBrowserClient() {
-  return createBrowserClient(env.supabase.url, env.supabase.anonKey);
+  const { url, anonKey } = requirePublicSupabaseEnv();
+  return createBrowserClient(url, anonKey);
 }
 

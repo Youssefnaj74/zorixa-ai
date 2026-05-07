@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-import { env } from "@/lib/env";
+import { requirePublicSupabaseEnv } from "@/lib/env";
 
 /**
  * Refreshes the Supabase session from cookies and returns a response that may
@@ -13,7 +13,8 @@ export async function updateSession(request: NextRequest) {
     request
   });
 
-  const supabase = createServerClient(env.supabase.url, env.supabase.anonKey, {
+  const { url, anonKey } = requirePublicSupabaseEnv();
+  const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
