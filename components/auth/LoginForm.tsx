@@ -5,17 +5,18 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { Chrome } from "lucide-react";
 
+import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
 export function LoginForm({ className }: { className?: string }) {
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const scheduleNavigation = useScheduledAppRouterNavigation();
   const redirectTo = searchParams.get("redirect") ?? "/dashboard";
 
   const [email, setEmail] = useState("");
@@ -37,10 +38,7 @@ export function LoginForm({ className }: { className?: string }) {
       return;
     }
 
-    startTransition(() => {
-      router.push(redirectTo);
-      router.refresh();
-    });
+    scheduleNavigation(redirectTo, { refresh: true });
   }
 
   async function onGoogleLogin() {

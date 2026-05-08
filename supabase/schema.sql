@@ -35,6 +35,18 @@ create table if not exists public.generations (
   created_at timestamptz not null default now()
 );
 
+-- Invoices (freelancer tools)
+create table if not exists public.invoices (
+  id bigserial primary key,
+  user_id uuid not null references public.users_profiles (id) on delete cascade,
+  client_name text not null,
+  project_details text not null,
+  amount_cents integer not null check (amount_cents >= 0),
+  currency text not null default 'USD',
+  status text not null default 'draft' check (status in ('draft', 'sent', 'paid')),
+  created_at timestamptz not null default now()
+);
+
 -- Auto-create profile on signup
 create or replace function public.handle_new_user()
 returns trigger
@@ -59,6 +71,7 @@ for each row execute procedure public.handle_new_user();
 alter table public.users_profiles enable row level security;
 alter table public.transactions enable row level security;
 alter table public.generations enable row level security;
+alter table public.invoices enable row level security;
 
 -- profiles: user can read/update own
 drop policy if exists "profiles_select_own" on public.users_profiles;
@@ -83,6 +96,17 @@ drop policy if exists "generations_select_own" on public.generations;
 create policy "generations_select_own"
 on public.generations for select
 using (auth.uid() = user_id);
+
+-- invoices: user can read/insert own
+drop policy if exists "invoices_select_own" on public.invoices;
+create policy "invoices_select_own"
+on public.invoices for select
+using (auth.uid() = user_id);
+
+drop policy if exists "invoices_insert_own" on public.invoices;
+create policy "invoices_insert_own"
+on public.invoices for insert
+with check (auth.uid() = user_id);
 
 -- Storage bucket for app/api/upload (public read for getPublicUrl; writes use service role)
 insert into storage.buckets (id, name, public)

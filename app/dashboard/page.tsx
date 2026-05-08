@@ -4,6 +4,24 @@ import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { getLemonSqueezyCheckoutUrl } from "@/lib/lemon-squeezy/checkout-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+const WELCOME_TAGLINES = [
+  "Ship something beautiful today — one creative step at a time.",
+  "Your next standout asset is a single click away.",
+  "Small experiments today become big wins tomorrow.",
+  "Quality compounds — keep refining, keep generating.",
+  "The best campaigns start with crisp visuals. You’ve got this.",
+  "Momentum beats perfection. Let’s make progress.",
+  "Premium results come from showing up — you’re already here."
+] as const;
+
+function welcomeTaglineFor(userId: string): string {
+  const day = new Date().getUTCDate();
+  let h = 0;
+  for (let i = 0; i < userId.length; i++) h = (h + userId.charCodeAt(i) * (i + 1)) % 2147483647;
+  const idx = (h + day) % WELCOME_TAGLINES.length;
+  return WELCOME_TAGLINES[idx];
+}
+
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -37,7 +55,8 @@ export default async function DashboardPage() {
 
   const creditsDisplay = credits >= 1000 ? `${(credits / 1000).toFixed(1)}k` : String(credits);
 
-  const upgradeHref = getLemonSqueezyCheckoutUrl(user.id) ?? "/dashboard/billing";
+  const upgradeHref = getLemonSqueezyCheckoutUrl(user.id) ?? "/pricing";
+  const welcomeTagline = welcomeTaglineFor(user.id);
 
   return (
     <DashboardHome
@@ -47,6 +66,7 @@ export default async function DashboardPage() {
       userEmail={user.email ?? null}
       isPremium={isPremium}
       upgradeHref={upgradeHref}
+      welcomeTagline={welcomeTagline}
       generations={generations ?? []}
     />
   );

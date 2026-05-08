@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { startTransition, useState } from "react";
+import { useState } from "react";
 import { UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
 
 export default function SignupPage() {
-  const router = useRouter();
+  const scheduleNavigation = useScheduledAppRouterNavigation();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,10 +38,7 @@ export default function SignupPage() {
       return;
     }
 
-    startTransition(() => {
-      router.push("/dashboard");
-      router.refresh();
-    });
+    scheduleNavigation("/dashboard", { refresh: true });
   }
 
   return (

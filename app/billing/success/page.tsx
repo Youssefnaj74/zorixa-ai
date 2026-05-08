@@ -10,7 +10,7 @@ export default function BillingSuccessPage() {
         Your credits will be added automatically in a moment.
       </p>
       <div className="mt-8 flex gap-3">
-        <Link href="/dashboard/billing">
+        <Link href="/pricing">
           <Button className="bg-white/10 text-white hover:bg-white/15">Go to billing</Button>
         </Link>
         <Link href="/dashboard/enhance">

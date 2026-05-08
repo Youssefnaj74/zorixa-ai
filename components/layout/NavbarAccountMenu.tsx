@@ -94,7 +94,7 @@ export function NavbarAccountMenu() {
       >
         <div className="flex items-center gap-2 px-5 pb-2 pt-4">
           <Link
-            href="/dashboard/billing"
+            href="/pricing"
             role="menuitem"
             onClick={() => setOpen(false)}
             className="rounded-[20px] bg-white px-4 py-1.5 text-sm font-normal leading-none text-black transition-opacity hover:opacity-90"
@@ -102,7 +102,7 @@ export function NavbarAccountMenu() {
             View Plans
           </Link>
           <Link
-            href="/dashboard/billing"
+            href="/pricing"
             role="menuitem"
             aria-label="Settings"
             onClick={() => setOpen(false)}
@@ -114,7 +114,7 @@ export function NavbarAccountMenu() {
 
         <nav className="flex flex-col pb-2 pt-1" aria-label="Account">
           <Link
-            href="/dashboard/billing"
+            href="/pricing"
             role="menuitem"
             onClick={() => setOpen(false)}
             className="px-5 py-3 text-sm font-normal text-white transition-opacity hover:opacity-70"
@@ -130,7 +130,7 @@ export function NavbarAccountMenu() {
             Usage
           </Link>
           <Link
-            href="/dashboard/billing"
+            href="/pricing"
             role="menuitem"
             onClick={() => setOpen(false)}
             className="px-5 py-3 text-sm font-normal text-white transition-opacity hover:opacity-70"

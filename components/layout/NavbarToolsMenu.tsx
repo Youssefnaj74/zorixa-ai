@@ -1,9 +1,10 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
 import { cn } from "@/lib/utils";
 
 import {
@@ -79,11 +80,15 @@ export function NavbarToolsMenu() {
   const [category, setCategory] = useState<CategoryFilter>("all");
 
   const pathname = usePathname();
-  const router = useRouter();
+  const scheduleNavigation = useScheduledAppRouterNavigation();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const videoGeneratorActive = pathname === "/video" || pathname.startsWith("/video/");
+  const videoGeneratorActive =
+    pathname === "/video" ||
+    pathname.startsWith("/video/") ||
+    pathname === "/dashboard/video" ||
+    pathname.startsWith("/dashboard/video/");
 
   const filteredTools = useMemo(() => {
     return ALL_TOOLS.filter(
@@ -100,10 +105,10 @@ export function NavbarToolsMenu() {
 
   const handleNavigate = useCallback(
     (href: string) => {
-      router.push(href);
+      scheduleNavigation(href);
       setOpen(false);
     },
-    [router]
+    [scheduleNavigation]
   );
 
   useEffect(() => {

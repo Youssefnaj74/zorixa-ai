@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
-import { startTransition, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const scheduleNavigation = useScheduledAppRouterNavigation();
   const redirectTo = searchParams.get("redirect") ?? "/dashboard";
   const urlError = searchParams.get("error");
 
@@ -35,10 +36,7 @@ export function LoginForm() {
       return;
     }
 
-    startTransition(() => {
-      router.push(redirectTo);
-      router.refresh();
-    });
+    scheduleNavigation(redirectTo, { refresh: true });
   }
 
   const inputClass =

@@ -22,7 +22,7 @@ export function UpgradeModal({
           {message ?? "Upgrade your plan to keep enhancing and generating."}
         </p>
         <div className="mt-6 flex gap-3">
-          <Link href="/dashboard/billing" className="flex-1">
+          <Link href="/pricing" className="flex-1">
             <Button className="w-full bg-violet-500 hover:bg-violet-400">
               Upgrade credits
             </Button>

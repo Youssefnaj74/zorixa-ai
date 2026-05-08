@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CreditCard, History, Image, LayoutGrid, Palette, Video } from "lucide-react";
+import { BriefcaseBusiness, CreditCard, History, Image, LayoutGrid, Palette, Video } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -10,9 +10,10 @@ const items = [
   { href: "/dashboard", label: "Home", icon: LayoutGrid },
   { href: "/image", label: "Create", icon: Palette },
   { href: "/dashboard/enhance", label: "Enhance", icon: Image },
-  { href: "/video", label: "Video", icon: Video },
+  { href: "/dashboard/video", label: "Video", icon: Video },
+  { href: "/dashboard/freelancer", label: "Freelancer", icon: BriefcaseBusiness },
   { href: "/dashboard/history", label: "History", icon: History },
-  { href: "/dashboard/billing", label: "Billing", icon: CreditCard }
+  { href: "/pricing", label: "Billing", icon: CreditCard }
 ] as const;
 
 function isNavActive(pathname: string, href: string) {

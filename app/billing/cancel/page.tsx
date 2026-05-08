@@ -10,7 +10,7 @@ export default function BillingCancelPage() {
         No worries — you can pick a plan anytime.
       </p>
       <div className="mt-8">
-        <Link href="/dashboard/billing">
+        <Link href="/pricing">
           <Button className="bg-white/10 text-white hover:bg-white/15">Back to billing</Button>
         </Link>
       </div>
