@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Play, Sparkles } from "lucide-react";
 
@@ -147,6 +148,47 @@ export function LandingPage() {
                 Watch Demo
               </a>
             </motion.div>
+          </motion.div>
+        </section>
+
+        {/* Showcase gallery */}
+        <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8">
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={{ show: { transition: { staggerChildren: 0.06 } } }}
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            {[
+              { src: "/influencer-1.jpg", label: "AI Influencer" },
+              { src: "/cinema-1.jpg", label: "Cinema Mode" },
+              { src: "/identity-1.jpg", label: "Identity Consistency" },
+              { src: "/enhanced-1.jpg", label: "De-AI Enhancement" }
+            ].map((item) => (
+              <motion.div
+                key={item.src}
+                variants={reveal}
+                className="group overflow-hidden rounded-2xl border border-white/[0.10] bg-white/[0.03] shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur"
+              >
+                <div className="relative aspect-[4/5] w-full overflow-hidden bg-black/40">
+                  <Image
+                    src={item.src}
+                    alt={item.label}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    priority={false}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3 px-4 py-3">
+                  <span className="text-xs font-semibold uppercase tracking-[0.22em] text-[#00d1ff]">
+                    {item.label}
+                  </span>
+                  <span className="h-px flex-1 bg-gradient-to-r from-[#00d1ff]/30 to-transparent" aria-hidden />
+                </div>
+              </motion.div>
+            ))}
           </motion.div>
         </section>
 
