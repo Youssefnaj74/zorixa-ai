@@ -14,9 +14,9 @@ const MOCK_IMAGE =
   "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1024&q=80&auto=format&fit=crop";
 
 export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
-  const [referencePreviewUrl, setReferencePreviewUrl] = useState<string | null>(null);
+  const [referencePreviewUrls, setReferencePreviewUrls] = useState<string[]>([]);
 
-  const [prompt, setPrompt] = useState("Ultra-detailed product hero, soft purple rim light, 50mm.");
+  const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
   const [negativeOpen, setNegativeOpen] = useState(false);
 
@@ -49,16 +49,57 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
   const creditsLabelVideo = "~90.00 CR";
   const creditsLabelImage = "-90.00 CR";
 
-  const applyReferenceFile = useCallback((file: File) => {
-    if (!file.type.startsWith("image/")) return;
-    const url = URL.createObjectURL(file);
-    setReferencePreviewUrl((prev) => {
-      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
-      return url;
-    });
-    setPrompt((p) => {
-      if (p.includes("@PRODUCT_IMAGE1")) return p;
-      return `Using @PRODUCT_IMAGE1 ${p.replace(/^Using\s*/, "").trim()}`.trim();
+  const applyReferenceFiles = useCallback(
+    (files: File[]) => {
+      const maxForModel: Record<string, number> = {
+        "gpt-image-2": 16,
+        "nano-banana-2": 14,
+        "nano-banana": 8,
+        enhancor: 4,
+        "seedream-5": 10,
+        "grok-imagine": 1
+      };
+      const max = maxForModel[modelId] ?? 1;
+
+      const incoming = files.filter((f) => f.type.startsWith("image/"));
+      if (!incoming.length) return;
+
+      setReferencePreviewUrls((prev) => {
+        const next = [...prev];
+        for (const f of incoming) {
+          if (next.length >= max) break;
+          next.push(URL.createObjectURL(f));
+        }
+        return next;
+      });
+
+      setPrompt((p) => {
+        let next = p;
+        const base = next.replace(/^Using\s*/i, "").trim();
+        next = base;
+        // Ensure @PRODUCT_IMAGE{n} tokens exist for the added slots.
+        // (We don't try to re-number on removals; this is a lightweight mock UI.)
+        const hasUsing = /^Using\s/i.test(p);
+        const currentCount = referencePreviewUrls.length;
+        const addCount = Math.min(max - currentCount, incoming.length);
+        for (let i = 1; i <= currentCount + addCount; i++) {
+          const token = `@PRODUCT_IMAGE${i}`;
+          if (!next.includes(token)) {
+            next = `${next} ${token}`.trim();
+          }
+        }
+        const withUsing = hasUsing || next.includes("@PRODUCT_IMAGE1") ? `Using ${next}` : next;
+        return withUsing.trim();
+      });
+    },
+    [modelId, referencePreviewUrls.length]
+  );
+
+  const removeReferenceAt = useCallback((index: number) => {
+    setReferencePreviewUrls((prev) => {
+      const url = prev[index];
+      if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== index);
     });
   }, []);
 
@@ -188,8 +229,9 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
           onNegativePromptChange={setNegativePrompt}
           showNegative={negativeOpen}
           onToggleNegative={() => setNegativeOpen((s) => !s)}
-          referencePreviewUrl={referencePreviewUrl}
-          onReferenceFile={applyReferenceFile}
+          referencePreviewUrls={referencePreviewUrls}
+          onReferenceFiles={applyReferenceFiles}
+          onRemoveReferenceAt={removeReferenceAt}
           modelId={modelId}
           onModelChange={setModelId}
           resolution={resolution}

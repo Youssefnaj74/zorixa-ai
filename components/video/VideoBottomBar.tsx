@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronUp, Sparkles, Upload } from "lucide-react";
+import { ChevronUp, Sparkles, Upload, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -228,7 +228,7 @@ export function VideoBottomBar({
       <div className="mx-auto flex max-w-[1920px] flex-col gap-3">
         {/* ROW 1 — Prompt */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3">
-          <div className="flex shrink-0 flex-wrap items-center gap-3">
+          <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start">
             <input
               ref={fileRef}
               type="file"
@@ -248,70 +248,93 @@ export function VideoBottomBar({
               onChange={onFile2Input}
             />
 
-            <div
-              className="relative shrink-0"
-              onDragEnter={stopDragDefaults}
-              onDragOver={stopDragDefaults}
-              onDrop={onDropSlot1}
-            >
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="relative flex size-12 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-white/25 bg-black/40 text-zorixa-muted transition-colors hover:border-white/35 hover:bg-black/55"
-                aria-label={promptImageUrl ? "Change reference image or video" : "Upload reference image or video"}
+            <div className="grid grid-cols-2 gap-3">
+              <div
+                className="relative"
+                onDragEnter={stopDragDefaults}
+                onDragOver={stopDragDefaults}
+                onDrop={onDropSlot1}
               >
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className={cn(
+                    "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                    "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                    "hover:border-white/30 hover:bg-black/55"
+                  )}
+                  aria-label={promptImageUrl ? "Change Products image" : "Upload Products image"}
+                >
+                  {promptImageUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={promptImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+                  ) : (
+                    <>
+                      <Upload className="size-5 opacity-60" />
+                      <span className="mt-2 text-xs font-medium text-zorixa-muted">Products</span>
+                    </>
+                  )}
+                </button>
                 {promptImageUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={promptImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
-                ) : (
-                  <Upload className="size-5 opacity-50" />
-                )}
-              </button>
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => onPromptImageChange(null)}
+                    className={cn(
+                      "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                      "hover:bg-black hover:text-white"
+                    )}
+                    aria-label="Remove Products image"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                ) : null}
+              </div>
 
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full border border-white/15 bg-zinc-800 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-white"
-              aria-label="Upload image or video"
-            >
-              <Upload className="size-4" />
-            </button>
-
-            <div onDragEnter={stopDragDefaults} onDragOver={stopDragDefaults} onDrop={onDropSlot2}>
-              <button
-                type="button"
-                onClick={() => fileRef2.current?.click()}
-                className="relative grid size-10 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-full border border-dashed border-white/20 bg-zinc-900/80 text-zinc-500 transition-colors hover:border-brand/40 hover:text-zorixa-muted"
-                aria-label="Secondary upload — image or video"
-              >
+              <div onDragEnter={stopDragDefaults} onDragOver={stopDragDefaults} onDrop={onDropSlot2} className="relative">
+                <button
+                  type="button"
+                  onClick={() => fileRef2.current?.click()}
+                  className={cn(
+                    "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                    "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                    "hover:border-white/30 hover:bg-black/55"
+                  )}
+                  aria-label={promptImage2Url ? "Change Influencers image" : "Upload Influencers image"}
+                >
+                  {promptImage2Url ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={promptImage2Url} alt="" className="absolute inset-0 size-full object-cover" />
+                  ) : (
+                    <>
+                      <Upload className="size-5 opacity-60" />
+                      <span className="mt-2 text-xs font-medium text-zorixa-muted">Influencers</span>
+                    </>
+                  )}
+                </button>
                 {promptImage2Url ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={promptImage2Url} alt="" className="absolute inset-0 size-full object-cover" />
-                ) : (
-                  <Upload className="size-3.5 opacity-60" />
-                )}
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => onPromptImage2Change?.(null)}
+                    className={cn(
+                      "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                      "hover:bg-black hover:text-white"
+                    )}
+                    aria-label="Remove Influencers image"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                ) : null}
+              </div>
             </div>
-
-            <span className="rounded-full bg-brand/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-light ring-1 ring-brand/30">
-              Influencers
-            </span>
-            <span className="max-w-[140px] truncate text-xs tabular-nums text-zorixa-muted" title={[file1Name, file2Name].filter(Boolean).join(", ") || undefined}>
-              {productCount === 0
-                ? "No files"
-                : productCount === 1
-                  ? file1Name || file2Name || "1 Product"
-                  : `${productCount} Products`}
-            </span>
           </div>
 
           <div className="min-w-0 flex-1">
             <textarea
+              suppressHydrationWarning
               value={prompt}
               onChange={(e) => onPromptChange(e.target.value)}
               rows={2}
-              placeholder="Type @ to reference relevant…"
+              placeholder="Describe your image..."
               className={cn(
                 "w-full resize-y rounded-lg bg-[#0a0a0a] px-3 py-2.5 text-sm leading-relaxed text-white outline-none transition-shadow placeholder:text-zorixa-muted",
                 "focus-visible:ring-2 focus-visible:ring-brand"

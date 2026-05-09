@@ -12,8 +12,6 @@ import { VideoPreview } from "@/components/video/VideoPreview";
 
 const NAV_H = 56;
 
-const DEFAULT_PROMPT = "Using @PRODUCT_IMAGE1 hav…";
-
 export function VideoGenerationPage() {
   const [bottomBarHeight, setBottomBarHeight] = useState(130);
 
@@ -28,7 +26,7 @@ export function VideoGenerationPage() {
   const [aiAgent, setAiAgent] = useState(false);
 
   const [actionTab, setActionTab] = useState<ActionTab>("Image to Video");
-  const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
+  const [prompt, setPrompt] = useState("");
 
   const [promptImageUrl, setPromptImageUrl] = useState<string | null>(null);
   const [promptImage2Url, setPromptImage2Url] = useState<string | null>(null);

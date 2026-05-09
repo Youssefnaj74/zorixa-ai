@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, ChevronUp, Sparkles, Upload } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Sparkles, Upload, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -45,8 +45,9 @@ export type ImageBottomBarProps = {
   onNegativePromptChange: (v: string) => void;
   showNegative: boolean;
   onToggleNegative: () => void;
-  referencePreviewUrl: string | null;
-  onReferenceFile: (file: File) => void;
+  referencePreviewUrls: string[];
+  onReferenceFiles: (files: File[]) => void;
+  onRemoveReferenceAt: (index: number) => void;
   modelId: string;
   onModelChange: (id: string) => void;
   resolution: string;
@@ -102,8 +103,9 @@ export function ImageBottomBar({
   onNegativePromptChange,
   showNegative,
   onToggleNegative,
-  referencePreviewUrl,
-  onReferenceFile,
+  referencePreviewUrls,
+  onReferenceFiles,
+  onRemoveReferenceAt,
   modelId,
   onModelChange,
   resolution,
@@ -126,11 +128,15 @@ export function ImageBottomBar({
 
   const selectedModel = MODEL_OPTIONS.find((m) => m.id === modelId) ?? MODEL_OPTIONS[0];
   const maxImages = getMaxImages(modelId);
-  const showImageCountGrid = maxImages > 1;
+  const uploadedCount = referencePreviewUrls.length;
 
   useEffect(() => {
     setBatchCount(defaultBatchCountForModel(modelId));
   }, [modelId]);
+
+  useEffect(() => {
+    setBatchCount((c) => Math.min(Math.max(1, c), maxImages));
+  }, [maxImages]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -166,20 +172,20 @@ export function ImageBottomBar({
 
   const onFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
-      if (f) onReferenceFile(f);
+      const fs = Array.from(e.target.files ?? []);
+      if (fs.length) onReferenceFiles(fs);
       e.target.value = "";
     },
-    [onReferenceFile]
+    [onReferenceFiles]
   );
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
       stopDrag(e);
-      const f = e.dataTransfer.files?.[0];
-      if (f) onReferenceFile(f);
+      const fs = Array.from(e.dataTransfer.files ?? []);
+      if (fs.length) onReferenceFiles(fs);
     },
-    [onReferenceFile, stopDrag]
+    [onReferenceFiles, stopDrag]
   );
 
   return (
@@ -196,100 +202,74 @@ export function ImageBottomBar({
           type="file"
           accept="image/*"
           className="hidden"
+          multiple
           tabIndex={-1}
           aria-hidden
           onChange={onFileChange}
         />
 
-        {/* ROW 1 — Upload + Prompt */}
-        <div className="flex gap-3">
+        {/* IMAGES — upload + thumbnail slots first (prompt follows below) */}
+        <div className="flex min-h-[36px] max-w-full flex-wrap items-center gap-3">
+          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
+            IMAGES
+          </span>
           <div
-            className="relative shrink-0"
+            className="flex flex-wrap items-start gap-2"
             onDragEnter={stopDrag}
             onDragOver={stopDrag}
             onDrop={onDrop}
           >
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="relative flex size-11 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-[rgba(131,56,235,0.4)] bg-[#1a1a2e] transition-colors hover:border-[rgba(131,56,235,0.55)]"
-              aria-label={referencePreviewUrl ? "Change reference image" : "Upload reference image"}
-            >
-              {referencePreviewUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={referencePreviewUrl} alt="" className="absolute inset-0 size-full object-cover" />
-              ) : (
-                <Upload className="size-5 text-[#6b7280]" strokeWidth={1.5} aria-hidden />
-              )}
-            </button>
-          </div>
+            {referencePreviewUrls.map((url, idx) => (
+              <div key={url} className="relative">
+                <div className="relative flex size-[60px] items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#0a0a12]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt="" className="absolute inset-0 size-full object-cover" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onRemoveReferenceAt(idx)}
+                  className={cn(
+                    "absolute -right-1 -top-1 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                    "hover:bg-black hover:text-white"
+                  )}
+                  aria-label="Remove image"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ))}
 
-          <textarea
-            value={prompt}
-            onChange={(e) => onPromptChange(e.target.value)}
-            placeholder="Describe your image..."
-            rows={1}
-            className={cn(
-              "min-h-[44px] w-full min-w-0 flex-1 resize-none rounded-[10px] border border-[rgba(131,56,235,0.3)] bg-[#1a1a2e] px-[14px] py-[10px] text-sm leading-snug text-white outline-none transition-[border-color,box-shadow] placeholder:text-zorixa-muted",
-              "focus:border-[#8338eb] focus:ring-2 focus:ring-[#8338eb]/35"
-            )}
-          />
-        </div>
-
-        {/* Negative prompt — collapsed by default; max-height 0 → 120px */}
-        <div
-          className={cn(
-            "overflow-hidden transition-[max-height] duration-300 ease-in-out",
-            showNegative ? "max-h-[120px]" : "max-h-0"
-          )}
-          aria-hidden={!showNegative}
-        >
-          <textarea
-            value={negativePrompt}
-            onChange={(e) => onNegativePromptChange(e.target.value)}
-            placeholder="Things to avoid…"
-            rows={3}
-            tabIndex={showNegative ? 0 : -1}
-            className={cn(
-              "mb-1 box-border max-h-[120px] min-h-0 w-full resize-none rounded-[10px] border border-[rgba(131,56,235,0.3)] bg-[#1a1a2e] px-3 py-2 text-sm text-white outline-none placeholder:text-zorixa-muted",
-              "focus:border-[#8338eb] focus:ring-2 focus:ring-[#8338eb]/35",
-              !showNegative && "pointer-events-none"
-            )}
-          />
-        </div>
-
-        {/* Image batch grid — above controls row; hidden for single-image models (e.g. Grok) */}
-        {showImageCountGrid ? (
-          <div className="flex h-9 min-h-[36px] max-w-full flex-wrap items-center gap-3">
-            <span className="shrink-0 text-xs text-[#6b7280]">Images:</span>
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-              {Array.from({ length: maxImages }, (_, i) => i + 1).map((slot) => {
-                const active = slot <= batchCount;
-                return (
-                  <button
-                    key={slot}
-                    type="button"
-                    onClick={() => {
-                      if (batchCount === slot) setBatchCount(1);
-                      else setBatchCount(slot);
-                    }}
-                    className={cn(
-                      "size-7 shrink-0 rounded-md border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50",
-                      active
-                        ? "border-[#9b5cf6] bg-[#8338eb]"
-                        : "border-[rgba(131,56,235,0.2)] bg-[#1a1a2e] hover:border-[rgba(131,56,235,0.35)]"
-                    )}
-                    aria-label={`Select ${slot} image${slot > 1 ? "s" : ""}`}
-                    aria-pressed={active}
-                  />
-                );
-              })}
+            <div className="flex flex-col items-center gap-1">
+              <button
+                type="button"
+                disabled={uploadedCount >= maxImages}
+                onClick={() => fileRef.current?.click()}
+                className={cn(
+                  "grid size-[60px] place-items-center rounded-xl border border-dashed border-white/20 bg-[#0a0a12] text-white/80 transition-colors",
+                  "hover:border-white/30 hover:bg-white/[0.03] disabled:cursor-not-allowed disabled:opacity-60"
+                )}
+                aria-label="Add image"
+              >
+                <span className="text-2xl leading-none">+</span>
+              </button>
+              <span className="text-[11px] tabular-nums text-zorixa-muted">
+                {uploadedCount}/{maxImages}
+              </span>
             </div>
-            <span className="shrink-0 text-xs tabular-nums text-[#9b7dff]">
-              {batchCount} image{batchCount !== 1 ? "s" : ""} selected
-            </span>
           </div>
-        ) : null}
+        </div>
+
+        {/* Prompt — below images row */}
+        <textarea
+          value={prompt}
+          onChange={(e) => onPromptChange(e.target.value)}
+          placeholder="Describe your image..."
+          rows={1}
+          className={cn(
+            "min-h-[44px] w-full min-w-0 resize-none rounded-[10px] border border-[rgba(131,56,235,0.3)] bg-[#1a1a2e] px-[14px] py-[10px] text-sm leading-snug text-white outline-none transition-[border-color,box-shadow] placeholder:text-zorixa-muted",
+            "focus:border-[#8338eb] focus:ring-2 focus:ring-[#8338eb]/35"
+          )}
+        />
 
         {/* ROW 2 — Controls */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2">

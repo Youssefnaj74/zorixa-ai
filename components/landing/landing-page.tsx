@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Play, Sparkles } from "lucide-react";
 
+import { DemoPlexusCanvas } from "@/components/landing/DemoPlexusCanvas";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -151,6 +152,151 @@ export function LandingPage() {
           </motion.div>
         </section>
 
+        {/* Features Grid */}
+        <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8">
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-90px" }}>
+            <motion.div variants={reveal} className="mb-8 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#a1a1aa]">Features</p>
+                <h2 className="mt-3 font-display text-3xl font-black tracking-tighter sm:text-4xl">
+                  Everything You Need to Create
+                </h2>
+              </div>
+              <span className="hidden h-px w-[180px] bg-gradient-to-r from-[#00e6c8]/40 to-transparent sm:block" aria-hidden />
+            </motion.div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  icon: "🎬",
+                  title: "UGC Video Studio",
+                  body: "Generate hyper-realistic UGC videos with AI influencers in seconds"
+                },
+                {
+                  icon: "👤",
+                  title: "AI Influencers",
+                  body: "Create consistent AI personas with stable identity across all frames"
+                },
+                {
+                  icon: "🎥",
+                  title: "Cinematic Upscaling",
+                  body: "Transform flat AI video into 8K film-grade cinematic results"
+                },
+                {
+                  icon: "🖼️",
+                  title: "Image Generation",
+                  body: "Photorealistic product images with real skin texture and lighting"
+                }
+              ].map((f) => (
+                <motion.div
+                  key={f.title}
+                  variants={reveal}
+                  className={cn(
+                    "group relative overflow-hidden rounded-2xl border border-white/[0.12] bg-white/[0.03] p-6",
+                    "shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur"
+                  )}
+                >
+                  <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(0,230,200,0.16),transparent_55%)]" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="grid size-10 place-items-center rounded-xl border border-white/10 bg-black/30 text-lg"
+                      aria-hidden
+                    >
+                      {f.icon}
+                    </span>
+                    <span className="h-px flex-1 bg-gradient-to-r from-[#00e6c8]/40 to-transparent" aria-hidden />
+                  </div>
+                  <h3 className="mt-4 font-display text-lg font-bold tracking-tight text-white">{f.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[#a1a1aa]">{f.body}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
+        {/* How it works */}
+        <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8">
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-90px" }}
+            className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur shadow-[0_24px_70px_rgba(0,0,0,0.65)]"
+          >
+            <motion.p variants={reveal} className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#a1a1aa]">
+              How it works
+            </motion.p>
+            <motion.h2 variants={reveal} className="mt-4 font-display text-3xl font-black tracking-tighter sm:text-4xl">
+              From Prompt to Cinema in 3 Steps
+            </motion.h2>
+
+            <motion.div variants={reveal} className="mt-8 grid gap-4 lg:grid-cols-3">
+              {[
+                { n: "01", t: "Upload or Prompt" },
+                { n: "02", t: "Choose Your Model" },
+                { n: "03", t: "Download & Publish" }
+              ].map((s) => (
+                <div key={s.n} className="rounded-2xl border border-white/10 bg-black/35 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-display text-xs font-bold tracking-[0.28em] text-[#00e6c8]">{s.n}</span>
+                    <span className="h-px flex-1 bg-gradient-to-r from-[#00e6c8]/30 to-transparent" aria-hidden />
+                  </div>
+                  <p className="mt-3 font-display text-lg font-bold tracking-tight text-white">{s.t}</p>
+                </div>
+              ))}
+            </motion.div>
+          </motion.div>
+        </section>
+
+        {/* Social proof banner */}
+        <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8">
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-90px" }}>
+            <motion.div
+              variants={reveal}
+              className={cn(
+                "flex flex-col items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/40 px-6 py-5 text-center backdrop-blur",
+                "shadow-[0_18px_55px_rgba(0,0,0,0.55)] sm:flex-row sm:text-left"
+              )}
+            >
+              <p className="font-display text-sm font-semibold tracking-tight text-white">
+                10,000+ creators <span className="text-white/30">·</span> 4.9/5 rating{" "}
+                <span className="text-white/30">·</span> Generate in seconds
+              </p>
+              <span className="h-px w-full bg-gradient-to-r from-transparent via-[#00e6c8]/30 to-transparent sm:hidden" aria-hidden />
+              <span className="inline-flex items-center rounded-full border border-[rgba(0,230,200,0.35)] bg-[rgba(0,230,200,0.10)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7ff7e8]">
+                Premium workflows
+              </span>
+            </motion.div>
+          </motion.div>
+        </section>
+
+        {/* CTA */}
+        <section className="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-90px" }}
+            className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] px-8 py-12 text-center backdrop-blur shadow-[0_24px_70px_rgba(0,0,0,0.65)]"
+          >
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,230,200,0.16),transparent_62%)]" />
+            <motion.h2 variants={reveal} className="relative font-display text-3xl font-black tracking-tighter sm:text-4xl">
+              Ready to go cinematic?
+            </motion.h2>
+            <motion.p variants={reveal} className="relative mt-3 text-sm leading-relaxed text-[#a1a1aa] sm:text-base">
+              Launch a workflow, pick your model, and ship production-ready visuals in minutes.
+            </motion.p>
+            <motion.div variants={reveal} className="relative mt-8 flex items-center justify-center">
+              <Link
+                href="/dashboard"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-[#00e6c8] px-8 text-sm font-bold text-black shadow-[0_0_0_1px_rgba(0,230,200,0.35),0_0_34px_rgba(0,230,200,0.38)] transition-transform hover:scale-[1.02]"
+              >
+                Start Creating for Free →
+              </Link>
+            </motion.div>
+          </motion.div>
+        </section>
+
         {/* Showcase gallery */}
         <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8">
           <motion.div
@@ -275,9 +421,11 @@ export function LandingPage() {
             className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]"
           >
             <motion.div variants={reveal} className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur">
-              <div className="aspect-video w-full rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_30%_20%,rgba(0,209,255,0.16),transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))]" />
+              <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
+                <DemoPlexusCanvas className="absolute inset-0 h-full w-full min-h-0" />
+              </div>
               <p className="mt-4 text-sm text-[#a1a1aa]">
-                Swap this placeholder with a real demo video later (we kept it lightweight for performance).
+                Canvas animation fills the frame for now — swap in a real demo video anytime without changing layout.
               </p>
             </motion.div>
 
