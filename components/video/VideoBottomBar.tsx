@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronUp, Sparkles, Upload, X } from "lucide-react";
+import { ChevronUp, Film, Mic2, Sparkles, Upload, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -18,13 +18,30 @@ import {
   type BottomBarModel
 } from "@/components/video/bottom-bar-models";
 
+import type { ActionTab } from "@/components/video/ActionTabsRow";
+
+export type VideoGenerateContext = {
+  promptText: string;
+  actionTab: ActionTab;
+  promptImageUrl: string | null;
+  promptImage2Url: string | null;
+  lipsyncAudioUrl: string | null;
+  editSourceVideoUrl: string | null;
+};
+
 export type VideoBottomBarProps = {
   prompt: string;
   onPromptChange: (v: string) => void;
+  /** Active preview tab — drives which assets are shown and sent to the API. */
+  actionTab: ActionTab;
   promptImageUrl: string | null;
   onPromptImageChange: (url: string | null) => void;
   promptImage2Url?: string | null;
   onPromptImage2Change?: (url: string | null) => void;
+  lipsyncAudioUrl: string | null;
+  onLipsyncAudioUrlChange: (url: string | null) => void;
+  editSourceVideoUrl: string | null;
+  onEditSourceVideoUrlChange: (url: string | null) => void;
   /** Bottom bar model (dropup). */
   composerModelId: string;
   onComposerModelChange: (id: string) => void;
@@ -44,8 +61,8 @@ export type VideoBottomBarProps = {
   onAiAgentChange: (v: boolean) => void;
   creditsLine: string;
   loadingGenerate: boolean;
-  /** Current prompt text from the textarea — passed at click time so the handler always receives the latest value. */
-  onGenerate: (promptText: string) => void | Promise<void>;
+  /** Snapshot of prompt + assets at click time (reads textarea ref so text is never stale). */
+  onGenerate: (ctx: VideoGenerateContext) => void | Promise<void>;
   /** Report measured height so the page can reserve space above this fixed bar. */
   onHeightChange?: (height: number) => void;
 };
@@ -79,10 +96,15 @@ function FullAccessToggle({ on, onChange }: { on: boolean; onChange: (v: boolean
 export function VideoBottomBar({
   prompt,
   onPromptChange,
+  actionTab,
   promptImageUrl,
   onPromptImageChange,
   promptImage2Url = null,
   onPromptImage2Change,
+  lipsyncAudioUrl,
+  onLipsyncAudioUrlChange,
+  editSourceVideoUrl,
+  onEditSourceVideoUrlChange,
   composerModelId,
   onComposerModelChange,
   fullAccessOn,
@@ -106,8 +128,11 @@ export function VideoBottomBar({
 }: VideoBottomBarProps) {
   const [open, setOpen] = useState<OpenPanel>(null);
   const bottomBarRef = useRef<HTMLElement>(null);
+  const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const fileRef2 = useRef<HTMLInputElement>(null);
+  const fileAudioRef = useRef<HTMLInputElement>(null);
+  const fileVideoRef = useRef<HTMLInputElement>(null);
   const [file1Name, setFile1Name] = useState<string | null>(null);
   const [file2Name, setFile2Name] = useState<string | null>(null);
 
@@ -208,7 +233,59 @@ export function VideoBottomBar({
     [applySlot2File, stopDragDefaults]
   );
 
-  const productCount = (promptImageUrl ? 1 : 0) + (promptImage2Url ? 1 : 0);
+  const applyAudioFile = useCallback(
+    (file: File) => {
+      if (!file.type.startsWith("audio/")) return;
+      const url = URL.createObjectURL(file);
+      onLipsyncAudioUrlChange(url);
+    },
+    [onLipsyncAudioUrlChange]
+  );
+
+  const applyVideoFile = useCallback(
+    (file: File) => {
+      if (!file.type.startsWith("video/")) return;
+      const url = URL.createObjectURL(file);
+      onEditSourceVideoUrlChange(url);
+    },
+    [onEditSourceVideoUrlChange]
+  );
+
+  const onAudioInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const f = e.target.files?.[0];
+      if (f) applyAudioFile(f);
+      e.target.value = "";
+    },
+    [applyAudioFile]
+  );
+
+  const onVideoInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const f = e.target.files?.[0];
+      if (f) applyVideoFile(f);
+      e.target.value = "";
+    },
+    [applyVideoFile]
+  );
+
+  const onDropAudio = useCallback(
+    (e: React.DragEvent) => {
+      stopDragDefaults(e);
+      const f = e.dataTransfer.files?.[0];
+      if (f) applyAudioFile(f);
+    },
+    [applyAudioFile, stopDragDefaults]
+  );
+
+  const onDropVideo = useCallback(
+    (e: React.DragEvent) => {
+      stopDragDefaults(e);
+      const f = e.dataTransfer.files?.[0];
+      if (f) applyVideoFile(f);
+    },
+    [applyVideoFile, stopDragDefaults]
+  );
 
   useEffect(() => {
     if (!promptImageUrl) setFile1Name(null);
@@ -217,6 +294,40 @@ export function VideoBottomBar({
   useEffect(() => {
     if (!promptImage2Url) setFile2Name(null);
   }, [promptImage2Url]);
+
+  const showKlingTextOnlyTab = actionTab === "Text to Video" && composerModelId === "kling-3-pro";
+
+  const emitGenerate = useCallback(() => {
+    const promptText = promptTextareaRef.current?.value ?? prompt;
+    const ctx: VideoGenerateContext = {
+      promptText,
+      actionTab,
+      promptImageUrl,
+      promptImage2Url,
+      lipsyncAudioUrl,
+      editSourceVideoUrl
+    };
+    console.log("[VideoBottomBar] GENERATE click", {
+      promptText,
+      promptTextLen: promptText.length,
+      actionTab,
+      composerModelId,
+      hasPromptImage: Boolean(promptImageUrl),
+      hasPromptImage2: Boolean(promptImage2Url),
+      hasLipsyncAudio: Boolean(lipsyncAudioUrl),
+      hasEditSourceVideo: Boolean(editSourceVideoUrl)
+    });
+    void onGenerate(ctx);
+  }, [
+    actionTab,
+    composerModelId,
+    editSourceVideoUrl,
+    lipsyncAudioUrl,
+    onGenerate,
+    prompt,
+    promptImage2Url,
+    promptImageUrl
+  ]);
 
   return (
     <footer
@@ -229,113 +340,210 @@ export function VideoBottomBar({
       <div className="mx-auto flex max-w-[1920px] flex-col gap-3">
         {/* ROW 1 — Prompt */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3">
-          <div
-            className={cn(
-              "flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start",
-              composerModelId === "kling-3-pro" && "hidden"
-            )}
-          >
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*,video/*"
-              className="hidden"
-              tabIndex={-1}
-              aria-hidden
-              onChange={onFile1Input}
-            />
-            <input
-              ref={fileRef2}
-              type="file"
-              accept="image/*,video/*"
-              className="hidden"
-              tabIndex={-1}
-              aria-hidden
-              onChange={onFile2Input}
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-              <div
-                className="relative"
-                onDragEnter={stopDragDefaults}
-                onDragOver={stopDragDefaults}
-                onDrop={onDropSlot1}
-              >
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className={cn(
-                    "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                    "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                    "hover:border-white/30 hover:bg-black/55"
-                  )}
-                  aria-label={promptImageUrl ? "Change Products image" : "Upload Products image"}
-                >
-                  {promptImageUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={promptImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
-                  ) : (
-                    <>
-                      <Upload className="size-5 opacity-60" />
-                      <span className="mt-2 text-xs font-medium text-zorixa-muted">Products</span>
-                    </>
-                  )}
-                </button>
-                {promptImageUrl ? (
-                  <button
-                    type="button"
-                    onClick={() => onPromptImageChange(null)}
-                    className={cn(
-                      "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
-                      "hover:bg-black hover:text-white"
-                    )}
-                    aria-label="Remove Products image"
+          {!showKlingTextOnlyTab ? (
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start">
+              {actionTab === "Lipsyncing" ? (
+                <>
+                  <input
+                    ref={fileAudioRef}
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    aria-hidden
+                    onChange={onAudioInput}
+                  />
+                  <div
+                    className="relative"
+                    onDragEnter={stopDragDefaults}
+                    onDragOver={stopDragDefaults}
+                    onDrop={onDropAudio}
                   >
-                    <X className="size-3.5" />
-                  </button>
-                ) : null}
-              </div>
-
-              <div onDragEnter={stopDragDefaults} onDragOver={stopDragDefaults} onDrop={onDropSlot2} className="relative">
-                <button
-                  type="button"
-                  onClick={() => fileRef2.current?.click()}
-                  className={cn(
-                    "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                    "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                    "hover:border-white/30 hover:bg-black/55"
-                  )}
-                  aria-label={promptImage2Url ? "Change Influencers image" : "Upload Influencers image"}
-                >
-                  {promptImage2Url ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={promptImage2Url} alt="" className="absolute inset-0 size-full object-cover" />
-                  ) : (
-                    <>
-                      <Upload className="size-5 opacity-60" />
-                      <span className="mt-2 text-xs font-medium text-zorixa-muted">Influencers</span>
-                    </>
-                  )}
-                </button>
-                {promptImage2Url ? (
-                  <button
-                    type="button"
-                    onClick={() => onPromptImage2Change?.(null)}
-                    className={cn(
-                      "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
-                      "hover:bg-black hover:text-white"
-                    )}
-                    aria-label="Remove Influencers image"
+                    <button
+                      type="button"
+                      onClick={() => fileAudioRef.current?.click()}
+                      className={cn(
+                        "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                        "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                        "hover:border-white/30 hover:bg-black/55"
+                      )}
+                      aria-label={lipsyncAudioUrl ? "Change audio" : "Upload audio"}
+                    >
+                      <Mic2 className="size-5 opacity-60" />
+                      <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">Audio</span>
+                    </button>
+                    {lipsyncAudioUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => onLipsyncAudioUrlChange(null)}
+                        className={cn(
+                          "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                          "hover:bg-black hover:text-white"
+                        )}
+                        aria-label="Remove audio"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    ) : null}
+                  </div>
+                </>
+              ) : actionTab === "Video Edit" ? (
+                <>
+                  <input
+                    ref={fileVideoRef}
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    aria-hidden
+                    onChange={onVideoInput}
+                  />
+                  <div
+                    className="relative"
+                    onDragEnter={stopDragDefaults}
+                    onDragOver={stopDragDefaults}
+                    onDrop={onDropVideo}
                   >
-                    <X className="size-3.5" />
-                  </button>
-                ) : null}
-              </div>
+                    <button
+                      type="button"
+                      onClick={() => fileVideoRef.current?.click()}
+                      className={cn(
+                        "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                        "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                        "hover:border-white/30 hover:bg-black/55"
+                      )}
+                      aria-label={editSourceVideoUrl ? "Change source video" : "Upload source video"}
+                    >
+                      <Film className="size-5 opacity-60" />
+                      <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">Source video</span>
+                    </button>
+                    {editSourceVideoUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => onEditSourceVideoUrlChange(null)}
+                        className={cn(
+                          "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                          "hover:bg-black hover:text-white"
+                        )}
+                        aria-label="Remove source video"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    ) : null}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    aria-hidden
+                    onChange={onFile1Input}
+                  />
+                  <input
+                    ref={fileRef2}
+                    type="file"
+                    accept="image/*,video/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    aria-hidden
+                    onChange={onFile2Input}
+                  />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div
+                      className="relative"
+                      onDragEnter={stopDragDefaults}
+                      onDragOver={stopDragDefaults}
+                      onDrop={onDropSlot1}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => fileRef.current?.click()}
+                        className={cn(
+                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                          "hover:border-white/30 hover:bg-black/55"
+                        )}
+                        aria-label={promptImageUrl ? "Change Products image" : "Upload Products image"}
+                      >
+                        {promptImageUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={promptImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+                        ) : (
+                          <>
+                            <Upload className="size-5 opacity-60" />
+                            <span className="mt-2 text-xs font-medium text-zorixa-muted">Products</span>
+                          </>
+                        )}
+                      </button>
+                      {promptImageUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => onPromptImageChange(null)}
+                          className={cn(
+                            "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                            "hover:bg-black hover:text-white"
+                          )}
+                          aria-label="Remove Products image"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      ) : null}
+                    </div>
+
+                    <div
+                      onDragEnter={stopDragDefaults}
+                      onDragOver={stopDragDefaults}
+                      onDrop={onDropSlot2}
+                      className="relative"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => fileRef2.current?.click()}
+                        className={cn(
+                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                          "hover:border-white/30 hover:bg-black/55"
+                        )}
+                        aria-label={promptImage2Url ? "Change Influencers image" : "Upload Influencers image"}
+                      >
+                        {promptImage2Url ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={promptImage2Url} alt="" className="absolute inset-0 size-full object-cover" />
+                        ) : (
+                          <>
+                            <Upload className="size-5 opacity-60" />
+                            <span className="mt-2 text-xs font-medium text-zorixa-muted">Influencers</span>
+                          </>
+                        )}
+                      </button>
+                      {promptImage2Url ? (
+                        <button
+                          type="button"
+                          onClick={() => onPromptImage2Change?.(null)}
+                          className={cn(
+                            "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                            "hover:bg-black hover:text-white"
+                          )}
+                          aria-label="Remove Influencers image"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
-          </div>
+          ) : null}
 
           <div className="min-w-0 flex-1">
             <textarea
+              ref={promptTextareaRef}
               suppressHydrationWarning
               value={prompt}
               onChange={(e) => onPromptChange(e.target.value)}
@@ -679,7 +887,7 @@ export function VideoBottomBar({
             disabled={loadingGenerate}
             whileHover={loadingGenerate ? undefined : { scale: 1.02 }}
             whileTap={loadingGenerate ? undefined : { scale: 0.98 }}
-            onClick={() => void onGenerate(prompt)}
+            onClick={emitGenerate}
             className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
           >
             {loadingGenerate ? (
