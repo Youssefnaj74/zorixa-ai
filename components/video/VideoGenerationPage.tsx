@@ -47,6 +47,7 @@ export function VideoGenerationPage() {
 
   const [loading, setLoading] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const [history, setHistory] = useState<VideoHistoryEntry[]>([
     {
@@ -67,9 +68,70 @@ export function VideoGenerationPage() {
     setBottomBarHeight(height);
   }, []);
 
-  const runGeneration = useCallback(() => {
-    setLoading(true);
+  const handleComposerModelChange = useCallback((id: string) => {
+    setComposerModelId(id);
+    setGenerateError(null);
+    if (id === "kling-3-pro") {
+      setActionTab("Text to Video");
+    }
+  }, []);
+
+  const runGeneration = useCallback(async () => {
+    setGenerateError(null);
     setVideoUrl(null);
+
+    if (composerModelId === "kling-3-pro") {
+      const trimmed = prompt.trim();
+      if (!trimmed) {
+        setGenerateError("Enter a prompt to generate a video.");
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await fetch("/api/generate-video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: trimmed })
+        });
+
+        let data: { video_url?: string; error?: string } = {};
+        try {
+          data = (await res.json()) as { video_url?: string; error?: string };
+        } catch {
+          setGenerateError(`Generation failed (${res.status})`);
+          return;
+        }
+
+        if (!res.ok) {
+          setGenerateError(data.error ?? `Generation failed (${res.status})`);
+          return;
+        }
+
+        if (!data.video_url) {
+          setGenerateError("No video URL was returned.");
+          return;
+        }
+
+        setVideoUrl(data.video_url);
+        const id = `v-${Date.now()}`;
+        setHistory((prev) => [
+          {
+            id,
+            thumb: `https://picsum.photos/seed/${id.slice(-6)}/96/96`,
+            title: trimmed.slice(0, 40) || "Kling 3.0 Pro"
+          },
+          ...prev
+        ]);
+      } catch {
+        setGenerateError("Network error. Try again.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    setLoading(true);
     window.setTimeout(() => {
       const url = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
       setVideoUrl(url);
@@ -84,7 +146,7 @@ export function VideoGenerationPage() {
         ...prev
       ]);
     }, 1800);
-  }, [prompt]);
+  }, [composerModelId, prompt]);
 
   const restoreSettings = useCallback((item: VideoHistoryEntry) => {
     setPrompt((p) => `${p.split("\n")[0]}\n(Restored: ${item.title})`);
@@ -108,7 +170,8 @@ export function VideoGenerationPage() {
               onActionTabChange={setActionTab}
               videoUrl={videoUrl}
               loading={loading}
-              promptThumbUrl={promptImageUrl}
+              errorMessage={generateError}
+              promptThumbUrl={composerModelId === "kling-3-pro" ? null : promptImageUrl}
               bottomBarHeight={bottomBarHeight}
               className="scrollbar-hide h-full min-h-0 w-full min-w-0 flex-1"
             />
@@ -125,13 +188,16 @@ export function VideoGenerationPage() {
 
       <VideoBottomBar
         prompt={prompt}
-        onPromptChange={setPrompt}
+        onPromptChange={(v) => {
+          setGenerateError(null);
+          setPrompt(v);
+        }}
         promptImageUrl={promptImageUrl}
         onPromptImageChange={setPromptImageUrlSafe}
         promptImage2Url={promptImage2Url}
         onPromptImage2Change={setPromptImage2UrlSafe}
         composerModelId={composerModelId}
-        onComposerModelChange={setComposerModelId}
+        onComposerModelChange={handleComposerModelChange}
         fullAccessOn={fullAccessOn}
         onFullAccessChange={setFullAccessOn}
         modeValue={modeValue}

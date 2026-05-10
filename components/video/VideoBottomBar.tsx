@@ -228,7 +228,12 @@ export function VideoBottomBar({
       <div className="mx-auto flex max-w-[1920px] flex-col gap-3">
         {/* ROW 1 — Prompt */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3">
-          <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start">
+          <div
+            className={cn(
+              "flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start",
+              composerModelId === "kling-3-pro" && "hidden"
+            )}
+          >
             <input
               ref={fileRef}
               type="file"
@@ -333,8 +338,12 @@ export function VideoBottomBar({
               suppressHydrationWarning
               value={prompt}
               onChange={(e) => onPromptChange(e.target.value)}
-              rows={2}
-              placeholder="Describe your image..."
+              rows={composerModelId === "kling-3-pro" ? 3 : 2}
+              placeholder={
+                composerModelId === "kling-3-pro"
+                  ? "Describe the video you want to generate…"
+                  : "Describe your image..."
+              }
               className={cn(
                 "w-full resize-y rounded-lg bg-[#0a0a0a] px-3 py-2.5 text-sm leading-relaxed text-white outline-none transition-shadow placeholder:text-zorixa-muted",
                 "focus-visible:ring-2 focus-visible:ring-brand"
