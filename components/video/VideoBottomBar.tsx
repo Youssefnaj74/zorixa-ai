@@ -44,7 +44,8 @@ export type VideoBottomBarProps = {
   onAiAgentChange: (v: boolean) => void;
   creditsLine: string;
   loadingGenerate: boolean;
-  onGenerate: () => void;
+  /** Current prompt text from the textarea — passed at click time so the handler always receives the latest value. */
+  onGenerate: (promptText: string) => void | Promise<void>;
   /** Report measured height so the page can reserve space above this fixed bar. */
   onHeightChange?: (height: number) => void;
 };
@@ -678,7 +679,7 @@ export function VideoBottomBar({
             disabled={loadingGenerate}
             whileHover={loadingGenerate ? undefined : { scale: 1.02 }}
             whileTap={loadingGenerate ? undefined : { scale: 0.98 }}
-            onClick={onGenerate}
+            onClick={() => void onGenerate(prompt)}
             className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
           >
             {loadingGenerate ? (

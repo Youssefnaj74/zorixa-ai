@@ -76,13 +76,13 @@ export function VideoGenerationPage() {
     }
   }, []);
 
-  const runGeneration = useCallback(async () => {
+  const runGeneration = useCallback(async (promptText: string) => {
     setGenerateError(null);
     setVideoUrl(null);
 
     if (composerModelId === "kling-3-pro") {
-      const trimmed = prompt.trim();
-      if (!trimmed) {
+      const promptValue = promptText.trim();
+      if (!promptValue) {
         setGenerateError("Enter a prompt to generate a video.");
         return;
       }
@@ -92,7 +92,7 @@ export function VideoGenerationPage() {
         const res = await fetch("/api/generate-video", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: trimmed })
+          body: JSON.stringify({ prompt: promptValue })
         });
 
         let data: { video_url?: string; error?: string } = {};
@@ -119,7 +119,7 @@ export function VideoGenerationPage() {
           {
             id,
             thumb: `https://picsum.photos/seed/${id.slice(-6)}/96/96`,
-            title: trimmed.slice(0, 40) || "Kling 3.0 Pro"
+            title: promptValue.slice(0, 40) || "Kling 3.0 Pro"
           },
           ...prev
         ]);
@@ -141,12 +141,12 @@ export function VideoGenerationPage() {
         {
           id,
           thumb: `https://picsum.photos/seed/${id.slice(-6)}/96/96`,
-          title: prompt.slice(0, 40) || "New render"
+          title: promptText.trim().slice(0, 40) || "New render"
         },
         ...prev
       ]);
     }, 1800);
-  }, [composerModelId, prompt]);
+  }, [composerModelId]);
 
   const restoreSettings = useCallback((item: VideoHistoryEntry) => {
     setPrompt((p) => `${p.split("\n")[0]}\n(Restored: ${item.title})`);
