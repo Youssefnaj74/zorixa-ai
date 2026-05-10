@@ -135,13 +135,8 @@ export function VideoGenerationPage() {
       setGenerateError(null);
       setVideoUrl(null);
 
-      const promptValue = ctx.promptText.trim();
-      console.log("[VideoGenerationPage] runGeneration", {
-        promptValue,
-        promptLen: promptValue.length,
-        actionTab: ctx.actionTab,
-        composerModelId
-      });
+      // Merge context + React state: avoids empty prompt when Generate runs before the last onChange commits.
+      const promptValue = ctx.promptText.trim() || prompt.trim();
 
       if (composerModelId !== "kling-3-pro") {
         setLoading(true);
@@ -207,6 +202,16 @@ export function VideoGenerationPage() {
         }
 
         console.log("[VideoGenerationPage] POST /api/generate-video body", payload);
+        console.log(
+          "[VideoGenerationPage] exact prompt before fetch:",
+          JSON.stringify(promptValue),
+          "| length:",
+          promptValue.length,
+          "| ctx:",
+          JSON.stringify(ctx.promptText.trim()),
+          "| parent state:",
+          JSON.stringify(prompt.trim())
+        );
 
         const res = await fetch("/api/generate-video", {
           method: "POST",
@@ -248,7 +253,7 @@ export function VideoGenerationPage() {
         setLoading(false);
       }
     },
-    [composerModelId]
+    [composerModelId, prompt]
   );
 
   const restoreSettings = useCallback((item: VideoHistoryEntry) => {
