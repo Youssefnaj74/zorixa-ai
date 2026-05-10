@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
+import { KLING_30_PRO_MODEL_ID } from "@/components/video/bottom-bar-models";
 import type { VideoHistoryEntry } from "@/components/video/VideoHistory";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
 import { VideoHistory } from "@/components/video/VideoHistory";
@@ -125,20 +126,29 @@ export function VideoGenerationPage() {
   const handleComposerModelChange = useCallback((id: string) => {
     setComposerModelId(id);
     setGenerateError(null);
-    if (id === "kling-3-pro") {
+    if (id === KLING_30_PRO_MODEL_ID) {
       setActionTab("Text to Video");
     }
   }, []);
 
   const runGeneration = useCallback(
     async (ctx: VideoGenerateContext) => {
+      console.log(
+        "[VideoGenerationPage] Generate click composerModelId (exact):",
+        JSON.stringify(composerModelId),
+        "| equals KLING constant:",
+        composerModelId === KLING_30_PRO_MODEL_ID,
+        "| constant:",
+        JSON.stringify(KLING_30_PRO_MODEL_ID)
+      );
+
       setGenerateError(null);
       setVideoUrl(null);
 
       // Merge context + React state: avoids empty prompt when Generate runs before the last onChange commits.
       const promptValue = ctx.promptText.trim() || prompt.trim();
 
-      if (composerModelId !== "kling-3-pro") {
+      if (composerModelId !== KLING_30_PRO_MODEL_ID) {
         setLoading(true);
         window.setTimeout(() => {
           const url = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
@@ -261,7 +271,7 @@ export function VideoGenerationPage() {
   }, []);
 
   const hidePromptThumb =
-    composerModelId === "kling-3-pro" && actionTab === "Text to Video";
+    composerModelId === KLING_30_PRO_MODEL_ID && actionTab === "Text to Video";
 
   return (
     <div className="flex min-h-dvh flex-col bg-zorixa-bg">

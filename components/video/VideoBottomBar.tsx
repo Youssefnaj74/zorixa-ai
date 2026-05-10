@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import {
   ASPECT_STEP_OPTIONS,
   BOTTOM_BAR_MODELS,
+  KLING_30_PRO_MODEL_ID,
   MODE_DROPUP_OPTIONS,
   RESOLUTION_STEP_OPTIONS,
   STANDARD_DURATION_OPTIONS,
@@ -298,7 +299,7 @@ export function VideoBottomBar({
     if (!promptImage2Url) setFile2Name(null);
   }, [promptImage2Url]);
 
-  const showKlingTextOnlyTab = actionTab === "Text to Video" && composerModelId === "kling-3-pro";
+  const showKlingTextOnlyTab = actionTab === "Text to Video" && composerModelId === KLING_30_PRO_MODEL_ID;
 
   const emitGenerate = useCallback(() => {
     const el = promptTextareaRef.current;
@@ -556,9 +557,9 @@ export function VideoBottomBar({
               suppressHydrationWarning
               value={prompt}
               onChange={(e) => onPromptChange(e.target.value)}
-              rows={composerModelId === "kling-3-pro" ? 3 : 2}
+              rows={composerModelId === KLING_30_PRO_MODEL_ID ? 3 : 2}
               placeholder={
-                composerModelId === "kling-3-pro"
+                composerModelId === KLING_30_PRO_MODEL_ID
                   ? "Describe the video you want to generate…"
                   : "Describe your image..."
               }
