@@ -129,6 +129,9 @@ export function VideoBottomBar({
   const [open, setOpen] = useState<OpenPanel>(null);
   const bottomBarRef = useRef<HTMLElement>(null);
   const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
+  /** Mirrors latest `prompt` prop every render — survives stale closures if Generate fires before React commits the last keystroke. */
+  const promptMirrorRef = useRef(prompt);
+  promptMirrorRef.current = prompt;
   const fileRef = useRef<HTMLInputElement>(null);
   const fileRef2 = useRef<HTMLInputElement>(null);
   const fileAudioRef = useRef<HTMLInputElement>(null);
@@ -298,7 +301,12 @@ export function VideoBottomBar({
   const showKlingTextOnlyTab = actionTab === "Text to Video" && composerModelId === "kling-3-pro";
 
   const emitGenerate = useCallback(() => {
-    const promptText = promptTextareaRef.current?.value ?? prompt;
+    const el = promptTextareaRef.current;
+    // Prefer live DOM (updates synchronously on every keystroke); fall back to latest prop mirror.
+    const fromDom = el?.value;
+    const promptText =
+      fromDom !== undefined && fromDom !== null ? fromDom : promptMirrorRef.current;
+
     const ctx: VideoGenerateContext = {
       promptText,
       actionTab,
@@ -310,6 +318,8 @@ export function VideoBottomBar({
     console.log("[VideoBottomBar] GENERATE click", {
       promptText,
       promptTextLen: promptText.length,
+      fromDomLen: fromDom?.length ?? null,
+      mirrorLen: promptMirrorRef.current.length,
       actionTab,
       composerModelId,
       hasPromptImage: Boolean(promptImageUrl),
@@ -324,7 +334,6 @@ export function VideoBottomBar({
     editSourceVideoUrl,
     lipsyncAudioUrl,
     onGenerate,
-    prompt,
     promptImage2Url,
     promptImageUrl
   ]);
