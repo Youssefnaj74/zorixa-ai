@@ -1,5 +1,7 @@
 import type { BadgeVariant } from "@/components/ui/Badge";
 
+import { KLING_30_PRO_MODEL_ID } from "@/components/video/bottom-bar-models";
+
 export type VideoModelOption = {
   id: string;
   label: string;
@@ -12,7 +14,7 @@ export const VIDEO_MODELS: VideoModelOption[] = [
   { id: "seedream-5-lite", label: "Seedream 5 Lite", badge: "fullAccess" },
   { id: "happy-horse", label: "Happy Horse", badge: "newTeal" },
   { id: "seedance-2", label: "Seedance 2.0", badge: "newTeal" },
-  { id: "kling-3-pro", label: "Kling 3.0 Pro", badge: "pro" },
+  { id: KLING_30_PRO_MODEL_ID, label: "Kling 3.0 Pro", badge: "pro" },
   { id: "enhancor-v4", label: "Enhancor V4", badge: "newTeal" },
   { id: "seedance-1-5", label: "Seedance 1.5", badge: "newTeal" },
   { id: "google-veo", label: "Google VEO 3.1", locked: true },

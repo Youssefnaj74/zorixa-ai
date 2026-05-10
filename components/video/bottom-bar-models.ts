@@ -1,5 +1,8 @@
 import type { BadgeVariant } from "@/components/ui/Badge";
 
+/** Use this for Kling 3.0 Pro in UI state and API gating (must match BOTTOM_BAR_MODELS id). */
+export const KLING_30_PRO_MODEL_ID = "kling-3-pro" as const;
+
 /** Bottom bar MODEL dropup — matches product spec (no Seedream row). */
 export type BottomBarModel = {
   id: string;
@@ -11,7 +14,7 @@ export type BottomBarModel = {
 export const BOTTOM_BAR_MODELS: BottomBarModel[] = [
   { id: "happy-horse", label: "Happy Horse", badge: "newTeal" },
   { id: "seedance-2", label: "Seedance 2.0", badge: "newTeal" },
-  { id: "kling-3-pro", label: "Kling 3.0 Pro", badge: "pro" },
+  { id: KLING_30_PRO_MODEL_ID, label: "Kling 3.0 Pro", badge: "pro" },
   { id: "enhancor-v4", label: "Enhancor V4", badge: "newTeal" },
   { id: "seedance-1-5", label: "Seedance 1.5", badge: "newTeal" },
   { id: "google-veo", label: "Google VEO 3.1", locked: true },
