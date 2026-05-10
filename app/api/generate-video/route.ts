@@ -4,6 +4,16 @@ const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
 const POLL_MS = 3000;
 const MAX_WAIT_MS = 15 * 60 * 1000;
 
+type GenerateVideoAction = "text" | "image" | "lipsync" | "edit";
+
+type ClientBody = {
+  prompt?: string;
+  action?: GenerateVideoAction;
+  image_url?: string;
+  audio_url?: string;
+  video_url?: string;
+};
+
 type AtlasPredictionData = {
   id?: string;
   status?: string;
@@ -15,6 +25,24 @@ type AtlasEnvelope = {
   data?: AtlasPredictionData;
   message?: string;
 };
+
+const DEFAULT_MODEL: Record<GenerateVideoAction, string> = {
+  text: "kwaivgi/kling-v3.0-pro/text-to-video",
+  image: "kwaivgi/kling-v3.0-pro/image-to-video",
+  lipsync: "kwaivgi/kling-v3.0-pro/text-to-video",
+  edit: "kwaivgi/kling-v3.0-pro/text-to-video"
+};
+
+function modelForAction(action: GenerateVideoAction): string {
+  const envMap: Record<GenerateVideoAction, string | undefined> = {
+    text: process.env.ATLASCLOUD_KLING_T2V_MODEL,
+    image: process.env.ATLASCLOUD_KLING_I2V_MODEL,
+    lipsync: process.env.ATLASCLOUD_KLING_LIPSYNC_MODEL,
+    edit: process.env.ATLASCLOUD_KLING_VIDEO_EDIT_MODEL
+  };
+  const fromEnv = envMap[action]?.trim();
+  return fromEnv || DEFAULT_MODEL[action];
+}
 
 function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -29,9 +57,9 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { prompt?: string };
+  let body: ClientBody;
   try {
-    body = (await request.json()) as { prompt?: string };
+    body = (await request.json()) as ClientBody;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
@@ -41,6 +69,65 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
   }
 
+  const action: GenerateVideoAction = body.action ?? "text";
+
+  const image_url =
+    typeof body.image_url === "string" ? body.image_url.trim() : "";
+  const audio_url =
+    typeof body.audio_url === "string" ? body.audio_url.trim() : "";
+  const video_url =
+    typeof body.video_url === "string" ? body.video_url.trim() : "";
+
+  if (action === "image" && !image_url) {
+    return NextResponse.json(
+      { error: "Missing image_url for Image to Video" },
+      { status: 400 }
+    );
+  }
+  if (action === "lipsync" && !audio_url) {
+    return NextResponse.json(
+      { error: "Missing audio_url for Lipsyncing" },
+      { status: 400 }
+    );
+  }
+  if (action === "edit" && !video_url) {
+    return NextResponse.json(
+      { error: "Missing video_url for Video Edit" },
+      { status: 400 }
+    );
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[generate-video]", {
+      action,
+      promptLen: prompt.length,
+      hasImage: Boolean(image_url),
+      hasAudio: Boolean(audio_url),
+      hasVideo: Boolean(video_url)
+    });
+  }
+
+  const input: Record<string, unknown> = {
+    prompt,
+    duration: 5,
+    fps: 24
+  };
+
+  if (image_url) {
+    input.image_url = image_url;
+    input.image = image_url;
+  }
+  if (audio_url) {
+    input.audio_url = audio_url;
+    input.audio = audio_url;
+  }
+  if (video_url) {
+    input.video_url = video_url;
+    input.video = video_url;
+  }
+
+  const model = modelForAction(action);
+
   const createRes = await fetch(`${ATLAS_BASE}/generateVideo`, {
     method: "POST",
     headers: {
@@ -48,12 +135,8 @@ export async function POST(request: Request) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: "kwaivgi/kling-v3.0-pro/text-to-video",
-      input: {
-        prompt,
-        duration: 5,
-        fps: 24
-      }
+      model,
+      input
     })
   });
 

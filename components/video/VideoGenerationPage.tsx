@@ -5,12 +5,50 @@ import { useCallback, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
+import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
 import type { VideoHistoryEntry } from "@/components/video/VideoHistory";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
 import { VideoHistory } from "@/components/video/VideoHistory";
 import { VideoPreview } from "@/components/video/VideoPreview";
 
 const NAV_H = 56;
+
+/** Resolve blob: URLs to a public https URL via authenticated upload. */
+async function uploadBlobUrlIfNeeded(url: string | null): Promise<string | null> {
+  if (!url) return null;
+  if (url.startsWith("https://") || url.startsWith("http://")) return url;
+  if (!url.startsWith("blob:")) return url;
+
+  const blobRes = await fetch(url);
+  const blob = await blobRes.blob();
+  const ext = blob.type.startsWith("audio/")
+    ? "mp3"
+    : blob.type.startsWith("video/")
+      ? "mp4"
+      : "png";
+  const file = new File([blob], `upload.${ext}`, {
+    type: blob.type || "application/octet-stream"
+  });
+  const form = new FormData();
+  form.set("file", file);
+  const up = await fetch("/api/upload", {
+    method: "POST",
+    body: form,
+    credentials: "include"
+  });
+  if (!up.ok) {
+    let msg = "Upload failed — sign in and try again.";
+    try {
+      const j = (await up.json()) as { error?: string };
+      if (j.error) msg = j.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+  const data = (await up.json()) as { url: string };
+  return data.url;
+}
 
 export function VideoGenerationPage() {
   const [bottomBarHeight, setBottomBarHeight] = useState(130);
@@ -30,6 +68,8 @@ export function VideoGenerationPage() {
 
   const [promptImageUrl, setPromptImageUrl] = useState<string | null>(null);
   const [promptImage2Url, setPromptImage2Url] = useState<string | null>(null);
+  const [lipsyncAudioUrl, setLipsyncAudioUrl] = useState<string | null>(null);
+  const [editSourceVideoUrl, setEditSourceVideoUrl] = useState<string | null>(null);
 
   const setPromptImageUrlSafe = useCallback((url: string | null) => {
     setPromptImageUrl((prev) => {
@@ -40,6 +80,20 @@ export function VideoGenerationPage() {
 
   const setPromptImage2UrlSafe = useCallback((url: string | null) => {
     setPromptImage2Url((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return url;
+    });
+  }, []);
+
+  const setLipsyncAudioUrlSafe = useCallback((url: string | null) => {
+    setLipsyncAudioUrl((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return url;
+    });
+  }, []);
+
+  const setEditSourceVideoUrlSafe = useCallback((url: string | null) => {
+    setEditSourceVideoUrl((prev) => {
       if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
       return url;
     });
@@ -76,12 +130,38 @@ export function VideoGenerationPage() {
     }
   }, []);
 
-  const runGeneration = useCallback(async (promptText: string) => {
-    setGenerateError(null);
-    setVideoUrl(null);
+  const runGeneration = useCallback(
+    async (ctx: VideoGenerateContext) => {
+      setGenerateError(null);
+      setVideoUrl(null);
 
-    if (composerModelId === "kling-3-pro") {
-      const promptValue = promptText.trim();
+      const promptValue = ctx.promptText.trim();
+      console.log("[VideoGenerationPage] runGeneration", {
+        promptValue,
+        promptLen: promptValue.length,
+        actionTab: ctx.actionTab,
+        composerModelId
+      });
+
+      if (composerModelId !== "kling-3-pro") {
+        setLoading(true);
+        window.setTimeout(() => {
+          const url = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+          setVideoUrl(url);
+          setLoading(false);
+          const id = `v-${Date.now()}`;
+          setHistory((prev) => [
+            {
+              id,
+              thumb: `https://picsum.photos/seed/${id.slice(-6)}/96/96`,
+              title: promptValue.slice(0, 40) || "New render"
+            },
+            ...prev
+          ]);
+        }, 1800);
+        return;
+      }
+
       if (!promptValue) {
         setGenerateError("Enter a prompt to generate a video.");
         return;
@@ -89,10 +169,49 @@ export function VideoGenerationPage() {
 
       setLoading(true);
       try {
+        let payload: Record<string, unknown>;
+
+        switch (ctx.actionTab) {
+          case "Text to Video":
+            payload = { prompt: promptValue, action: "text" };
+            break;
+          case "Image to Video": {
+            const image_url = await uploadBlobUrlIfNeeded(ctx.promptImageUrl);
+            if (!image_url) {
+              setGenerateError("Add a Products image for Image to Video.");
+              return;
+            }
+            payload = { prompt: promptValue, action: "image", image_url };
+            break;
+          }
+          case "Lipsyncing": {
+            const audio_url = await uploadBlobUrlIfNeeded(ctx.lipsyncAudioUrl);
+            if (!audio_url) {
+              setGenerateError("Add an audio file for Lipsyncing.");
+              return;
+            }
+            payload = { prompt: promptValue, action: "lipsync", audio_url };
+            break;
+          }
+          case "Video Edit": {
+            const video_url = await uploadBlobUrlIfNeeded(ctx.editSourceVideoUrl);
+            if (!video_url) {
+              setGenerateError("Add a source video for Video Edit.");
+              return;
+            }
+            payload = { prompt: promptValue, action: "edit", video_url };
+            break;
+          }
+          default:
+            payload = { prompt: promptValue, action: "text" };
+        }
+
+        console.log("[VideoGenerationPage] POST /api/generate-video body", payload);
+
         const res = await fetch("/api/generate-video", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: promptValue })
+          body: JSON.stringify(payload)
         });
 
         let data: { video_url?: string; error?: string } = {};
@@ -123,34 +242,21 @@ export function VideoGenerationPage() {
           },
           ...prev
         ]);
-      } catch {
-        setGenerateError("Network error. Try again.");
+      } catch (e: unknown) {
+        setGenerateError(e instanceof Error ? e.message : "Network error. Try again.");
       } finally {
         setLoading(false);
       }
-      return;
-    }
-
-    setLoading(true);
-    window.setTimeout(() => {
-      const url = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
-      setVideoUrl(url);
-      setLoading(false);
-      const id = `v-${Date.now()}`;
-      setHistory((prev) => [
-        {
-          id,
-          thumb: `https://picsum.photos/seed/${id.slice(-6)}/96/96`,
-          title: promptText.trim().slice(0, 40) || "New render"
-        },
-        ...prev
-      ]);
-    }, 1800);
-  }, [composerModelId]);
+    },
+    [composerModelId]
+  );
 
   const restoreSettings = useCallback((item: VideoHistoryEntry) => {
     setPrompt((p) => `${p.split("\n")[0]}\n(Restored: ${item.title})`);
   }, []);
+
+  const hidePromptThumb =
+    composerModelId === "kling-3-pro" && actionTab === "Text to Video";
 
   return (
     <div className="flex min-h-dvh flex-col bg-zorixa-bg">
@@ -171,7 +277,7 @@ export function VideoGenerationPage() {
               videoUrl={videoUrl}
               loading={loading}
               errorMessage={generateError}
-              promptThumbUrl={composerModelId === "kling-3-pro" ? null : promptImageUrl}
+              promptThumbUrl={hidePromptThumb ? null : promptImageUrl}
               bottomBarHeight={bottomBarHeight}
               className="scrollbar-hide h-full min-h-0 w-full min-w-0 flex-1"
             />
@@ -192,10 +298,15 @@ export function VideoGenerationPage() {
           setGenerateError(null);
           setPrompt(v);
         }}
+        actionTab={actionTab}
         promptImageUrl={promptImageUrl}
         onPromptImageChange={setPromptImageUrlSafe}
         promptImage2Url={promptImage2Url}
         onPromptImage2Change={setPromptImage2UrlSafe}
+        lipsyncAudioUrl={lipsyncAudioUrl}
+        onLipsyncAudioUrlChange={setLipsyncAudioUrlSafe}
+        editSourceVideoUrl={editSourceVideoUrl}
+        onEditSourceVideoUrlChange={setEditSourceVideoUrlSafe}
         composerModelId={composerModelId}
         onComposerModelChange={handleComposerModelChange}
         fullAccessOn={fullAccessOn}
