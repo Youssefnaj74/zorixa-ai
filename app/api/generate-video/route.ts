@@ -43,6 +43,44 @@ function normalizeResolution(raw: unknown): string {
   return ALLOWED_RESOLUTIONS.has(v) ? v : DEFAULT_RESOLUTION;
 }
 
+/** ByteDance Seedance 2.0 on Atlas expects `input: { ... }`, not a flat Kling-style body (see model page + docs examples). */
+function usesSeedance20InputEnvelope(model: string): boolean {
+  return model.startsWith("bytedance/seedance-2.0/");
+}
+
+/** Short-side pixel size from UI resolution tier. */
+function resolutionShortSidePx(resolution: string): number {
+  switch (resolution) {
+    case "1080p":
+      return 1080;
+    case "720p":
+      return 720;
+    case "480p":
+    default:
+      return 480;
+  }
+}
+
+/** Width × height for Seedance / ByteDance video (short side = resolution tier). */
+function dimensionsForAspectResolution(
+  aspectRatio: string,
+  resolution: string
+): { width: number; height: number } {
+  const s = resolutionShortSidePx(resolution);
+  switch (aspectRatio) {
+    case "16:9":
+      return { width: Math.round((s * 16) / 9), height: s };
+    case "9:16":
+      return { width: s, height: Math.round((s * 16) / 9) };
+    case "1:1":
+      return { width: s, height: s };
+    case "4:3":
+      return { width: Math.round((s * 4) / 3), height: s };
+    default:
+      return { width: s, height: Math.round((s * 16) / 9) };
+  }
+}
+
 type AtlasPredictionData = {
   id?: string;
   status?: string;
@@ -125,28 +163,52 @@ export async function POST(request: Request) {
   const aspectRatio = normalizeAspectRatio(body.aspectRatio);
   const resolution = normalizeResolution(body.resolution);
 
-  // Atlas `generateVideo` flat body (see https://www.atlascloud.ai/docs/en/models/video).
-  const atlasBody: Record<string, unknown> = {
-    model,
-    prompt,
-    duration: 5,
-    fps: 24,
-    aspect_ratio: aspectRatio,
-    aspectRatio,
-    resolution
-  };
+  const durationSec = 5;
+  const fps = 24;
 
-  if (image_url) {
-    atlasBody.image_url = image_url;
-    atlasBody.image = image_url;
-  }
-  if (audio_url) {
-    atlasBody.audio_url = audio_url;
-    atlasBody.audio = audio_url;
-  }
-  if (video_url) {
-    atlasBody.video_url = video_url;
-    atlasBody.video = video_url;
+  let atlasBody: Record<string, unknown>;
+
+  if (usesSeedance20InputEnvelope(model)) {
+    const { width, height } = dimensionsForAspectResolution(aspectRatio, resolution);
+    // Seedance 2.0 playground uses explicit width/height (see Atlas model page); avoid sending
+    // both aspect_ratio and dimensions, which can trigger schema validation errors.
+    const input: Record<string, unknown> = {
+      prompt,
+      duration: durationSec,
+      fps,
+      width,
+      height
+    };
+    if (image_url) {
+      // Seedance I2V expects the first-frame URL as `image` inside `input` (not top-level `image_url`).
+      input.image = image_url;
+    }
+    if (audio_url) input.audio = audio_url;
+    if (video_url) input.video = video_url;
+    atlasBody = { model, input };
+  } else {
+    // Atlas `generateVideo` flat body (Kling, Veo, Wan, Hailuo, etc.).
+    atlasBody = {
+      model,
+      prompt,
+      duration: durationSec,
+      fps,
+      aspect_ratio: aspectRatio,
+      aspectRatio,
+      resolution
+    };
+    if (image_url) {
+      atlasBody.image_url = image_url;
+      atlasBody.image = image_url;
+    }
+    if (audio_url) {
+      atlasBody.audio_url = audio_url;
+      atlasBody.audio = audio_url;
+    }
+    if (video_url) {
+      atlasBody.video_url = video_url;
+      atlasBody.video = video_url;
+    }
   }
 
   if (process.env.NODE_ENV === "development") {
@@ -154,6 +216,7 @@ export async function POST(request: Request) {
       videoModel,
       action,
       model,
+      envelope: usesSeedance20InputEnvelope(model) ? "input" : "flat",
       aspectRatio,
       resolution,
       keys: Object.keys(atlasBody),
@@ -166,8 +229,10 @@ export async function POST(request: Request) {
     videoModel,
     "→ model:",
     model,
+    "| envelope:",
+    usesSeedance20InputEnvelope(model) ? "input" : "flat",
     "| resolution:",
-    atlasBody.resolution
+    resolution
   );
 
   const createRes = await fetch(`${ATLAS_BASE}/generateVideo`, {
@@ -219,7 +284,7 @@ export async function POST(request: Request) {
 
     const status = pollJson.data?.status;
 
-    if (status === "completed") {
+    if (status === "completed" || status === "succeeded") {
       const outputs = pollJson.data?.outputs;
       const videoUrl = outputs?.[0];
       if (!videoUrl) {
