@@ -44,25 +44,12 @@ function normalizeResolution(raw: unknown): string {
 }
 
 /**
- * ByteDance Seedance on Atlas: `/docs/models/video` I2V uses flat `model` + `prompt` + `image_url`;
- * model pages also show `width` / `height` / `duration` / `fps`. Multimodal `content` (image + text
- * parts) is required by the live API for some Seedance slugs — send both shapes together for I2V.
- * @see https://www.atlascloud.ai/docs/models/video (Image-to-Video)
+ * Seedance 2.0 I2V on Atlas accepts only flat fields (`image` URL, dimensions, etc.).
+ * Sending `content` alongside flat fields causes 400 (verified in Atlas request history).
  */
-function isByteDanceSeedanceAtlasModel(model: string): boolean {
-  return (
-    model.startsWith("bytedance/seedance-2.0/") ||
-    model.startsWith("bytedance/seedance-v1.5-pro/")
-  );
+function isSeedance20ImageToVideo(model: string): boolean {
+  return model === "bytedance/seedance-2.0/image-to-video";
 }
-
-function isAtlasImageToVideoSlug(model: string): boolean {
-  return model.endsWith("/image-to-video");
-}
-
-type SeedanceI2vContentPart =
-  | { type: "image_url"; image_url: { url: string } }
-  | { type: "text"; text: string };
 
 /** Short-side pixel size from UI resolution tier (matches Seedance model page examples). */
 function resolutionShortSidePx(resolution: string): number {
@@ -184,31 +171,18 @@ export async function POST(request: Request) {
 
   let atlasBody: Record<string, unknown>;
 
-  const seedanceI2v =
-    isByteDanceSeedanceAtlasModel(model) &&
-    isAtlasImageToVideoSlug(model) &&
-    Boolean(image_url);
+  const seedance20I2v = isSeedance20ImageToVideo(model) && Boolean(image_url);
 
-  if (seedanceI2v) {
+  if (seedance20I2v) {
     const { width, height } = dimensionsForAspectResolution(aspectRatio, resolution);
-    const content: SeedanceI2vContentPart[] = [
-      { type: "image_url", image_url: { url: image_url } },
-      { type: "text", text: prompt }
-    ];
-    // Flat fields per https://www.atlascloud.ai/docs/models/video + dimensions from model pages.
     atlasBody = {
       model,
       prompt,
-      image_url,
       image: image_url,
-      duration: durationSec,
-      fps,
-      aspect_ratio: aspectRatio,
-      aspectRatio,
-      resolution,
       width,
       height,
-      content
+      duration: durationSec,
+      fps
     };
   } else {
     // Atlas `generateVideo` flat body (Kling, Veo, Wan, Hailuo, Seedance T2V, etc.).
@@ -240,7 +214,7 @@ export async function POST(request: Request) {
       videoModel,
       action,
       model,
-      envelope: seedanceI2v ? "seedance-i2v(flat+content[])" : "flat",
+      envelope: seedance20I2v ? "seedance-2.0-i2v-flat" : "flat",
       aspectRatio,
       resolution,
       keys: Object.keys(atlasBody),
@@ -254,7 +228,7 @@ export async function POST(request: Request) {
     "→ model:",
     model,
     "| envelope:",
-    seedanceI2v ? "seedance-i2v(flat+content[])" : "flat",
+    seedance20I2v ? "seedance-2.0-i2v-flat" : "flat",
     "| resolution:",
     resolution
   );
