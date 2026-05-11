@@ -43,8 +43,8 @@ function normalizeResolution(raw: unknown): string {
   return ALLOWED_RESOLUTIONS.has(v) ? v : DEFAULT_RESOLUTION;
 }
 
-/** ByteDance Seedance 2.0 on Atlas expects `input: { ... }`, not a flat Kling-style body (see model page + docs examples). */
-function usesSeedance20InputEnvelope(model: string): boolean {
+/** ByteDance Seedance 2.0 on Atlas expects `content: { ... }`, not `input` or a flat Kling-style body. */
+function usesSeedance20ContentEnvelope(model: string): boolean {
   return model.startsWith("bytedance/seedance-2.0/");
 }
 
@@ -168,11 +168,10 @@ export async function POST(request: Request) {
 
   let atlasBody: Record<string, unknown>;
 
-  if (usesSeedance20InputEnvelope(model)) {
+  if (usesSeedance20ContentEnvelope(model)) {
     const { width, height } = dimensionsForAspectResolution(aspectRatio, resolution);
-    // Seedance 2.0 playground uses explicit width/height (see Atlas model page); avoid sending
-    // both aspect_ratio and dimensions, which can trigger schema validation errors.
-    const input: Record<string, unknown> = {
+    // Seedance 2.0 uses explicit width/height; avoid sending both aspect_ratio and dimensions.
+    const content: Record<string, unknown> = {
       prompt,
       duration: durationSec,
       fps,
@@ -180,12 +179,12 @@ export async function POST(request: Request) {
       height
     };
     if (image_url) {
-      // Seedance I2V expects the first-frame URL as `image` inside `input` (not top-level `image_url`).
-      input.image = image_url;
+      // I2V: first-frame URL inside `content` (Atlas rejects missing `content` / flat `image_url`).
+      content.image = image_url;
     }
-    if (audio_url) input.audio = audio_url;
-    if (video_url) input.video = video_url;
-    atlasBody = { model, input };
+    if (audio_url) content.audio = audio_url;
+    if (video_url) content.video = video_url;
+    atlasBody = { model, content };
   } else {
     // Atlas `generateVideo` flat body (Kling, Veo, Wan, Hailuo, etc.).
     atlasBody = {
@@ -216,7 +215,7 @@ export async function POST(request: Request) {
       videoModel,
       action,
       model,
-      envelope: usesSeedance20InputEnvelope(model) ? "input" : "flat",
+      envelope: usesSeedance20ContentEnvelope(model) ? "content" : "flat",
       aspectRatio,
       resolution,
       keys: Object.keys(atlasBody),
@@ -230,7 +229,7 @@ export async function POST(request: Request) {
     "→ model:",
     model,
     "| envelope:",
-    usesSeedance20InputEnvelope(model) ? "input" : "flat",
+    usesSeedance20ContentEnvelope(model) ? "content" : "flat",
     "| resolution:",
     resolution
   );
