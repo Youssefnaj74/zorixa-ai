@@ -171,7 +171,7 @@ export function VideoBottomBar({
     setOpen((prev) => (prev === panel ? null : panel));
   }, []);
 
-  const selectedModel = BOTTOM_BAR_MODELS.find((m) => m.id === composerModelId) ?? BOTTOM_BAR_MODELS[1];
+  const selectedModel = BOTTOM_BAR_MODELS.find((m) => m.id === composerModelId) ?? BOTTOM_BAR_MODELS[0];
 
   const applySlot1File = useCallback(
     (file: File) => {

@@ -9,18 +9,14 @@ export type VideoModelOption = {
   locked?: boolean;
 };
 
-/** Order matches product spec; default selection: Seedream 5 Lite */
+/** Video model list (aligned with bottom bar Atlas models). */
 export const VIDEO_MODELS: VideoModelOption[] = [
-  { id: "seedream-5-lite", label: "Seedream 5 Lite", badge: "fullAccess" },
-  { id: "happy-horse", label: "Happy Horse", badge: "newTeal" },
-  { id: "seedance-2", label: "Seedance 2.0", badge: "newTeal" },
   { id: KLING_30_PRO_MODEL_ID, label: "Kling 3.0 Pro", badge: "pro" },
-  { id: "enhancor-v4", label: "Enhancor V4", badge: "newTeal" },
+  { id: "seedance-2", label: "Seedance 2.0", badge: "newTeal" },
   { id: "seedance-1-5", label: "Seedance 1.5", badge: "newTeal" },
-  { id: "google-veo", label: "Google VEO 3.1", locked: true },
-  { id: "sora-2", label: "Sora 2", locked: true },
   { id: "wan-2-6", label: "Wan 2.6" },
-  { id: "grok-imagine", label: "Grok Imagine" }
+  { id: "hailuo-2-3", label: "Hailuo 2.3", badge: "newTeal" },
+  { id: "google-veo-3-1", label: "Google Veo 3.1", badge: "newTeal" }
 ];
 
 export const TYPE_OPTIONS = [
