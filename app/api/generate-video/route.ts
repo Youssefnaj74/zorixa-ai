@@ -97,36 +97,39 @@ export async function POST(request: Request) {
     );
   }
 
-  if (process.env.NODE_ENV === "development") {
-    console.log("[generate-video]", {
-      action,
-      promptLen: prompt.length,
-      hasImage: Boolean(image_url),
-      hasAudio: Boolean(audio_url),
-      hasVideo: Boolean(video_url)
-    });
-  }
+  const model = modelForAction(action);
 
-  const input: Record<string, unknown> = {
+  // Atlas `generateVideo` expects a flat body: `model`, `prompt`, and optional params
+  // (see https://www.atlascloud.ai/docs/en/models/video). Nesting under `input` leaves
+  // top-level `prompt` empty and Atlas returns "prompt cannot be empty".
+  const atlasBody: Record<string, unknown> = {
+    model,
     prompt,
     duration: 5,
     fps: 24
   };
 
   if (image_url) {
-    input.image_url = image_url;
-    input.image = image_url;
+    atlasBody.image_url = image_url;
+    atlasBody.image = image_url;
   }
   if (audio_url) {
-    input.audio_url = audio_url;
-    input.audio = audio_url;
+    atlasBody.audio_url = audio_url;
+    atlasBody.audio = audio_url;
   }
   if (video_url) {
-    input.video_url = video_url;
-    input.video = video_url;
+    atlasBody.video_url = video_url;
+    atlasBody.video = video_url;
   }
 
-  const model = modelForAction(action);
+  if (process.env.NODE_ENV === "development") {
+    console.log("[generate-video] Atlas request (keys + prompt length)", {
+      action,
+      model,
+      keys: Object.keys(atlasBody),
+      promptLen: prompt.length
+    });
+  }
 
   const createRes = await fetch(`${ATLAS_BASE}/generateVideo`, {
     method: "POST",
@@ -134,10 +137,7 @@ export async function POST(request: Request) {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({
-      model,
-      input
-    })
+    body: JSON.stringify(atlasBody)
   });
 
   const createJson = (await createRes.json()) as AtlasEnvelope;
