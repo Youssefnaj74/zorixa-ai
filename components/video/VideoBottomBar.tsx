@@ -26,6 +26,8 @@ export type VideoGenerateContext = {
   actionTab: ActionTab;
   /** Bottom-bar aspect selector (e.g. 16:9, 9:16) — sent to API as `aspectRatio`. */
   aspectRatio: string;
+  /** Bottom-bar resolution (480p, 720p, 1080p) — sent to API as `resolution`. */
+  resolution: string;
   promptImageUrl: string | null;
   promptImage2Url: string | null;
   lipsyncAudioUrl: string | null;
@@ -314,6 +316,7 @@ export function VideoBottomBar({
       promptText,
       actionTab,
       aspectRatio: aspect,
+      resolution,
       promptImageUrl,
       promptImage2Url,
       lipsyncAudioUrl,
@@ -326,6 +329,7 @@ export function VideoBottomBar({
       mirrorLen: promptMirrorRef.current.length,
       actionTab,
       aspectRatio: aspect,
+      resolution,
       composerModelId,
       hasPromptImage: Boolean(promptImageUrl),
       hasPromptImage2: Boolean(promptImage2Url),
@@ -341,7 +345,8 @@ export function VideoBottomBar({
     lipsyncAudioUrl,
     onGenerate,
     promptImage2Url,
-    promptImageUrl
+    promptImageUrl,
+    resolution
   ]);
 
   return (

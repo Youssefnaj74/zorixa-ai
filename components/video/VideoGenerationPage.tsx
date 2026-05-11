@@ -177,10 +177,11 @@ export function VideoGenerationPage() {
         let payload: Record<string, unknown>;
 
         const aspectRatio = ctx.aspectRatio.trim() || aspect.trim();
+        const resTier = ctx.resolution.trim() || resolution.trim();
 
         switch (ctx.actionTab) {
           case "Text to Video":
-            payload = { prompt: promptValue, action: "text", aspectRatio };
+            payload = { prompt: promptValue, action: "text", aspectRatio, resolution: resTier };
             break;
           case "Image to Video": {
             const image_url = await uploadBlobUrlIfNeeded(ctx.promptImageUrl);
@@ -188,7 +189,13 @@ export function VideoGenerationPage() {
               setGenerateError("Add a Products image for Image to Video.");
               return;
             }
-            payload = { prompt: promptValue, action: "image", image_url, aspectRatio };
+            payload = {
+              prompt: promptValue,
+              action: "image",
+              image_url,
+              aspectRatio,
+              resolution: resTier
+            };
             break;
           }
           case "Lipsyncing": {
@@ -197,7 +204,13 @@ export function VideoGenerationPage() {
               setGenerateError("Add an audio file for Lipsyncing.");
               return;
             }
-            payload = { prompt: promptValue, action: "lipsync", audio_url, aspectRatio };
+            payload = {
+              prompt: promptValue,
+              action: "lipsync",
+              audio_url,
+              aspectRatio,
+              resolution: resTier
+            };
             break;
           }
           case "Video Edit": {
@@ -206,11 +219,17 @@ export function VideoGenerationPage() {
               setGenerateError("Add a source video for Video Edit.");
               return;
             }
-            payload = { prompt: promptValue, action: "edit", video_url, aspectRatio };
+            payload = {
+              prompt: promptValue,
+              action: "edit",
+              video_url,
+              aspectRatio,
+              resolution: resTier
+            };
             break;
           }
           default:
-            payload = { prompt: promptValue, action: "text", aspectRatio };
+            payload = { prompt: promptValue, action: "text", aspectRatio, resolution: resTier };
         }
 
         console.log("[VideoGenerationPage] POST /api/generate-video body", payload);
@@ -265,7 +284,7 @@ export function VideoGenerationPage() {
         setLoading(false);
       }
     },
-    [aspect, composerModelId, prompt]
+    [aspect, composerModelId, prompt, resolution]
   );
 
   const restoreSettings = useCallback((item: VideoHistoryEntry) => {

@@ -14,6 +14,8 @@ type ClientBody = {
   video_url?: string;
   /** UI aspect selector (16:9, 9:16, 1:1, 4:3) — forwarded to Atlas. */
   aspectRatio?: string;
+  /** UI resolution tier (480p, 720p, 1080p) — forwarded to Atlas `resolution`. */
+  resolution?: string;
 };
 
 const ALLOWED_ASPECT_RATIOS = new Set(["16:9", "9:16", "1:1", "4:3"]);
@@ -23,6 +25,15 @@ function normalizeAspectRatio(raw: unknown): string {
   if (typeof raw !== "string") return DEFAULT_ASPECT_RATIO;
   const v = raw.trim();
   return ALLOWED_ASPECT_RATIOS.has(v) ? v : DEFAULT_ASPECT_RATIO;
+}
+
+const ALLOWED_RESOLUTIONS = new Set(["480p", "720p", "1080p"]);
+const DEFAULT_RESOLUTION = "1080p";
+
+function normalizeResolution(raw: unknown): string {
+  if (typeof raw !== "string") return DEFAULT_RESOLUTION;
+  const v = raw.trim().toLowerCase();
+  return ALLOWED_RESOLUTIONS.has(v) ? v : DEFAULT_RESOLUTION;
 }
 
 type AtlasPredictionData = {
@@ -110,6 +121,7 @@ export async function POST(request: Request) {
 
   const model = modelForAction(action);
   const aspectRatio = normalizeAspectRatio(body.aspectRatio);
+  const resolution = normalizeResolution(body.resolution);
 
   // Atlas `generateVideo` expects a flat body: `model`, `prompt`, and optional params
   // (see https://www.atlascloud.ai/docs/en/models/video). Nesting under `input` leaves
@@ -121,7 +133,8 @@ export async function POST(request: Request) {
     fps: 24,
     // Kling / Atlas commonly use snake_case; some clients expect camelCase.
     aspect_ratio: aspectRatio,
-    aspectRatio
+    aspectRatio,
+    resolution
   };
 
   if (image_url) {
@@ -142,10 +155,20 @@ export async function POST(request: Request) {
       action,
       model,
       aspectRatio,
+      resolution,
       keys: Object.keys(atlasBody),
       promptLen: prompt.length
     });
   }
+
+  console.log(
+    "[generate-video] Kling atlasBody before Atlas fetch — resolution:",
+    resolution,
+    "| atlasBody.resolution:",
+    atlasBody.resolution,
+    "| model:",
+    model
+  );
 
   const createRes = await fetch(`${ATLAS_BASE}/generateVideo`, {
     method: "POST",
