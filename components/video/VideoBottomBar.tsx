@@ -24,6 +24,8 @@ import type { ActionTab } from "@/components/video/ActionTabsRow";
 export type VideoGenerateContext = {
   promptText: string;
   actionTab: ActionTab;
+  /** Bottom-bar aspect selector (e.g. 16:9, 9:16) — sent to API as `aspectRatio`. */
+  aspectRatio: string;
   promptImageUrl: string | null;
   promptImage2Url: string | null;
   lipsyncAudioUrl: string | null;
@@ -311,6 +313,7 @@ export function VideoBottomBar({
     const ctx: VideoGenerateContext = {
       promptText,
       actionTab,
+      aspectRatio: aspect,
       promptImageUrl,
       promptImage2Url,
       lipsyncAudioUrl,
@@ -322,6 +325,7 @@ export function VideoBottomBar({
       fromDomLen: fromDom?.length ?? null,
       mirrorLen: promptMirrorRef.current.length,
       actionTab,
+      aspectRatio: aspect,
       composerModelId,
       hasPromptImage: Boolean(promptImageUrl),
       hasPromptImage2: Boolean(promptImage2Url),
@@ -331,6 +335,7 @@ export function VideoBottomBar({
     void onGenerate(ctx);
   }, [
     actionTab,
+    aspect,
     composerModelId,
     editSourceVideoUrl,
     lipsyncAudioUrl,
