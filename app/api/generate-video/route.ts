@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
 
+import {
+  type AtlasVideoRouteAction,
+  resolveAtlasVideoModelId
+} from "@/lib/atlas-video-model-ids";
+
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
 const POLL_MS = 3000;
 const MAX_WAIT_MS = 15 * 60 * 1000;
 
-type GenerateVideoAction = "text" | "image" | "lipsync" | "edit";
+type GenerateVideoAction = AtlasVideoRouteAction;
 
 type ClientBody = {
   prompt?: string;
   action?: GenerateVideoAction;
+  /** Zorixa composer row id (e.g. kling-3-pro) — maps to Atlas `model` slug. */
+  videoModel?: string;
   image_url?: string;
   audio_url?: string;
   video_url?: string;
@@ -48,24 +55,6 @@ type AtlasEnvelope = {
   message?: string;
 };
 
-const DEFAULT_MODEL: Record<GenerateVideoAction, string> = {
-  text: "kwaivgi/kling-v3.0-pro/text-to-video",
-  image: "kwaivgi/kling-v3.0-pro/image-to-video",
-  lipsync: "kwaivgi/kling-v3.0-pro/text-to-video",
-  edit: "kwaivgi/kling-v3.0-pro/text-to-video"
-};
-
-function modelForAction(action: GenerateVideoAction): string {
-  const envMap: Record<GenerateVideoAction, string | undefined> = {
-    text: process.env.ATLASCLOUD_KLING_T2V_MODEL,
-    image: process.env.ATLASCLOUD_KLING_I2V_MODEL,
-    lipsync: process.env.ATLASCLOUD_KLING_LIPSYNC_MODEL,
-    edit: process.env.ATLASCLOUD_KLING_VIDEO_EDIT_MODEL
-  };
-  const fromEnv = envMap[action]?.trim();
-  return fromEnv || DEFAULT_MODEL[action];
-}
-
 function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
@@ -93,6 +82,20 @@ export async function POST(request: Request) {
 
   const action: GenerateVideoAction = body.action ?? "text";
 
+  const videoModel =
+    typeof body.videoModel === "string" ? body.videoModel.trim() : "";
+  if (!videoModel) {
+    return NextResponse.json({ error: "Missing videoModel" }, { status: 400 });
+  }
+
+  const model = resolveAtlasVideoModelId(videoModel, action);
+  if (!model) {
+    return NextResponse.json(
+      { error: `Unknown video model: ${videoModel}` },
+      { status: 400 }
+    );
+  }
+
   const image_url =
     typeof body.image_url === "string" ? body.image_url.trim() : "";
   const audio_url =
@@ -119,19 +122,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const model = modelForAction(action);
   const aspectRatio = normalizeAspectRatio(body.aspectRatio);
   const resolution = normalizeResolution(body.resolution);
 
-  // Atlas `generateVideo` expects a flat body: `model`, `prompt`, and optional params
-  // (see https://www.atlascloud.ai/docs/en/models/video). Nesting under `input` leaves
-  // top-level `prompt` empty and Atlas returns "prompt cannot be empty".
+  // Atlas `generateVideo` flat body (see https://www.atlascloud.ai/docs/en/models/video).
   const atlasBody: Record<string, unknown> = {
     model,
     prompt,
     duration: 5,
     fps: 24,
-    // Kling / Atlas commonly use snake_case; some clients expect camelCase.
     aspect_ratio: aspectRatio,
     aspectRatio,
     resolution
@@ -151,7 +150,8 @@ export async function POST(request: Request) {
   }
 
   if (process.env.NODE_ENV === "development") {
-    console.log("[generate-video] Atlas request (keys + prompt length)", {
+    console.log("[generate-video] Atlas request", {
+      videoModel,
       action,
       model,
       aspectRatio,
@@ -162,12 +162,12 @@ export async function POST(request: Request) {
   }
 
   console.log(
-    "[generate-video] Kling atlasBody before Atlas fetch — resolution:",
-    resolution,
-    "| atlasBody.resolution:",
-    atlasBody.resolution,
-    "| model:",
-    model
+    "[generate-video] Atlas generateVideo payload — videoModel:",
+    videoModel,
+    "→ model:",
+    model,
+    "| resolution:",
+    atlasBody.resolution
   );
 
   const createRes = await fetch(`${ATLAS_BASE}/generateVideo`, {

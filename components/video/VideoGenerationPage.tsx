@@ -8,6 +8,7 @@ import type { ActionTab } from "@/components/video/ActionTabsRow";
 import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
 import { KLING_30_PRO_MODEL_ID } from "@/components/video/bottom-bar-models";
 import type { VideoHistoryEntry } from "@/components/video/VideoHistory";
+import { isAtlasVideoComposerId } from "@/lib/atlas-video-model-ids";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
 import { VideoHistory } from "@/components/video/VideoHistory";
 import { VideoPreview } from "@/components/video/VideoPreview";
@@ -133,37 +134,14 @@ export function VideoGenerationPage() {
 
   const runGeneration = useCallback(
     async (ctx: VideoGenerateContext) => {
-      console.log(
-        "[VideoGenerationPage] Generate click composerModelId (exact):",
-        JSON.stringify(composerModelId),
-        "| equals KLING constant:",
-        composerModelId === KLING_30_PRO_MODEL_ID,
-        "| constant:",
-        JSON.stringify(KLING_30_PRO_MODEL_ID)
-      );
-
       setGenerateError(null);
       setVideoUrl(null);
 
       // Merge context + React state: avoids empty prompt when Generate runs before the last onChange commits.
       const promptValue = ctx.promptText.trim() || prompt.trim();
 
-      if (composerModelId !== KLING_30_PRO_MODEL_ID) {
-        setLoading(true);
-        window.setTimeout(() => {
-          const url = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
-          setVideoUrl(url);
-          setLoading(false);
-          const id = `v-${Date.now()}`;
-          setHistory((prev) => [
-            {
-              id,
-              thumb: `https://picsum.photos/seed/${id.slice(-6)}/96/96`,
-              title: promptValue.slice(0, 40) || "New render"
-            },
-            ...prev
-          ]);
-        }, 1800);
+      if (!isAtlasVideoComposerId(composerModelId)) {
+        setGenerateError("Unsupported video model.");
         return;
       }
 
@@ -178,10 +156,17 @@ export function VideoGenerationPage() {
 
         const aspectRatio = ctx.aspectRatio.trim() || aspect.trim();
         const resTier = ctx.resolution.trim() || resolution.trim();
+        const videoModel = composerModelId;
 
         switch (ctx.actionTab) {
           case "Text to Video":
-            payload = { prompt: promptValue, action: "text", aspectRatio, resolution: resTier };
+            payload = {
+              prompt: promptValue,
+              action: "text",
+              videoModel,
+              aspectRatio,
+              resolution: resTier
+            };
             break;
           case "Image to Video": {
             const image_url = await uploadBlobUrlIfNeeded(ctx.promptImageUrl);
@@ -192,6 +177,7 @@ export function VideoGenerationPage() {
             payload = {
               prompt: promptValue,
               action: "image",
+              videoModel,
               image_url,
               aspectRatio,
               resolution: resTier
@@ -207,6 +193,7 @@ export function VideoGenerationPage() {
             payload = {
               prompt: promptValue,
               action: "lipsync",
+              videoModel,
               audio_url,
               aspectRatio,
               resolution: resTier
@@ -222,6 +209,7 @@ export function VideoGenerationPage() {
             payload = {
               prompt: promptValue,
               action: "edit",
+              videoModel,
               video_url,
               aspectRatio,
               resolution: resTier
@@ -229,7 +217,13 @@ export function VideoGenerationPage() {
             break;
           }
           default:
-            payload = { prompt: promptValue, action: "text", aspectRatio, resolution: resTier };
+            payload = {
+              prompt: promptValue,
+              action: "text",
+              videoModel,
+              aspectRatio,
+              resolution: resTier
+            };
         }
 
         console.log("[VideoGenerationPage] POST /api/generate-video body", payload);
@@ -274,7 +268,7 @@ export function VideoGenerationPage() {
           {
             id,
             thumb: `https://picsum.photos/seed/${id.slice(-6)}/96/96`,
-            title: promptValue.slice(0, 40) || "Kling 3.0 Pro"
+            title: promptValue.slice(0, 40) || videoModel
           },
           ...prev
         ]);
