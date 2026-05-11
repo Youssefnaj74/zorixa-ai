@@ -12,7 +12,18 @@ type ClientBody = {
   image_url?: string;
   audio_url?: string;
   video_url?: string;
+  /** UI aspect selector (16:9, 9:16, 1:1, 4:3) — forwarded to Atlas. */
+  aspectRatio?: string;
 };
+
+const ALLOWED_ASPECT_RATIOS = new Set(["16:9", "9:16", "1:1", "4:3"]);
+const DEFAULT_ASPECT_RATIO = "9:16";
+
+function normalizeAspectRatio(raw: unknown): string {
+  if (typeof raw !== "string") return DEFAULT_ASPECT_RATIO;
+  const v = raw.trim();
+  return ALLOWED_ASPECT_RATIOS.has(v) ? v : DEFAULT_ASPECT_RATIO;
+}
 
 type AtlasPredictionData = {
   id?: string;
@@ -98,6 +109,7 @@ export async function POST(request: Request) {
   }
 
   const model = modelForAction(action);
+  const aspectRatio = normalizeAspectRatio(body.aspectRatio);
 
   // Atlas `generateVideo` expects a flat body: `model`, `prompt`, and optional params
   // (see https://www.atlascloud.ai/docs/en/models/video). Nesting under `input` leaves
@@ -106,7 +118,10 @@ export async function POST(request: Request) {
     model,
     prompt,
     duration: 5,
-    fps: 24
+    fps: 24,
+    // Kling / Atlas commonly use snake_case; some clients expect camelCase.
+    aspect_ratio: aspectRatio,
+    aspectRatio
   };
 
   if (image_url) {
@@ -126,6 +141,7 @@ export async function POST(request: Request) {
     console.log("[generate-video] Atlas request (keys + prompt length)", {
       action,
       model,
+      aspectRatio,
       keys: Object.keys(atlasBody),
       promptLen: prompt.length
     });
