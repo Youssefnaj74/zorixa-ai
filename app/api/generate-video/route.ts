@@ -43,31 +43,58 @@ function normalizeResolution(raw: unknown): string {
   return ALLOWED_RESOLUTIONS.has(v) ? v : DEFAULT_RESOLUTION;
 }
 
-/** ByteDance Seedance 2.0 on Atlas expects `content` as a multimodal parts array (see I2V schema). */
-function usesSeedance20ContentEnvelope(model: string): boolean {
-  return model.startsWith("bytedance/seedance-2.0/");
+/**
+ * ByteDance Seedance on Atlas: `/docs/models/video` I2V uses flat `model` + `prompt` + `image_url`;
+ * model pages also show `width` / `height` / `duration` / `fps`. Multimodal `content` (image + text
+ * parts) is required by the live API for some Seedance slugs — send both shapes together for I2V.
+ * @see https://www.atlascloud.ai/docs/models/video (Image-to-Video)
+ */
+function isByteDanceSeedanceAtlasModel(model: string): boolean {
+  return (
+    model.startsWith("bytedance/seedance-2.0/") ||
+    model.startsWith("bytedance/seedance-v1.5-pro/")
+  );
 }
 
-type Seedance20ContentPart =
+function isAtlasImageToVideoSlug(model: string): boolean {
+  return model.endsWith("/image-to-video");
+}
+
+type SeedanceI2vContentPart =
   | { type: "image_url"; image_url: { url: string } }
   | { type: "text"; text: string };
 
-/** Atlas Seedance 2.0 I2V: only `model` + `content` array (image part + text part). */
-function buildSeedance20AtlasBody(
-  model: string,
-  prompt: string,
-  image_url: string
-): Record<string, unknown> {
-  let content: Seedance20ContentPart[];
-  if (model === "bytedance/seedance-2.0/image-to-video") {
-    content = [
-      { type: "image_url", image_url: { url: image_url } },
-      { type: "text", text: prompt }
-    ];
-  } else {
-    content = [{ type: "text", text: prompt }];
+/** Short-side pixel size from UI resolution tier (matches Seedance model page examples). */
+function resolutionShortSidePx(resolution: string): number {
+  switch (resolution) {
+    case "1080p":
+      return 1080;
+    case "720p":
+      return 720;
+    case "480p":
+    default:
+      return 480;
   }
-  return { model, content };
+}
+
+/** Width × height for Seedance I2V (short side = resolution tier). */
+function dimensionsForAspectResolution(
+  aspectRatio: string,
+  resolution: string
+): { width: number; height: number } {
+  const s = resolutionShortSidePx(resolution);
+  switch (aspectRatio) {
+    case "16:9":
+      return { width: Math.round((s * 16) / 9), height: s };
+    case "9:16":
+      return { width: s, height: Math.round((s * 16) / 9) };
+    case "1:1":
+      return { width: s, height: s };
+    case "4:3":
+      return { width: Math.round((s * 4) / 3), height: s };
+    default:
+      return { width: s, height: Math.round((s * 16) / 9) };
+  }
 }
 
 type AtlasPredictionData = {
@@ -157,10 +184,34 @@ export async function POST(request: Request) {
 
   let atlasBody: Record<string, unknown>;
 
-  if (usesSeedance20ContentEnvelope(model)) {
-    atlasBody = buildSeedance20AtlasBody(model, prompt, image_url);
+  const seedanceI2v =
+    isByteDanceSeedanceAtlasModel(model) &&
+    isAtlasImageToVideoSlug(model) &&
+    Boolean(image_url);
+
+  if (seedanceI2v) {
+    const { width, height } = dimensionsForAspectResolution(aspectRatio, resolution);
+    const content: SeedanceI2vContentPart[] = [
+      { type: "image_url", image_url: { url: image_url } },
+      { type: "text", text: prompt }
+    ];
+    // Flat fields per https://www.atlascloud.ai/docs/models/video + dimensions from model pages.
+    atlasBody = {
+      model,
+      prompt,
+      image_url,
+      image: image_url,
+      duration: durationSec,
+      fps,
+      aspect_ratio: aspectRatio,
+      aspectRatio,
+      resolution,
+      width,
+      height,
+      content
+    };
   } else {
-    // Atlas `generateVideo` flat body (Kling, Veo, Wan, Hailuo, etc.).
+    // Atlas `generateVideo` flat body (Kling, Veo, Wan, Hailuo, Seedance T2V, etc.).
     atlasBody = {
       model,
       prompt,
@@ -189,9 +240,7 @@ export async function POST(request: Request) {
       videoModel,
       action,
       model,
-      envelope: usesSeedance20ContentEnvelope(model)
-        ? "content[]"
-        : "flat",
+      envelope: seedanceI2v ? "seedance-i2v(flat+content[])" : "flat",
       aspectRatio,
       resolution,
       keys: Object.keys(atlasBody),
@@ -205,7 +254,7 @@ export async function POST(request: Request) {
     "→ model:",
     model,
     "| envelope:",
-    usesSeedance20ContentEnvelope(model) ? "content[]" : "flat",
+    seedanceI2v ? "seedance-i2v(flat+content[])" : "flat",
     "| resolution:",
     resolution
   );
