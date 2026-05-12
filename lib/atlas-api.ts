@@ -1,3 +1,5 @@
+import { requireAtlasCloudApiKey } from "@/lib/env";
+
 const ATLAS_MODEL_BASE = "https://api.atlascloud.ai/api/v1/model";
 
 /** Fixed model for studio video route (Atlas slug). */
@@ -24,11 +26,11 @@ type AtlasEnvelope = {
 };
 
 function getAtlasApiKey(): string {
-  const key = process.env.ATLASCLOUD_API_KEY?.trim();
-  if (!key) {
+  try {
+    return requireAtlasCloudApiKey();
+  } catch {
     throw new AtlasApiError("Missing ATLASCLOUD_API_KEY", 500);
   }
-  return key;
 }
 
 const ALLOWED_ASPECTS = new Set(["16:9", "9:16", "1:1", "4:3"]);

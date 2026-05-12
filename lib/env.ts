@@ -10,6 +10,14 @@ function envTrim(name: string): string {
   return process.env[name]?.trim() ?? "";
 }
 
+/**
+ * Atlas Cloud REST API key (`https://api.atlascloud.ai`).
+ * **Only** `ATLASCLOUD_API_KEY` is read — no `ATLAS_API_KEY` / `ATLAS_CLOUD_*` fallbacks (matches Vercel naming).
+ */
+export function requireAtlasCloudApiKey(): string {
+  return required("ATLASCLOUD_API_KEY");
+}
+
 /** Validates `NEXT_PUBLIC_SUPABASE_*` before creating any Supabase client. */
 export function requirePublicSupabaseEnv(): { url: string; anonKey: string } {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -26,6 +34,8 @@ export const env = {
   /** Same resolution as getPublicSiteUrl — prefer NEXT_PUBLIC_SITE_URL. */
   siteUrl: getPublicSiteUrl(),
   appUrl: getPublicSiteUrl(),
+  /** Trimmed `ATLASCLOUD_API_KEY` (empty string if unset). Prefer `requireAtlasCloudApiKey()` when the key is required. */
+  atlasCloudApiKey: envTrim("ATLASCLOUD_API_KEY"),
   supabase: {
     url: envTrim("NEXT_PUBLIC_SUPABASE_URL"),
     anonKey: envTrim("NEXT_PUBLIC_SUPABASE_ANON_KEY"),

@@ -5,6 +5,7 @@ import {
   resolveAtlasVideoModelId
 } from "@/lib/atlas-video-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
+import { env } from "@/lib/env";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
@@ -141,8 +142,8 @@ async function fetchAtlasPredictionOnce(
  * (Vercel/serverless timeouts would kill the request while Atlas still runs).
  */
 export async function GET(request: Request) {
-  const apiKey = process.env.ATLASCLOUD_API_KEY;
-  if (!apiKey?.trim()) {
+  const apiKey = env.atlasCloudApiKey;
+  if (!apiKey) {
     return NextResponse.json(
       { error: "Server missing ATLASCLOUD_API_KEY" },
       { status: 500 }
@@ -180,8 +181,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.ATLASCLOUD_API_KEY;
-  if (!apiKey?.trim()) {
+  const apiKey = env.atlasCloudApiKey;
+  if (!apiKey) {
     return NextResponse.json(
       { error: "Server missing ATLASCLOUD_API_KEY" },
       { status: 500 }
