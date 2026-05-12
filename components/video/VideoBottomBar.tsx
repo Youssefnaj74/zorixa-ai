@@ -181,11 +181,8 @@ export function VideoBottomBar({
       const url = URL.createObjectURL(file);
       onPromptImageChange(url);
       setFile1Name(file.name);
-      if (!prompt.includes("@PRODUCT_IMAGE1")) {
-        onPromptChange(`Using @PRODUCT_IMAGE1 ${prompt.replace(/^Using\s*/, "")}`.trim());
-      }
     },
-    [onPromptChange, onPromptImageChange, prompt]
+    [onPromptImageChange]
   );
 
   const applySlot2File = useCallback(
@@ -195,11 +192,8 @@ export function VideoBottomBar({
       const url = URL.createObjectURL(file);
       onPromptImage2Change(url);
       setFile2Name(file.name);
-      if (!prompt.includes("@PRODUCT_IMAGE2")) {
-        onPromptChange(`${prompt.trim()} @PRODUCT_IMAGE2`.trim());
-      }
     },
-    [onPromptChange, onPromptImage2Change, prompt]
+    [onPromptImage2Change]
   );
 
   const onFile1Input = useCallback(
