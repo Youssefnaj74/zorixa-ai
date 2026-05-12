@@ -15,6 +15,9 @@ import { VideoPreview } from "@/components/video/VideoPreview";
 
 const NAV_H = 56;
 
+const ATLAS_CLIENT_POLL_MS = 3000;
+const ATLAS_CLIENT_MAX_WAIT_MS = 15 * 60 * 1000;
+
 /** Resolve blob: URLs to a public https URL via authenticated upload. */
 async function uploadBlobUrlIfNeeded(url: string | null): Promise<string | null> {
   if (!url) return null;
@@ -157,6 +160,7 @@ export function VideoGenerationPage() {
         const aspectRatio = ctx.aspectRatio.trim() || aspect.trim();
         const resTier = ctx.resolution.trim() || resolution.trim();
         const videoModel = composerModelId;
+        const duration = ctx.durationSeconds;
 
         switch (ctx.actionTab) {
           case "Text to Video":
@@ -165,7 +169,8 @@ export function VideoGenerationPage() {
               action: "text",
               videoModel,
               aspectRatio,
-              resolution: resTier
+              resolution: resTier,
+              duration
             };
             break;
           case "Image to Video": {
@@ -180,7 +185,8 @@ export function VideoGenerationPage() {
               videoModel,
               image_url,
               aspectRatio,
-              resolution: resTier
+              resolution: resTier,
+              duration
             };
             break;
           }
@@ -196,7 +202,8 @@ export function VideoGenerationPage() {
               videoModel,
               audio_url,
               aspectRatio,
-              resolution: resTier
+              resolution: resTier,
+              duration
             };
             break;
           }
@@ -212,7 +219,8 @@ export function VideoGenerationPage() {
               videoModel,
               video_url,
               aspectRatio,
-              resolution: resTier
+              resolution: resTier,
+              duration
             };
             break;
           }
@@ -222,7 +230,8 @@ export function VideoGenerationPage() {
               action: "text",
               videoModel,
               aspectRatio,
-              resolution: resTier
+              resolution: resTier,
+              duration
             };
         }
 
@@ -244,9 +253,15 @@ export function VideoGenerationPage() {
           body: JSON.stringify(payload)
         });
 
-        let data: { video_url?: string; error?: string } = {};
+        let data: {
+          video_url?: string;
+          pending?: boolean;
+          prediction_id?: string;
+          poll_interval_ms?: number;
+          error?: string;
+        } = {};
         try {
-          data = (await res.json()) as { video_url?: string; error?: string };
+          data = (await res.json()) as typeof data;
         } catch {
           setGenerateError(`Generation failed (${res.status})`);
           return;
@@ -257,12 +272,53 @@ export function VideoGenerationPage() {
           return;
         }
 
-        if (!data.video_url) {
-          setGenerateError("No video URL was returned.");
+        if (data.video_url) {
+          setVideoUrl(data.video_url);
+        } else if (data.pending && data.prediction_id) {
+          const predictionId = data.prediction_id;
+          const interval = data.poll_interval_ms ?? ATLAS_CLIENT_POLL_MS;
+          const deadline = Date.now() + ATLAS_CLIENT_MAX_WAIT_MS;
+          let resolvedUrl: string | null = null;
+          while (Date.now() < deadline) {
+            await new Promise((r) => setTimeout(r, interval));
+            const pr = await fetch(
+              `/api/generate-video?predictionId=${encodeURIComponent(predictionId)}`,
+              { cache: "no-store" }
+            );
+            let pd: {
+              video_url?: string | null;
+              status?: string;
+              error?: string | null;
+              poll_interval_ms?: number;
+            } = {};
+            try {
+              pd = (await pr.json()) as typeof pd;
+            } catch {
+              setGenerateError(`Status check failed (${pr.status})`);
+              return;
+            }
+            if (!pr.ok) {
+              setGenerateError(pd.error ?? `Status check failed (${pr.status})`);
+              return;
+            }
+            if (typeof pd.video_url === "string" && pd.video_url.length > 0) {
+              resolvedUrl = pd.video_url;
+              break;
+            }
+            if (pd.status === "failed") {
+              setGenerateError(pd.error ?? "Atlas prediction failed");
+              return;
+            }
+          }
+          if (!resolvedUrl) {
+            setGenerateError("Video generation timed out. Check your connection and try again.");
+            return;
+          }
+          setVideoUrl(resolvedUrl);
+        } else {
+          setGenerateError("No video URL or job id was returned.");
           return;
         }
-
-        setVideoUrl(data.video_url);
         const id = `v-${Date.now()}`;
         setHistory((prev) => [
           {
@@ -278,7 +334,7 @@ export function VideoGenerationPage() {
         setLoading(false);
       }
     },
-    [aspect, composerModelId, prompt, resolution]
+    [aspect, composerModelId, prompt, resolution, timeSeconds]
   );
 
   const restoreSettings = useCallback((item: VideoHistoryEntry) => {

@@ -6,8 +6,8 @@ import {
 } from "@/lib/atlas-video-model-ids";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
-const POLL_MS = 3000;
-const MAX_WAIT_MS = 15 * 60 * 1000;
+/** Client polls `GET ?predictionId=` this often (serverless POST cannot block for minutes). */
+const CLIENT_POLL_HINT_MS = 3000;
 
 type GenerateVideoAction = AtlasVideoRouteAction;
 
@@ -23,6 +23,8 @@ type ClientBody = {
   aspectRatio?: string;
   /** UI resolution tier (480p, 720p, 1080p) — forwarded to Atlas `resolution`. */
   resolution?: string;
+  /** Clip length in seconds (clamped). */
+  duration?: number;
 };
 
 const ALLOWED_ASPECT_RATIOS = new Set(["16:9", "9:16", "1:1", "4:3"]);
@@ -41,6 +43,11 @@ function normalizeResolution(raw: unknown): string {
   if (typeof raw !== "string") return DEFAULT_RESOLUTION;
   const v = raw.trim().toLowerCase();
   return ALLOWED_RESOLUTIONS.has(v) ? v : DEFAULT_RESOLUTION;
+}
+
+function normalizeDurationSeconds(raw: unknown): number {
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return 5;
+  return Math.min(60, Math.max(1, Math.round(raw)));
 }
 
 /**
@@ -96,8 +103,60 @@ type AtlasEnvelope = {
   message?: string;
 };
 
-function sleep(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+/** One-shot Atlas prediction fetch (used by GET for browser polling). */
+async function fetchAtlasPredictionOnce(
+  predictionId: string,
+  apiKey: string
+): Promise<AtlasEnvelope & { httpOk: boolean; httpStatus: number }> {
+  const pollRes = await fetch(`${ATLAS_BASE}/prediction/${predictionId}`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    cache: "no-store"
+  });
+  const pollJson = (await pollRes.json()) as AtlasEnvelope;
+  return { ...pollJson, httpOk: pollRes.ok, httpStatus: pollRes.status };
+}
+
+/**
+ * Poll Atlas prediction status once. Use from the browser in a loop — not from a long-lived POST
+ * (Vercel/serverless timeouts would kill the request while Atlas still runs).
+ */
+export async function GET(request: Request) {
+  const apiKey = process.env.ATLASCLOUD_API_KEY;
+  if (!apiKey?.trim()) {
+    return NextResponse.json(
+      { error: "Server missing ATLASCLOUD_API_KEY" },
+      { status: 500 }
+    );
+  }
+
+  const predictionId = new URL(request.url).searchParams.get("predictionId")?.trim();
+  if (!predictionId) {
+    return NextResponse.json({ error: "Missing predictionId query parameter" }, { status: 400 });
+  }
+
+  const pollJson = await fetchAtlasPredictionOnce(predictionId, apiKey);
+  if (!pollJson.httpOk) {
+    return NextResponse.json(
+      {
+        error: pollJson.message ?? `Prediction poll failed (${pollJson.httpStatus})`,
+        poll_interval_ms: CLIENT_POLL_HINT_MS
+      },
+      { status: pollJson.httpStatus >= 400 ? pollJson.httpStatus : 502 }
+    );
+  }
+
+  const status = pollJson.data?.status ?? "unknown";
+  const videoUrl = pollJson.data?.outputs?.[0];
+  const err =
+    pollJson.data?.error ??
+    (typeof pollJson.message === "string" ? pollJson.message : null);
+
+  return NextResponse.json({
+    status,
+    video_url: typeof videoUrl === "string" ? videoUrl : null,
+    error: status === "failed" ? err : null,
+    poll_interval_ms: CLIENT_POLL_HINT_MS
+  });
 }
 
 export async function POST(request: Request) {
@@ -165,8 +224,8 @@ export async function POST(request: Request) {
 
   const aspectRatio = normalizeAspectRatio(body.aspectRatio);
   const resolution = normalizeResolution(body.resolution);
+  const durationSec = normalizeDurationSeconds(body.duration);
 
-  const durationSec = 5;
   const fps = 24;
 
   let atlasBody: Record<string, unknown>;
@@ -218,7 +277,8 @@ export async function POST(request: Request) {
       aspectRatio,
       resolution,
       keys: Object.keys(atlasBody),
-      promptLen: prompt.length
+      promptLen: prompt.length,
+      durationSec
     });
   }
 
@@ -262,51 +322,29 @@ export async function POST(request: Request) {
     );
   }
 
-  const deadline = Date.now() + MAX_WAIT_MS;
-
-  while (Date.now() < deadline) {
-    const pollRes = await fetch(`${ATLAS_BASE}/prediction/${predictionId}`, {
-      headers: { Authorization: `Bearer ${apiKey}` }
-    });
-
-    const pollJson = (await pollRes.json()) as AtlasEnvelope;
-    if (!pollRes.ok) {
-      return NextResponse.json(
-        {
-          error:
-            pollJson.message ?? `Prediction poll failed (${pollRes.status})`
-        },
-        { status: pollRes.status >= 400 ? pollRes.status : 502 }
-      );
-    }
-
-    const status = pollJson.data?.status;
-
-    if (status === "completed" || status === "succeeded") {
-      const outputs = pollJson.data?.outputs;
-      const videoUrl = outputs?.[0];
-      if (!videoUrl) {
-        return NextResponse.json(
-          { error: "Completed prediction had no output URL" },
-          { status: 502 }
-        );
-      }
+  const initialStatus = createJson.data?.status;
+  if (initialStatus === "completed" || initialStatus === "succeeded") {
+    const videoUrl = createJson.data?.outputs?.[0];
+    if (typeof videoUrl === "string" && videoUrl.length > 0) {
       return NextResponse.json({ video_url: videoUrl });
     }
-
-    if (status === "failed") {
-      const err =
-        pollJson.data?.error ??
-        pollJson.message ??
-        "Atlas prediction failed";
-      return NextResponse.json({ error: err }, { status: 502 });
-    }
-
-    await sleep(POLL_MS);
+    return NextResponse.json(
+      { error: "Atlas returned completed without an output URL" },
+      { status: 502 }
+    );
   }
 
-  return NextResponse.json(
-    { error: "Video generation timed out while polling prediction status" },
-    { status: 504 }
-  );
+  if (initialStatus === "failed") {
+    const err =
+      createJson.data?.error ??
+      createJson.message ??
+      "Atlas prediction failed";
+    return NextResponse.json({ error: err }, { status: 502 });
+  }
+
+  return NextResponse.json({
+    pending: true,
+    prediction_id: predictionId,
+    poll_interval_ms: CLIENT_POLL_HINT_MS
+  });
 }
