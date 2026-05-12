@@ -1,35 +1,26 @@
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 
 /**
- * Prepare an Atlas (or CDN) video URL for `<video src>`.
- * - Forces https when possible.
- * - Follows redirects with a tiny ranged GET so `fetch().url` matches what the CDN finally serves.
- * If CORS/network fails, returns the https-normalized original (the `<video>` element may still play it).
+ * Prepare an Atlas / CDN video URL for `<video src>` **without any network request**.
+ *
+ * Do **not** pre-fetch the URL (Range GET, HEAD, etc.): many storage/CDN links are
+ * **single-use or token-bound** — the first request can invalidate the URL and leave
+ * the `<video>` element with a dead `src` (black player at 0:00).
+ *
+ * We only trim and upgrade `http:` → `https:` when `coerceToPublicHttpsUrl` applies.
  */
-export async function resolveAtlasVideoUrlForPlayback(raw: string): Promise<string> {
+export function normalizeAtlasVideoUrlForPlayback(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return trimmed;
 
-  const base = coerceToPublicHttpsUrl(trimmed) ?? (trimmed.startsWith("http") ? trimmed : "");
-  if (!base) return trimmed;
+  const upgraded = coerceToPublicHttpsUrl(trimmed);
+  if (upgraded) return upgraded;
 
-  try {
-    const ac = new AbortController();
-    const t = setTimeout(() => ac.abort(), 15_000);
-    const res = await fetch(base, {
-      method: "GET",
-      redirect: "follow",
-      mode: "cors",
-      headers: { Range: "bytes=0-0" },
-      cache: "no-store",
-      signal: ac.signal
-    });
-    clearTimeout(t);
-    const final = typeof res.url === "string" && res.url.length > 0 ? res.url : base;
-    return final;
-  } catch {
-    return base;
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
   }
+
+  return trimmed;
 }
 
 /** Heuristic for logging — many CDNs serve MP4 without `.mp4` in the path. */
