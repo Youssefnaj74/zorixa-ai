@@ -10,6 +10,8 @@ export type VideoHistoryEntry = {
   thumb: string;
   title: string;
   subtitle?: string;
+  /** Completed Atlas output — replay in the preview when selected */
+  outputVideoUrl?: string | null;
 };
 
 export function VideoHistory({
@@ -49,7 +51,7 @@ export function VideoHistory({
             className="zorixa-card-border flex w-full gap-3 rounded-xl bg-zorixa-card p-3 text-left transition-shadow hover:shadow-[0_0_20px_rgba(131,56,235,0.2)]"
           >
             <div className="relative size-16 shrink-0 overflow-hidden rounded-lg ring-1 ring-white/10">
-              <Image src={item.thumb} alt="" width={64} height={64} className="size-full object-cover" />
+              <Image src={item.thumb} alt="" width={64} height={64} className="size-full object-cover" unoptimized />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-white">{item.title}</p>

@@ -10,6 +10,7 @@ import { KLING_30_PRO_MODEL_ID } from "@/components/video/bottom-bar-models";
 import type { VideoHistoryEntry } from "@/components/video/VideoHistory";
 import { isAtlasVideoComposerId } from "@/lib/atlas-video-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
+import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
 import { VideoHistory } from "@/components/video/VideoHistory";
 import { VideoPreview } from "@/components/video/VideoPreview";
@@ -71,6 +72,23 @@ async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<strin
     throw new Error("Upload did not return a usable https URL.");
   }
   return out;
+}
+
+function logAtlasComposerVideoToSupabase(payload: {
+  output_url: string;
+  input_url?: string;
+  prediction_id?: string | null;
+}) {
+  void fetch("/api/generations/atlas-video-log", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      output_url: payload.output_url,
+      input_url: payload.input_url ?? "",
+      prediction_id: payload.prediction_id ?? null
+    })
+  }).catch(() => {});
 }
 
 export function VideoGenerationPage() {
@@ -160,6 +178,7 @@ export function VideoGenerationPage() {
 
       // Merge context + React state: avoids empty prompt when Generate runs before the last onChange commits.
       const promptValue = ctx.promptText.trim() || prompt.trim();
+      const promptForAtlas = stripVideoComposerAssetTokens(promptValue);
 
       if (!isAtlasVideoComposerId(composerModelId)) {
         setGenerateError("Unsupported video model.");
@@ -171,9 +190,15 @@ export function VideoGenerationPage() {
         return;
       }
 
+      if (!promptForAtlas) {
+        setGenerateError("Enter a prompt (not only image placeholders) to generate a video.");
+        return;
+      }
+
       setLoading(true);
       try {
         let payload: Record<string, unknown>;
+        let sourceInputForLog: string | null = null;
 
         const aspectRatio = ctx.aspectRatio.trim() || aspect.trim();
         const resTier = ctx.resolution.trim() || resolution.trim();
@@ -183,7 +208,7 @@ export function VideoGenerationPage() {
         switch (ctx.actionTab) {
           case "Text to Video":
             payload = {
-              prompt: promptValue,
+              prompt: promptForAtlas,
               action: "text",
               videoModel,
               aspectRatio,
@@ -197,8 +222,9 @@ export function VideoGenerationPage() {
               setGenerateError("Add a Products image for Image to Video.");
               return;
             }
+            sourceInputForLog = image_url;
             payload = {
-              prompt: promptValue,
+              prompt: promptForAtlas,
               action: "image",
               videoModel,
               image_url,
@@ -214,8 +240,9 @@ export function VideoGenerationPage() {
               setGenerateError("Add an audio file for Lipsyncing.");
               return;
             }
+            sourceInputForLog = audio_url;
             payload = {
-              prompt: promptValue,
+              prompt: promptForAtlas,
               action: "lipsync",
               videoModel,
               audio_url,
@@ -231,8 +258,9 @@ export function VideoGenerationPage() {
               setGenerateError("Add a source video for Video Edit.");
               return;
             }
+            sourceInputForLog = video_url;
             payload = {
-              prompt: promptValue,
+              prompt: promptForAtlas,
               action: "edit",
               videoModel,
               video_url,
@@ -244,7 +272,7 @@ export function VideoGenerationPage() {
           }
           default:
             payload = {
-              prompt: promptValue,
+              prompt: promptForAtlas,
               action: "text",
               videoModel,
               aspectRatio,
@@ -255,14 +283,10 @@ export function VideoGenerationPage() {
 
         console.log("[VideoGenerationPage] POST /api/generate-video body", payload);
         console.log(
-          "[VideoGenerationPage] exact prompt before fetch:",
-          JSON.stringify(promptValue),
-          "| length:",
-          promptValue.length,
-          "| ctx:",
-          JSON.stringify(ctx.promptText.trim()),
-          "| parent state:",
-          JSON.stringify(prompt.trim())
+          "[VideoGenerationPage] prompt sent to Atlas (stripped):",
+          JSON.stringify(promptForAtlas),
+          "| UI prompt:",
+          JSON.stringify(promptValue)
         );
 
         const res = await fetch("/api/generate-video", {
@@ -290,13 +314,17 @@ export function VideoGenerationPage() {
           return;
         }
 
+        let finalVideoUrl: string | null = null;
+        let predictionIdForLog: string | null = null;
+
         if (data.video_url) {
-          setVideoUrl(data.video_url);
+          finalVideoUrl = data.video_url;
+          setVideoUrl(finalVideoUrl);
         } else if (data.pending && data.prediction_id) {
+          predictionIdForLog = data.prediction_id;
           const predictionId = data.prediction_id;
           const interval = data.poll_interval_ms ?? ATLAS_CLIENT_POLL_MS;
           const deadline = Date.now() + ATLAS_CLIENT_MAX_WAIT_MS;
-          let resolvedUrl: string | null = null;
           while (Date.now() < deadline) {
             await new Promise((r) => setTimeout(r, interval));
             const pr = await fetch(
@@ -320,7 +348,8 @@ export function VideoGenerationPage() {
               return;
             }
             if (typeof pd.video_url === "string" && pd.video_url.length > 0) {
-              resolvedUrl = pd.video_url;
+              finalVideoUrl = pd.video_url;
+              setVideoUrl(finalVideoUrl);
               break;
             }
             if (pd.status === "failed") {
@@ -328,24 +357,38 @@ export function VideoGenerationPage() {
               return;
             }
           }
-          if (!resolvedUrl) {
+          if (!finalVideoUrl) {
             setGenerateError("Video generation timed out. Check your connection and try again.");
             return;
           }
-          setVideoUrl(resolvedUrl);
         } else {
           setGenerateError("No video URL or job id was returned.");
           return;
         }
+
         const id = `v-${Date.now()}`;
+        const displayTitle =
+          stripVideoComposerAssetTokens(promptValue).slice(0, 48) || videoModel;
+        const thumbForHistory =
+          ctx.actionTab === "Image to Video" && sourceInputForLog
+            ? sourceInputForLog
+            : `https://picsum.photos/seed/${id.slice(-6)}/96/96`;
+
         setHistory((prev) => [
           {
             id,
-            thumb: `https://picsum.photos/seed/${id.slice(-6)}/96/96`,
-            title: promptValue.slice(0, 40) || videoModel
+            thumb: thumbForHistory,
+            title: displayTitle,
+            outputVideoUrl: finalVideoUrl
           },
           ...prev
         ]);
+
+        logAtlasComposerVideoToSupabase({
+          output_url: finalVideoUrl,
+          input_url: sourceInputForLog ?? "",
+          prediction_id: predictionIdForLog
+        });
       } catch (e: unknown) {
         setGenerateError(e instanceof Error ? e.message : "Network error. Try again.");
       } finally {
@@ -357,6 +400,10 @@ export function VideoGenerationPage() {
 
   const restoreSettings = useCallback((item: VideoHistoryEntry) => {
     setPrompt((p) => `${p.split("\n")[0]}\n(Restored: ${item.title})`);
+    if (item.outputVideoUrl) {
+      setGenerateError(null);
+      setVideoUrl(item.outputVideoUrl);
+    }
   }, []);
 
   const hidePromptThumb =
