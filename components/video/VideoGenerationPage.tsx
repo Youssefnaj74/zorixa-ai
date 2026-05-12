@@ -9,6 +9,7 @@ import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
 import { KLING_30_PRO_MODEL_ID } from "@/components/video/bottom-bar-models";
 import type { VideoHistoryEntry } from "@/components/video/VideoHistory";
 import { isAtlasVideoComposerId } from "@/lib/atlas-video-model-ids";
+import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
 import { VideoHistory } from "@/components/video/VideoHistory";
 import { VideoPreview } from "@/components/video/VideoPreview";
@@ -18,19 +19,32 @@ const NAV_H = 56;
 const ATLAS_CLIENT_POLL_MS = 3000;
 const ATLAS_CLIENT_MAX_WAIT_MS = 15 * 60 * 1000;
 
-/** Resolve blob: URLs to a public https URL via authenticated upload. */
-async function uploadBlobUrlIfNeeded(url: string | null): Promise<string | null> {
-  if (!url) return null;
-  if (url.startsWith("https://") || url.startsWith("http://")) return url;
-  if (!url.startsWith("blob:")) return url;
+function extensionForUploadedBlob(blob: Blob): string {
+  const mt = (blob.type || "").toLowerCase();
+  if (mt.includes("jpeg") || mt === "image/jpg") return "jpg";
+  if (mt === "image/png") return "png";
+  if (mt === "image/webp") return "webp";
+  if (mt === "image/gif") return "gif";
+  if (mt.startsWith("audio/")) return "mp3";
+  if (mt.startsWith("video/")) return "mp4";
+  return "png";
+}
 
-  const blobRes = await fetch(url);
+/**
+ * Atlas `generateVideo` needs a public https:// URL in `image` / media fields.
+ * Resolves blob: and data: sources via `/api/upload`, upgrades http→https.
+ */
+async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<string | null> {
+  if (!url) return null;
+  const t = url.trim();
+  const direct = coerceToPublicHttpsUrl(t);
+  if (direct) return direct;
+
+  if (!t.startsWith("blob:") && !t.startsWith("data:")) return null;
+
+  const blobRes = await fetch(t);
   const blob = await blobRes.blob();
-  const ext = blob.type.startsWith("audio/")
-    ? "mp3"
-    : blob.type.startsWith("video/")
-      ? "mp4"
-      : "png";
+  const ext = extensionForUploadedBlob(blob);
   const file = new File([blob], `upload.${ext}`, {
     type: blob.type || "application/octet-stream"
   });
@@ -52,7 +66,11 @@ async function uploadBlobUrlIfNeeded(url: string | null): Promise<string | null>
     throw new Error(msg);
   }
   const data = (await up.json()) as { url: string };
-  return data.url;
+  const out = coerceToPublicHttpsUrl(data.url);
+  if (!out) {
+    throw new Error("Upload did not return a usable https URL.");
+  }
+  return out;
 }
 
 export function VideoGenerationPage() {
@@ -174,7 +192,7 @@ export function VideoGenerationPage() {
             };
             break;
           case "Image to Video": {
-            const image_url = await uploadBlobUrlIfNeeded(ctx.promptImageUrl);
+            const image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImageUrl);
             if (!image_url) {
               setGenerateError("Add a Products image for Image to Video.");
               return;
@@ -191,7 +209,7 @@ export function VideoGenerationPage() {
             break;
           }
           case "Lipsyncing": {
-            const audio_url = await uploadBlobUrlIfNeeded(ctx.lipsyncAudioUrl);
+            const audio_url = await ensureAtlasPublicHttpsMediaUrl(ctx.lipsyncAudioUrl);
             if (!audio_url) {
               setGenerateError("Add an audio file for Lipsyncing.");
               return;
@@ -208,7 +226,7 @@ export function VideoGenerationPage() {
             break;
           }
           case "Video Edit": {
-            const video_url = await uploadBlobUrlIfNeeded(ctx.editSourceVideoUrl);
+            const video_url = await ensureAtlasPublicHttpsMediaUrl(ctx.editSourceVideoUrl);
             if (!video_url) {
               setGenerateError("Add a source video for Video Edit.");
               return;

@@ -4,6 +4,7 @@ import {
   type AtlasVideoRouteAction,
   resolveAtlasVideoModelId
 } from "@/lib/atlas-video-model-ids";
+import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
 /** Client polls `GET ?predictionId=` this often (serverless POST cannot block for minutes). */
@@ -196,11 +197,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const image_url =
+  let image_url =
     typeof body.image_url === "string" ? body.image_url.trim() : "";
-  const audio_url =
+  let audio_url =
     typeof body.audio_url === "string" ? body.audio_url.trim() : "";
-  const video_url =
+  let video_url =
     typeof body.video_url === "string" ? body.video_url.trim() : "";
 
   if (action === "image" && !image_url) {
@@ -220,6 +221,46 @@ export async function POST(request: Request) {
       { error: "Missing video_url for Video Edit" },
       { status: 400 }
     );
+  }
+
+  if (action === "image" && image_url) {
+    const c = coerceToPublicHttpsUrl(image_url);
+    if (!c) {
+      return NextResponse.json(
+        {
+          error:
+            "image_url must be a public https:// URL so Atlas can fetch the image (upload local or data URLs first)."
+        },
+        { status: 400 }
+      );
+    }
+    image_url = c;
+  }
+  if (action === "lipsync" && audio_url) {
+    const c = coerceToPublicHttpsUrl(audio_url);
+    if (!c) {
+      return NextResponse.json(
+        {
+          error:
+            "audio_url must be a public https:// URL so Atlas can fetch the audio (upload local files first)."
+        },
+        { status: 400 }
+      );
+    }
+    audio_url = c;
+  }
+  if (action === "edit" && video_url) {
+    const c = coerceToPublicHttpsUrl(video_url);
+    if (!c) {
+      return NextResponse.json(
+        {
+          error:
+            "video_url must be a public https:// URL so Atlas can fetch the source video (upload local files first)."
+        },
+        { status: 400 }
+      );
+    }
+    video_url = c;
   }
 
   const aspectRatio = normalizeAspectRatio(body.aspectRatio);
