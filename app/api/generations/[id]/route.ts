@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { fetchAtlasPrediction } from "@/lib/atlas-api";
 import { extractFirstUrl, getPrediction } from "@/lib/replicate-api";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -38,6 +39,28 @@ export async function GET(
         gen.status = "completed";
         gen.output_url = outUrl;
       } else if (pred.status === "failed" || pred.status === "canceled") {
+        await supabaseAdmin.from("generations").update({ status: "failed" }).eq("id", gen.id);
+        gen.status = "failed";
+      }
+    } catch {
+      // If polling fails transiently, return current state; client will retry.
+    }
+  }
+
+  if (gen.status === "pending" && gen.provider === "atlas" && gen.provider_prediction_id) {
+    try {
+      const poll = await fetchAtlasPrediction(gen.provider_prediction_id);
+      if (poll.status === "completed" || poll.status === "succeeded") {
+        const outUrl = poll.outputUrl;
+        if (outUrl) {
+          await supabaseAdmin
+            .from("generations")
+            .update({ status: "completed", output_url: outUrl })
+            .eq("id", gen.id);
+          gen.status = "completed";
+          gen.output_url = outUrl;
+        }
+      } else if (poll.status === "failed") {
         await supabaseAdmin.from("generations").update({ status: "failed" }).eq("id", gen.id);
         gen.status = "failed";
       }

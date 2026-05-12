@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { createPrediction, extractFirstUrl } from "@/lib/replicate-api";
-import { aspectToVideoSize, resolveVideoModelSlug } from "@/lib/replicate-payloads";
-import type { AspectRatioId } from "@/lib/studio-constants";
+import { AtlasApiError, atlasGenerateVideo } from "@/lib/atlas-api";
 import { CREDIT_COSTS } from "@/lib/replicate";
 import { rateLimit } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -27,31 +25,31 @@ export async function POST(request: Request) {
     negative_prompt?: string;
     aspect_ratio?: string;
     model_id?: string;
+    /** Output size tier: 480p | 720p | 1080p */
+    resolution?: string;
+    /** Clip length in seconds (clamped server-side). */
+    duration?: number;
   };
 
-  if (!body.input_url || !body.end_image_url || !body.description) {
+  if (!body.input_url || !body.description?.trim()) {
     return NextResponse.json(
-      { error: "Missing start image (input_url), end image (end_image_url), or description" },
+      { error: "Missing start image (input_url) or description" },
       { status: 400 }
     );
   }
 
-  const videoModel = resolveVideoModelSlug(body.model_id);
-  if (!videoModel) {
-    return NextResponse.json(
-      {
-        error:
-          "Missing video model. Set REPLICATE_MODEL_VIDEO in .env. Optional: REPLICATE_MODEL_VIDEO_KLING, REPLICATE_MODEL_VIDEO_LUMA."
-      },
-      { status: 500 }
-    );
-  }
-
-  const aspect: AspectRatioId =
+  const aspect_ratio =
     body.aspect_ratio === "9:16" || body.aspect_ratio === "1:1" || body.aspect_ratio === "16:9"
       ? body.aspect_ratio
       : "16:9";
-  const dims = aspectToVideoSize(aspect);
+
+  const resolution =
+    typeof body.resolution === "string" && body.resolution.trim()
+      ? body.resolution.trim().toLowerCase()
+      : "1080p";
+
+  const duration =
+    typeof body.duration === "number" && Number.isFinite(body.duration) ? body.duration : 5;
 
   const { data: profile, error: profileErr } = await supabaseAdmin
     .from("users_profiles")
@@ -74,7 +72,7 @@ export async function POST(request: Request) {
       feature_type: "video",
       input_url: body.input_url,
       output_url: null,
-      provider: "replicate",
+      provider: "atlas",
       provider_prediction_id: null,
       credits_spent: videoCost,
       status: "pending"
@@ -99,42 +97,44 @@ export async function POST(request: Request) {
     });
   }
 
-  const input: Record<string, unknown> = {
-    image: body.input_url,
-    end_image: body.end_image_url,
-    prompt: body.description,
-    voice_style: body.voice_style ?? "friendly",
-    width: dims.width,
-    height: dims.height
-  };
-  if (body.negative_prompt?.trim()) {
-    input.negative_prompt = body.negative_prompt.trim();
+  let atlasResult;
+  try {
+    atlasResult = await atlasGenerateVideo({
+      image_url: body.input_url,
+      prompt: body.description.trim(),
+      duration,
+      aspect_ratio,
+      resolution
+    });
+  } catch (e: unknown) {
+    await supabaseAdmin.from("generations").update({ status: "failed" }).eq("id", gen.id);
+    if (e instanceof AtlasApiError) {
+      return NextResponse.json({ error: e.message }, { status: e.statusCode >= 400 ? e.statusCode : 500 });
+    }
+    const msg = e instanceof Error ? e.message : "Atlas video generation failed";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  let pred;
-  try {
-    pred = await createPrediction(videoModel, input);
-  } catch (e: any) {
-    await supabaseAdmin.from("generations").update({ status: "failed" }).eq("id", gen.id);
-    return NextResponse.json(
-      { error: e?.message ?? "Replicate video prediction failed" },
-      { status: 500 }
-    );
+  if (atlasResult.mode === "sync") {
+    await supabaseAdmin
+      .from("generations")
+      .update({
+        provider_prediction_id: null,
+        output_url: atlasResult.outputUrl,
+        status: "completed"
+      })
+      .eq("id", gen.id);
+    return NextResponse.json({
+      id: gen.id,
+      status: "completed",
+      output_url: atlasResult.outputUrl
+    });
   }
 
   await supabaseAdmin
     .from("generations")
-    .update({ provider_prediction_id: pred.id })
+    .update({ provider_prediction_id: atlasResult.predictionId })
     .eq("id", gen.id);
-
-  if (pred.status === "succeeded") {
-    const outUrl = extractFirstUrl(pred.output);
-    await supabaseAdmin
-      .from("generations")
-      .update({ output_url: outUrl, status: "completed" })
-      .eq("id", gen.id);
-    return NextResponse.json({ id: gen.id, status: "completed", output_url: outUrl });
-  }
 
   return NextResponse.json({
     id: gen.id,
