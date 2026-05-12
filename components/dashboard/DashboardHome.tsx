@@ -34,6 +34,7 @@ type GenerationTile = {
   title: string;
   kind: "image" | "video";
   src?: string;
+  videoSrc?: string;
 };
 
 function formatCreditsStat(n: number): string {
@@ -53,6 +54,9 @@ function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
     if (g.feature_type === "video") {
       const out = g.output_url;
       const inn = g.input_url;
+      let videoSrc: string | undefined;
+      if (out && isLikelyVideoFile(out)) videoSrc = out;
+
       let src: string | undefined;
       if (out && !isLikelyVideoFile(out)) src = out;
       else if (inn && !isLikelyVideoFile(inn)) src = inn;
@@ -61,6 +65,7 @@ function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
         title: g.status === "completed" ? `UGC video · ${dateLabel}` : `Video (${g.status}) · ${dateLabel}`,
         kind: "video" as const,
         src,
+        videoSrc
       };
     }
     const pick = g.output_url ?? g.input_url;

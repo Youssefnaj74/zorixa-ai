@@ -86,7 +86,18 @@ export function VideoPreview({
 
           <div className="relative flex min-h-0 flex-1 flex-col">
             <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center p-4">
-              {loading ? (
+              {videoUrl && !errorMessage ? (
+                <div className="flex h-full min-h-0 w-full flex-1 items-center justify-center">
+                  <video
+                    key={videoUrl}
+                    src={videoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)]"
+                  />
+                </div>
+              ) : loading ? (
                 <div className="flex flex-col items-center justify-center gap-3">
                   <div className="size-12 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />
                   <p className="text-sm text-zorixa-muted">Generating video…</p>
@@ -94,16 +105,6 @@ export function VideoPreview({
               ) : errorMessage ? (
                 <div className="max-w-md px-4 text-center">
                   <p className="text-sm text-red-400/95">{errorMessage}</p>
-                </div>
-              ) : videoUrl ? (
-                <div className="flex h-full min-h-0 w-full flex-1 items-center justify-center">
-                  <video
-                    key={videoUrl}
-                    src={videoUrl}
-                    controls
-                    playsInline
-                    className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)]"
-                  />
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center gap-4">

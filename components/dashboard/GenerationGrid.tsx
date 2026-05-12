@@ -6,10 +6,12 @@ import { Clapperboard } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-export type GenerationTile = {
+type GenerationTile = {
   id: string;
   /** Remote or absolute path; omit when kind is video and no poster */
   src?: string;
+  /** Direct .mp4 / .webm URL for inline playback */
+  videoSrc?: string;
   title: string;
   kind?: "image" | "video";
 };
@@ -18,7 +20,8 @@ export function GenerationGrid({ items, className }: { items: GenerationTile[]; 
   return (
     <div className={cn("grid gap-4 sm:grid-cols-2 lg:grid-cols-3", className)}>
       {items.map((item, i) => {
-        const showVideoFallback = item.kind === "video" && !item.src;
+        const showVideo = Boolean(item.videoSrc);
+        const showVideoFallback = item.kind === "video" && !item.src && !showVideo;
         return (
           <motion.div
             key={item.id}
@@ -28,7 +31,15 @@ export function GenerationGrid({ items, className }: { items: GenerationTile[]; 
             className="zorixa-card-border group overflow-hidden rounded-2xl bg-zorixa-card shadow-glow transition-shadow hover:shadow-glow-lg"
           >
             <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-900">
-              {showVideoFallback ? (
+              {showVideo ? (
+                <video
+                  src={item.videoSrc}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="absolute inset-0 size-full object-cover"
+                />
+              ) : showVideoFallback ? (
                 <div className="flex size-full flex-col items-center justify-center gap-2 text-zorixa-muted">
                   <Clapperboard className="size-12 opacity-60" aria-hidden />
                   <span className="text-xs font-medium">Video</span>
