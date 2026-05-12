@@ -3,6 +3,7 @@
 import { Download, Expand, History, Play, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,17 @@ export function VideoPreview({
   className?: string;
 }) {
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${TABS_ROW_H}px - ${bottomBarHeight}px)`;
+
+  useEffect(() => {
+    if (videoUrl && !errorMessage) {
+      console.log("[VideoPreview] <video> will use src", {
+        videoUrl,
+        length: videoUrl.length,
+        isEmptyString: videoUrl === "",
+        looksLikeMp4Path: /\.mp4(\?|#|$)/i.test(videoUrl)
+      });
+    }
+  }, [videoUrl, errorMessage]);
 
   return (
     <div className={cn("flex h-full min-h-0 min-w-0 flex-1 flex-col gap-3 font-body", className)}>
@@ -89,12 +101,30 @@ export function VideoPreview({
               {videoUrl && !errorMessage ? (
                 <div className="flex h-full min-h-0 w-full flex-1 items-center justify-center">
                   <video
-                    key={videoUrl}
+                    key={videoUrl ? `zorixa-preview:${videoUrl}` : "zorixa-preview:empty"}
                     src={videoUrl}
                     controls
                     playsInline
-                    preload="metadata"
+                    preload="auto"
                     className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)]"
+                    onLoadedMetadata={(e) => {
+                      const el = e.currentTarget;
+                      console.log("[VideoPreview] <video> loadedmetadata", {
+                        duration: el.duration,
+                        videoWidth: el.videoWidth,
+                        videoHeight: el.videoHeight,
+                        currentSrc: el.currentSrc
+                      });
+                    }}
+                    onError={(e) => {
+                      const el = e.currentTarget;
+                      console.error("[VideoPreview] <video> error", {
+                        code: el.error?.code,
+                        message: el.error?.message,
+                        currentSrc: el.currentSrc,
+                        networkState: el.networkState
+                      });
+                    }}
                   />
                 </div>
               ) : loading ? (

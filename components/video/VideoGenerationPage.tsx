@@ -10,6 +10,7 @@ import { KLING_30_PRO_MODEL_ID } from "@/components/video/bottom-bar-models";
 import type { VideoHistoryEntry } from "@/components/video/VideoHistory";
 import { isAtlasVideoComposerId } from "@/lib/atlas-video-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
+import { resolveAtlasVideoUrlForPlayback, videoUrlLooksLikeMp4Path } from "@/lib/resolve-video-playback-url";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
 import { VideoHistory } from "@/components/video/VideoHistory";
@@ -318,7 +319,15 @@ export function VideoGenerationPage() {
         let predictionIdForLog: string | null = null;
 
         if (data.video_url) {
-          finalVideoUrl = data.video_url;
+          const rawOut = data.video_url;
+          finalVideoUrl = await resolveAtlasVideoUrlForPlayback(rawOut);
+          console.log("[VideoGenerationPage] Atlas video URL → player (sync response)", {
+            rawLength: rawOut.length,
+            resolvedLength: finalVideoUrl.length,
+            looksLikeMp4Path: videoUrlLooksLikeMp4Path(finalVideoUrl),
+            redirectNormalized: rawOut !== finalVideoUrl,
+            resolved: finalVideoUrl
+          });
           setVideoUrl(finalVideoUrl);
         } else if (data.pending && data.prediction_id) {
           predictionIdForLog = data.prediction_id;
@@ -348,7 +357,15 @@ export function VideoGenerationPage() {
               return;
             }
             if (typeof pd.video_url === "string" && pd.video_url.length > 0) {
-              finalVideoUrl = pd.video_url;
+              const rawOut = pd.video_url;
+              finalVideoUrl = await resolveAtlasVideoUrlForPlayback(rawOut);
+              console.log("[VideoGenerationPage] Atlas video URL → player (after poll)", {
+                rawLength: rawOut.length,
+                resolvedLength: finalVideoUrl.length,
+                looksLikeMp4Path: videoUrlLooksLikeMp4Path(finalVideoUrl),
+                redirectNormalized: rawOut !== finalVideoUrl,
+                resolved: finalVideoUrl
+              });
               setVideoUrl(finalVideoUrl);
               break;
             }
@@ -402,7 +419,17 @@ export function VideoGenerationPage() {
     setPrompt((p) => `${p.split("\n")[0]}\n(Restored: ${item.title})`);
     if (item.outputVideoUrl) {
       setGenerateError(null);
-      setVideoUrl(item.outputVideoUrl);
+      const raw = item.outputVideoUrl;
+      void (async () => {
+        const resolved = await resolveAtlasVideoUrlForPlayback(raw);
+        console.log("[VideoGenerationPage] restore history → player", {
+          rawLength: raw.length,
+          resolvedLength: resolved.length,
+          looksLikeMp4Path: videoUrlLooksLikeMp4Path(resolved),
+          resolved
+        });
+        setVideoUrl(resolved);
+      })();
     }
   }, []);
 
