@@ -24,9 +24,9 @@ type AtlasEnvelope = {
 };
 
 function getAtlasApiKey(): string {
-  const key = process.env.ATLAS_API_KEY?.trim();
+  const key = process.env.ATLASCLOUD_API_KEY?.trim();
   if (!key) {
-    throw new AtlasApiError("Missing ATLAS_API_KEY", 500);
+    throw new AtlasApiError("Missing ATLASCLOUD_API_KEY", 500);
   }
   return key;
 }
