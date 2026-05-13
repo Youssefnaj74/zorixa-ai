@@ -21,6 +21,33 @@ const NAV_H = 56;
 const ATLAS_CLIENT_POLL_MS = 3000;
 const ATLAS_CLIENT_MAX_WAIT_MS = 15 * 60 * 1000;
 
+function atlasTerminalSuccessStatus(status: string | undefined): boolean {
+  const s = (status ?? "").toLowerCase();
+  return s === "succeeded" || s === "completed";
+}
+
+/** POST /api/generate-video returns snake_case; tolerate camelCase if a proxy changes keys. */
+function pickPredictionIdFromPost(data: {
+  prediction_id?: string;
+  predictionId?: string;
+}): string | null {
+  const snake = typeof data.prediction_id === "string" ? data.prediction_id.trim() : "";
+  if (snake.length > 0) return snake;
+  const camel = typeof data.predictionId === "string" ? data.predictionId.trim() : "";
+  return camel.length > 0 ? camel : null;
+}
+
+/** GET poll returns `video_url`; tolerate `videoUrl`. */
+function pickVideoUrlFromResponse(data: {
+  video_url?: string | null;
+  videoUrl?: string | null;
+}): string | null {
+  for (const v of [data.video_url, data.videoUrl]) {
+    if (typeof v === "string" && v.trim().length > 0) return v.trim();
+  }
+  return null;
+}
+
 function extensionForUploadedBlob(blob: Blob): string {
   const mt = (blob.type || "").toLowerCase();
   if (mt.includes("jpeg") || mt === "image/jpg") return "jpg";
@@ -298,8 +325,10 @@ export function VideoGenerationPage() {
 
         let data: {
           video_url?: string;
+          videoUrl?: string;
           pending?: boolean;
           prediction_id?: string;
+          predictionId?: string;
           poll_interval_ms?: number;
           error?: string;
         } = {};
@@ -318,8 +347,9 @@ export function VideoGenerationPage() {
         let finalVideoUrl: string | null = null;
         let predictionIdForLog: string | null = null;
 
-        if (data.video_url) {
-          const rawOut = data.video_url;
+        const syncUrl = pickVideoUrlFromResponse(data);
+        if (syncUrl) {
+          const rawOut = syncUrl;
           finalVideoUrl = normalizeAtlasVideoUrlForPlayback(rawOut);
           console.log("[VideoGenerationPage] Atlas video URL → player (sync response)", {
             rawLength: rawOut.length,
@@ -329,9 +359,13 @@ export function VideoGenerationPage() {
             resolved: finalVideoUrl
           });
           setVideoUrl(finalVideoUrl);
-        } else if (data.pending && data.prediction_id) {
-          predictionIdForLog = data.prediction_id;
-          const predictionId = data.prediction_id;
+        } else if (data.pending) {
+          const predictionId = pickPredictionIdFromPost(data);
+          if (!predictionId) {
+            setGenerateError("No video URL or job id was returned.");
+            return;
+          }
+          predictionIdForLog = predictionId;
           const interval = data.poll_interval_ms ?? ATLAS_CLIENT_POLL_MS;
           const deadline = Date.now() + ATLAS_CLIENT_MAX_WAIT_MS;
           while (Date.now() < deadline) {
@@ -342,6 +376,7 @@ export function VideoGenerationPage() {
             );
             let pd: {
               video_url?: string | null;
+              videoUrl?: string | null;
               status?: string;
               error?: string | null;
               poll_interval_ms?: number;
@@ -356,10 +391,15 @@ export function VideoGenerationPage() {
               setGenerateError(pd.error ?? `Status check failed (${pr.status})`);
               return;
             }
-            if (typeof pd.video_url === "string" && pd.video_url.length > 0) {
-              const rawOut = pd.video_url;
+            const polledUrl = pickVideoUrlFromResponse(pd);
+            const statusNorm = (pd.status ?? "").toLowerCase();
+
+            if (polledUrl) {
+              const rawOut = polledUrl;
               finalVideoUrl = normalizeAtlasVideoUrlForPlayback(rawOut);
               console.log("[VideoGenerationPage] Atlas video URL → player (after poll)", {
+                status: pd.status,
+                terminalOk: atlasTerminalSuccessStatus(pd.status),
                 rawLength: rawOut.length,
                 resolvedLength: finalVideoUrl.length,
                 looksLikeMp4Path: videoUrlLooksLikeMp4Path(finalVideoUrl),
@@ -369,7 +409,7 @@ export function VideoGenerationPage() {
               setVideoUrl(finalVideoUrl);
               break;
             }
-            if (pd.status === "failed") {
+            if (statusNorm === "failed") {
               setGenerateError(pd.error ?? "Atlas prediction failed");
               return;
             }
