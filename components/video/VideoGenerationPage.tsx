@@ -16,6 +16,7 @@ import {
 } from "@/lib/extract-atlas-video-output-url";
 import { normalizeAtlasVideoUrlForPlayback, videoUrlLooksLikeMp4Path } from "@/lib/resolve-video-playback-url";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
+import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
 import { VideoHistory } from "@/components/video/VideoHistory";
 import { VideoPreview } from "@/components/video/VideoPreview";
@@ -47,6 +48,12 @@ function pickVideoUrlFromPollBody(data: Record<string, unknown>): string | null 
     if (typeof v === "string" && v.trim().length > 0) return v.trim();
   }
   return extractAtlasVideoOutputUrl(data as unknown as AtlasLikeVideoPayload);
+}
+
+/** Same-origin playback URL (cookie session) → 302 to CDN; falls back to raw if host not allowlisted. */
+function toBrowserVideoSrc(canonicalHttps: string): string {
+  if (typeof window === "undefined") return canonicalHttps;
+  return buildSameOriginVideoPlaybackUrl(canonicalHttps, window.location.origin);
 }
 
 function extensionForUploadedBlob(blob: Blob): string {
@@ -359,7 +366,7 @@ export function VideoGenerationPage() {
             redirectNormalized: rawOut !== finalVideoUrl,
             resolved: finalVideoUrl
           });
-          setVideoUrl(finalVideoUrl);
+          setVideoUrl(toBrowserVideoSrc(finalVideoUrl));
         } else if (pickPredictionIdFromPost(data) && data.pending !== false) {
           const predictionId = pickPredictionIdFromPost(data);
           if (!predictionId) {
@@ -409,7 +416,7 @@ export function VideoGenerationPage() {
                 redirectNormalized: rawOut !== finalVideoUrl,
                 resolved: finalVideoUrl
               });
-              setVideoUrl(finalVideoUrl);
+              setVideoUrl(toBrowserVideoSrc(finalVideoUrl));
               break;
             }
             if (statusNorm === "failed") {
@@ -471,7 +478,7 @@ export function VideoGenerationPage() {
           looksLikeMp4Path: videoUrlLooksLikeMp4Path(resolved),
           resolved
         });
-        setVideoUrl(resolved);
+        setVideoUrl(toBrowserVideoSrc(resolved));
       })();
     }
   }, []);

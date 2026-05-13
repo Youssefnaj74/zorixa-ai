@@ -1,0 +1,36 @@
+/** Hosts we allow streaming through `/api/video-playback` (open redirect guard). */
+export function isAllowedVideoPlaybackHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  return (
+    h === "api.atlascloud.ai" ||
+    h.endsWith(".atlascloud.ai") ||
+    h.endsWith(".amazonaws.com") ||
+    h.endsWith(".cloudfront.net") ||
+    h.endsWith(".supabase.co") ||
+    h.endsWith(".supabase.in") ||
+    h.endsWith(".r2.cloudflarestorage.com") ||
+    h === "public.blob.vercel-storage.com" ||
+    h.endsWith(".blob.vercel-storage.com") ||
+    h.endsWith(".googleusercontent.com") ||
+    /** Atlas / ByteDance outputs often land on Aliyun OSS */
+    h.endsWith(".aliyuncs.com")
+  );
+}
+
+/**
+ * Same-origin URL so `<video src>` hits our app first (auth + allowlist), then 302 to CDN.
+ * Falls back to `raw` when not https or host not allowlisted.
+ */
+export function buildSameOriginVideoPlaybackUrl(raw: string, origin: string): string {
+  const t = raw.trim();
+  if (!t.startsWith("https://")) return t;
+  let u: URL;
+  try {
+    u = new URL(t);
+  } catch {
+    return t;
+  }
+  if (!isAllowedVideoPlaybackHost(u.hostname)) return t;
+  const base = origin.replace(/\/$/, "");
+  return `${base}/api/video-playback?url=${encodeURIComponent(t)}`;
+}

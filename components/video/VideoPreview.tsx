@@ -3,7 +3,7 @@
 import { Download, Expand, History, Play, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState, type VideoHTMLAttributes } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,11 @@ import { ActionTabsRow } from "@/components/video/ActionTabsRow";
 
 const NAV_H = 56;
 const TABS_ROW_H = 48;
+
+/** React 18 `@types/react` omits `referrerPolicy` on `<video>`; DOM supports it (helps some CDNs). */
+const domVideoAttrs = {
+  referrerPolicy: "no-referrer"
+} as unknown as VideoHTMLAttributes<HTMLVideoElement>;
 
 export function VideoPreview({
   actionTab,
@@ -36,6 +41,11 @@ export function VideoPreview({
   className?: string;
 }) {
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${TABS_ROW_H}px - ${bottomBarHeight}px)`;
+  const [inlinePlaybackError, setInlinePlaybackError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setInlinePlaybackError(null);
+  }, [videoUrl]);
 
   useEffect(() => {
     if (videoUrl && !errorMessage) {
@@ -99,16 +109,17 @@ export function VideoPreview({
           <div className="relative flex min-h-0 flex-1 flex-col">
             <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center p-4">
               {videoUrl && !errorMessage ? (
-                <div className="flex h-full min-h-0 w-full flex-1 items-center justify-center">
+                <div className="flex h-full min-h-0 w-full flex-1 flex-col items-center justify-center gap-3">
                   <video
                     key={videoUrl ? `zorixa-preview:${videoUrl}` : "zorixa-preview:empty"}
-                    src={videoUrl}
                     controls
                     playsInline
                     preload="auto"
+                    {...domVideoAttrs}
                     className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)]"
                     onLoadedMetadata={(e) => {
                       const el = e.currentTarget;
+                      setInlinePlaybackError(null);
                       console.log("[VideoPreview] <video> loadedmetadata", {
                         duration: el.duration,
                         videoWidth: el.videoWidth,
@@ -124,8 +135,29 @@ export function VideoPreview({
                         currentSrc: el.currentSrc,
                         networkState: el.networkState
                       });
+                      const code = el.error?.code;
+                      if (code === 4) {
+                        setInlinePlaybackError(
+                          "This output uses a format or codec your browser can't play inline (common with some Atlas / OSS files). Open in a new tab or download."
+                        );
+                      }
                     }}
-                  />
+                  >
+                    <source src={videoUrl} type="video/mp4" />
+                  </video>
+                  {inlinePlaybackError ? (
+                    <div className="max-w-md rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-100/95">
+                      <p>{inlinePlaybackError}</p>
+                      <a
+                        href={videoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-2 inline-block font-medium text-amber-200 underline underline-offset-2 hover:text-white"
+                      >
+                        Open video URL in new tab
+                      </a>
+                    </div>
+                  ) : null}
                 </div>
               ) : loading ? (
                 <div className="flex flex-col items-center justify-center gap-3">
@@ -160,14 +192,28 @@ export function VideoPreview({
                 <RotateCcw className="mr-1 size-3.5" />
                 Reset to Defaults
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="pointer-events-auto h-9 rounded-lg border border-brand/50 bg-black/30 px-3 text-xs text-white hover:bg-brand/20"
-              >
-                <Download className="mr-1 size-3.5" />
-                Download
-              </Button>
+              {videoUrl ? (
+                <a
+                  href={videoUrl}
+                  download
+                  target="_blank"
+                  rel="noreferrer"
+                  className="pointer-events-auto inline-flex h-9 items-center justify-center rounded-lg border border-brand/50 bg-black/30 px-3 text-xs font-medium text-white transition-colors hover:bg-brand/20"
+                >
+                  <Download className="mr-1 size-3.5" />
+                  Download
+                </a>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled
+                  className="pointer-events-auto h-9 cursor-not-allowed rounded-lg border border-white/10 bg-black/20 px-3 text-xs text-zorixa-muted opacity-50"
+                >
+                  <Download className="mr-1 size-3.5" />
+                  Download
+                </Button>
+              )}
             </div>
           </div>
         </div>

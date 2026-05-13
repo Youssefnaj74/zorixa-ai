@@ -55,8 +55,17 @@ function extractFromOutputField(single: unknown): string | null {
   return null;
 }
 
-export function extractAtlasVideoOutputUrl(data: AtlasLikeVideoPayload | undefined): string | null {
-  if (!data) return null;
+export function extractAtlasVideoOutputUrl(
+  data: AtlasLikeVideoPayload | undefined,
+  depth = 0
+): string | null {
+  if (!data || depth > 4) return null;
+
+  const nested = (data as Record<string, unknown>).data;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    const inner = extractAtlasVideoOutputUrl(nested as AtlasLikeVideoPayload, depth + 1);
+    if (inner) return inner;
+  }
 
   const outs = data.outputs;
   if (Array.isArray(outs)) {
