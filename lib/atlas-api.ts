@@ -1,4 +1,5 @@
 import { requireAtlasCloudApiKey } from "@/lib/env";
+import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
 
 const ATLAS_MODEL_BASE = "https://api.atlascloud.ai/api/v1/model";
 
@@ -19,7 +20,8 @@ type AtlasEnvelope = {
   data?: {
     id?: string;
     status?: string;
-    outputs?: string[];
+    outputs?: unknown[];
+    output?: unknown;
     error?: string | null;
   };
   message?: string;
@@ -140,8 +142,8 @@ export async function atlasGenerateVideo(
 
   const st = data.status;
   if (st === "completed" || st === "succeeded") {
-    const out = data.outputs?.[0];
-    if (typeof out === "string" && out.length > 0) {
+    const out = extractAtlasVideoOutputUrl(data);
+    if (out) {
       return { mode: "sync", outputUrl: out };
     }
   }
@@ -171,8 +173,7 @@ export async function fetchAtlasPrediction(predictionId: string): Promise<AtlasP
 
   const data = json.data;
   const status = data?.status ?? "unknown";
-  const outputUrl =
-    typeof data?.outputs?.[0] === "string" && data.outputs[0].length > 0 ? data.outputs[0] : null;
+  const outputUrl = extractAtlasVideoOutputUrl(data);
   const error =
     typeof data?.error === "string" && data.error.length > 0
       ? data.error

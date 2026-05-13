@@ -6,6 +6,7 @@ import {
 } from "@/lib/atlas-video-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { env } from "@/lib/env";
+import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
@@ -102,23 +103,6 @@ type AtlasPredictionData = {
   error?: string | null;
 };
 
-function extractAtlasVideoOutputUrl(data: AtlasPredictionData | undefined): string | null {
-  if (!data) return null;
-  const outs = data.outputs;
-  if (Array.isArray(outs) && outs.length > 0) {
-    const first = outs[0];
-    if (typeof first === "string" && first.trim().length > 0) return first.trim();
-    if (first && typeof first === "object") {
-      const rec = first as { url?: unknown; uri?: unknown };
-      const u = rec.url ?? rec.uri;
-      if (typeof u === "string" && u.trim().length > 0) return u.trim();
-    }
-  }
-  const single = data.output;
-  if (typeof single === "string" && single.trim().length > 0) return single.trim();
-  return null;
-}
-
 type AtlasEnvelope = {
   data?: AtlasPredictionData;
   message?: string;
@@ -150,9 +134,13 @@ export async function GET(request: Request) {
     );
   }
 
-  const predictionId = new URL(request.url).searchParams.get("predictionId")?.trim();
+  const searchParams = new URL(request.url).searchParams;
+  const predictionId = (searchParams.get("predictionId") ?? searchParams.get("prediction_id"))?.trim();
   if (!predictionId) {
-    return NextResponse.json({ error: "Missing predictionId query parameter" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing predictionId or prediction_id query parameter" },
+      { status: 400 }
+    );
   }
 
   const pollJson = await fetchAtlasPredictionOnce(predictionId, apiKey);
@@ -171,11 +159,15 @@ export async function GET(request: Request) {
   const err =
     pollJson.data?.error ??
     (typeof pollJson.message === "string" ? pollJson.message : null);
+  const statusNorm = String(status).toLowerCase();
 
   return NextResponse.json({
     status,
     video_url: typeof videoUrl === "string" ? videoUrl : null,
-    error: status === "failed" ? err : null,
+    /** Lets the browser parse alternate Atlas shapes if `video_url` is still null. */
+    outputs: pollJson.data?.outputs ?? null,
+    output: pollJson.data?.output ?? null,
+    error: statusNorm === "failed" ? err : null,
     poll_interval_ms: CLIENT_POLL_HINT_MS
   });
 }

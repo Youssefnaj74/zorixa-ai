@@ -10,6 +10,10 @@ import { KLING_30_PRO_MODEL_ID } from "@/components/video/bottom-bar-models";
 import type { VideoHistoryEntry } from "@/components/video/VideoHistory";
 import { isAtlasVideoComposerId } from "@/lib/atlas-video-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
+import {
+  extractAtlasVideoOutputUrl,
+  type AtlasLikeVideoPayload
+} from "@/lib/extract-atlas-video-output-url";
 import { normalizeAtlasVideoUrlForPlayback, videoUrlLooksLikeMp4Path } from "@/lib/resolve-video-playback-url";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
@@ -37,15 +41,12 @@ function pickPredictionIdFromPost(data: {
   return camel.length > 0 ? camel : null;
 }
 
-/** GET poll returns `video_url`; tolerate `videoUrl`. */
-function pickVideoUrlFromResponse(data: {
-  video_url?: string | null;
-  videoUrl?: string | null;
-}): string | null {
+/** GET poll: top-level `video_url` from API, then Atlas `outputs` / nested shapes. */
+function pickVideoUrlFromPollBody(data: Record<string, unknown>): string | null {
   for (const v of [data.video_url, data.videoUrl]) {
     if (typeof v === "string" && v.trim().length > 0) return v.trim();
   }
-  return null;
+  return extractAtlasVideoOutputUrl(data as unknown as AtlasLikeVideoPayload);
 }
 
 function extensionForUploadedBlob(blob: Blob): string {
@@ -347,7 +348,7 @@ export function VideoGenerationPage() {
         let finalVideoUrl: string | null = null;
         let predictionIdForLog: string | null = null;
 
-        const syncUrl = pickVideoUrlFromResponse(data);
+        const syncUrl = pickVideoUrlFromPollBody(data as Record<string, unknown>);
         if (syncUrl) {
           const rawOut = syncUrl;
           finalVideoUrl = normalizeAtlasVideoUrlForPlayback(rawOut);
@@ -359,7 +360,7 @@ export function VideoGenerationPage() {
             resolved: finalVideoUrl
           });
           setVideoUrl(finalVideoUrl);
-        } else if (data.pending) {
+        } else if (pickPredictionIdFromPost(data) && data.pending !== false) {
           const predictionId = pickPredictionIdFromPost(data);
           if (!predictionId) {
             setGenerateError("No video URL or job id was returned.");
@@ -377,6 +378,8 @@ export function VideoGenerationPage() {
             let pd: {
               video_url?: string | null;
               videoUrl?: string | null;
+              outputs?: unknown;
+              output?: unknown;
               status?: string;
               error?: string | null;
               poll_interval_ms?: number;
@@ -391,7 +394,7 @@ export function VideoGenerationPage() {
               setGenerateError(pd.error ?? `Status check failed (${pr.status})`);
               return;
             }
-            const polledUrl = pickVideoUrlFromResponse(pd);
+            const polledUrl = pickVideoUrlFromPollBody(pd as Record<string, unknown>);
             const statusNorm = (pd.status ?? "").toLowerCase();
 
             if (polledUrl) {
