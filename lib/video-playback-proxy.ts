@@ -18,8 +18,8 @@ export function isAllowedVideoPlaybackHost(hostname: string): boolean {
 }
 
 /**
- * Same-origin URL so `<video src>` hits our app first (auth + allowlist), then 302 to CDN.
- * Falls back to `raw` when not https or host not allowlisted.
+ * Same-origin URL so `<video src>` hits our app (`/api/video-playback`), which **streams**
+ * bytes from the CDN (auth + host allowlist). Falls back to `raw` when not https or host not allowlisted.
  */
 export function buildSameOriginVideoPlaybackUrl(raw: string, origin: string): string {
   const t = raw.trim();
