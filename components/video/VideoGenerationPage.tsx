@@ -10,7 +10,7 @@ import { KLING_30_PRO_MODEL_ID } from "@/components/video/bottom-bar-models";
 import type { VideoHistoryEntry } from "@/components/video/VideoHistory";
 import { isAtlasVideoComposerId } from "@/lib/atlas-video-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
-import { resolveAtlasVideoUrlForPlayback, videoUrlLooksLikeMp4Path } from "@/lib/resolve-video-playback-url";
+import { normalizeAtlasVideoUrlForPlayback, videoUrlLooksLikeMp4Path } from "@/lib/resolve-video-playback-url";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
 import { VideoHistory } from "@/components/video/VideoHistory";
@@ -320,7 +320,7 @@ export function VideoGenerationPage() {
 
         if (data.video_url) {
           const rawOut = data.video_url;
-          finalVideoUrl = await resolveAtlasVideoUrlForPlayback(rawOut);
+          finalVideoUrl = normalizeAtlasVideoUrlForPlayback(rawOut);
           console.log("[VideoGenerationPage] Atlas video URL → player (sync response)", {
             rawLength: rawOut.length,
             resolvedLength: finalVideoUrl.length,
@@ -358,7 +358,7 @@ export function VideoGenerationPage() {
             }
             if (typeof pd.video_url === "string" && pd.video_url.length > 0) {
               const rawOut = pd.video_url;
-              finalVideoUrl = await resolveAtlasVideoUrlForPlayback(rawOut);
+              finalVideoUrl = normalizeAtlasVideoUrlForPlayback(rawOut);
               console.log("[VideoGenerationPage] Atlas video URL → player (after poll)", {
                 rawLength: rawOut.length,
                 resolvedLength: finalVideoUrl.length,
@@ -421,7 +421,7 @@ export function VideoGenerationPage() {
       setGenerateError(null);
       const raw = item.outputVideoUrl;
       void (async () => {
-        const resolved = await resolveAtlasVideoUrlForPlayback(raw);
+        const resolved = normalizeAtlasVideoUrlForPlayback(raw);
         console.log("[VideoGenerationPage] restore history → player", {
           rawLength: raw.length,
           resolvedLength: resolved.length,
