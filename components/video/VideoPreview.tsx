@@ -106,7 +106,6 @@ export function VideoPreview({
                     controls
                     playsInline
                     preload="auto"
-                    referrerPolicy="no-referrer"
                     className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)]"
                     onLoadedMetadata={(e) => {
                       const el = e.currentTarget;
