@@ -119,7 +119,7 @@ export default function DashboardVideoPage() {
           <div>
             <h1 className="font-display text-lg font-semibold tracking-tight">Video from image</h1>
             <p className="text-sm text-zinc-400">
-              Stable Video Diffusion — motion and timing controls
+              Atlas Cloud (Seedance 2.0 image-to-video) — motion and pacing from your sliders
             </p>
           </div>
         </div>
@@ -174,7 +174,7 @@ export default function DashboardVideoPage() {
               onChange={(e) => setMotion(Number(e.target.value))}
               className="mt-2 h-2 w-full cursor-pointer appearance-none rounded-full bg-zinc-800 accent-violet-500"
             />
-            <p className="mt-1 text-[11px] text-zinc-500">Higher values add more camera / subject motion.</p>
+            <p className="mt-1 text-[11px] text-zinc-500">Feeds the text prompt motion emphasis for Atlas.</p>
           </div>
 
           <div>
@@ -191,7 +191,7 @@ export default function DashboardVideoPage() {
               onChange={(e) => setFps(Number(e.target.value))}
               className="mt-2 h-2 w-full cursor-pointer appearance-none rounded-full bg-zinc-800 accent-fuchsia-500"
             />
-            <p className="mt-1 text-[11px] text-zinc-500">Influences decoded frame span for the model.</p>
+            <p className="mt-1 text-[11px] text-zinc-500">Maps to clip length (seconds) on Atlas.</p>
           </div>
 
           {error ? (

@@ -1,24 +1,42 @@
 import { NextResponse } from "next/server";
 
-import { createPrediction, extractFirstUrl } from "@/lib/replicate-api";
+import { AtlasApiError, atlasGenerateVideo } from "@/lib/atlas-api";
 import { CREDIT_COSTS } from "@/lib/replicate";
 import { rateLimit } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-/** Replicate img2vid — image + motion controls. */
-const SVD_MODEL =
-  process.env.REPLICATE_MODEL_STABLE_VIDEO ?? "stability-ai/stable-video-diffusion";
+const ALLOWED_ASPECTS = new Set(["16:9", "9:16", "1:1", "4:3"]);
+const ALLOWED_RESOLUTIONS = new Set(["480p", "720p", "1080p"]);
 
 function clampInt(n: number, min: number, max: number, fallback: number) {
   if (!Number.isFinite(n)) return fallback;
   return Math.min(max, Math.max(min, Math.round(n)));
 }
 
-/** Map UI fps (6–30) to Replicate `decoding_t` (roughly controls decoded frame span). */
-function fpsToDecodingT(fps: number): number {
+/** Map UI fps (6–30) to clip length (seconds) for Atlas Seedance. */
+function fpsToDurationSeconds(fps: number): number {
   const f = clampInt(fps, 6, 30, 12);
-  return clampInt(6 + ((f - 6) / 24) * 10, 3, 20, 10);
+  return clampInt(Math.round(9 - ((f - 6) / 24) * 6), 3, 9, 5);
+}
+
+function normalizeAspect(raw: unknown): string {
+  if (typeof raw !== "string") return "16:9";
+  const v = raw.trim();
+  return ALLOWED_ASPECTS.has(v) ? v : "16:9";
+}
+
+function normalizeResolution(raw: unknown): string {
+  if (typeof raw !== "string") return "1080p";
+  const v = raw.trim().toLowerCase();
+  return ALLOWED_RESOLUTIONS.has(v) ? v : "1080p";
+}
+
+function buildPrompt(motionBucketId: number, explicit?: string): string {
+  const trimmed = typeof explicit === "string" ? explicit.trim() : "";
+  if (trimmed.length > 0) return trimmed;
+  const intensity = Math.round((motionBucketId / 255) * 100);
+  return `Smooth cinematic motion with natural movement. Motion emphasis around ${intensity}%.`;
 }
 
 export async function POST(request: Request) {
@@ -52,7 +70,14 @@ export async function POST(request: Request) {
     30,
     12
   );
-  const decoding_t = fpsToDecodingT(fps);
+  const durationSec = fpsToDurationSeconds(fps);
+  const aspect_ratio = normalizeAspect(form.get("aspect_ratio"));
+  const resolution = normalizeResolution(form.get("resolution"));
+  const promptRaw = form.get("prompt");
+  const prompt = buildPrompt(
+    motion_bucket_id,
+    typeof promptRaw === "string" ? promptRaw : undefined
+  );
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const ext = file.name.split(".").pop()?.toLowerCase() || "png";
@@ -96,7 +121,7 @@ export async function POST(request: Request) {
       feature_type: "video",
       input_url: inputUrl,
       output_url: null,
-      provider: "replicate",
+      provider: "atlas",
       provider_prediction_id: null,
       credits_spent: videoCost,
       status: "pending"
@@ -121,43 +146,46 @@ export async function POST(request: Request) {
     });
   }
 
-  const replicateInput: Record<string, unknown> = {
-    image: inputUrl,
-    motion_bucket_id,
-    cond_aug: 0.02,
-    decoding_t
-  };
-
-  let pred;
+  let atlasResult;
   try {
-    pred = await createPrediction(SVD_MODEL, replicateInput);
+    atlasResult = await atlasGenerateVideo({
+      image_url: inputUrl,
+      prompt,
+      duration: durationSec,
+      aspect_ratio,
+      resolution
+    });
   } catch (e: unknown) {
     await supabaseAdmin.from("generations").update({ status: "failed" }).eq("id", gen.id);
-    const msg = e instanceof Error ? e.message : "Replicate prediction failed";
+    if (e instanceof AtlasApiError) {
+      return NextResponse.json({ error: e.message }, { status: e.statusCode });
+    }
+    const msg = e instanceof Error ? e.message : "Atlas video generation failed";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  await supabaseAdmin
-    .from("generations")
-    .update({ provider_prediction_id: pred.id })
-    .eq("id", gen.id);
-
-  if (pred.status === "succeeded") {
-    const outUrl = extractFirstUrl(pred.output);
+  if (atlasResult.mode === "sync") {
     await supabaseAdmin
       .from("generations")
-      .update({ output_url: outUrl, status: "completed" })
+      .update({ output_url: atlasResult.outputUrl, status: "completed" })
       .eq("id", gen.id);
     return NextResponse.json({
       id: gen.id,
       status: "completed",
-      output_url: outUrl,
+      output_url: atlasResult.outputUrl,
       credits_spent: videoCost,
       motion_bucket_id,
       fps,
-      decoding_t
+      duration: durationSec,
+      aspect_ratio,
+      resolution
     });
   }
+
+  await supabaseAdmin
+    .from("generations")
+    .update({ provider_prediction_id: atlasResult.predictionId })
+    .eq("id", gen.id);
 
   return NextResponse.json({
     id: gen.id,
@@ -165,6 +193,8 @@ export async function POST(request: Request) {
     credits_spent: videoCost,
     motion_bucket_id,
     fps,
-    decoding_t
+    duration: durationSec,
+    aspect_ratio,
+    resolution
   });
 }
