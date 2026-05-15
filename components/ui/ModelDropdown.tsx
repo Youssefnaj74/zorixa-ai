@@ -12,66 +12,38 @@ export type ModelOption = {
   id: string;
   label: string;
   badge?: ReactNode;
-  /** Short limit label for dropdown row pill, e.g. "14 imgs" */
-  limitShort?: string;
-  /** Line under bottom-bar model trigger, e.g. "14 images per generation" */
-  limitDetail?: string;
 };
-
-export function ModelLimitPill({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center rounded-full border border-[rgba(131,56,235,0.3)] bg-[rgba(131,56,235,0.15)] px-2 py-0.5 text-[11px] leading-none text-[#9b7dff]"
-      )}
-    >
-      {children}
-    </span>
-  );
-}
 
 /** Shared catalog for sidebar dropdown + image bottom bar model display. */
 export const MODEL_OPTIONS: ModelOption[] = [
   {
     id: "gpt-image-2",
     label: "GPT Image 2",
-    badge: <Badge variant="newTeal">NEW</Badge>,
-    limitShort: "16 imgs",
-    limitDetail: "16 images per generation"
+    badge: <Badge variant="newTeal">NEW</Badge>
   },
   {
     id: "nano-banana-2",
     label: "Nano Banana 2",
-    badge: <Badge variant="fullAccess">FULL ACCESS</Badge>,
-    limitShort: "14 imgs",
-    limitDetail: "14 images per generation"
+    badge: <Badge variant="fullAccess">FULL ACCESS</Badge>
   },
   {
     id: "nano-banana",
     label: "Nano Banana",
-    badge: <Badge variant="pro">PRO</Badge>,
-    limitShort: "8 imgs",
-    limitDetail: "8 images per generation"
+    badge: <Badge variant="pro">PRO</Badge>
   },
   {
     id: "zorixa",
     label: "Zorixa",
-    badge: <Badge variant="fullAccess">FULL ACCESS</Badge>,
-    limitShort: "4 imgs",
-    limitDetail: "4 images per generation"
+    badge: <Badge variant="fullAccess">FULL ACCESS</Badge>
   },
   {
     id: "seedream-5",
     label: "Seedream 5 Lite",
-    badge: <Badge variant="fullAccess">FULL ACCESS</Badge>,
-    limitShort: "10 imgs",
-    limitDetail: "10 images per generation"
+    badge: <Badge variant="fullAccess">FULL ACCESS</Badge>
   },
   {
     id: "grok-imagine",
-    label: "Grok Imagine",
-    limitShort: "1 img",
-    limitDetail: "1 image per generation"
+    label: "Grok Imagine"
   }
 ];
 
@@ -88,7 +60,6 @@ export function ModelDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-
   const selected = models.find((m) => m.id === value) ?? models[0];
 
   useEffect(() => {
@@ -143,10 +114,7 @@ export function ModelDropdown({
                     <span className="truncate">{m.label}</span>
                     {m.badge}
                   </span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    {m.limitShort ? <ModelLimitPill>{m.limitShort}</ModelLimitPill> : null}
-                    {active ? <Check className="size-4 shrink-0 text-brand-light" /> : null}
-                  </span>
+                  {active ? <Check className="size-4 shrink-0 text-brand-light" /> : null}
                 </button>
               );
             })}

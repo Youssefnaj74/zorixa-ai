@@ -4,7 +4,7 @@ import { Check, ChevronDown, ChevronUp, Sparkles, Upload, X } from "lucide-react
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { MODEL_OPTIONS, ModelLimitPill, type ModelOption } from "@/components/ui/ModelDropdown";
+import { MODEL_OPTIONS, type ModelOption } from "@/components/ui/ModelDropdown";
 import { Toggle } from "@/components/ui/Toggle";
 import { getAtlasImageModelLimits } from "@/lib/atlas-image-model-ids";
 import { cn } from "@/lib/utils";
@@ -85,10 +85,7 @@ function ModelPickRow({
         <span className="truncate">{model.label}</span>
         {model.badge}
       </span>
-      <span className="flex shrink-0 items-center gap-2">
-        {model.limitShort ? <ModelLimitPill>{model.limitShort}</ModelLimitPill> : null}
-        {active ? <Check className="size-4 shrink-0 text-brand-light" /> : null}
-      </span>
+      {active ? <Check className="size-4 shrink-0 text-brand-light" /> : null}
     </button>
   );
 }
@@ -370,11 +367,6 @@ export function ImageBottomBar({
                   )}
                 />
               </span>
-              {selectedModel.limitDetail ? (
-                <span className="truncate text-[10px] leading-tight text-zorixa-muted">
-                  {selectedModel.limitDetail}
-                </span>
-              ) : null}
             </button>
             <AnimatePresence>
               {open === "model" ? (
