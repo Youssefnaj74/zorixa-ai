@@ -15,7 +15,16 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "picsum.photos", pathname: "/**" },
-      { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" }
+      { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
+      /** Atlas Cloud image outputs (OSS). */
+      {
+        protocol: "https",
+        hostname: "atlas-media.oss-us-west-1.aliyuncs.com",
+        pathname: "/**"
+      },
+      { protocol: "https", hostname: "**.aliyuncs.com", pathname: "/**" },
+      /** Supabase Storage public URLs (reference uploads in history). */
+      { protocol: "https", hostname: "**.supabase.co", pathname: "/**" }
     ]
   }
 };

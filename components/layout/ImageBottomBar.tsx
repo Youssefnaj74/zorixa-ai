@@ -6,29 +6,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { MODEL_OPTIONS, ModelLimitPill, type ModelOption } from "@/components/ui/ModelDropdown";
 import { Toggle } from "@/components/ui/Toggle";
+import { getAtlasImageModelLimits } from "@/lib/atlas-image-model-ids";
 import { cn } from "@/lib/utils";
 
 const CAMERA_STYLES = ["None", "iPhone Selfie", "Mirror Selfie", "Top Down View", "Full Bodyshot"] as const;
 const RESOLUTIONS = ["2K", "4K", "1K"] as const;
 const ASPECTS = ["Auto", "1:1", "16:9", "9:16", "4:3"] as const;
 
-/** Max simultaneous images per model (grid size). */
-const MODEL_MAX_IMAGES: Record<string, number> = {
-  "gpt-image-2": 16,
-  "nano-banana-2": 14,
-  "nano-banana": 8,
-  enhancor: 4,
-  "seedream-5": 10,
-  "grok-imagine": 1
-};
-
 function defaultBatchCountForModel(modelId: string): number {
-  if (modelId === "gpt-image-2") return 16;
-  return 1;
+  return getAtlasImageModelLimits(modelId).defaultBatch;
 }
 
 function getMaxImages(modelId: string): number {
-  return MODEL_MAX_IMAGES[modelId] ?? 1;
+  return getAtlasImageModelLimits(modelId).maxImages;
 }
 
 /** Dropup panels: 12px radius, dark card, purple border (matches Video bottom bar). */
@@ -37,6 +27,12 @@ const dropupPanelClass =
 
 const triggerClass =
   "inline-flex h-9 min-h-[36px] shrink-0 items-center gap-1.5 rounded-lg border border-[rgba(131,56,235,0.2)] bg-[#1a1a24] px-3 text-xs font-medium text-white outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand";
+
+export type ImageGenerateContext = {
+  promptText: string;
+  negativePromptText: string;
+  batchCount: number;
+};
 
 export type ImageBottomBarProps = {
   prompt: string;
@@ -60,7 +56,8 @@ export type ImageBottomBarProps = {
   onWebSearchChange: (v: boolean) => void;
   creditsLabel: string;
   loading: boolean;
-  onGenerate: () => void;
+  generateError?: string | null;
+  onGenerate: (ctx: ImageGenerateContext) => void | Promise<void>;
   onHeightChange?: (height: number) => void;
 };
 
@@ -118,6 +115,7 @@ export function ImageBottomBar({
   onWebSearchChange,
   creditsLabel,
   loading,
+  generateError,
   onGenerate,
   onHeightChange
 }: ImageBottomBarProps) {
@@ -514,10 +512,21 @@ export function ImageBottomBar({
 
           <div className="ml-auto flex min-w-0 shrink-0 items-center gap-3">
             <span className="truncate text-xs tabular-nums text-zorixa-muted">{creditsLabel}</span>
+            {generateError ? (
+            <p className="max-w-[min(280px,40vw)] truncate text-xs text-red-400" title={generateError}>
+              {generateError}
+            </p>
+          ) : null}
             <motion.button
               type="button"
               disabled={loading}
-              onClick={onGenerate}
+              onClick={() =>
+                void onGenerate({
+                  promptText: prompt,
+                  negativePromptText: negativePrompt,
+                  batchCount
+                })
+              }
               whileHover={{ scale: loading ? 1 : 1.02 }}
               whileTap={{ scale: loading ? 1 : 0.98 }}
               className={cn(

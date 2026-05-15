@@ -3,15 +3,98 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { HistoryPanel, LipsyncStrip, type HistoryItem } from "@/components/layout/HistoryPanel";
-import { ImageBottomBar } from "@/components/layout/ImageBottomBar";
+import {
+  ImageBottomBar,
+  type ImageGenerateContext
+} from "@/components/layout/ImageBottomBar";
 import { Navbar } from "@/components/layout/Navbar";
 import { PromptBar } from "@/components/layout/PromptBar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { OutputPreview } from "@/components/ui/OutputPreview";
+import {
+  getAtlasImageModelLimits,
+  isAtlasImageComposerId
+} from "@/lib/atlas-image-model-ids";
+import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
+import {
+  extractAtlasVideoOutputUrl,
+  type AtlasLikeVideoPayload
+} from "@/lib/extract-atlas-video-output-url";
+import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { cn } from "@/lib/utils";
 
-const MOCK_IMAGE =
-  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1024&q=80&auto=format&fit=crop";
+const ATLAS_CLIENT_POLL_MS = 3000;
+const ATLAS_CLIENT_MAX_WAIT_MS = 15 * 60 * 1000;
+
+function atlasTerminalSuccessStatus(status: string | undefined): boolean {
+  const s = (status ?? "").toLowerCase();
+  return s === "succeeded" || s === "completed";
+}
+
+function pickPredictionIdFromPost(data: {
+  prediction_id?: string;
+  predictionId?: string;
+}): string | null {
+  const snake = typeof data.prediction_id === "string" ? data.prediction_id.trim() : "";
+  if (snake.length > 0) return snake;
+  const camel = typeof data.predictionId === "string" ? data.predictionId.trim() : "";
+  return camel.length > 0 ? camel : null;
+}
+
+function pickImageUrlFromPollBody(data: Record<string, unknown>): string | null {
+  for (const v of [data.image_url, data.imageUrl]) {
+    if (typeof v === "string" && v.trim().length > 0) return v.trim();
+  }
+  return extractAtlasVideoOutputUrl(data as unknown as AtlasLikeVideoPayload);
+}
+
+function extensionForUploadedBlob(blob: Blob): string {
+  const mt = (blob.type || "").toLowerCase();
+  if (mt.includes("jpeg") || mt === "image/jpg") return "jpg";
+  if (mt === "image/png") return "png";
+  if (mt === "image/webp") return "webp";
+  if (mt === "image/gif") return "gif";
+  return "png";
+}
+
+async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<string | null> {
+  if (!url) return null;
+  const t = url.trim();
+  const direct = coerceToPublicHttpsUrl(t);
+  if (direct) return direct;
+
+  if (!t.startsWith("blob:") && !t.startsWith("data:")) return null;
+
+  const blobRes = await fetch(t);
+  const blob = await blobRes.blob();
+  const ext = extensionForUploadedBlob(blob);
+  const file = new File([blob], `upload.${ext}`, {
+    type: blob.type || "application/octet-stream"
+  });
+  const form = new FormData();
+  form.set("file", file);
+  const up = await fetch("/api/upload", {
+    method: "POST",
+    body: form,
+    credentials: "include"
+  });
+  if (!up.ok) {
+    let msg = "Upload failed — sign in and try again.";
+    try {
+      const j = (await up.json()) as { error?: string };
+      if (j.error) msg = j.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+  const data = (await up.json()) as { url: string };
+  const out = coerceToPublicHttpsUrl(data.url);
+  if (!out) {
+    throw new Error("Upload did not return a usable https URL.");
+  }
+  return out;
+}
 
 export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
   const [referencePreviewUrls, setReferencePreviewUrls] = useState<string[]>([]);
@@ -32,6 +115,7 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
   const [motion, setMotion] = useState(50);
 
   const [loading, setLoading] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [outputUrl, setOutputUrl] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([
     {
@@ -51,15 +135,7 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
 
   const applyReferenceFiles = useCallback(
     (files: File[]) => {
-      const maxForModel: Record<string, number> = {
-        "gpt-image-2": 16,
-        "nano-banana-2": 14,
-        "nano-banana": 8,
-        enhancor: 4,
-        "seedream-5": 10,
-        "grok-imagine": 1
-      };
-      const max = maxForModel[modelId] ?? 1;
+      const max = getAtlasImageModelLimits(modelId).maxImages;
 
       const incoming = files.filter((f) => f.type.startsWith("image/"));
       if (!incoming.length) return;
@@ -77,8 +153,6 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
         let next = p;
         const base = next.replace(/^Using\s*/i, "").trim();
         next = base;
-        // Ensure @PRODUCT_IMAGE{n} tokens exist for the added slots.
-        // (We don't try to re-number on removals; this is a lightweight mock UI.)
         const hasUsing = /^Using\s/i.test(p);
         const currentCount = referencePreviewUrls.length;
         const addCount = Math.min(max - currentCount, incoming.length);
@@ -103,32 +177,185 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
     });
   }, []);
 
-  const runGeneration = useCallback(() => {
+  const runImageGeneration = useCallback(
+    async (ctx: ImageGenerateContext) => {
+      setGenerateError(null);
+      setOutputUrl(null);
+
+      const promptValue = ctx.promptText.trim() || prompt.trim();
+      const promptForAtlas = stripVideoComposerAssetTokens(promptValue);
+      const negativeValue = ctx.negativePromptText.trim() || negativePrompt.trim();
+
+      if (!isAtlasImageComposerId(modelId)) {
+        setGenerateError("Unsupported image model.");
+        return;
+      }
+
+      if (!promptForAtlas) {
+        setGenerateError("Enter a prompt to generate an image.");
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const image_urls: string[] = [];
+        for (const refUrl of referencePreviewUrls) {
+          const uploaded = await ensureAtlasPublicHttpsMediaUrl(refUrl);
+          if (uploaded) image_urls.push(uploaded);
+        }
+
+        const payload: Record<string, unknown> = {
+          prompt: promptForAtlas,
+          imageModel: modelId,
+          aspectRatio: aspect.trim(),
+          resolution: resolution.trim(),
+          num_images: ctx.batchCount
+        };
+        if (negativeValue) payload.negativePrompt = negativeValue;
+        if (image_urls.length > 0) payload.image_urls = image_urls;
+
+        const res = await fetch("/api/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "include"
+        });
+
+        let data: {
+          image_url?: string;
+          imageUrl?: string;
+          pending?: boolean;
+          prediction_id?: string;
+          predictionId?: string;
+          poll_interval_ms?: number;
+          error?: string;
+        } = {};
+        try {
+          data = (await res.json()) as typeof data;
+        } catch {
+          setGenerateError(`Generation failed (${res.status})`);
+          return;
+        }
+
+        if (!res.ok) {
+          setGenerateError(data.error ?? `Generation failed (${res.status})`);
+          return;
+        }
+
+        let finalImageUrl: string | null = null;
+
+        const syncUrl = pickImageUrlFromPollBody(data as Record<string, unknown>);
+        if (syncUrl) {
+          finalImageUrl = syncUrl;
+          setOutputUrl(finalImageUrl);
+        } else if (pickPredictionIdFromPost(data) && data.pending !== false) {
+          const predictionId = pickPredictionIdFromPost(data);
+          if (!predictionId) {
+            setGenerateError("No image URL or job id was returned.");
+            return;
+          }
+          const interval = data.poll_interval_ms ?? ATLAS_CLIENT_POLL_MS;
+          const deadline = Date.now() + ATLAS_CLIENT_MAX_WAIT_MS;
+          while (Date.now() < deadline) {
+            await new Promise((r) => setTimeout(r, interval));
+            const pr = await fetch(
+              `/api/generate-image?predictionId=${encodeURIComponent(predictionId)}`,
+              { cache: "no-store", credentials: "include" }
+            );
+            let pd: {
+              image_url?: string | null;
+              imageUrl?: string | null;
+              outputs?: unknown;
+              output?: unknown;
+              status?: string;
+              error?: string | null;
+              poll_interval_ms?: number;
+            } = {};
+            try {
+              pd = (await pr.json()) as typeof pd;
+            } catch {
+              setGenerateError(`Status check failed (${pr.status})`);
+              return;
+            }
+            if (!pr.ok) {
+              setGenerateError(pd.error ?? `Status check failed (${pr.status})`);
+              return;
+            }
+            const polledUrl = pickImageUrlFromPollBody(pd as Record<string, unknown>);
+            const statusNorm = (pd.status ?? "").toLowerCase();
+
+            if (polledUrl) {
+              finalImageUrl = polledUrl;
+              setOutputUrl(finalImageUrl);
+              break;
+            }
+            if (statusNorm === "failed") {
+              setGenerateError(pd.error ?? "Atlas prediction failed");
+              return;
+            }
+            if (atlasTerminalSuccessStatus(pd.status) && !polledUrl) {
+              setGenerateError("Generation finished but no image URL was returned.");
+              return;
+            }
+          }
+          if (!finalImageUrl) {
+            setGenerateError("Image generation timed out. Check your connection and try again.");
+            return;
+          }
+        } else {
+          setGenerateError("No image URL or job id was returned.");
+          return;
+        }
+
+        const id = `gen-${Date.now()}`;
+        const thumbForHistory = finalImageUrl ?? `https://picsum.photos/seed/${id.slice(-4)}/96/96`;
+        setHistory((prev) => [
+          {
+            id,
+            thumb: thumbForHistory,
+            outputUrl: finalImageUrl ?? undefined,
+            label: promptForAtlas.slice(0, 42) || "New generation"
+          },
+          ...prev
+        ]);
+      } catch (e: unknown) {
+        setGenerateError(e instanceof Error ? e.message : "Network error. Try again.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [aspect, modelId, negativePrompt, prompt, referencePreviewUrls, resolution]
+  );
+
+  const runVideoGeneration = useCallback(() => {
     setLoading(true);
     setOutputUrl(null);
     window.setTimeout(() => {
       const url =
-        mode === "video"
-          ? "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-          : MOCK_IMAGE;
+        "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
       setOutputUrl(url);
       setLoading(false);
       const id = `gen-${Date.now()}`;
       setHistory((prev) => [
         {
           id,
-          thumb:
-            mode === "video"
-              ? "https://picsum.photos/seed/vid/96/96"
-              : `https://picsum.photos/seed/${id.slice(-4)}/96/96`,
+          thumb: "https://picsum.photos/seed/vid/96/96",
           label: prompt.slice(0, 42) || "New generation"
         },
         ...prev
       ]);
     }, 1600);
-  }, [mode, prompt]);
+  }, [prompt]);
 
   const historyItems = useMemo(() => history.slice(0, 8), [history]);
+
+  const restoreHistoryItem = useCallback((item: HistoryItem) => {
+    const url = item.outputUrl ?? item.thumb;
+    if (url.startsWith("http")) {
+      setGenerateError(null);
+      setOutputUrl(url);
+    }
+  }, []);
 
   return (
     <div className="flex min-h-dvh flex-col bg-zorixa-bg font-sans text-white">
@@ -178,7 +405,7 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
             onCrispUpscaleChange={setCrispUpscale}
             creditsLabel={creditsLabelVideo}
             loading={loading}
-            onGenerate={runGeneration}
+            onGenerate={runVideoGeneration}
             durationSec={durationSec}
             onDurationChange={setDurationSec}
             fps={fps}
@@ -215,6 +442,7 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
 
             <HistoryPanel
               items={historyItems}
+              onSelectItem={restoreHistoryItem}
               className="flex h-full min-h-0 w-[300px] min-w-[300px] max-w-[300px] shrink-0 flex-col self-stretch"
             />
           </div>
@@ -233,7 +461,10 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
           onReferenceFiles={applyReferenceFiles}
           onRemoveReferenceAt={removeReferenceAt}
           modelId={modelId}
-          onModelChange={setModelId}
+          onModelChange={(id) => {
+            setModelId(id);
+            setGenerateError(null);
+          }}
           resolution={resolution}
           onResolutionChange={setResolution}
           aspect={aspect}
@@ -244,7 +475,8 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
           onWebSearchChange={setWebSearch}
           creditsLabel={creditsLabelImage}
           loading={loading}
-          onGenerate={runGeneration}
+          generateError={generateError}
+          onGenerate={runImageGeneration}
         />
       ) : null}
     </div>

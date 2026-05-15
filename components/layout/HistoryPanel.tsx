@@ -1,21 +1,24 @@
 "use client";
 
-import Image from "next/image";
-
+import { ExternalImage } from "@/components/ui/ExternalImage";
 import { cn } from "@/lib/utils";
 
 export type HistoryItem = {
   id: string;
   thumb: string;
   label: string;
+  /** Full output URL — used when restoring a generation to the preview. */
+  outputUrl?: string;
 };
 
 export function HistoryPanel({
   items,
-  className
+  className,
+  onSelectItem
 }: {
   items: HistoryItem[];
   className?: string;
+  onSelectItem?: (item: HistoryItem) => void;
 }) {
   return (
     <aside
@@ -36,10 +39,17 @@ export function HistoryPanel({
             <button
               key={it.id}
               type="button"
+              onClick={() => onSelectItem?.(it)}
               className="zorixa-card-border group flex w-full gap-3 rounded-xl bg-zorixa-bg-secondary p-2 text-left transition-shadow hover:shadow-glow"
             >
               <div className="relative size-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-white/10">
-                <Image src={it.thumb} alt="" width={56} height={56} className="size-full object-cover" />
+                <ExternalImage
+                  src={it.thumb}
+                  alt=""
+                  width={56}
+                  height={56}
+                  className="size-full object-cover"
+                />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-medium text-white">{it.label}</p>

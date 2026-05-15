@@ -10,7 +10,7 @@ import {
   Share2
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import Image from "next/image";
+import { ExternalImage } from "@/components/ui/ExternalImage";
 import { useCallback, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -125,13 +125,12 @@ export function OutputPreview({
                 {mode === "image" ? (
                   imageSrc ? (
                     <div className="relative flex max-h-full max-w-full items-center justify-center rounded-xl shadow-[0_0_24px_rgba(131,56,235,0.25)] ring-2 ring-brand/40">
-                      <Image
+                      <ExternalImage
                         src={imageSrc}
                         alt="Generation output"
                         width={1024}
                         height={1024}
                         className="max-h-full w-auto max-w-full rounded-xl object-contain"
-                        unoptimized
                       />
                     </div>
                   ) : (

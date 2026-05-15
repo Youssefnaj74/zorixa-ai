@@ -1,4 +1,4 @@
-const PRODUCT_IMAGE_TOKEN = /@PRODUCT_IMAGE[12]\b/gi;
+const PRODUCT_IMAGE_TOKEN = /@PRODUCT_IMAGE\d+\b/gi;
 
 /**
  * Removes composer-only @PRODUCT_IMAGE… tokens before sending prompts to Atlas.

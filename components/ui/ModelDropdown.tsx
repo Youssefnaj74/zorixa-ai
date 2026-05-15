@@ -54,8 +54,8 @@ export const MODEL_OPTIONS: ModelOption[] = [
     limitDetail: "8 images per generation"
   },
   {
-    id: "enhancor",
-    label: "Enhancor",
+    id: "zorixa",
+    label: "Zorixa",
     badge: <Badge variant="fullAccess">FULL ACCESS</Badge>,
     limitShort: "4 imgs",
     limitDetail: "4 images per generation"
