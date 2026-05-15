@@ -57,12 +57,11 @@ function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
     if (g.feature_type === "video") {
       const out = g.output_url;
       const inn = g.input_url;
-      let videoSrc: string | undefined;
-      if (out && isLikelyVideoFile(out)) videoSrc = out;
+      const videoSrc = out?.trim() ? out : undefined;
 
       let src: string | undefined;
       if (out && !isLikelyVideoFile(out)) src = out;
-      else if (inn && !isLikelyVideoFile(inn)) src = inn;
+      else if (inn && !isLikelyVideoFile(inn) && !inn.includes("placehold.co")) src = inn;
       return {
         id: String(g.id),
         title: g.status === "completed" ? `UGC video · ${dateLabel}` : `Video (${g.status}) · ${dateLabel}`,
