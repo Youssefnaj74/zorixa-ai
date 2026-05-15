@@ -18,6 +18,7 @@ import {
   TIME_SECONDS_OPTIONS,
   type BottomBarModel
 } from "@/components/video/bottom-bar-models";
+import { videoComposerSupportsGenerateAudio } from "@/lib/atlas-video-generate-audio";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 
@@ -34,6 +35,8 @@ export type VideoGenerateContext = {
   promptImage2Url: string | null;
   lipsyncAudioUrl: string | null;
   editSourceVideoUrl: string | null;
+  /** Native AI soundtrack (Seedance only). */
+  generateAudio: boolean;
 };
 
 export type VideoBottomBarProps = {
@@ -52,8 +55,8 @@ export type VideoBottomBarProps = {
   /** Bottom bar model (dropup). */
   composerModelId: string;
   onComposerModelChange: (id: string) => void;
-  fullAccessOn: boolean;
-  onFullAccessChange: (v: boolean) => void;
+  generateAudioOn: boolean;
+  onGenerateAudioChange: (v: boolean) => void;
   modeValue: string;
   onModeChange: (v: string) => void;
   durationStandard: string;
@@ -82,16 +85,19 @@ const dropupPanelClass =
 const triggerClass =
   "inline-flex h-9 min-h-[36px] shrink-0 items-center gap-1.5 rounded-lg border border-[rgba(131,56,235,0.2)] bg-[#1a1a24] px-3 text-xs font-medium text-white outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand";
 
-function FullAccessToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+function GenerateAudioToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={on}
+      aria-label={on ? "Generate audio on" : "Generate audio off"}
       onClick={() => onChange(!on)}
       className={cn(
         "flex min-w-[72px] items-center justify-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors duration-200",
-        on ? "bg-[#16a34a] text-white shadow-[0_0_12px_rgba(22,163,74,0.35)]" : "bg-zinc-700 text-zinc-300"
+        on
+          ? "bg-[#16a34a] text-white shadow-[0_0_12px_rgba(22,163,74,0.35)]"
+          : "bg-zinc-700 text-zinc-300"
       )}
     >
       <span className={cn("size-2 rounded-full transition-colors", on ? "bg-white" : "bg-zinc-500")} />
@@ -114,8 +120,8 @@ export function VideoBottomBar({
   onEditSourceVideoUrlChange,
   composerModelId,
   onComposerModelChange,
-  fullAccessOn,
-  onFullAccessChange,
+  generateAudioOn,
+  onGenerateAudioChange,
   modeValue,
   onModeChange,
   durationStandard,
@@ -300,6 +306,11 @@ export function VideoBottomBar({
   }, [promptImage2Url]);
 
   const showKlingTextOnlyTab = actionTab === "Text to Video" && composerModelId === KLING_30_PRO_MODEL_ID;
+  const seedanceAudioSupported = videoComposerSupportsGenerateAudio(composerModelId);
+  const showGenerateAudioControl =
+    seedanceAudioSupported &&
+    (actionTab === "Text to Video" || actionTab === "Image to Video");
+  const generateAudioEffective = generateAudioOn && showGenerateAudioControl;
 
   const emitGenerate = useCallback(() => {
     const el = promptTextareaRef.current;
@@ -317,7 +328,8 @@ export function VideoBottomBar({
       promptImageUrl,
       promptImage2Url,
       lipsyncAudioUrl,
-      editSourceVideoUrl
+      editSourceVideoUrl,
+      generateAudio: generateAudioEffective
     };
     console.log("[VideoBottomBar] GENERATE click", {
       promptText,
@@ -332,7 +344,8 @@ export function VideoBottomBar({
       hasPromptImage: Boolean(promptImageUrl),
       hasPromptImage2: Boolean(promptImage2Url),
       hasLipsyncAudio: Boolean(lipsyncAudioUrl),
-      hasEditSourceVideo: Boolean(editSourceVideoUrl)
+      hasEditSourceVideo: Boolean(editSourceVideoUrl),
+      generateAudio: generateAudioEffective
     });
     void onGenerate(ctx);
   }, [
@@ -340,6 +353,7 @@ export function VideoBottomBar({
     aspect,
     composerModelId,
     editSourceVideoUrl,
+    generateAudioEffective,
     lipsyncAudioUrl,
     onGenerate,
     promptImage2Url,
@@ -581,8 +595,9 @@ export function VideoBottomBar({
           <div className="hidden min-w-[24px] shrink-0 lg:block" aria-hidden />
         </div>
 
-        {/* ROW 2 — Controls */}
-        <div className="flex flex-wrap items-center gap-3">
+        {/* ROW 2 — Controls (left wraps; credits + GENERATE pinned right) */}
+        <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
           {/* MODEL */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Model</span>
@@ -631,12 +646,20 @@ export function VideoBottomBar({
             </div>
           </div>
 
-          <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
-
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Full access</span>
-            <FullAccessToggle on={fullAccessOn} onChange={onFullAccessChange} />
-          </div>
+          {showGenerateAudioControl ? (
+            <>
+              <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted"
+                  title="Generate native audio with the video (Seedance)"
+                >
+                  Audio
+                </span>
+                <GenerateAudioToggle on={generateAudioEffective} onChange={onGenerateAudioChange} />
+              </div>
+            </>
+          ) : null}
 
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
 
@@ -898,24 +921,26 @@ export function VideoBottomBar({
             <span className="text-[10px] font-semibold uppercase text-zorixa-muted">AI Agent</span>
             <Toggle id="bar-ai-agent" checked={aiAgent} onCheckedChange={onAiAgentChange} />
           </div>
+          </div>
 
-          <span className="ml-auto text-xs tabular-nums text-zorixa-muted">{creditsLine}</span>
-
-          <motion.button
-            type="button"
-            disabled={loadingGenerate}
-            whileHover={loadingGenerate ? undefined : { scale: 1.02 }}
-            whileTap={loadingGenerate ? undefined : { scale: 0.98 }}
-            onClick={emitGenerate}
-            className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
-          >
-            {loadingGenerate ? (
-              <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            ) : (
-              <Sparkles className="size-4" />
-            )}
-            GENERATE
-          </motion.button>
+          <div className="ml-auto flex shrink-0 items-center gap-3">
+            <span className="text-xs tabular-nums text-zorixa-muted">{creditsLine}</span>
+            <motion.button
+              type="button"
+              disabled={loadingGenerate}
+              whileHover={loadingGenerate ? undefined : { scale: 1.02 }}
+              whileTap={loadingGenerate ? undefined : { scale: 0.98 }}
+              onClick={emitGenerate}
+              className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
+            >
+              {loadingGenerate ? (
+                <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : (
+                <Sparkles className="size-4" />
+              )}
+              GENERATE
+            </motion.button>
+          </div>
         </div>
       </div>
     </footer>

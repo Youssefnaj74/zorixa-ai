@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { atlasModelSupportsGenerateAudio } from "@/lib/atlas-video-generate-audio";
 import {
   type AtlasVideoRouteAction,
   resolveAtlasVideoModelId
@@ -29,6 +30,8 @@ type ClientBody = {
   resolution?: string;
   /** Clip length in seconds (clamped). */
   duration?: number;
+  /** Seedance native soundtrack (Atlas `generate_audio`). */
+  generate_audio?: boolean;
 };
 
 const ALLOWED_ASPECT_RATIOS = new Set(["16:9", "9:16", "1:1", "4:3"]);
@@ -286,6 +289,10 @@ export async function POST(request: Request) {
   let atlasBody: Record<string, unknown>;
 
   const seedance20I2v = isSeedance20ImageToVideo(model) && Boolean(image_url);
+  const generateAudio =
+    body.generate_audio === true &&
+    atlasModelSupportsGenerateAudio(model) &&
+    (action === "text" || action === "image");
 
   if (seedance20I2v) {
     const { width, height } = dimensionsForAspectResolution(aspectRatio, resolution);
@@ -298,6 +305,9 @@ export async function POST(request: Request) {
       duration: durationSec,
       fps
     };
+    if (generateAudio) {
+      atlasBody.generate_audio = true;
+    }
   } else {
     // Atlas `generateVideo` flat body (Kling, Veo, Wan, Hailuo, Seedance T2V, etc.).
     atlasBody = {
@@ -321,6 +331,9 @@ export async function POST(request: Request) {
       atlasBody.video_url = video_url;
       atlasBody.video = video_url;
     }
+    if (generateAudio) {
+      atlasBody.generate_audio = true;
+    }
   }
 
   if (process.env.NODE_ENV === "development") {
@@ -333,7 +346,8 @@ export async function POST(request: Request) {
       resolution,
       keys: Object.keys(atlasBody),
       promptLen: prompt.length,
-      durationSec
+      durationSec,
+      generateAudio
     });
   }
 

@@ -15,6 +15,7 @@ import {
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
 import { normalizeAtlasVideoUrlForPlayback, videoUrlLooksLikeMp4Path } from "@/lib/resolve-video-playback-url";
+import { videoComposerSupportsGenerateAudio } from "@/lib/atlas-video-generate-audio";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
@@ -133,7 +134,7 @@ export function VideoGenerationPage() {
   const [modeValue, setModeValue] = useState("UGC");
 
   const [composerModelId, setComposerModelId] = useState("seedance-2");
-  const [fullAccessOn, setFullAccessOn] = useState(false);
+  const [generateAudioOn, setGenerateAudioOn] = useState(false);
   const [durationStandard, setDurationStandard] = useState("Standard");
   const [timeSeconds, setTimeSeconds] = useState(10);
   const [aspect, setAspect] = useState("9:16");
@@ -202,6 +203,9 @@ export function VideoGenerationPage() {
   const handleComposerModelChange = useCallback((id: string) => {
     setComposerModelId(id);
     setGenerateError(null);
+    if (!videoComposerSupportsGenerateAudio(id)) {
+      setGenerateAudioOn(false);
+    }
     if (id === KLING_30_PRO_MODEL_ID) {
       setActionTab("Text to Video");
     }
@@ -241,6 +245,11 @@ export function VideoGenerationPage() {
         const videoModel = composerModelId;
         const duration = ctx.durationSeconds;
 
+        const wantGenerateAudio =
+          ctx.generateAudio &&
+          videoComposerSupportsGenerateAudio(videoModel) &&
+          (ctx.actionTab === "Text to Video" || ctx.actionTab === "Image to Video");
+
         switch (ctx.actionTab) {
           case "Text to Video":
             payload = {
@@ -249,7 +258,8 @@ export function VideoGenerationPage() {
               videoModel,
               aspectRatio,
               resolution: resTier,
-              duration
+              duration,
+              ...(wantGenerateAudio ? { generate_audio: true } : {})
             };
             break;
           case "Image to Video": {
@@ -266,7 +276,8 @@ export function VideoGenerationPage() {
               image_url,
               aspectRatio,
               resolution: resTier,
-              duration
+              duration,
+              ...(wantGenerateAudio ? { generate_audio: true } : {})
             };
             break;
           }
@@ -537,8 +548,8 @@ export function VideoGenerationPage() {
         onEditSourceVideoUrlChange={setEditSourceVideoUrlSafe}
         composerModelId={composerModelId}
         onComposerModelChange={handleComposerModelChange}
-        fullAccessOn={fullAccessOn}
-        onFullAccessChange={setFullAccessOn}
+        generateAudioOn={generateAudioOn}
+        onGenerateAudioChange={setGenerateAudioOn}
         modeValue={modeValue}
         onModeChange={setModeValue}
         durationStandard={durationStandard}

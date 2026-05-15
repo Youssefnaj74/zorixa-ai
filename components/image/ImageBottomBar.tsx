@@ -81,24 +81,6 @@ function ModelPickRow({
   );
 }
 
-function FullAccessToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      onClick={() => onChange(!on)}
-      className={cn(
-        "flex min-w-[72px] items-center justify-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors duration-200",
-        on ? "bg-[#16a34a] text-white shadow-[0_0_12px_rgba(22,163,74,0.35)]" : "bg-zinc-700 text-zinc-300"
-      )}
-    >
-      <span className={cn("size-2 rounded-full transition-colors", on ? "bg-white" : "bg-zinc-500")} />
-      {on ? "On" : "Off"}
-    </button>
-  );
-}
-
 export function ImageBottomBar({
   prompt,
   onPromptChange,
@@ -121,7 +103,6 @@ export function ImageBottomBar({
   onHeightChange
 }: ImageBottomBarProps) {
   const [open, setOpen] = useState<OpenPanel>(null);
-  const [fullAccessOn, setFullAccessOn] = useState(false);
   const bottomBarRef = useRef<HTMLElement>(null);
   const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const promptMirrorRef = useRef(prompt);
@@ -355,13 +336,6 @@ export function ImageBottomBar({
                 ) : null}
               </AnimatePresence>
             </div>
-          </div>
-
-          <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
-
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Full access</span>
-            <FullAccessToggle on={fullAccessOn} onChange={setFullAccessOn} />
           </div>
 
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
