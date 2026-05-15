@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { ImageActionTab } from "@/components/image/ImageActionTabsRow";
 import {
+  GPT_IMAGE_2_SIZE_GROUPS,
   IMAGE_ASPECTS,
   IMAGE_CAMERA_STYLES,
   IMAGE_RESOLUTIONS
@@ -43,13 +44,35 @@ export type ImageBottomBarProps = {
   onHeightChange?: (height: number) => void;
 };
 
-type OpenPanel = "camera" | "model" | "resolution" | "aspect" | null;
+type OpenPanel = "camera" | "model" | "resolution" | "aspect" | "gptSize" | null;
 
 const dropupPanelClass =
   "absolute bottom-[calc(100%+8px)] z-[100] overflow-hidden rounded-xl border border-[rgba(131,56,235,0.2)] bg-[#1a1a24] shadow-glow-lg";
 
 const triggerClass =
   "inline-flex h-9 min-h-[36px] shrink-0 items-center gap-1.5 rounded-lg border border-[rgba(131,56,235,0.2)] bg-[#1a1a24] px-3 text-xs font-medium text-white outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand";
+
+function AspectRatioIcon({ ratio }: { ratio: string }) {
+  const box = "rounded-[3px] border border-current opacity-90";
+  switch (ratio) {
+    case "1:1":
+      return <span className={cn(box, "inline-block size-[22px] align-middle")} aria-hidden />;
+    case "16:9":
+      return <span className={cn(box, "inline-block h-[11px] w-[22px] align-middle")} aria-hidden />;
+    case "9:16":
+      return <span className={cn(box, "inline-block h-[22px] w-[11px] align-middle")} aria-hidden />;
+    case "4:3":
+      return <span className={cn(box, "inline-block h-[14px] w-[19px] align-middle")} aria-hidden />;
+    case "3:4":
+      return <span className={cn(box, "inline-block h-[19px] w-[14px] align-middle")} aria-hidden />;
+    case "2:3":
+      return <span className={cn(box, "inline-block h-[20px] w-[13px] align-middle")} aria-hidden />;
+    case "3:2":
+      return <span className={cn(box, "inline-block h-[13px] w-[20px] align-middle")} aria-hidden />;
+    default:
+      return <span className={cn(box, "inline-block size-[18px] align-middle")} aria-hidden />;
+  }
+}
 
 function ModelPickRow({
   model,
@@ -109,6 +132,7 @@ export function ImageBottomBar({
   const maxRefs = getAtlasImageModelLimits(modelId).maxImages;
   const defaultBatch = getAtlasImageModelLimits(modelId).defaultBatch;
   const showUploads = actionTab === "Image to Image";
+  const isGptImage2 = modelId === "gpt-image-2";
 
   useEffect(() => {
     const el = bottomBarRef.current;
@@ -376,63 +400,141 @@ export function ImageBottomBar({
             </AnimatePresence>
           </div>
 
-          <div className="relative">
-            <button type="button" onClick={() => openOnly("resolution")} className={triggerClass}>
-              <span>{resolution}</span>
-              <ChevronUp className={cn("size-3.5", open === "resolution" && "rotate-180")} />
-            </button>
-            <AnimatePresence>
-              {open === "resolution" ? (
-                <motion.div className={cn(dropupPanelClass, "left-0 min-w-[100px] py-1")}>
-                  {IMAGE_RESOLUTIONS.map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => {
-                        onResolutionChange(r);
-                        setOpen(null);
-                      }}
-                      className={cn(
-                        "w-full px-4 py-2.5 text-left text-sm",
-                        r === resolution ? "bg-zorixa-tab text-white" : "hover:bg-white/5"
-                      )}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-          </div>
+          {isGptImage2 ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => openOnly("gptSize")}
+                className={cn(
+                  triggerClass,
+                  open === "gptSize" && "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.1)]"
+                )}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <AspectRatioIcon ratio={aspect} />
+                  <span className="tabular-nums">
+                    {resolution} · {aspect}
+                  </span>
+                </span>
+                <ChevronUp className={cn("size-3.5 text-zorixa-muted", open === "gptSize" && "rotate-180")} />
+              </button>
+              <AnimatePresence>
+                {open === "gptSize" ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    style={{ transformOrigin: "bottom left" }}
+                    className={cn(
+                      dropupPanelClass,
+                      "left-0 max-h-[min(70vh,440px)] w-[232px] overflow-y-auto py-2"
+                    )}
+                  >
+                    {GPT_IMAGE_2_SIZE_GROUPS.map((group, gi) => (
+                      <div
+                        key={group.tier}
+                        className={cn("px-2 pb-2", gi < GPT_IMAGE_2_SIZE_GROUPS.length - 1 && "border-b border-white/5")}
+                      >
+                        <div className="px-2 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
+                          {group.tier}
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          {group.aspects.map((ar) => {
+                            const selected = resolution === group.tier && aspect === ar;
+                            return (
+                              <button
+                                key={`${group.tier}-${ar}`}
+                                type="button"
+                                onClick={() => {
+                                  onResolutionChange(group.tier);
+                                  onAspectChange(ar);
+                                  setOpen(null);
+                                }}
+                                className={cn(
+                                  "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors",
+                                  selected
+                                    ? "border border-brand-light/50 bg-brand/10 text-white"
+                                    : "border border-transparent text-white/90 hover:bg-white/5"
+                                )}
+                              >
+                                {selected ? (
+                                  <Check className="size-4 shrink-0 text-brand-light" />
+                                ) : (
+                                  <span className="inline-flex w-4 shrink-0 justify-center" aria-hidden />
+                                )}
+                                <AspectRatioIcon ratio={ar} />
+                                <span className="tabular-nums">{ar}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <>
+              <div className="relative">
+                <button type="button" onClick={() => openOnly("resolution")} className={triggerClass}>
+                  <span>{resolution}</span>
+                  <ChevronUp className={cn("size-3.5", open === "resolution" && "rotate-180")} />
+                </button>
+                <AnimatePresence>
+                  {open === "resolution" ? (
+                    <motion.div className={cn(dropupPanelClass, "left-0 min-w-[100px] py-1")}>
+                      {IMAGE_RESOLUTIONS.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => {
+                            onResolutionChange(r);
+                            setOpen(null);
+                          }}
+                          className={cn(
+                            "w-full px-4 py-2.5 text-left text-sm",
+                            r === resolution ? "bg-zorixa-tab text-white" : "hover:bg-white/5"
+                          )}
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </div>
 
-          <div className="relative">
-            <button type="button" onClick={() => openOnly("aspect")} className={triggerClass}>
-              <span>{aspect}</span>
-              <ChevronUp className={cn("size-3.5", open === "aspect" && "rotate-180")} />
-            </button>
-            <AnimatePresence>
-              {open === "aspect" ? (
-                <motion.div className={cn(dropupPanelClass, "left-0 min-w-[120px] py-1")}>
-                  {IMAGE_ASPECTS.map((a) => (
-                    <button
-                      key={a}
-                      type="button"
-                      onClick={() => {
-                        onAspectChange(a);
-                        setOpen(null);
-                      }}
-                      className={cn(
-                        "w-full px-4 py-2.5 text-left text-sm",
-                        a === aspect ? "bg-zorixa-tab text-white" : "hover:bg-white/5"
-                      )}
-                    >
-                      {a}
-                    </button>
-                  ))}
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-          </div>
+              <div className="relative">
+                <button type="button" onClick={() => openOnly("aspect")} className={triggerClass}>
+                  <span>{aspect}</span>
+                  <ChevronUp className={cn("size-3.5", open === "aspect" && "rotate-180")} />
+                </button>
+                <AnimatePresence>
+                  {open === "aspect" ? (
+                    <motion.div className={cn(dropupPanelClass, "left-0 min-w-[120px] py-1")}>
+                      {IMAGE_ASPECTS.map((a) => (
+                        <button
+                          key={a}
+                          type="button"
+                          onClick={() => {
+                            onAspectChange(a);
+                            setOpen(null);
+                          }}
+                          className={cn(
+                            "w-full px-4 py-2.5 text-left text-sm",
+                            a === aspect ? "bg-zorixa-tab text-white" : "hover:bg-white/5"
+                          )}
+                        >
+                          {a}
+                        </button>
+                      ))}
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </div>
+            </>
+          )}
 
           <span className="ml-auto text-xs tabular-nums text-zorixa-muted">{creditsLine}</span>
 
@@ -449,7 +551,7 @@ export function ImageBottomBar({
             ) : (
               <Sparkles className="size-4" />
             )}
-            GENERATE ({defaultBatch})
+            GENERATE
           </motion.button>
         </div>
       </div>

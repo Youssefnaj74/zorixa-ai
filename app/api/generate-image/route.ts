@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 
+import {
+  atlasGenerateImageErrorMessage,
+  buildAtlasImageBody
+} from "@/lib/build-atlas-image-body";
 import { logAtlasImageGenerationIfNew } from "@/lib/atlas-image-generation-log";
 import {
   isAtlasImageComposerId,
@@ -40,84 +44,16 @@ const ALLOWED_ASPECT_RATIOS = new Set([
 
 function normalizeAspectRatio(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
-  const v = raw.trim();
+  const v = raw.trim().replace(/\uFF1A/g, ":").replace(/\s+/g, "");
   if (!v || v.toLowerCase() === "auto") return null;
   return ALLOWED_ASPECT_RATIOS.has(v) ? v : null;
 }
 
-function resolutionShortSidePx(resolution: string): number {
-  switch (resolution.trim().toUpperCase()) {
-    case "4K":
-      return 2048;
-    case "2K":
-      return 1536;
-    case "1K":
-    default:
-      return 1024;
-  }
-}
-
-/** Qwen Image uses `size` as `width*height` (512–2048), not `aspect_ratio`. */
-function qwenSizeFromAspectAndResolution(
-  aspectRatio: string | null,
-  resolution: string
-): string {
-  const s = Math.min(2048, Math.max(512, resolutionShortSidePx(resolution)));
-  const aspect = aspectRatio ?? "1:1";
-  let width: number;
-  let height: number;
-  switch (aspect) {
-    case "16:9":
-      height = s;
-      width = Math.round((s * 16) / 9);
-      break;
-    case "9:16":
-      width = s;
-      height = Math.round((s * 16) / 9);
-      break;
-    case "4:3":
-      height = s;
-      width = Math.round((s * 4) / 3);
-      break;
-    case "3:4":
-      width = s;
-      height = Math.round((s * 4) / 3);
-      break;
-    case "1:1":
-    default:
-      width = s;
-      height = s;
-      break;
-  }
-  width = Math.min(2048, Math.max(512, width));
-  height = Math.min(2048, Math.max(512, height));
-  return `${width}*${height}`;
-}
-
-function isQwenImageAtlasModel(model: string): boolean {
-  return model.includes("qwen-image");
-}
-
-function mapResolutionToSize(resolution: string): string | undefined {
-  return qwenSizeFromAspectAndResolution("1:1", resolution);
-}
-
-function mapResolutionToMediaResolution(resolution: string): string | undefined {
-  switch (resolution.trim().toUpperCase()) {
-    case "4K":
-      return "high";
-    case "2K":
-      return "medium";
-    case "1K":
-      return "low";
-    default:
-      return undefined;
-  }
-}
-
-function normalizeNumImages(raw: unknown): number {
+function normalizeNumImages(raw: unknown, imageModel: string): number {
   if (typeof raw !== "number" || !Number.isFinite(raw)) return 1;
-  return Math.min(16, Math.max(1, Math.round(raw)));
+  const n = Math.min(16, Math.max(1, Math.round(raw)));
+  if (imageModel === "gpt-image-2") return 1;
+  return n;
 }
 
 type AtlasPredictionData = {
@@ -271,56 +207,21 @@ export async function POST(request: Request) {
   const aspectRatio = normalizeAspectRatio(body.aspectRatio);
   const resolution =
     typeof body.resolution === "string" ? body.resolution.trim() : "";
-  const numImages = normalizeNumImages(body.num_images);
+  const numImages = normalizeNumImages(body.num_images, imageModel);
 
   const negativePrompt =
     typeof body.negativePrompt === "string" ? body.negativePrompt.trim() : "";
 
-  const qwen = isQwenImageAtlasModel(model);
-
-  const atlasBody: Record<string, unknown> = {
+  const atlasBody = buildAtlasImageBody({
     model,
-    prompt
-  };
-
-  if (qwen) {
-    atlasBody.size = qwenSizeFromAspectAndResolution(
-      aspectRatio,
-      resolution || "1K"
-    );
-    if (isEdit && imageUrls[0]) {
-      atlasBody.image = imageUrls[0];
-    }
-  } else {
-    const size = resolution ? mapResolutionToSize(resolution) : undefined;
-    const mediaResolution = resolution
-      ? mapResolutionToMediaResolution(resolution)
-      : undefined;
-
-    if (negativePrompt) {
-      atlasBody.negative_prompt = negativePrompt;
-    }
-    if (aspectRatio) {
-      atlasBody.aspect_ratio = aspectRatio;
-      atlasBody.aspectRatio = aspectRatio;
-    }
-    if (size) {
-      atlasBody.size = size;
-    }
-    if (mediaResolution) {
-      atlasBody.media_resolution = mediaResolution;
-    }
-    if (numImages > 1) {
-      atlasBody.n = numImages;
-      atlasBody.num_images = numImages;
-    }
-
-    if (isEdit) {
-      atlasBody.images = imageUrls;
-      atlasBody.image = imageUrls[0];
-      atlasBody.image_url = imageUrls[0];
-    }
-  }
+    prompt,
+    isEdit,
+    imageUrls,
+    aspectRatio,
+    resolution,
+    numImages,
+    negativePrompt
+  });
 
   if (process.env.NODE_ENV === "development") {
     console.log("[generate-image] Atlas request", {
@@ -349,9 +250,7 @@ export async function POST(request: Request) {
   if (!createRes.ok) {
     return NextResponse.json(
       {
-        error:
-          createJson.message ??
-          `Atlas generateImage failed (${createRes.status})`
+        error: atlasGenerateImageErrorMessage(createJson, createRes.status)
       },
       { status: createRes.status >= 400 ? createRes.status : 502 }
     );

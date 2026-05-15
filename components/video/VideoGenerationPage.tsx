@@ -7,16 +7,18 @@ import { Navbar } from "@/components/layout/Navbar";
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
 import { KLING_30_PRO_MODEL_ID } from "@/components/video/bottom-bar-models";
-import type { VideoHistoryEntry } from "@/components/video/VideoHistory";
-import { isAtlasVideoComposerId } from "@/lib/atlas-video-model-ids";
+import type { VideoHistoryEntry, VideoHistorySettingsSnapshot } from "@/components/video/VideoHistory";
+import {
+  isAtlasVideoComposerId,
+  videoComposerSupportsSpeedTier
+} from "@/lib/atlas-video-model-ids";
+import { videoComposerSupportsGenerateAudio } from "@/lib/atlas-video-generate-audio";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import {
   extractAtlasVideoOutputUrl,
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
 import { normalizeAtlasVideoUrlForPlayback, videoUrlLooksLikeMp4Path } from "@/lib/resolve-video-playback-url";
-import { videoComposerSupportsGenerateAudio } from "@/lib/atlas-video-generate-audio";
-import { videoComposerSupportsSpeedTier } from "@/lib/atlas-video-model-ids";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
@@ -180,18 +182,7 @@ export function VideoGenerationPage() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
-  const [history, setHistory] = useState<VideoHistoryEntry[]>([
-    {
-      id: "h1",
-      thumb: "https://picsum.photos/seed/neon/96/96",
-      title: "Neon portrait concept"
-    },
-    {
-      id: "h2",
-      thumb: "https://picsum.photos/seed/mountain/96/96",
-      title: "Studio packshot v2"
-    }
-  ]);
+  const [history, setHistory] = useState<VideoHistoryEntry[]>([]);
 
   const creditsLine = "428 CR/s";
 
@@ -461,12 +452,36 @@ export function VideoGenerationPage() {
             ? sourceInputForLog
             : `https://picsum.photos/seed/${id.slice(-6)}/96/96`;
 
+        const settingsSnapshot: VideoHistorySettingsSnapshot = {
+          actionTab: ctx.actionTab,
+          composerModelId: videoModel,
+          modeValue,
+          durationStandard: videoComposerSupportsSpeedTier(videoModel)
+            ? durationStandard
+            : "Standard",
+          timeSeconds: duration,
+          aspect: aspectRatio,
+          resolution: resTier,
+          generateAudioOn: wantGenerateAudio,
+          promptRaw: promptValue,
+          promptImageUrl:
+            ctx.actionTab === "Image to Video" && sourceInputForLog
+              ? sourceInputForLog
+              : ctx.promptImageUrl,
+          promptImage2Url: ctx.promptImage2Url,
+          lipsyncAudioUrl:
+            ctx.actionTab === "Lipsyncing" && sourceInputForLog ? sourceInputForLog : ctx.lipsyncAudioUrl,
+          editSourceVideoUrl:
+            ctx.actionTab === "Video Edit" && sourceInputForLog ? sourceInputForLog : ctx.editSourceVideoUrl
+        };
+
         setHistory((prev) => [
           {
             id,
             thumb: thumbForHistory,
             title: displayTitle,
-            outputVideoUrl: finalVideoUrl
+            outputVideoUrl: finalVideoUrl,
+            settingsSnapshot
           },
           ...prev
         ]);
@@ -482,15 +497,42 @@ export function VideoGenerationPage() {
         setLoading(false);
       }
     },
-    [aspect, composerModelId, prompt, resolution, timeSeconds]
+    [aspect, composerModelId, durationStandard, modeValue, prompt, resolution, timeSeconds]
   );
 
-  const restoreSettings = useCallback((item: VideoHistoryEntry) => {
-    setPrompt((p) => `${p.split("\n")[0]}\n(Restored: ${item.title})`);
-    if (item.outputVideoUrl) {
-      setGenerateError(null);
-      const raw = item.outputVideoUrl;
-      void (async () => {
+  const restoreSettings = useCallback(
+    (item: VideoHistoryEntry) => {
+      const snap = item.settingsSnapshot;
+      if (snap) {
+        setGenerateError(null);
+        setPrompt(snap.promptRaw);
+        setModeValue(snap.modeValue);
+        setComposerModelId(snap.composerModelId);
+        setDurationStandard(
+          videoComposerSupportsSpeedTier(snap.composerModelId) ? snap.durationStandard : "Standard"
+        );
+        setTimeSeconds(snap.timeSeconds);
+        setAspect(snap.aspect);
+        setResolution(snap.resolution);
+        setGenerateAudioOn(
+          videoComposerSupportsGenerateAudio(snap.composerModelId) ? snap.generateAudioOn : false
+        );
+        if (snap.composerModelId === KLING_30_PRO_MODEL_ID) {
+          setActionTab("Text to Video");
+        } else {
+          setActionTab(snap.actionTab);
+        }
+        setPromptImageUrlSafe(snap.promptImageUrl);
+        setPromptImage2UrlSafe(snap.promptImage2Url);
+        setLipsyncAudioUrlSafe(snap.lipsyncAudioUrl);
+        setEditSourceVideoUrlSafe(snap.editSourceVideoUrl);
+      } else if (item.title) {
+        setPrompt((p) => `${p.split("\n")[0]}\n(Restored: ${item.title})`);
+      }
+
+      if (item.outputVideoUrl) {
+        setGenerateError(null);
+        const raw = item.outputVideoUrl;
         const resolved = normalizeAtlasVideoUrlForPlayback(raw);
         console.log("[VideoGenerationPage] restore history → player", {
           rawLength: raw.length,
@@ -499,9 +541,15 @@ export function VideoGenerationPage() {
           resolved
         });
         setVideoUrl(toBrowserVideoSrc(resolved));
-      })();
-    }
-  }, []);
+      }
+    },
+    [
+      setEditSourceVideoUrlSafe,
+      setLipsyncAudioUrlSafe,
+      setPromptImage2UrlSafe,
+      setPromptImageUrlSafe
+    ]
+  );
 
   const hidePromptThumb =
     composerModelId === KLING_30_PRO_MODEL_ID && actionTab === "Text to Video";

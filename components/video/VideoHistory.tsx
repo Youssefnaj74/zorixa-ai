@@ -3,7 +3,27 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 
+import type { ActionTab } from "@/components/video/ActionTabsRow";
+
 import { cn } from "@/lib/utils";
+
+/** Stored when a run succeeds — reapplied on sidebar tap. */
+export type VideoHistorySettingsSnapshot = {
+  actionTab: ActionTab;
+  composerModelId: string;
+  modeValue: string;
+  durationStandard: string;
+  timeSeconds: number;
+  aspect: string;
+  resolution: string;
+  generateAudioOn: boolean;
+  /** Exact textarea text before Atlas stripping */
+  promptRaw: string;
+  promptImageUrl: string | null;
+  promptImage2Url: string | null;
+  lipsyncAudioUrl: string | null;
+  editSourceVideoUrl: string | null;
+};
 
 export type VideoHistoryEntry = {
   id: string;
@@ -12,6 +32,8 @@ export type VideoHistoryEntry = {
   subtitle?: string;
   /** Completed Atlas output — replay in the preview when selected */
   outputVideoUrl?: string | null;
+  /** Present after successful generation — restores bar + assets */
+  settingsSnapshot?: VideoHistorySettingsSnapshot;
 };
 
 export function VideoHistory({
@@ -55,7 +77,12 @@ export function VideoHistory({
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-white">{item.title}</p>
-              <p className="mt-0.5 text-xs text-zorixa-muted">{item.subtitle ?? "Tap to restore settings"}</p>
+              <p className="mt-0.5 text-xs text-zorixa-muted">
+                {item.subtitle ??
+                  (item.settingsSnapshot
+                    ? "Tap to restore settings & preview"
+                    : "Tap to preview")}
+              </p>
             </div>
           </motion.button>
         ))}

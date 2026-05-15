@@ -18,7 +18,7 @@ export const ATLAS_IMAGE_MODEL_MAP: Record<string, AtlasImageModelRow> = {
     text: "openai/gpt-image-2/text-to-image",
     edit: "openai/gpt-image-2/edit",
     maxImages: 16,
-    defaultBatch: 16
+    defaultBatch: 1
   },
   "nano-banana-2": {
     text: "google/nano-banana-2/text-to-image",

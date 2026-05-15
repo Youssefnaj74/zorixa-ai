@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { ImageActionTab } from "@/components/image/ImageActionTabsRow";
 import type { ImageGenerateContext } from "@/components/image/ImageBottomBar";
@@ -8,6 +8,11 @@ import { ImageBottomBar } from "@/components/image/ImageBottomBar";
 import type { ImageHistoryEntry } from "@/components/image/ImageHistory";
 import { ImageHistory } from "@/components/image/ImageHistory";
 import { ImagePreview } from "@/components/image/ImagePreview";
+import {
+  defaultGptImage2Selection,
+  IMAGE_ASPECTS,
+  isGptImage2SizeSelection
+} from "@/components/image/image-bottom-bar-constants";
 import { Navbar } from "@/components/layout/Navbar";
 import { isAtlasImageComposerId } from "@/lib/atlas-image-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
@@ -115,6 +120,20 @@ export function ImageGenerationPage() {
   ]);
 
   const creditsLine = "-90.00 CR";
+
+  useEffect(() => {
+    if (modelId === "gpt-image-2") {
+      if (!isGptImage2SizeSelection(resolution, aspect)) {
+        const d = defaultGptImage2Selection();
+        setResolution(d.resolution);
+        setAspect(d.aspect);
+      }
+      return;
+    }
+    if (resolution === "3K") setResolution("4K");
+    if (!(IMAGE_ASPECTS as readonly string[]).includes(aspect)) setAspect("Auto");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- normalize only when `modelId` changes
+  }, [modelId]);
 
   const setReferenceUrlsSafe = useCallback((urls: string[]) => {
     setReferenceUrls((prev) => {
