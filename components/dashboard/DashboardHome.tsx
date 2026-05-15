@@ -27,6 +27,7 @@ type GenerationRow = {
   output_url: string | null;
   status: string;
   created_at: string;
+  provider?: string | null;
 };
 
 type GenerationTile = {
@@ -35,6 +36,8 @@ type GenerationTile = {
   kind: "image" | "video";
   src?: string;
   videoSrc?: string;
+  /** Footer line under title in the grid card */
+  categoryLabel?: string;
 };
 
 function formatCreditsStat(n: number): string {
@@ -65,14 +68,26 @@ function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
         title: g.status === "completed" ? `UGC video · ${dateLabel}` : `Video (${g.status}) · ${dateLabel}`,
         kind: "video" as const,
         src,
-        videoSrc
+        videoSrc,
+        categoryLabel: "UGC video"
       };
     }
-    const pick = g.output_url ?? g.input_url;
-    if (pick && isLikelyVideoFile(pick)) {
-      return { id: String(g.id), title: `Output · ${dateLabel}`, kind: "video", src: undefined };
-    }
-    return { id: String(g.id), title: `Enhancement · ${dateLabel}`, kind: "image" as const, src: pick };
+    const out = g.output_url;
+    const inn = g.input_url;
+    const isAtlasStudio = g.provider === "atlas";
+    const categoryLabel = isAtlasStudio ? "AI image" : "Image";
+    const title =
+      g.status === "completed"
+        ? `${categoryLabel} · ${dateLabel}`
+        : `${categoryLabel} (${g.status}) · ${dateLabel}`;
+    const src = out ?? (inn && !inn.includes("placehold.co") ? inn : undefined);
+    return {
+      id: String(g.id),
+      title,
+      kind: "image" as const,
+      src,
+      categoryLabel
+    };
   });
 }
 
@@ -254,7 +269,7 @@ export function DashboardHome({
           <p className="text-sm text-white/40 mb-4">Recent AI outputs from your account.</p>
           {historyItems.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[#1e1e30] bg-[#0f0f1e] px-6 py-12 text-center text-sm text-white/30">
-              No generations yet. Start with image enhancement or a UGC video.
+              No generations yet. Start with image create or a UGC video.
             </div>
           ) : (
             <GenerationGrid items={historyItems} />

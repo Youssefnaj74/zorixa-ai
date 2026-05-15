@@ -192,9 +192,10 @@ export function ImageGenerationPage() {
         }
 
         let finalImageUrl: string | null = pickImageUrlFromPollBody(data as Record<string, unknown>);
+        let predictionIdForLog: string | null = pickPredictionIdFromPost(data);
 
-        if (!finalImageUrl && pickPredictionIdFromPost(data) && data.pending !== false) {
-          const predictionId = pickPredictionIdFromPost(data);
+        if (!finalImageUrl && predictionIdForLog && data.pending !== false) {
+          const predictionId = predictionIdForLog;
           if (!predictionId) {
             setGenerateError("No image URL or job id was returned.");
             return;

@@ -49,7 +49,7 @@ export default async function DashboardPage() {
 
   const { data: generations } = await supabase
     .from("generations")
-    .select("id, feature_type, output_url, input_url, status, created_at")
+    .select("id, feature_type, output_url, input_url, status, created_at, provider")
     .order("created_at", { ascending: false })
     .limit(12);
 

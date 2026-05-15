@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { logAtlasImageGenerationIfNew } from "@/lib/atlas-image-generation-log";
 import {
   isAtlasImageComposerId,
   resolveAtlasImageModelId
@@ -8,6 +9,7 @@ import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { env } from "@/lib/env";
 import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
 const CLIENT_POLL_HINT_MS = 3000;
@@ -178,6 +180,21 @@ export async function GET(request: Request) {
     pollJson.data?.error ??
     (typeof pollJson.message === "string" ? pollJson.message : null);
   const statusNorm = String(status).toLowerCase();
+
+  if (typeof imageUrl === "string" && imageUrl.trim().length > 0) {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (user) {
+      void logAtlasImageGenerationIfNew({
+        userId: user.id,
+        outputUrl: imageUrl,
+        predictionId,
+        requireTerminalStatus: statusNorm
+      });
+    }
+  }
 
   return NextResponse.json({
     status,
@@ -352,7 +369,20 @@ export async function POST(request: Request) {
   if (initialStatus === "completed" || initialStatus === "succeeded") {
     const imageUrl = extractAtlasVideoOutputUrl(createJson.data);
     if (imageUrl) {
-      return NextResponse.json({ image_url: imageUrl });
+      const supabase = await createSupabaseServerClient();
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+      if (user) {
+        void logAtlasImageGenerationIfNew({
+          userId: user.id,
+          outputUrl: imageUrl,
+          inputUrl: imageUrls[0] ?? null,
+          predictionId: predictionId ?? null,
+          requireTerminalStatus: initialStatus
+        });
+      }
+      return NextResponse.json({ image_url: imageUrl, prediction_id: predictionId });
     }
     return NextResponse.json(
       { error: "Atlas returned completed without an output URL" },
