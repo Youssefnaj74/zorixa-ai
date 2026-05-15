@@ -262,10 +262,12 @@ export function ImageBottomBar({
           value={prompt}
           onChange={(e) => onPromptChange(e.target.value)}
           placeholder="Describe your image..."
-          rows={1}
+          rows={3}
+          style={{ resize: "none" }}
           className={cn(
-            "min-h-[44px] w-full min-w-0 resize-none rounded-[10px] border border-[rgba(131,56,235,0.3)] bg-[#1a1a2e] px-[14px] py-[10px] text-sm leading-snug text-white outline-none transition-[border-color,box-shadow] placeholder:text-zorixa-muted",
-            "focus:border-[#8338eb] focus:ring-2 focus:ring-[#8338eb]/35"
+            "scrollbar-hide min-h-[44px] max-h-[140px] w-full min-w-0 resize-none overflow-y-auto rounded-[10px] border border-[rgba(131,56,235,0.3)] bg-[#1a1a2e] px-[14px] py-[10px] text-sm leading-snug text-white outline-none transition-[border-color,box-shadow] placeholder:text-zorixa-muted",
+            "focus:border-[#8338eb] focus:ring-2 focus:ring-[#8338eb]/35",
+            "[&::-webkit-resizer]:hidden"
           )}
         />
 
