@@ -26,10 +26,10 @@ export const ATLAS_IMAGE_MODEL_MAP: Record<string, AtlasImageModelRow> = {
     maxImages: 14,
     defaultBatch: 1
   },
-  "nano-banana": {
-    text: "google/nano-banana/text-to-image",
-    edit: "google/nano-banana/edit",
-    maxImages: 8,
+  "nano-banana-pro": {
+    text: "google/nano-banana-pro/text-to-image",
+    edit: "google/nano-banana-pro/edit",
+    maxImages: 14,
     defaultBatch: 1
   },
   /** In-house slot (replaces legacy Enhancor) — Atlas Qwen Image stack. */

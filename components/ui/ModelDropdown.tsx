@@ -12,6 +12,8 @@ export type ModelOption = {
   id: string;
   label: string;
   badge?: ReactNode;
+  /** Long Atlas-style name for tooltip / accessibility when `label` is shortened in the UI. */
+  title?: string;
 };
 
 /** Shared catalog for sidebar dropdown + image bottom bar model display. */
@@ -27,8 +29,8 @@ export const MODEL_OPTIONS: ModelOption[] = [
     badge: <Badge variant="fullAccess">FULL ACCESS</Badge>
   },
   {
-    id: "nano-banana",
-    label: "Nano Banana",
+    id: "nano-banana-pro",
+    label: "Nano Banana Pro",
     badge: <Badge variant="pro">PRO</Badge>
   },
   {
@@ -75,6 +77,7 @@ export function ModelDropdown({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        title={selected?.title ?? selected?.label}
         className="zorixa-card-border flex w-full items-center justify-between gap-2 rounded-xl bg-zorixa-card px-3 py-2.5 text-left text-sm text-white shadow-glow transition-shadow hover:shadow-glow-lg"
       >
         <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
@@ -101,6 +104,7 @@ export function ModelDropdown({
                 <button
                   key={m.id}
                   type="button"
+                  title={m.title ?? m.label}
                   onClick={() => {
                     onChange(m.id);
                     setOpen(false);

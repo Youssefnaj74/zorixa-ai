@@ -86,6 +86,7 @@ function ModelPickRow({
   return (
     <button
       type="button"
+      title={model.title ?? model.label}
       onClick={onPick}
       className={cn(
         "flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors",
@@ -325,6 +326,7 @@ export function ImageBottomBar({
             <div className="relative">
               <button
                 type="button"
+                title={selectedModel.title ?? selectedModel.label}
                 onClick={() => openOnly("model")}
                 className={cn(triggerClass, open === "model" && "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.1)]")}
               >
