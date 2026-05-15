@@ -16,6 +16,7 @@ import {
 } from "@/lib/extract-atlas-video-output-url";
 import { normalizeAtlasVideoUrlForPlayback, videoUrlLooksLikeMp4Path } from "@/lib/resolve-video-playback-url";
 import { videoComposerSupportsGenerateAudio } from "@/lib/atlas-video-generate-audio";
+import { videoComposerSupportsSpeedTier } from "@/lib/atlas-video-model-ids";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
@@ -139,8 +140,6 @@ export function VideoGenerationPage() {
   const [timeSeconds, setTimeSeconds] = useState(10);
   const [aspect, setAspect] = useState("9:16");
   const [resolution, setResolution] = useState("1080p");
-  const [aiAgent, setAiAgent] = useState(false);
-
   const [actionTab, setActionTab] = useState<ActionTab>("Image to Video");
   const [prompt, setPrompt] = useState("");
 
@@ -206,6 +205,9 @@ export function VideoGenerationPage() {
     if (!videoComposerSupportsGenerateAudio(id)) {
       setGenerateAudioOn(false);
     }
+    if (!videoComposerSupportsSpeedTier(id)) {
+      setDurationStandard("Standard");
+    }
     if (id === KLING_30_PRO_MODEL_ID) {
       setActionTab("Text to Video");
     }
@@ -250,6 +252,8 @@ export function VideoGenerationPage() {
           videoComposerSupportsGenerateAudio(videoModel) &&
           (ctx.actionTab === "Text to Video" || ctx.actionTab === "Image to Video");
 
+        const speed_tier = ctx.speedTier;
+
         switch (ctx.actionTab) {
           case "Text to Video":
             payload = {
@@ -259,6 +263,7 @@ export function VideoGenerationPage() {
               aspectRatio,
               resolution: resTier,
               duration,
+              speed_tier,
               ...(wantGenerateAudio ? { generate_audio: true } : {})
             };
             break;
@@ -277,6 +282,7 @@ export function VideoGenerationPage() {
               aspectRatio,
               resolution: resTier,
               duration,
+              speed_tier,
               ...(wantGenerateAudio ? { generate_audio: true } : {})
             };
             break;
@@ -295,7 +301,8 @@ export function VideoGenerationPage() {
               audio_url,
               aspectRatio,
               resolution: resTier,
-              duration
+              duration,
+              speed_tier
             };
             break;
           }
@@ -313,7 +320,8 @@ export function VideoGenerationPage() {
               video_url,
               aspectRatio,
               resolution: resTier,
-              duration
+              duration,
+              speed_tier
             };
             break;
           }
@@ -324,7 +332,8 @@ export function VideoGenerationPage() {
               videoModel,
               aspectRatio,
               resolution: resTier,
-              duration
+              duration,
+              speed_tier
             };
         }
 
@@ -560,8 +569,6 @@ export function VideoGenerationPage() {
         onAspectChange={setAspect}
         resolution={resolution}
         onResolutionChange={setResolution}
-        aiAgent={aiAgent}
-        onAiAgentChange={setAiAgent}
         creditsLine={creditsLine}
         loadingGenerate={loading}
         onGenerate={runGeneration}

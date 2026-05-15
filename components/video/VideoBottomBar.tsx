@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
-import { Toggle } from "@/components/ui/Toggle";
 import { cn } from "@/lib/utils";
 
 import {
@@ -19,6 +18,10 @@ import {
   type BottomBarModel
 } from "@/components/video/bottom-bar-models";
 import { videoComposerSupportsGenerateAudio } from "@/lib/atlas-video-generate-audio";
+import {
+  parseVideoSpeedTierFromUiLabel,
+  videoComposerSupportsSpeedTier
+} from "@/lib/atlas-video-model-ids";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 
@@ -37,6 +40,8 @@ export type VideoGenerateContext = {
   editSourceVideoUrl: string | null;
   /** Native AI soundtrack (Seedance only). */
   generateAudio: boolean;
+  /** Standard vs Fast Atlas model tier (Seedance + Kling). */
+  speedTier: "standard" | "fast";
 };
 
 export type VideoBottomBarProps = {
@@ -67,8 +72,6 @@ export type VideoBottomBarProps = {
   onAspectChange: (v: string) => void;
   resolution: string;
   onResolutionChange: (v: string) => void;
-  aiAgent: boolean;
-  onAiAgentChange: (v: boolean) => void;
   creditsLine: string;
   loadingGenerate: boolean;
   /** Snapshot of prompt + assets at click time (reads textarea ref so text is never stale). */
@@ -132,8 +135,6 @@ export function VideoBottomBar({
   onAspectChange,
   resolution,
   onResolutionChange,
-  aiAgent,
-  onAiAgentChange,
   creditsLine,
   loadingGenerate,
   onGenerate,
@@ -311,6 +312,8 @@ export function VideoBottomBar({
     seedanceAudioSupported &&
     (actionTab === "Text to Video" || actionTab === "Image to Video");
   const generateAudioEffective = generateAudioOn && showGenerateAudioControl;
+  const showSpeedTierControl = videoComposerSupportsSpeedTier(composerModelId);
+  const speedTier = parseVideoSpeedTierFromUiLabel(durationStandard);
 
   const emitGenerate = useCallback(() => {
     const el = promptTextareaRef.current;
@@ -329,7 +332,8 @@ export function VideoBottomBar({
       promptImage2Url,
       lipsyncAudioUrl,
       editSourceVideoUrl,
-      generateAudio: generateAudioEffective
+      generateAudio: generateAudioEffective,
+      speedTier: showSpeedTierControl ? speedTier : "standard"
     };
     console.log("[VideoBottomBar] GENERATE click", {
       promptText,
@@ -345,13 +349,15 @@ export function VideoBottomBar({
       hasPromptImage2: Boolean(promptImage2Url),
       hasLipsyncAudio: Boolean(lipsyncAudioUrl),
       hasEditSourceVideo: Boolean(editSourceVideoUrl),
-      generateAudio: generateAudioEffective
+      generateAudio: generateAudioEffective,
+      speedTier: showSpeedTierControl ? speedTier : "standard"
     });
     void onGenerate(ctx);
   }, [
     actionTab,
     aspect,
     composerModelId,
+    durationStandard,
     editSourceVideoUrl,
     generateAudioEffective,
     lipsyncAudioUrl,
@@ -359,6 +365,8 @@ export function VideoBottomBar({
     promptImage2Url,
     promptImageUrl,
     resolution,
+    showSpeedTierControl,
+    speedTier,
     timeSeconds
   ]);
 
@@ -595,9 +603,9 @@ export function VideoBottomBar({
           <div className="hidden min-w-[24px] shrink-0 lg:block" aria-hidden />
         </div>
 
-        {/* ROW 2 — Controls (left wraps; credits + GENERATE pinned right) */}
-        <div className="flex items-center gap-3">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+        {/* ROW 2 — Controls wrap left; credits + GENERATE bottom-right */}
+        <div className="flex items-end gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">
           {/* MODEL */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Model</span>
@@ -715,9 +723,20 @@ export function VideoBottomBar({
             </div>
           </div>
 
+          {showSpeedTierControl ? (
+          <>
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
-
-          {/* Standard */}
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted"
+              title={
+                composerModelId === "kling-3-pro"
+                  ? "Standard = Kling Pro · Fast = Kling Std (cheaper)"
+                  : "Standard = full Seedance · Fast = Seedance fast tier"
+              }
+            >
+              Speed
+            </span>
           <div className="relative">
             <button
               type="button"
@@ -764,6 +783,11 @@ export function VideoBottomBar({
               ) : null}
             </AnimatePresence>
           </div>
+          </div>
+          </>
+          ) : null}
+
+          <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
 
           {/* Time */}
           <div className="relative">
@@ -917,13 +941,9 @@ export function VideoBottomBar({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase text-zorixa-muted">AI Agent</span>
-            <Toggle id="bar-ai-agent" checked={aiAgent} onCheckedChange={onAiAgentChange} />
-          </div>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-3">
+          <div className="ml-auto flex shrink-0 items-end gap-3 pb-0.5">
             <span className="text-xs tabular-nums text-zorixa-muted">{creditsLine}</span>
             <motion.button
               type="button"

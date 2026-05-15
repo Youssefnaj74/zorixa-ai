@@ -96,7 +96,6 @@ export function ImageGenerationPage() {
   const [cameraStyle, setCameraStyle] = useState("None");
   const [resolution, setResolution] = useState("2K");
   const [aspect, setAspect] = useState("Auto");
-  const [webSearch, setWebSearch] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -322,8 +321,6 @@ export function ImageGenerationPage() {
         onResolutionChange={setResolution}
         aspect={aspect}
         onAspectChange={setAspect}
-        webSearch={webSearch}
-        onWebSearchChange={setWebSearch}
         creditsLine={creditsLine}
         loadingGenerate={loading}
         onGenerate={runGeneration}

@@ -11,7 +11,6 @@ import {
   IMAGE_RESOLUTIONS
 } from "@/components/image/image-bottom-bar-constants";
 import { MODEL_OPTIONS, type ModelOption } from "@/components/ui/ModelDropdown";
-import { Toggle } from "@/components/ui/Toggle";
 import { getAtlasImageModelLimits } from "@/lib/atlas-image-model-ids";
 import { cn } from "@/lib/utils";
 
@@ -38,8 +37,6 @@ export type ImageBottomBarProps = {
   onResolutionChange: (v: string) => void;
   aspect: string;
   onAspectChange: (v: string) => void;
-  webSearch: boolean;
-  onWebSearchChange: (v: boolean) => void;
   creditsLine: string;
   loadingGenerate: boolean;
   onGenerate: (ctx: ImageGenerateContext) => void | Promise<void>;
@@ -95,8 +92,6 @@ export function ImageBottomBar({
   onResolutionChange,
   aspect,
   onAspectChange,
-  webSearch,
-  onWebSearchChange,
   creditsLine,
   loadingGenerate,
   onGenerate,
@@ -438,14 +433,6 @@ export function ImageBottomBar({
               ) : null}
             </AnimatePresence>
           </div>
-
-          <Toggle
-            id="image-web-search"
-            label="Web search"
-            checked={webSearch}
-            onCheckedChange={onWebSearchChange}
-            className="gap-2 [&_label]:text-[11px]"
-          />
 
           <span className="ml-auto text-xs tabular-nums text-zorixa-muted">{creditsLine}</span>
 

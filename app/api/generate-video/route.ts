@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { atlasModelSupportsGenerateAudio } from "@/lib/atlas-video-generate-audio";
 import {
   type AtlasVideoRouteAction,
+  normalizeAtlasVideoSpeedTier,
   resolveAtlasVideoModelId
 } from "@/lib/atlas-video-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
@@ -32,6 +33,9 @@ type ClientBody = {
   duration?: number;
   /** Seedance native soundtrack (Atlas `generate_audio`). */
   generate_audio?: boolean;
+  /** UI Standard/Fast → Atlas model slug tier (Seedance fast, Kling std). */
+  speed_tier?: string;
+  speedTier?: string;
 };
 
 const ALLOWED_ASPECT_RATIOS = new Set(["16:9", "9:16", "1:1", "4:3"]);
@@ -62,7 +66,10 @@ function normalizeDurationSeconds(raw: unknown): number {
  * Sending `content` alongside flat fields causes 400 (verified in Atlas request history).
  */
 function isSeedance20ImageToVideo(model: string): boolean {
-  return model === "bytedance/seedance-2.0/image-to-video";
+  return (
+    model === "bytedance/seedance-2.0/image-to-video" ||
+    model === "bytedance/seedance-2.0-fast/image-to-video"
+  );
 }
 
 /** Short-side pixel size from UI resolution tier (matches Seedance model page examples). */
@@ -206,7 +213,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing videoModel" }, { status: 400 });
   }
 
-  const model = resolveAtlasVideoModelId(videoModel, action);
+  const speedTier = normalizeAtlasVideoSpeedTier(body.speed_tier ?? body.speedTier);
+  const model = resolveAtlasVideoModelId(videoModel, action, speedTier);
   if (!model) {
     return NextResponse.json(
       { error: `Unknown video model: ${videoModel}` },
@@ -347,13 +355,16 @@ export async function POST(request: Request) {
       keys: Object.keys(atlasBody),
       promptLen: prompt.length,
       durationSec,
-      generateAudio
+      generateAudio,
+      speedTier
     });
   }
 
   console.log(
     "[generate-video] Atlas generateVideo payload — videoModel:",
     videoModel,
+    "speedTier:",
+    speedTier,
     "→ model:",
     model,
     "| envelope:",
