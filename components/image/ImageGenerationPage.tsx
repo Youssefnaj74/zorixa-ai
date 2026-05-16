@@ -10,8 +10,10 @@ import { ImageHistory } from "@/components/image/ImageHistory";
 import { ImagePreview } from "@/components/image/ImagePreview";
 import {
   defaultGptImage2Selection,
+  defaultSeedreamSelection,
   IMAGE_ASPECTS,
-  isGptImage2SizeSelection
+  isGptImage2SizeSelection,
+  isSeedreamSizeSelection
 } from "@/components/image/image-bottom-bar-constants";
 import { Navbar } from "@/components/layout/Navbar";
 import { isAtlasImageComposerId } from "@/lib/atlas-image-model-ids";
@@ -125,6 +127,14 @@ export function ImageGenerationPage() {
     if (modelId === "gpt-image-2") {
       if (!isGptImage2SizeSelection(resolution, aspect)) {
         const d = defaultGptImage2Selection();
+        setResolution(d.resolution);
+        setAspect(d.aspect);
+      }
+      return;
+    }
+    if (modelId === "seedream-5") {
+      if (!isSeedreamSizeSelection(resolution, aspect)) {
+        const d = defaultSeedreamSelection();
         setResolution(d.resolution);
         setAspect(d.aspect);
       }

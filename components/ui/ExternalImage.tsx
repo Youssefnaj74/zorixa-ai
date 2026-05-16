@@ -8,13 +8,21 @@ type ExternalImageProps = {
   width?: number;
   height?: number;
   className?: string;
+  onLoad?: React.ReactEventHandler<HTMLImageElement>;
 };
 
 /**
  * Native img for Atlas OSS / Supabase / other CDN URLs.
  * Avoids next/image remotePatterns checks and /_next/image optimizer 400s.
  */
-export function ExternalImage({ src, alt, width, height, className }: ExternalImageProps) {
+export function ExternalImage({
+  src,
+  alt,
+  width,
+  height,
+  className,
+  onLoad
+}: ExternalImageProps) {
   return (
     <img
       src={src}
@@ -25,6 +33,7 @@ export function ExternalImage({ src, alt, width, height, className }: ExternalIm
       loading="lazy"
       decoding="async"
       referrerPolicy="no-referrer"
+      onLoad={onLoad}
     />
   );
 }

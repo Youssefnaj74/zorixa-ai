@@ -40,3 +40,10 @@ export function defaultGptImage2Selection(): {
 } {
   return { resolution: "1K", aspect: "3:2" };
 }
+
+export {
+  defaultSeedreamSelection,
+  formatSeedreamPixelLabel,
+  isSeedreamSizeSelection,
+  SEEDREAM_ATLAS_SIZE_GROUPS
+} from "@/lib/seedream-atlas-sizes";

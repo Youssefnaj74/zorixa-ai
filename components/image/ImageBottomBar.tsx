@@ -9,7 +9,8 @@ import {
   GPT_IMAGE_2_SIZE_GROUPS,
   IMAGE_ASPECTS,
   IMAGE_CAMERA_STYLES,
-  IMAGE_RESOLUTIONS
+  IMAGE_RESOLUTIONS,
+  SEEDREAM_ATLAS_SIZE_GROUPS
 } from "@/components/image/image-bottom-bar-constants";
 import { MODEL_OPTIONS, type ModelOption } from "@/components/ui/ModelDropdown";
 import { getAtlasImageModelLimits } from "@/lib/atlas-image-model-ids";
@@ -44,7 +45,14 @@ export type ImageBottomBarProps = {
   onHeightChange?: (height: number) => void;
 };
 
-type OpenPanel = "camera" | "model" | "resolution" | "aspect" | "gptSize" | null;
+type OpenPanel =
+  | "camera"
+  | "model"
+  | "resolution"
+  | "aspect"
+  | "gptSize"
+  | "seedreamSize"
+  | null;
 
 const dropupPanelClass =
   "absolute bottom-[calc(100%+8px)] z-[100] overflow-hidden rounded-xl border border-[rgba(131,56,235,0.2)] bg-[#1a1a24] shadow-glow-lg";
@@ -134,6 +142,7 @@ export function ImageBottomBar({
   const defaultBatch = getAtlasImageModelLimits(modelId).defaultBatch;
   const showUploads = actionTab === "Image to Image";
   const isGptImage2 = modelId === "gpt-image-2";
+  const isSeedream = modelId === "seedream-5";
 
   useEffect(() => {
     const el = bottomBarRef.current;
@@ -402,7 +411,88 @@ export function ImageBottomBar({
             </AnimatePresence>
           </div>
 
-          {isGptImage2 ? (
+          {isSeedream ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => openOnly("seedreamSize")}
+                className={cn(
+                  triggerClass,
+                  open === "seedreamSize" &&
+                    "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.1)]"
+                )}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <AspectRatioIcon ratio={aspect} />
+                  <span className="tabular-nums">
+                    {resolution} · {aspect}
+                  </span>
+                </span>
+                <ChevronUp
+                  className={cn("size-3.5 text-zorixa-muted", open === "seedreamSize" && "rotate-180")}
+                />
+              </button>
+              <AnimatePresence>
+                {open === "seedreamSize" ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    style={{ transformOrigin: "bottom left" }}
+                    className={cn(
+                      dropupPanelClass,
+                      "left-0 max-h-[min(70vh,480px)] w-[260px] overflow-y-auto py-2"
+                    )}
+                  >
+                    {SEEDREAM_ATLAS_SIZE_GROUPS.map((group, gi) => (
+                      <div
+                        key={group.tier}
+                        className={cn(
+                          "px-2 pb-2",
+                          gi < SEEDREAM_ATLAS_SIZE_GROUPS.length - 1 && "border-b border-white/5"
+                        )}
+                      >
+                        <div className="px-2 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
+                          {group.tier}
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          {group.options.map((opt) => {
+                            const selected =
+                              resolution === group.tier && aspect === opt.aspect;
+                            return (
+                              <button
+                                key={`${group.tier}-${opt.aspect}`}
+                                type="button"
+                                onClick={() => {
+                                  onResolutionChange(group.tier);
+                                  onAspectChange(opt.aspect);
+                                  setOpen(null);
+                                }}
+                                className={cn(
+                                  "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors",
+                                  selected
+                                    ? "border border-brand-light/50 bg-brand/10 text-white"
+                                    : "border border-transparent text-white/90 hover:bg-white/5"
+                                )}
+                              >
+                                {selected ? (
+                                  <Check className="size-4 shrink-0 text-brand-light" />
+                                ) : (
+                                  <span className="inline-flex w-4 shrink-0 justify-center" aria-hidden />
+                                )}
+                                <AspectRatioIcon ratio={opt.aspect} />
+                                <span className="tabular-nums">{opt.aspect}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+          ) : isGptImage2 ? (
             <div className="relative">
               <button
                 type="button"

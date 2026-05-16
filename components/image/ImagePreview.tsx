@@ -1,11 +1,13 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import { Download, Expand, History, ImageIcon, RotateCcw } from "lucide-react";
 
 import type { ImageActionTab } from "@/components/image/ImageActionTabsRow";
 import { ImageActionTabsRow } from "@/components/image/ImageActionTabsRow";
 import { Button } from "@/components/ui/button";
 import { ExternalImage } from "@/components/ui/ExternalImage";
+import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { cn } from "@/lib/utils";
 
 const NAV_H = 56;
@@ -31,6 +33,11 @@ export function ImagePreview({
   className?: string;
 }) {
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${TABS_ROW_H}px - ${bottomBarHeight}px)`;
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const openLightbox = useCallback(() => {
+    if (imageUrl) setLightboxOpen(true);
+  }, [imageUrl]);
+  const closeLightbox = useCallback(() => setLightboxOpen(false), []);
 
   return (
     <div className={cn("flex h-full min-h-0 min-w-0 flex-1 flex-col gap-3 font-body", className)}>
@@ -57,8 +64,10 @@ export function ImagePreview({
             </Button>
             <button
               type="button"
-              className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/10 text-zorixa-muted hover:bg-white/5 hover:text-white"
-              aria-label="Expand"
+              disabled={!imageUrl || loading}
+              onClick={openLightbox}
+              className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/10 text-zorixa-muted hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Expand preview"
             >
               <Expand className="size-4" />
             </button>
@@ -94,13 +103,20 @@ export function ImagePreview({
               ) : errorMessage ? (
                 <p className="max-w-md text-center text-sm text-red-400">{errorMessage}</p>
               ) : imageUrl ? (
-                <ExternalImage
-                  src={imageUrl}
-                  alt="Generated output"
-                  width={1024}
-                  height={1024}
-                  className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)]"
-                />
+                <button
+                  type="button"
+                  onClick={openLightbox}
+                  className="group relative max-h-full max-w-full cursor-zoom-in rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                  aria-label="Enlarge image preview"
+                >
+                  <ExternalImage
+                    src={imageUrl}
+                    alt="Generated output"
+                    width={1024}
+                    height={1024}
+                    className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)] transition-transform group-hover:scale-[1.01]"
+                  />
+                </button>
               ) : (
                 <div className="flex flex-col items-center justify-center gap-4">
                   <div className="grid size-16 place-items-center rounded-full bg-[rgba(131,56,235,0.25)] text-brand-light ring-2 ring-white/10">
@@ -150,6 +166,13 @@ export function ImagePreview({
       <div className="relative z-10 flex h-12 w-full shrink-0 items-center bg-[#0a0a0f]">
         <ImageActionTabsRow active={actionTab} onChange={onActionTabChange} className="h-full min-h-0 w-full flex-1" />
       </div>
+      <ImageLightbox
+        open={lightboxOpen}
+        src={imageUrl}
+        alt="Generated output"
+        title="Image preview"
+        onClose={closeLightbox}
+      />
     </div>
   );
 }

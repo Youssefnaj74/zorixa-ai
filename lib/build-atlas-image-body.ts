@@ -3,6 +3,11 @@
  * @see https://www.atlascloud.ai/models
  */
 
+import {
+  defaultSeedreamSelection,
+  seedreamAtlasPixels
+} from "@/lib/seedream-atlas-sizes";
+
 export type BuildAtlasImageBodyInput = {
   model: string;
   prompt: string;
@@ -20,6 +25,10 @@ function isQwenImageAtlasModel(model: string): boolean {
 
 function isGptImage2AtlasModel(model: string): boolean {
   return model.includes("gpt-image-2");
+}
+
+function isSeedreamAtlasModel(model: string): boolean {
+  return model.includes("seedream");
 }
 
 /** Qwen Image uses `size` as `width*height` (512–2048). */
@@ -181,6 +190,30 @@ export function buildAtlasImageBody(input: BuildAtlasImageBodyInput): Record<str
     if (isEdit && imageUrls.length > 0) {
       body.image = imageUrls[0];
       body.images = imageUrls;
+    }
+    return body;
+  }
+
+  if (isSeedreamAtlasModel(model)) {
+    const tier = resolution?.trim() || defaultSeedreamSelection().resolution;
+    const aspect = aspectRatio ?? defaultSeedreamSelection().aspect;
+    const dims =
+      seedreamAtlasPixels(tier, aspect) ??
+      seedreamAtlasPixels(
+        defaultSeedreamSelection().resolution,
+        defaultSeedreamSelection().aspect
+      )!;
+    const { width, height } = dims;
+    const body: Record<string, unknown> = {
+      model,
+      prompt,
+      width,
+      height,
+      size: `${width}*${height}`
+    };
+    if (isEdit && imageUrls.length > 0) {
+      body.images = imageUrls;
+      body.image = imageUrls[0];
     }
     return body;
   }
