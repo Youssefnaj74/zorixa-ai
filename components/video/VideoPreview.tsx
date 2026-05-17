@@ -248,7 +248,12 @@ export function VideoPreview({
                 </div>
               ) : errorMessage ? (
                 <div className="max-w-md px-4 text-center">
-                  <p className="text-sm text-red-400/95">{errorMessage}</p>
+                  <p className="mb-2 font-display text-xs font-semibold uppercase tracking-wide text-red-300/90">
+                    Generation failed
+                  </p>
+                  <p className="whitespace-pre-wrap break-words text-left text-xs leading-relaxed text-red-400/95">
+                    {errorMessage}
+                  </p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center gap-4">

@@ -19,6 +19,10 @@ import {
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
 import { normalizeAtlasVideoUrlForPlayback, videoUrlLooksLikeMp4Path } from "@/lib/resolve-video-playback-url";
+import {
+  formatAtlasVideoFailureForUi,
+  isAtlasRealPersonImageError
+} from "@/lib/atlas-video-failure-message";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
@@ -377,7 +381,12 @@ export function VideoGenerationPage() {
         }
 
         if (!res.ok) {
-          setGenerateError(data.error ?? `Generation failed (${res.status})`);
+          setGenerateError(
+            formatAtlasVideoFailureForUi(data.error, {
+              generateAudio: wantGenerateAudio,
+              hostIsProduction: typeof window !== "undefined" && !window.location.hostname.includes("localhost")
+            }) || `Generation failed (${res.status})`
+          );
           return;
         }
 
@@ -464,14 +473,14 @@ export function VideoGenerationPage() {
                 error: pd.error,
                 prediction_id: pd.prediction_id ?? predictionId
               });
-              const msg =
-                pd.error ??
-                (pd.atlas_error
-                  ? `Atlas: ${pd.atlas_error}`
-                  : "Atlas prediction failed. Check Atlas Request History and Vercel balance.");
+              const msg = formatAtlasVideoFailureForUi(pd.atlas_error ?? pd.error, {
+                generateAudio: wantGenerateAudio,
+                hostIsProduction:
+                  typeof window !== "undefined" && !window.location.hostname.includes("localhost")
+              });
               setGenerateError(
-                pd.prediction_id
-                  ? `${msg} (prediction: ${pd.prediction_id.slice(0, 12)}…)`
+                pd.prediction_id && !isAtlasRealPersonImageError(pd.atlas_error ?? pd.error)
+                  ? `${msg}\n\n(prediction: ${pd.prediction_id.slice(0, 12)}…)`
                   : msg
               );
               return;
