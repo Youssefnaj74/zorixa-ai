@@ -49,23 +49,28 @@ export default async function DashboardPage() {
 
   const generationColumnsBase =
     "id, feature_type, output_url, input_url, status, created_at, provider";
-  let generationsQuery = await supabase
+
+  const primaryGenerations = await supabase
     .from("generations")
     .select(`${generationColumnsBase}, composer_model_id`)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(12);
 
-  if (generationsQuery.error) {
-    generationsQuery = await supabase
+  let generations = primaryGenerations.data ?? [];
+
+  if (primaryGenerations.error) {
+    const fallbackGenerations = await supabase
       .from("generations")
       .select(generationColumnsBase)
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(12);
+    generations = (fallbackGenerations.data ?? []).map((row) => ({
+      ...row,
+      composer_model_id: null
+    }));
   }
-
-  const generations = generationsQuery.data;
 
   const creditsDisplay = credits >= 1000 ? `${(credits / 1000).toFixed(1)}k` : String(credits);
 
@@ -81,7 +86,7 @@ export default async function DashboardPage() {
       isPremium={isPremium}
       upgradeHref={upgradeHref}
       welcomeTagline={welcomeTagline}
-      generations={generations ?? []}
+      generations={generations}
     />
   );
 }

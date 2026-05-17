@@ -1,4 +1,4 @@
-import { ENHANCE_MODELS } from "@/lib/studio-constants";
+import { ENHANCE_MODELS, type EnhanceModelId } from "@/lib/studio-constants";
 
 /** Server-safe labels (do not import from `use client` modules). */
 const IMAGE_COMPOSER_LABELS: Record<string, string> = {
@@ -64,7 +64,7 @@ export function composerModelDisplayLabel(
   return (
     IMAGE_COMPOSER_LABELS[id] ??
     VIDEO_COMPOSER_LABELS[id] ??
-    ENHANCE_LABEL_BY_ID.get(id) ??
+    ENHANCE_LABEL_BY_ID.get(id as EnhanceModelId) ??
     humanizeComposerId(id)
   );
 }
