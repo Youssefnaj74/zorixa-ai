@@ -24,6 +24,10 @@ import {
 } from "@/lib/atlas-video-model-ids";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
+import {
+  isSeedanceVideoComposerId,
+  SeedanceI2vReferenceTip
+} from "@/components/video/SeedanceI2vReferenceTip";
 
 export type VideoGenerateContext = {
   promptText: string;
@@ -314,6 +318,8 @@ export function VideoBottomBar({
   const generateAudioEffective = generateAudioOn && showGenerateAudioControl;
   const showSpeedTierControl = videoComposerSupportsSpeedTier(composerModelId);
   const speedTier = parseVideoSpeedTierFromUiLabel(durationStandard);
+  const showSeedanceI2vTip =
+    actionTab === "Image to Video" && isSeedanceVideoComposerId(composerModelId);
 
   const emitGenerate = useCallback(() => {
     const el = promptTextareaRef.current;
@@ -577,6 +583,9 @@ export function VideoBottomBar({
                       ) : null}
                     </div>
                   </div>
+                  {showSeedanceI2vTip ? (
+                    <SeedanceI2vReferenceTip className="w-full max-w-[312px]" />
+                  ) : null}
                 </>
               )}
             </div>
