@@ -19,21 +19,19 @@ import { ActionTabsRow } from "@/components/video/ActionTabsRow";
 const NAV_H = 56;
 const TABS_ROW_H = 48;
 
-/** UI label `9:16` → CSS `aspect-ratio: 9/16`. */
-function uiAspectToCssRatio(aspect: string): string {
-  const parts = aspect.split(":");
-  if (parts.length === 2) {
-    const w = parts[0]?.trim();
-    const h = parts[1]?.trim();
-    if (w && h) return `${w}/${h}`;
+/** Tailwind frame for preview — driven by UI aspect, not file metadata. */
+function uiAspectFrameClass(aspect: string): string {
+  switch (aspect) {
+    case "16:9":
+      return "aspect-video";
+    case "1:1":
+      return "aspect-square";
+    case "4:3":
+      return "aspect-[4/3]";
+    case "9:16":
+    default:
+      return "aspect-[9/16]";
   }
-  return "9/16";
-}
-
-function isPortraitCssRatio(cssRatio: string): boolean {
-  const [w, h] = cssRatio.split("/").map((n) => Number(n));
-  if (!Number.isFinite(w) || !Number.isFinite(h) || h === 0) return true;
-  return w / h < 1;
 }
 
 /** React 18 `@types/react` omits `referrerPolicy` on `<video>`; DOM supports it (helps some CDNs). */
@@ -72,9 +70,9 @@ export function VideoPreview({
   const [inlinePlaybackError, setInlinePlaybackError] = useState<string | null>(null);
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const [intrinsicAspectCss, setIntrinsicAspectCss] = useState<string | null>(null);
-  const displayAspectCss = intrinsicAspectCss ?? uiAspectToCssRatio(aspectRatio);
-  const portraitFrame = isPortraitCssRatio(displayAspectCss);
+  const [fileAspectCss, setFileAspectCss] = useState<string | null>(null);
+  const frameAspectClass = uiAspectFrameClass(aspectRatio);
+  const uiPortrait = aspectRatio === "9:16";
   const canonicalDownloadUrl =
     videoDownloadUrl?.trim() ||
     (videoUrl ? extractCanonicalVideoUrlFromProxy(videoUrl) : null) ||
@@ -98,7 +96,7 @@ export function VideoPreview({
   useEffect(() => {
     setInlinePlaybackError(null);
     setDownloadError(null);
-    setIntrinsicAspectCss(null);
+    setFileAspectCss(null);
   }, [videoUrl]);
 
   useEffect(() => {
@@ -163,15 +161,13 @@ export function VideoPreview({
           <div className="relative flex min-h-0 flex-1 flex-col">
             <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center p-4">
               {videoUrl && !errorMessage ? (
-                <motion.div className="flex h-full min-h-0 w-full flex-1 flex-col items-center justify-center gap-3">
+                <div className="flex h-full min-h-0 w-full flex-1 flex-col items-center justify-center gap-3">
                   <div
                     className={cn(
-                      "relative flex items-center justify-center",
-                      portraitFrame
-                        ? "h-full max-h-full w-auto max-w-full"
-                        : "h-auto max-h-full w-full max-w-full"
+                      "relative mx-auto max-h-[min(70vh,100%)] overflow-hidden rounded-xl shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)]",
+                      frameAspectClass,
+                      uiPortrait ? "h-full w-auto max-w-[min(100%,56vh)]" : "w-full max-w-full"
                     )}
-                    style={{ aspectRatio: displayAspectCss }}
                   >
                     <video
                       key={videoUrl ? `zorixa-preview:${videoUrl}` : "zorixa-preview:empty"}
@@ -179,20 +175,20 @@ export function VideoPreview({
                       playsInline
                       preload="auto"
                       {...domVideoAttrs}
-                      className="h-full w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)]"
+                      className="size-full object-contain bg-black"
                       onLoadedMetadata={(e) => {
                         const el = e.currentTarget;
                         setInlinePlaybackError(null);
                         if (el.videoWidth > 0 && el.videoHeight > 0) {
-                          setIntrinsicAspectCss(`${el.videoWidth}/${el.videoHeight}`);
-                          const uiPortrait = aspectRatio === "9:16";
+                          const fileCss = `${el.videoWidth}/${el.videoHeight}`;
+                          setFileAspectCss(fileCss);
                           const filePortrait = el.videoWidth < el.videoHeight;
                           if (uiPortrait !== filePortrait) {
                             console.warn("[VideoPreview] aspect mismatch", {
                               uiAspect: aspectRatio,
                               filePixels: `${el.videoWidth}x${el.videoHeight}`,
                               hint:
-                                "Atlas returned a different orientation than selected — check Request History body."
+                                "File orientation differs from UI — preview frame follows your aspect setting."
                             });
                           }
                         }
@@ -200,10 +196,8 @@ export function VideoPreview({
                           duration: el.duration,
                           videoWidth: el.videoWidth,
                           videoHeight: el.videoHeight,
-                          aspectCss:
-                            el.videoWidth > 0 && el.videoHeight > 0
-                              ? `${el.videoWidth}/${el.videoHeight}`
-                              : displayAspectCss,
+                          uiFrame: frameAspectClass,
+                          fileAspect: fileAspectCss,
                           currentSrc: el.currentSrc
                         });
                       }}
@@ -246,7 +240,7 @@ export function VideoPreview({
                       </a>
                     </div>
                   ) : null}
-                </motion.div>
+                </div>
               ) : loading ? (
                 <div className="flex flex-col items-center justify-center gap-3">
                   <div className="size-12 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />
