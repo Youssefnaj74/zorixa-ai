@@ -49,26 +49,17 @@ export function VideoPreview({
 }) {
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${TABS_ROW_H}px - ${bottomBarHeight}px)`;
   const [inlinePlaybackError, setInlinePlaybackError] = useState<string | null>(null);
-  const [downloading, setDownloading] = useState(false);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
-
   const canonicalDownloadUrl =
     videoDownloadUrl?.trim() ||
     (videoUrl ? extractCanonicalVideoUrlFromProxy(videoUrl) : null) ||
     (videoUrl?.startsWith("https://") ? videoUrl : null);
 
-  const onDownloadClick = useCallback(async () => {
+  const onDownloadClick = useCallback(() => {
     if (!canonicalDownloadUrl) return;
-    setDownloadError(null);
-    setDownloading(true);
     try {
-      await downloadVideoFile(canonicalDownloadUrl);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Download failed";
-      setDownloadError(msg);
+      downloadVideoFile(canonicalDownloadUrl);
+    } catch {
       window.open(canonicalDownloadUrl, "_blank", "noopener,noreferrer");
-    } finally {
-      setDownloading(false);
     }
   }, [canonicalDownloadUrl]);
 
@@ -225,12 +216,12 @@ export function VideoPreview({
                 <Button
                   type="button"
                   variant="ghost"
-                  disabled={downloading || !canonicalDownloadUrl}
-                  onClick={() => void onDownloadClick()}
+                  disabled={!canonicalDownloadUrl}
+                  onClick={onDownloadClick}
                   className="pointer-events-auto h-9 rounded-lg border border-brand/50 bg-black/30 px-3 text-xs font-medium text-white hover:bg-brand/20 disabled:opacity-60"
                 >
                   <Download className="mr-1 size-3.5" />
-                  {downloading ? "Downloading…" : "Download"}
+                  Download
                 </Button>
               ) : (
                 <Button
