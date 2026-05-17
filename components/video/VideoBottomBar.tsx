@@ -38,7 +38,7 @@ export type VideoGenerateContext = {
   promptImage2Url: string | null;
   lipsyncAudioUrl: string | null;
   editSourceVideoUrl: string | null;
-  /** Native AI soundtrack (Seedance only). */
+  /** Native AI soundtrack (Seedance, Kling v3). */
   generateAudio: boolean;
   /** Standard vs Fast Atlas model tier (Seedance + Kling). */
   speedTier: "standard" | "fast";
@@ -307,9 +307,9 @@ export function VideoBottomBar({
   }, [promptImage2Url]);
 
   const showKlingTextOnlyTab = actionTab === "Text to Video" && composerModelId === KLING_30_PRO_MODEL_ID;
-  const seedanceAudioSupported = videoComposerSupportsGenerateAudio(composerModelId);
+  const nativeAudioSupported = videoComposerSupportsGenerateAudio(composerModelId);
   const showGenerateAudioControl =
-    seedanceAudioSupported &&
+    nativeAudioSupported &&
     (actionTab === "Text to Video" || actionTab === "Image to Video");
   const generateAudioEffective = generateAudioOn && showGenerateAudioControl;
   const showSpeedTierControl = videoComposerSupportsSpeedTier(composerModelId);
@@ -660,7 +660,7 @@ export function VideoBottomBar({
               <div className="flex items-center gap-2">
                 <span
                   className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted"
-                  title="Generate native audio with the video (Seedance)"
+                  title="Generate native audio with the video (Atlas: Seedance, Kling v3)"
                 >
                   Audio
                 </span>

@@ -31,7 +31,7 @@ type ClientBody = {
   resolution?: string;
   /** Clip length in seconds (clamped). */
   duration?: number;
-  /** Seedance native soundtrack (Atlas `generate_audio`). */
+  /** Native soundtrack via Atlas `generate_audio` (Seedance, Kling v3, etc.). */
   generate_audio?: boolean;
   /** UI Standard/Fast → Atlas model slug tier (Seedance fast, Kling std). */
   speed_tier?: string;
