@@ -182,6 +182,8 @@ export function VideoGenerationPage() {
 
   const [loading, setLoading] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  /** Raw Atlas/CDN URL for full-file download (playback uses proxied `videoUrl`). */
+  const [videoDownloadUrl, setVideoDownloadUrl] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
   const [history, setHistory] = useState<VideoHistoryEntry[]>([]);
@@ -212,6 +214,7 @@ export function VideoGenerationPage() {
 
       setGenerateError(null);
       setVideoUrl(null);
+      setVideoDownloadUrl(null);
 
       // Merge context + React state: avoids empty prompt when Generate runs before the last onChange commits.
       const promptValue = ctx.promptText.trim() || prompt.trim();
@@ -381,6 +384,7 @@ export function VideoGenerationPage() {
             redirectNormalized: rawOut !== finalVideoUrl,
             resolved: finalVideoUrl
           });
+          setVideoDownloadUrl(finalVideoUrl);
           setVideoUrl(toBrowserVideoSrc(finalVideoUrl));
         } else if (pickPredictionIdFromPost(data) && data.pending !== false) {
           const predictionId = pickPredictionIdFromPost(data);
@@ -431,6 +435,7 @@ export function VideoGenerationPage() {
                 redirectNormalized: rawOut !== finalVideoUrl,
                 resolved: finalVideoUrl
               });
+              setVideoDownloadUrl(finalVideoUrl);
               setVideoUrl(toBrowserVideoSrc(finalVideoUrl));
               break;
             }
@@ -545,6 +550,7 @@ export function VideoGenerationPage() {
           looksLikeMp4Path: videoUrlLooksLikeMp4Path(resolved),
           resolved
         });
+        setVideoDownloadUrl(resolved);
         setVideoUrl(toBrowserVideoSrc(resolved));
       }
     },
@@ -576,6 +582,7 @@ export function VideoGenerationPage() {
               actionTab={actionTab}
               onActionTabChange={setActionTab}
               videoUrl={videoUrl}
+              videoDownloadUrl={videoDownloadUrl}
               loading={loading}
               errorMessage={generateError}
               promptThumbUrl={hidePromptThumb ? null : promptImageUrl}

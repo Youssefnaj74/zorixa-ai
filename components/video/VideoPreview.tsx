@@ -3,9 +3,13 @@
 import { Download, Expand, History, Play, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useEffect, useState, type VideoHTMLAttributes } from "react";
+import { useCallback, useEffect, useState, type VideoHTMLAttributes } from "react";
 
 import { Button } from "@/components/ui/button";
+import { downloadVideoFile } from "@/lib/download-video-file";
+import {
+  extractCanonicalVideoUrlFromProxy
+} from "@/lib/video-playback-proxy";
 import { cn } from "@/lib/utils";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
@@ -23,6 +27,7 @@ export function VideoPreview({
   actionTab,
   onActionTabChange,
   videoUrl,
+  videoDownloadUrl,
   loading,
   errorMessage,
   promptThumbUrl,
@@ -32,6 +37,8 @@ export function VideoPreview({
   actionTab: ActionTab;
   onActionTabChange: (t: ActionTab) => void;
   videoUrl: string | null;
+  /** Raw Atlas/CDN https URL — used for full-file download (not the playback proxy). */
+  videoDownloadUrl?: string | null;
   loading: boolean;
   errorMessage?: string | null;
   /** Small reference thumbnail (e.g. @PRODUCT_IMAGE1) shown top-center */
@@ -42,6 +49,28 @@ export function VideoPreview({
 }) {
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${TABS_ROW_H}px - ${bottomBarHeight}px)`;
   const [inlinePlaybackError, setInlinePlaybackError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  const canonicalDownloadUrl =
+    videoDownloadUrl?.trim() ||
+    (videoUrl ? extractCanonicalVideoUrlFromProxy(videoUrl) : null) ||
+    (videoUrl?.startsWith("https://") ? videoUrl : null);
+
+  const onDownloadClick = useCallback(async () => {
+    if (!canonicalDownloadUrl) return;
+    setDownloadError(null);
+    setDownloading(true);
+    try {
+      await downloadVideoFile(canonicalDownloadUrl);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Download failed";
+      setDownloadError(msg);
+      window.open(canonicalDownloadUrl, "_blank", "noopener,noreferrer");
+    } finally {
+      setDownloading(false);
+    }
+  }, [canonicalDownloadUrl]);
 
   useEffect(() => {
     setInlinePlaybackError(null);
@@ -193,16 +222,16 @@ export function VideoPreview({
                 Reset to Defaults
               </Button>
               {videoUrl ? (
-                <a
-                  href={videoUrl}
-                  download
-                  target="_blank"
-                  rel="noreferrer"
-                  className="pointer-events-auto inline-flex h-9 items-center justify-center rounded-lg border border-brand/50 bg-black/30 px-3 text-xs font-medium text-white transition-colors hover:bg-brand/20"
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={downloading || !canonicalDownloadUrl}
+                  onClick={() => void onDownloadClick()}
+                  className="pointer-events-auto h-9 rounded-lg border border-brand/50 bg-black/30 px-3 text-xs font-medium text-white hover:bg-brand/20 disabled:opacity-60"
                 >
                   <Download className="mr-1 size-3.5" />
-                  Download
-                </a>
+                  {downloading ? "Downloading…" : "Download"}
+                </Button>
               ) : (
                 <Button
                   type="button"
