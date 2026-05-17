@@ -158,6 +158,14 @@ export async function GET(request: Request) {
     const poll = await fetchAtlasPrediction(predictionId);
     const statusNorm = poll.status.toLowerCase();
 
+    if (statusNorm === "failed") {
+      console.error("[generate-video GET] Atlas task failed", {
+        predictionId,
+        atlasError: poll.error,
+        generateAudio: pollGenerateAudio
+      });
+    }
+
     return NextResponse.json({
       status: poll.status,
       video_url: poll.outputUrl,
@@ -170,6 +178,8 @@ export async function GET(request: Request) {
               hostIsProduction: process.env.VERCEL_ENV === "production"
             })
           : null,
+      atlas_error: statusNorm === "failed" ? poll.error : null,
+      prediction_id: predictionId,
       poll_interval_ms: CLIENT_POLL_HINT_MS
     });
   } catch (e) {
@@ -442,15 +452,29 @@ async function handleGenerateVideoPost(request: Request) {
 
   const createJson = (await createRes.json()) as AtlasEnvelope;
   if (!createRes.ok) {
+    console.error("[generate-video POST] Atlas generateVideo HTTP error", {
+      httpStatus: createRes.status,
+      atlasResponse: JSON.stringify(createJson),
+      model,
+      atlasBody
+    });
     return NextResponse.json(
       {
         error:
           createJson.message ??
-          `Atlas generateVideo failed (${createRes.status})`
+          `Atlas generateVideo failed (${createRes.status})`,
+        atlas_error: createJson.data?.error ?? createJson.message ?? null
       },
       { status: createRes.status >= 400 ? createRes.status : 502 }
     );
   }
+
+  console.log("[generate-video POST] Atlas create response", {
+    httpStatus: createRes.status,
+    predictionId: createJson.data?.id,
+    initialStatus: createJson.data?.status,
+    atlasResponse: JSON.stringify(createJson)
+  });
 
   const predictionId = createJson.data?.id;
   if (!predictionId) {
@@ -473,14 +497,23 @@ async function handleGenerateVideoPost(request: Request) {
   }
 
   if (initialStatus === "failed") {
-    const err = formatAtlasVideoFailureForUi(
-      createJson.data?.error ?? createJson.message ?? "Atlas prediction failed",
-      {
-        generateAudio,
-        hostIsProduction: process.env.VERCEL_ENV === "production"
-      }
+    const atlasRaw =
+      createJson.data?.error ?? createJson.message ?? "Atlas prediction failed";
+    console.error("[generate-video POST] Atlas task failed (immediate)", {
+      predictionId,
+      atlasError: atlasRaw,
+      atlasResponse: JSON.stringify(createJson),
+      model,
+      atlasBody
+    });
+    const err = formatAtlasVideoFailureForUi(atlasRaw, {
+      generateAudio,
+      hostIsProduction: process.env.VERCEL_ENV === "production"
+    });
+    return NextResponse.json(
+      { error: err, atlas_error: atlasRaw, atlas_model: model, prediction_id: predictionId },
+      { status: 502 }
     );
-    return NextResponse.json({ error: err, atlas_model: model }, { status: 502 });
   }
 
   const atlasDebug =

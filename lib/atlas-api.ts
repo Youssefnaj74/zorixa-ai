@@ -157,6 +157,13 @@ export type AtlasPredictionPoll = {
   error: string | null;
 };
 
+function atlasErrorFromEnvelope(json: AtlasEnvelope): string | null {
+  const data = json.data;
+  if (typeof data?.error === "string" && data.error.length > 0) return data.error;
+  if (typeof json.message === "string" && json.message.length > 0) return json.message;
+  return null;
+}
+
 /** GET `/api/v1/model/prediction/{id}` — used by generations poll route. */
 export async function fetchAtlasPrediction(predictionId: string): Promise<AtlasPredictionPoll> {
   const apiKey = getAtlasApiKey();
@@ -174,12 +181,17 @@ export async function fetchAtlasPrediction(predictionId: string): Promise<AtlasP
   const data = json.data;
   const status = data?.status ?? "unknown";
   const outputUrl = extractAtlasVideoOutputUrl(data);
-  const error =
-    typeof data?.error === "string" && data.error.length > 0
-      ? data.error
-      : typeof json.message === "string"
-        ? json.message
-        : null;
+  const error = atlasErrorFromEnvelope(json);
+
+  const statusNorm = status.toLowerCase();
+  if (statusNorm === "failed") {
+    console.error("[atlas-api] prediction failed", {
+      predictionId,
+      status,
+      error,
+      atlasResponse: JSON.stringify(json)
+    });
+  }
 
   return { status, outputUrl, error };
 }

@@ -424,6 +424,8 @@ export function VideoGenerationPage() {
               output?: unknown;
               status?: string;
               error?: string | null;
+              atlas_error?: string | null;
+              prediction_id?: string;
               poll_interval_ms?: number;
             } = {};
             try {
@@ -456,11 +458,21 @@ export function VideoGenerationPage() {
               break;
             }
             if (statusNorm === "failed") {
-              setGenerateError(
+              console.error("[VideoGenerationPage] Atlas poll failed", {
+                status: pd.status,
+                atlas_error: pd.atlas_error,
+                error: pd.error,
+                prediction_id: pd.prediction_id ?? predictionId
+              });
+              const msg =
                 pd.error ??
-                  (wantGenerateAudio
-                    ? "Atlas prediction failed. Try Audio Off on zorixaai.com, or check Atlas balance for your Vercel API key."
-                    : "Atlas prediction failed. Check Atlas Request History and Vercel ATLASCLOUD_API_KEY balance.")
+                (pd.atlas_error
+                  ? `Atlas: ${pd.atlas_error}`
+                  : "Atlas prediction failed. Check Atlas Request History and Vercel balance.");
+              setGenerateError(
+                pd.prediction_id
+                  ? `${msg} (prediction: ${pd.prediction_id.slice(0, 12)}…)`
+                  : msg
               );
               return;
             }
