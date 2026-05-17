@@ -118,6 +118,7 @@ function logAtlasComposerVideoToSupabase(payload: {
   output_url: string;
   input_url?: string;
   prediction_id?: string | null;
+  video_model?: string | null;
 }) {
   void fetch("/api/generations/atlas-video-log", {
     method: "POST",
@@ -126,7 +127,8 @@ function logAtlasComposerVideoToSupabase(payload: {
     body: JSON.stringify({
       output_url: payload.output_url,
       input_url: payload.input_url ?? "",
-      prediction_id: payload.prediction_id ?? null
+      prediction_id: payload.prediction_id ?? null,
+      video_model: payload.video_model ?? null
     })
   }).catch(() => {});
 }
@@ -206,6 +208,8 @@ export function VideoGenerationPage() {
 
   const runGeneration = useCallback(
     async (ctx: VideoGenerateContext) => {
+      if (loading) return;
+
       setGenerateError(null);
       setVideoUrl(null);
 
@@ -483,13 +487,14 @@ export function VideoGenerationPage() {
             outputVideoUrl: finalVideoUrl,
             settingsSnapshot
           },
-          ...prev
+          ...prev.filter((h) => h.outputVideoUrl !== finalVideoUrl)
         ]);
 
         logAtlasComposerVideoToSupabase({
           output_url: finalVideoUrl,
           input_url: sourceInputForLog ?? "",
-          prediction_id: predictionIdForLog
+          prediction_id: predictionIdForLog,
+          video_model: composerModelId
         });
       } catch (e: unknown) {
         setGenerateError(e instanceof Error ? e.message : "Network error. Try again.");
@@ -497,7 +502,7 @@ export function VideoGenerationPage() {
         setLoading(false);
       }
     },
-    [aspect, composerModelId, durationStandard, modeValue, prompt, resolution, timeSeconds]
+    [aspect, composerModelId, durationStandard, loading, modeValue, prompt, resolution, timeSeconds]
   );
 
   const restoreSettings = useCallback(

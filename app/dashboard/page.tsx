@@ -47,11 +47,25 @@ export default async function DashboardPage() {
 
   const isPremium = profile?.is_premium ?? false;
 
-  const { data: generations } = await supabase
+  const generationColumnsBase =
+    "id, feature_type, output_url, input_url, status, created_at, provider";
+  let generationsQuery = await supabase
     .from("generations")
-    .select("id, feature_type, output_url, input_url, status, created_at, provider")
+    .select(`${generationColumnsBase}, composer_model_id`)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(12);
+
+  if (generationsQuery.error) {
+    generationsQuery = await supabase
+      .from("generations")
+      .select(generationColumnsBase)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(12);
+  }
+
+  const generations = generationsQuery.data;
 
   const creditsDisplay = credits >= 1000 ? `${(credits / 1000).toFixed(1)}k` : String(credits);
 

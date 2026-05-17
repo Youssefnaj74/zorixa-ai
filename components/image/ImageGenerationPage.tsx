@@ -108,18 +108,7 @@ export function ImageGenerationPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
-  const [history, setHistory] = useState<ImageHistoryEntry[]>([
-    {
-      id: "h1",
-      thumb: "https://picsum.photos/seed/neon/96/96",
-      title: "Neon portrait concept"
-    },
-    {
-      id: "h2",
-      thumb: "https://picsum.photos/seed/mountain/96/96",
-      title: "Studio packshot v2"
-    }
-  ]);
+  const [history, setHistory] = useState<ImageHistoryEntry[]>([]);
 
   const creditsLine = "-90.00 CR";
 
@@ -156,6 +145,8 @@ export function ImageGenerationPage() {
 
   const runGeneration = useCallback(
     async (ctx: ImageGenerateContext) => {
+      if (loading) return;
+
       setGenerateError(null);
       setImageUrl(null);
 
@@ -200,6 +191,7 @@ export function ImageGenerationPage() {
           credentials: "include"
         });
 
+        const rawText = await res.text();
         let data: {
           image_url?: string;
           pending?: boolean;
@@ -208,14 +200,18 @@ export function ImageGenerationPage() {
           error?: string;
         } = {};
         try {
-          data = (await res.json()) as typeof data;
+          data = rawText ? (JSON.parse(rawText) as typeof data) : {};
         } catch {
-          setGenerateError(`Generation failed (${res.status})`);
+          setGenerateError(
+            rawText.trim().slice(0, 200) || `Generation failed (${res.status})`
+          );
           return;
         }
 
         if (!res.ok) {
-          setGenerateError(data.error ?? `Generation failed (${res.status})`);
+          setGenerateError(
+            data.error ?? (rawText.trim().slice(0, 200) || `Generation failed (${res.status})`)
+          );
           return;
         }
 
@@ -233,7 +229,7 @@ export function ImageGenerationPage() {
           while (Date.now() < deadline) {
             await new Promise((r) => setTimeout(r, interval));
             const pr = await fetch(
-              `/api/generate-image?predictionId=${encodeURIComponent(predictionId)}`,
+              `/api/generate-image?predictionId=${encodeURIComponent(predictionId)}&imageModel=${encodeURIComponent(modelId)}`,
               { cache: "no-store", credentials: "include" }
             );
             let pd: {
@@ -281,7 +277,7 @@ export function ImageGenerationPage() {
             title: promptForAtlas.slice(0, 42) || modelId,
             outputImageUrl: finalImageUrl
           },
-          ...prev
+          ...prev.filter((h) => h.outputImageUrl !== finalImageUrl)
         ]);
       } catch (e: unknown) {
         setGenerateError(e instanceof Error ? e.message : "Network error. Try again.");
@@ -289,7 +285,7 @@ export function ImageGenerationPage() {
         setLoading(false);
       }
     },
-    [aspect, modelId, prompt, resolution]
+    [aspect, loading, modelId, prompt, resolution]
   );
 
   const restoreHistory = useCallback((item: ImageHistoryEntry) => {

@@ -117,18 +117,7 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
   const [loading, setLoading] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [outputUrl, setOutputUrl] = useState<string | null>(null);
-  const [history, setHistory] = useState<HistoryItem[]>([
-    {
-      id: "h1",
-      thumb: "https://picsum.photos/seed/z1/96/96",
-      label: "Neon portrait concept"
-    },
-    {
-      id: "h2",
-      thumb: "https://picsum.photos/seed/z2/96/96",
-      label: "Studio packshot v2"
-    }
-  ]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
 
   const creditsLabelVideo = "~90.00 CR";
   const creditsLabelImage = "-90.00 CR";
@@ -243,13 +232,14 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
         }
 
         let finalImageUrl: string | null = null;
+        let predictionIdForLog: string | null = pickPredictionIdFromPost(data);
 
         const syncUrl = pickImageUrlFromPollBody(data as Record<string, unknown>);
         if (syncUrl) {
           finalImageUrl = syncUrl;
           setOutputUrl(finalImageUrl);
-        } else if (pickPredictionIdFromPost(data) && data.pending !== false) {
-          const predictionId = pickPredictionIdFromPost(data);
+        } else if (predictionIdForLog && data.pending !== false) {
+          const predictionId = predictionIdForLog;
           if (!predictionId) {
             setGenerateError("No image URL or job id was returned.");
             return;
@@ -259,7 +249,7 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
           while (Date.now() < deadline) {
             await new Promise((r) => setTimeout(r, interval));
             const pr = await fetch(
-              `/api/generate-image?predictionId=${encodeURIComponent(predictionId)}`,
+              `/api/generate-image?predictionId=${encodeURIComponent(predictionId)}&imageModel=${encodeURIComponent(modelId)}`,
               { cache: "no-store", credentials: "include" }
             );
             let pd: {
@@ -316,7 +306,7 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
             outputUrl: finalImageUrl ?? undefined,
             label: promptForAtlas.slice(0, 42) || "New generation"
           },
-          ...prev
+          ...prev.filter((h) => h.outputUrl !== finalImageUrl)
         ]);
       } catch (e: unknown) {
         setGenerateError(e instanceof Error ? e.message : "Network error. Try again.");

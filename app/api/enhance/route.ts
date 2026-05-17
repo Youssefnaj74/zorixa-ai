@@ -92,8 +92,9 @@ export async function POST(request: Request) {
       feature_type: "image",
       input_url: body.input_url,
       output_url: null,
-      provider: "replicate",
+      provider: `replicate:${model}`,
       provider_prediction_id: null,
+      composer_model_id: model,
       credits_spent: enhanceCost,
       status: "pending"
     })

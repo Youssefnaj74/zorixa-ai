@@ -16,6 +16,7 @@ import {
 import { DashboardNavbar } from "@/components/layout/Navbar";
 import { StatsCard } from "./StatsCard";
 import { GenerationGrid } from "./GenerationGrid";
+import { composerModelDisplayLabel } from "@/lib/composer-model-label";
 import { QuickActions } from "./QuickActions";
 import { UpgradeBanner } from "./upgrade-banner";
 import { WelcomeBanner } from "./welcome-banner";
@@ -28,6 +29,7 @@ type GenerationRow = {
   status: string;
   created_at: string;
   provider?: string | null;
+  composer_model_id?: string | null;
 };
 
 type GenerationTile = {
@@ -51,9 +53,26 @@ function isLikelyVideoFile(url: string): boolean {
   return [".mp4", ".webm", ".mov", ".m4v"].some((ext) => path.endsWith(ext));
 }
 
+/** One tile per output URL — hides legacy duplicate DB rows in dashboard history. */
+function dedupeGenerationsByOutput(items: GenerationRow[]): GenerationRow[] {
+  const seen = new Set<string>();
+  const out: GenerationRow[] = [];
+  for (const g of items) {
+    const key = (g.output_url?.trim() || `id:${g.id}`).toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(g);
+  }
+  return out;
+}
+
 function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
-  return items.map((g) => {
-    const dateLabel = new Date(g.created_at).toLocaleString();
+  return dedupeGenerationsByOutput(items).map((g) => {
+    const modelLabel = composerModelDisplayLabel(
+      g.composer_model_id,
+      g.feature_type,
+      g.provider
+    );
     if (g.feature_type === "video") {
       const out = g.output_url;
       const inn = g.input_url;
@@ -62,30 +81,28 @@ function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
       let src: string | undefined;
       if (out && !isLikelyVideoFile(out)) src = out;
       else if (inn && !isLikelyVideoFile(inn) && !inn.includes("placehold.co")) src = inn;
+      const title =
+        g.status === "completed" ? modelLabel : `${modelLabel} (${g.status})`;
       return {
         id: String(g.id),
-        title: g.status === "completed" ? `UGC video · ${dateLabel}` : `Video (${g.status}) · ${dateLabel}`,
+        title,
         kind: "video" as const,
         src,
         videoSrc,
-        categoryLabel: "UGC video"
+        categoryLabel: "Zorixa AI"
       };
     }
     const out = g.output_url;
     const inn = g.input_url;
-    const isAtlasStudio = g.provider === "atlas";
-    const categoryLabel = isAtlasStudio ? "AI image" : "Image";
     const title =
-      g.status === "completed"
-        ? `${categoryLabel} · ${dateLabel}`
-        : `${categoryLabel} (${g.status}) · ${dateLabel}`;
+      g.status === "completed" ? modelLabel : `${modelLabel} (${g.status})`;
     const src = out ?? (inn && !inn.includes("placehold.co") ? inn : undefined);
     return {
       id: String(g.id),
       title,
       kind: "image" as const,
       src,
-      categoryLabel
+      categoryLabel: "Zorixa AI"
     };
   });
 }
@@ -113,10 +130,11 @@ export function DashboardHome({
   generations: GenerationRow[];
 }) {
   const scheduleNavigation = useScheduledAppRouterNavigation();
+  const uniqueGenerations = dedupeGenerationsByOutput(generations);
   const historyItems = mapGenerationsToTiles(generations);
-  const total = generations.length;
-  const imageRuns = generations.filter((g) => g.feature_type === "image").length;
-  const videoRuns = generations.filter((g) => g.feature_type === "video").length;
+  const total = uniqueGenerations.length;
+  const imageRuns = uniqueGenerations.filter((g) => g.feature_type === "image").length;
+  const videoRuns = uniqueGenerations.filter((g) => g.feature_type === "video").length;
   const splitTotal = imageRuns + videoRuns;
 
   const onSignOut = useCallback(async () => {

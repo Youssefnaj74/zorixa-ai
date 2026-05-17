@@ -31,9 +31,6 @@ export function ImageHistory({
         className
       )}
     >
-      <div className="border-b border-white/10 px-4 py-3">
-        <p className="text-xs text-zorixa-muted">Recent outputs from this session:</p>
-      </div>
       <div
         className="studio-scrollbar flex-1 space-y-3 overflow-y-auto p-4"
         style={scrollPaddingBottom > 0 ? { paddingBottom: scrollPaddingBottom } : undefined}

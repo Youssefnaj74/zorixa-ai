@@ -20,7 +20,12 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let body: { output_url?: string; input_url?: string; prediction_id?: string | null };
+  let body: {
+    output_url?: string;
+    input_url?: string;
+    prediction_id?: string | null;
+    image_model?: string | null;
+  };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -41,11 +46,17 @@ export async function POST(request: Request) {
       ? body.prediction_id.trim()
       : null;
 
+  const image_model =
+    typeof body.image_model === "string" && body.image_model.trim().length > 0
+      ? body.image_model.trim()
+      : null;
+
   const ok = await logAtlasImageGenerationIfNew({
     userId: user.id,
     outputUrl: outputRaw,
     inputUrl: inputRaw || null,
-    predictionId: prediction_id
+    predictionId: prediction_id,
+    composerModelId: image_model
   });
 
   if (!ok) {

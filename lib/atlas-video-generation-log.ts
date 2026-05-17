@@ -3,12 +3,7 @@ import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const PLACEHOLDER_INPUT =
-  "https://placehold.co/640x640/0d0d12/a78bfa?text=Zorixa+Image+Studio";
-
-function atlasImageTerminalSuccess(status: string | undefined): boolean {
-  const s = (status ?? "").toLowerCase();
-  return s === "succeeded" || s === "completed" || s === "success";
-}
+  "https://placehold.co/640x360/0d0d12/a78bfa?text=Zorixa+Video+Studio";
 
 function isMissingComposerModelColumn(error: { message?: string; code?: string } | null): boolean {
   if (!error) return false;
@@ -35,26 +30,16 @@ async function patchGenerationModelMeta(
 }
 
 /**
- * Persists a completed Atlas image studio output for dashboard history.
- * Skips duplicate rows when the same prediction id was already logged.
+ * Persists a completed Atlas video studio output for dashboard history.
+ * Skips duplicate rows for the same prediction id or output URL.
  */
-export async function logAtlasImageGenerationIfNew(args: {
+export async function logAtlasVideoGenerationIfNew(args: {
   userId: string;
   outputUrl: string;
   inputUrl?: string | null;
   predictionId?: string | null;
-  /** Zorixa composer id (e.g. nano-banana-pro) for dashboard history. */
   composerModelId?: string | null;
-  /** When set, only write if Atlas status is terminal success. Omit when output URL is already verified. */
-  requireTerminalStatus?: string;
 }): Promise<boolean> {
-  if (
-    args.requireTerminalStatus !== undefined &&
-    !atlasImageTerminalSuccess(args.requireTerminalStatus)
-  ) {
-    return false;
-  }
-
   const output_url = coerceToPublicHttpsUrl(args.outputUrl.trim());
   if (!output_url) return false;
 
@@ -74,7 +59,7 @@ export async function logAtlasImageGenerationIfNew(args: {
       .select("id, composer_model_id, provider")
       .eq("user_id", args.userId)
       .eq("provider_prediction_id", prediction_id)
-      .eq("feature_type", "image")
+      .eq("feature_type", "video")
       .maybeSingle();
     if (existing) {
       if (composer_model_id) {
@@ -88,7 +73,7 @@ export async function logAtlasImageGenerationIfNew(args: {
     .from("generations")
     .select("id, composer_model_id, provider")
     .eq("user_id", args.userId)
-    .eq("feature_type", "image")
+    .eq("feature_type", "video")
     .eq("output_url", output_url)
     .maybeSingle();
   if (existingByOutput) {
@@ -104,7 +89,7 @@ export async function logAtlasImageGenerationIfNew(args: {
 
   const baseRow = {
     user_id: args.userId,
-    feature_type: "image" as const,
+    feature_type: "video" as const,
     input_url: inputFinal,
     output_url,
     provider: atlasProviderForModel(composer_model_id),
@@ -124,7 +109,7 @@ export async function logAtlasImageGenerationIfNew(args: {
   }
 
   if (error && process.env.NODE_ENV === "development") {
-    console.error("[atlas-image-generation-log] insert failed", error.message);
+    console.error("[atlas-video-generation-log] insert failed", error.message);
   }
 
   return !error;

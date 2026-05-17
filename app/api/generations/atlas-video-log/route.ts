@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 
+import { logAtlasVideoGenerationIfNew } from "@/lib/atlas-video-generation-log";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { rateLimit } from "@/lib/rate-limit";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-const PLACEHOLDER_INPUT =
-  "https://placehold.co/640x360/0d0d12/a78bfa?text=Zorixa+Video+Studio";
 
 /**
  * Records a completed Atlas video from the public video composer (no extra credit charge).
@@ -23,7 +20,12 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let body: { output_url?: string; input_url?: string; prediction_id?: string | null };
+  let body: {
+    output_url?: string;
+    input_url?: string;
+    prediction_id?: string | null;
+    video_model?: string | null;
+  };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -41,26 +43,25 @@ export async function POST(request: Request) {
     );
   }
 
-  const coercedInput = inputRaw ? coerceToPublicHttpsUrl(inputRaw) : null;
-  const inputFinal = coercedInput ?? PLACEHOLDER_INPUT;
-
   const prediction_id =
     typeof body.prediction_id === "string" && body.prediction_id.trim().length > 0
       ? body.prediction_id.trim()
       : null;
 
-  const { error: insErr } = await supabaseAdmin.from("generations").insert({
-    user_id: user.id,
-    feature_type: "video",
-    input_url: inputFinal,
-    output_url,
-    provider: "atlas",
-    provider_prediction_id: prediction_id,
-    credits_spent: 0,
-    status: "completed"
+  const video_model =
+    typeof body.video_model === "string" && body.video_model.trim().length > 0
+      ? body.video_model.trim()
+      : null;
+
+  const ok = await logAtlasVideoGenerationIfNew({
+    userId: user.id,
+    outputUrl: output_url,
+    inputUrl: inputRaw || null,
+    predictionId: prediction_id,
+    composerModelId: video_model
   });
 
-  if (insErr) {
+  if (!ok) {
     return NextResponse.json({ error: "Failed to save generation" }, { status: 500 });
   }
 

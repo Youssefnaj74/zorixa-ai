@@ -92,6 +92,9 @@ export async function GET(request: Request) {
 
   const searchParams = new URL(request.url).searchParams;
   const predictionId = (searchParams.get("predictionId") ?? searchParams.get("prediction_id"))?.trim();
+  const imageModelParam = searchParams.get("imageModel")?.trim() ?? "";
+  const composerModelId =
+    imageModelParam && isAtlasImageComposerId(imageModelParam) ? imageModelParam : null;
   if (!predictionId) {
     return NextResponse.json(
       { error: "Missing predictionId or prediction_id query parameter" },
@@ -127,7 +130,8 @@ export async function GET(request: Request) {
         userId: user.id,
         outputUrl: imageUrl,
         predictionId,
-        requireTerminalStatus: statusNorm
+        composerModelId,
+        requireTerminalStatus: status
       });
     }
   }
@@ -143,6 +147,18 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  try {
+    return await handleGenerateImagePost(request);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Image generation failed";
+    if (process.env.NODE_ENV === "development") {
+      console.error("[generate-image] unhandled", e);
+    }
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+async function handleGenerateImagePost(request: Request) {
   const apiKey = env.atlasCloudApiKey;
   if (!apiKey) {
     return NextResponse.json(
@@ -278,6 +294,7 @@ export async function POST(request: Request) {
           outputUrl: imageUrl,
           inputUrl: imageUrls[0] ?? null,
           predictionId: predictionId ?? null,
+          composerModelId: imageModel,
           requireTerminalStatus: initialStatus
         });
       }
