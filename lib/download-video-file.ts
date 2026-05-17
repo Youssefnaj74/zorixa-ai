@@ -22,11 +22,12 @@ export async function downloadVideoFile(
     throw new Error(`Download failed (${res.status})`);
   }
 
-  const blob = await res.blob();
-  if (blob.size < 2048) {
+  const bytes = await res.arrayBuffer();
+  if (bytes.byteLength < 2048) {
     throw new Error("Downloaded file is too small — try again or open the CDN link.");
   }
 
+  const blob = new Blob([bytes], { type: res.headers.get("content-type") ?? "video/mp4" });
   const objectUrl = URL.createObjectURL(blob);
   try {
     const a = document.createElement("a");

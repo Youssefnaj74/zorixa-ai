@@ -53,24 +53,33 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Failed to reach video host" }, { status: 502 });
   }
 
-  if (!upstream.ok || !upstream.body) {
+  if (!upstream.ok) {
     return NextResponse.json(
       { error: `Upstream returned ${upstream.status}` },
       { status: upstream.status >= 400 ? upstream.status : 502 }
     );
   }
 
+  let bytes: ArrayBuffer;
+  try {
+    bytes = await upstream.arrayBuffer();
+  } catch {
+    return NextResponse.json({ error: "Failed to read video from CDN" }, { status: 502 });
+  }
+
+  if (bytes.byteLength < 2048) {
+    return NextResponse.json({ error: "Video file from CDN is too small or empty" }, { status: 502 });
+  }
+
   const contentType = upstream.headers.get("content-type") ?? "video/mp4";
   const outHeaders = new Headers({
-    "Content-Type": contentType,
+    "Content-Type": contentType.includes("video") ? contentType : "video/mp4",
     "Content-Disposition": 'attachment; filename="zorixa-video.mp4"',
+    "Content-Length": String(bytes.byteLength),
     "Cache-Control": "private, no-store"
   });
 
-  const len = upstream.headers.get("content-length");
-  if (len) outHeaders.set("Content-Length", len);
-
-  return new NextResponse(upstream.body, {
+  return new NextResponse(bytes, {
     status: 200,
     headers: outHeaders
   });

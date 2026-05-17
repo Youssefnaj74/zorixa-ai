@@ -67,14 +67,11 @@ function normalizeDurationSeconds(raw: unknown): number {
 }
 
 /**
- * Seedance 2.0 I2V on Atlas accepts only flat fields (`image` URL, dimensions, etc.).
- * Sending `content` alongside flat fields causes 400 (verified in Atlas request history).
+ * Seedance on Atlas uses explicit `width` / `height` (see Atlas model docs).
+ * `aspect_ratio` + `resolution` alone are ignored → defaults to landscape (~16:9).
  */
-function isSeedance20ImageToVideo(model: string): boolean {
-  return (
-    model === "bytedance/seedance-2.0/image-to-video" ||
-    model === "bytedance/seedance-2.0-fast/image-to-video"
-  );
+function atlasSeedanceModelUsesDimensions(model: string): boolean {
+  return /seedance/i.test(model);
 }
 
 /** Short-side pixel size from UI resolution tier (matches Seedance model page examples). */
@@ -305,28 +302,39 @@ export async function POST(request: Request) {
     durationSec = normalizeAtlasKlingDurationSeconds(durationSec);
   }
 
-  const seedance20I2v = isSeedance20ImageToVideo(model) && Boolean(image_url);
+  const seedanceDimensions = atlasSeedanceModelUsesDimensions(model);
   const generateAudio =
     body.generate_audio === true &&
     atlasModelSupportsGenerateAudio(model) &&
     (action === "text" || action === "image");
 
-  if (seedance20I2v) {
+  if (seedanceDimensions) {
     const { width, height } = dimensionsForAspectResolution(aspectRatio, resolution);
     atlasBody = {
       model,
       prompt,
-      image: image_url,
       width,
       height,
       duration: durationSec,
       fps
     };
+    if (image_url) {
+      atlasBody.image = image_url;
+      atlasBody.image_url = image_url;
+    }
+    if (audio_url) {
+      atlasBody.audio_url = audio_url;
+      atlasBody.audio = audio_url;
+    }
+    if (video_url) {
+      atlasBody.video_url = video_url;
+      atlasBody.video = video_url;
+    }
     if (generateAudio) {
       applyAtlasNativeAudioFields(atlasBody, model);
     }
   } else {
-    // Atlas `generateVideo` flat body (Kling, Veo, Wan, Hailuo, Seedance T2V, etc.).
+    // Kling, Veo, Wan, Hailuo — `aspect_ratio` + `resolution` on flat body.
     atlasBody = {
       model,
       prompt,
@@ -358,9 +366,11 @@ export async function POST(request: Request) {
       videoModel,
       action,
       model,
-      envelope: seedance20I2v ? "seedance-2.0-i2v-flat" : "flat",
+      envelope: seedanceDimensions ? "seedance-width-height" : "flat-aspect-ratio",
       aspectRatio,
       resolution,
+      width: seedanceDimensions ? atlasBody.width : undefined,
+      height: seedanceDimensions ? atlasBody.height : undefined,
       keys: Object.keys(atlasBody),
       promptLen: prompt.length,
       durationSec,
@@ -382,9 +392,10 @@ export async function POST(request: Request) {
     "→ model:",
     model,
     "| envelope:",
-    seedance20I2v ? "seedance-2.0-i2v-flat" : "flat",
+    seedanceDimensions ? "seedance-width-height" : "flat-aspect-ratio",
     "| resolution:",
-    resolution
+    resolution,
+    seedanceDimensions ? `| ${String(atlasBody.width)}x${String(atlasBody.height)}` : `| aspect ${aspectRatio}`
   );
 
   const createRes = await fetch(`${ATLAS_BASE}/generateVideo`, {
