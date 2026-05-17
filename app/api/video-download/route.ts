@@ -6,11 +6,16 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const maxDuration = 120;
 
 /**
- * Full-file download proxy (no Range). Use for Save/Download — avoids corrupt MP4s
- * when saving a partial segment from `/api/video-playback`.
+ * Authenticated download helper for Atlas / Supabase CDN videos.
+ *
+ * Default (`mode` omitted): **302 redirect** to the public CDN URL — browser downloads
+ * directly from Atlas/OSS (no Vercel body timeout, no corrupt partial streams).
+ *
+ * `?mode=proxy`: buffer full file on server (fallback if CDN blocks browser download).
  */
 export async function GET(request: Request) {
-  const target = new URL(request.url).searchParams.get("url")?.trim();
+  const searchParams = new URL(request.url).searchParams;
+  const target = searchParams.get("url")?.trim();
   if (!target) {
     return NextResponse.json({ error: "Missing url query parameter" }, { status: 400 });
   }
@@ -36,6 +41,11 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const mode = searchParams.get("mode")?.trim().toLowerCase();
+  if (mode !== "proxy") {
+    return NextResponse.redirect(remote.toString(), 302);
   }
 
   let upstream: Response;
