@@ -352,13 +352,12 @@ async function handleGenerateVideoPost(request: Request) {
 
   if (seedanceDimensions) {
     const { width, height } = dimensionsForAspectResolution(aspectRatio, resolution);
+    // Seedance: width/height define aspect (Atlas examples omit aspect_ratio).
     atlasBody = {
       model,
       prompt,
       width,
       height,
-      aspect_ratio: aspectRatio,
-      aspectRatio,
       duration: durationSec,
       fps
     };
@@ -384,7 +383,6 @@ async function handleGenerateVideoPost(request: Request) {
       duration: durationSec,
       fps,
       aspect_ratio: aspectRatio,
-      aspectRatio,
       resolution
     };
     if (image_url) {
