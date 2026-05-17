@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { AtlasApiError, fetchAtlasPrediction } from "@/lib/atlas-api";
 import {
   applyAtlasNativeAudioFields,
   atlasModelSupportsGenerateAudio,
@@ -87,65 +88,59 @@ function resolutionShortSidePx(resolution: string): number {
   }
 }
 
-/** Width × height for Seedance I2V (short side = resolution tier). */
+/** Atlas video models expect dimensions aligned to 8px (avoids 500/invalid size). */
+function snapVideoDimension(n: number): number {
+  return Math.max(64, Math.round(n / 8) * 8);
+}
+
+/** Width × height for Seedance (short side = resolution tier). */
 function dimensionsForAspectResolution(
   aspectRatio: string,
   resolution: string
 ): { width: number; height: number } {
   const s = resolutionShortSidePx(resolution);
+  let width: number;
+  let height: number;
   switch (aspectRatio) {
     case "16:9":
-      return { width: Math.round((s * 16) / 9), height: s };
+      width = Math.round((s * 16) / 9);
+      height = s;
+      break;
     case "9:16":
-      return { width: s, height: Math.round((s * 16) / 9) };
+      width = s;
+      height = Math.round((s * 16) / 9);
+      break;
     case "1:1":
-      return { width: s, height: s };
+      width = s;
+      height = s;
+      break;
     case "4:3":
-      return { width: Math.round((s * 4) / 3), height: s };
+      width = Math.round((s * 4) / 3);
+      height = s;
+      break;
     default:
-      return { width: s, height: Math.round((s * 16) / 9) };
+      width = s;
+      height = Math.round((s * 16) / 9);
   }
+  return { width: snapVideoDimension(width), height: snapVideoDimension(height) };
 }
-
-type AtlasPredictionData = {
-  id?: string;
-  status?: string;
-  outputs?: unknown[];
-  output?: unknown;
-  error?: string | null;
-};
 
 type AtlasEnvelope = {
-  data?: AtlasPredictionData;
+  data?: {
+    id?: string;
+    status?: string;
+    outputs?: unknown[];
+    output?: unknown;
+    error?: string | null;
+  };
   message?: string;
 };
-
-/** One-shot Atlas prediction fetch (used by GET for browser polling). */
-async function fetchAtlasPredictionOnce(
-  predictionId: string,
-  apiKey: string
-): Promise<AtlasEnvelope & { httpOk: boolean; httpStatus: number }> {
-  const pollRes = await fetch(`${ATLAS_BASE}/prediction/${predictionId}`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-    cache: "no-store"
-  });
-  const pollJson = (await pollRes.json()) as AtlasEnvelope;
-  return { ...pollJson, httpOk: pollRes.ok, httpStatus: pollRes.status };
-}
 
 /**
  * Poll Atlas prediction status once. Use from the browser in a loop — not from a long-lived POST
  * (Vercel/serverless timeouts would kill the request while Atlas still runs).
  */
 export async function GET(request: Request) {
-  const apiKey = env.atlasCloudApiKey;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "Server missing ATLASCLOUD_API_KEY" },
-      { status: 500 }
-    );
-  }
-
   const searchParams = new URL(request.url).searchParams;
   const predictionId = (searchParams.get("predictionId") ?? searchParams.get("prediction_id"))?.trim();
   if (!predictionId) {
@@ -155,41 +150,65 @@ export async function GET(request: Request) {
     );
   }
 
-  const pollJson = await fetchAtlasPredictionOnce(predictionId, apiKey);
-  if (!pollJson.httpOk) {
-    return NextResponse.json(
-      {
-        error: pollJson.message ?? `Prediction poll failed (${pollJson.httpStatus})`,
-        poll_interval_ms: CLIENT_POLL_HINT_MS
-      },
-      { status: pollJson.httpStatus >= 400 ? pollJson.httpStatus : 502 }
-    );
+  try {
+    const poll = await fetchAtlasPrediction(predictionId);
+    const statusNorm = poll.status.toLowerCase();
+
+    return NextResponse.json({
+      status: poll.status,
+      video_url: poll.outputUrl,
+      outputs: null,
+      output: null,
+      error: statusNorm === "failed" ? poll.error : null,
+      poll_interval_ms: CLIENT_POLL_HINT_MS
+    });
+  } catch (e) {
+    const msg =
+      e instanceof AtlasApiError
+        ? e.message
+        : e instanceof Error
+          ? e.message
+          : "Prediction poll failed";
+
+    if (msg.includes("ATLASCLOUD_API_KEY") || msg.includes("Missing ATLASCLOUD")) {
+      return NextResponse.json(
+        { error: "Server missing ATLASCLOUD_API_KEY in environment" },
+        { status: 503 }
+      );
+    }
+
+    console.error("[generate-video GET] poll error", { predictionId, msg });
+
+    /** 200 + failed — UI shows Atlas error without red 500 spam in console. */
+    return NextResponse.json({
+      status: "failed",
+      video_url: null,
+      outputs: null,
+      output: null,
+      error: msg,
+      poll_interval_ms: CLIENT_POLL_HINT_MS
+    });
   }
-
-  const status = pollJson.data?.status ?? "unknown";
-  const videoUrl = extractAtlasVideoOutputUrl(pollJson.data);
-  const err =
-    pollJson.data?.error ??
-    (typeof pollJson.message === "string" ? pollJson.message : null);
-  const statusNorm = String(status).toLowerCase();
-
-  return NextResponse.json({
-    status,
-    video_url: typeof videoUrl === "string" ? videoUrl : null,
-    /** Lets the browser parse alternate Atlas shapes if `video_url` is still null. */
-    outputs: pollJson.data?.outputs ?? null,
-    output: pollJson.data?.output ?? null,
-    error: statusNorm === "failed" ? err : null,
-    poll_interval_ms: CLIENT_POLL_HINT_MS
-  });
 }
 
 export async function POST(request: Request) {
+  try {
+    return await handleGenerateVideoPost(request);
+  } catch (e) {
+    console.error("[generate-video POST] unhandled", e);
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Video generation failed" },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleGenerateVideoPost(request: Request) {
   const apiKey = env.atlasCloudApiKey;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "Server missing ATLASCLOUD_API_KEY" },
-      { status: 500 }
+      { error: "Server missing ATLASCLOUD_API_KEY in environment" },
+      { status: 503 }
     );
   }
 
@@ -320,7 +339,6 @@ export async function POST(request: Request) {
     };
     if (image_url) {
       atlasBody.image = image_url;
-      atlasBody.image_url = image_url;
     }
     if (audio_url) {
       atlasBody.audio_url = audio_url;
