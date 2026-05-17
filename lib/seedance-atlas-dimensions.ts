@@ -44,17 +44,22 @@ export function seedancePresetDimensions(
   };
 }
 
+export type SeedanceAtlasRouteAction = "text" | "image";
+
 /**
  * Atlas Seedance T2V: swap W/H in the JSON body so output file matches UI aspect.
  * (Request 856×480 when user picks 9:16 → file often comes back 480×856.)
+ *
+ * I2V must use logical portrait/landscape pixels — swapped sizes often make Atlas fail (400).
  */
 export function seedanceAtlasRequestDimensions(
   aspectRatio: string,
-  resolution: string
+  resolution: string,
+  routeAction: SeedanceAtlasRouteAction = "text"
 ): { width: number; height: number; logical: { width: number; height: number } } {
   const logical = seedancePresetDimensions(aspectRatio, resolution);
 
-  if (aspectRatio === "9:16") {
+  if (aspectRatio === "9:16" && routeAction === "text") {
     return {
       width: logical.height,
       height: logical.width,

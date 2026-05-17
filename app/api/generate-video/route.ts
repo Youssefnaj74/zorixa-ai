@@ -80,6 +80,10 @@ function atlasSeedanceModelUsesDimensions(model: string): boolean {
   return /seedance/i.test(model);
 }
 
+function isSeedanceImageToVideoModel(model: string): boolean {
+  return /seedance/i.test(model) && /image-to-video/i.test(model);
+}
+
 /** Short-side pixel size from UI resolution tier (matches Seedance model page examples). */
 function resolutionShortSidePx(resolution: string): number {
   switch (resolution) {
@@ -368,8 +372,11 @@ async function handleGenerateVideoPost(request: Request) {
   const applyNativeAudio =
     atlasModelSupportsGenerateAudio(model) && (action === "text" || action === "image");
 
+  const seedanceI2v = isSeedanceImageToVideoModel(model);
+  const seedanceRouteAction = action === "image" ? "image" : "text";
+
   const seedanceRequestDims = seedanceDimensions
-    ? seedanceAtlasRequestDimensions(aspectRatio, resolution)
+    ? seedanceAtlasRequestDimensions(aspectRatio, resolution, seedanceRouteAction)
     : null;
 
   if (seedanceDimensions && seedanceRequestDims) {
@@ -377,17 +384,27 @@ async function handleGenerateVideoPost(request: Request) {
     const dims = seedanceRequestDims;
     const { width, height } = dims;
     warnIfSeedanceDimensionsMismatch(aspectRatio, dims.logical.width, dims.logical.height);
-    // Seedance T2V: swapped W/H in JSON + aspect_ratio + portrait/landscape hint in prompt.
+    // Seedance T2V: swapped W/H + aspect_ratio. I2V: logical pixels + required `image` only.
     atlasBody = {
       model,
       prompt,
       width,
       height,
-      aspect_ratio: aspectRatio,
       duration: durationSec,
       fps
     };
-    if (image_url) {
+    if (!seedanceI2v) {
+      atlasBody.aspect_ratio = aspectRatio;
+    }
+    if (seedanceI2v) {
+      if (!image_url) {
+        return NextResponse.json(
+          { error: "Missing image for Seedance image-to-video (Atlas requires `image` URL)" },
+          { status: 400 }
+        );
+      }
+      atlasBody.image = image_url;
+    } else if (image_url) {
       atlasBody.image = image_url;
     }
     if (audio_url) {
@@ -433,6 +450,8 @@ async function handleGenerateVideoPost(request: Request) {
       videoModel,
       action,
       model,
+      seedanceI2v,
+      hasImage: Boolean(atlasBody.image),
       envelope: seedanceDimensions ? "seedance-width-height" : "flat-aspect-ratio",
       aspectRatio,
       resolution,
@@ -540,21 +559,43 @@ async function handleGenerateVideoPost(request: Request) {
     );
   }
 
-  const atlasDebug =
-    seedanceDimensions && seedanceRequestDims && atlasBody.width != null && atlasBody.height != null
+  const atlasImage =
+    typeof atlasBody.image === "string"
+      ? atlasBody.image
+      : typeof atlasBody.image_url === "string"
+        ? atlasBody.image_url
+        : null;
+
+  const atlasDebug = {
+    model,
+    action,
+    atlas_model_slug: model,
+    has_image: Boolean(atlasImage),
+    image_host: atlasImage
+      ? (() => {
+          try {
+            return new URL(atlasImage).host;
+          } catch {
+            return "invalid-url";
+          }
+        })()
+      : null,
+    ...(seedanceDimensions && seedanceRequestDims && atlasBody.width != null && atlasBody.height != null
       ? {
           width: atlasBody.width,
           height: atlasBody.height,
           logical_width: seedanceRequestDims.logical.width,
           logical_height: seedanceRequestDims.logical.height,
-          aspect_ratio: aspectRatio,
-          generate_audio: applyNativeAudio ? generateAudio : undefined
+          seedance_i2v: seedanceI2v,
+          dimensions_swapped: seedanceRouteAction === "text" && aspectRatio === "9:16"
         }
       : {
           aspect_ratio: aspectRatio,
-          resolution,
-          generate_audio: applyNativeAudio ? generateAudio : undefined
-        };
+          resolution
+        }),
+    aspect_ratio: aspectRatio,
+    generate_audio: applyNativeAudio ? generateAudio : undefined
+  };
 
   return NextResponse.json({
     pending: true,
