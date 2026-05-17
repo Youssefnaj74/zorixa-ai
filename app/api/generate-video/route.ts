@@ -337,6 +337,9 @@ async function handleGenerateVideoPost(request: Request) {
     atlasModelSupportsGenerateAudio(model) &&
     (action === "text" || action === "image");
 
+  const applyNativeAudio =
+    atlasModelSupportsGenerateAudio(model) && (action === "text" || action === "image");
+
   if (seedanceDimensions) {
     const { width, height } = dimensionsForAspectResolution(aspectRatio, resolution);
     atlasBody = {
@@ -344,6 +347,8 @@ async function handleGenerateVideoPost(request: Request) {
       prompt,
       width,
       height,
+      aspect_ratio: aspectRatio,
+      aspectRatio,
       duration: durationSec,
       fps
     };
@@ -358,8 +363,8 @@ async function handleGenerateVideoPost(request: Request) {
       atlasBody.video_url = video_url;
       atlasBody.video = video_url;
     }
-    if (generateAudio) {
-      applyAtlasNativeAudioFields(atlasBody, model);
+    if (applyNativeAudio) {
+      applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
     }
   } else {
     // Kling, Veo, Wan, Hailuo — `aspect_ratio` + `resolution` on flat body.
@@ -384,8 +389,8 @@ async function handleGenerateVideoPost(request: Request) {
       atlasBody.video_url = video_url;
       atlasBody.video = video_url;
     }
-    if (generateAudio) {
-      applyAtlasNativeAudioFields(atlasBody, model);
+    if (applyNativeAudio) {
+      applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
     }
   }
 
@@ -478,11 +483,25 @@ async function handleGenerateVideoPost(request: Request) {
     return NextResponse.json({ error: err, atlas_model: model }, { status: 502 });
   }
 
+  const atlasDebug =
+    seedanceDimensions && atlasBody.width != null && atlasBody.height != null
+      ? {
+          width: atlasBody.width,
+          height: atlasBody.height,
+          aspect_ratio: aspectRatio,
+          generate_audio: applyNativeAudio ? generateAudio : undefined
+        }
+      : {
+          aspect_ratio: aspectRatio,
+          resolution,
+          generate_audio: applyNativeAudio ? generateAudio : undefined
+        };
+
   return NextResponse.json({
     pending: true,
     prediction_id: predictionId,
     poll_interval_ms: CLIENT_POLL_HINT_MS,
     atlas_model: model,
-    generate_audio: generateAudio
+    atlas_request: atlasDebug
   });
 }

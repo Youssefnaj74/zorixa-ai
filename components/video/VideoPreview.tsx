@@ -19,6 +19,23 @@ import { ActionTabsRow } from "@/components/video/ActionTabsRow";
 const NAV_H = 56;
 const TABS_ROW_H = 48;
 
+/** UI label `9:16` → CSS `aspect-ratio: 9/16`. */
+function uiAspectToCssRatio(aspect: string): string {
+  const parts = aspect.split(":");
+  if (parts.length === 2) {
+    const w = parts[0]?.trim();
+    const h = parts[1]?.trim();
+    if (w && h) return `${w}/${h}`;
+  }
+  return "9/16";
+}
+
+function isPortraitCssRatio(cssRatio: string): boolean {
+  const [w, h] = cssRatio.split("/").map((n) => Number(n));
+  if (!Number.isFinite(w) || !Number.isFinite(h) || h === 0) return true;
+  return w / h < 1;
+}
+
 /** React 18 `@types/react` omits `referrerPolicy` on `<video>`; DOM supports it (helps some CDNs). */
 const domVideoAttrs = {
   referrerPolicy: "no-referrer"
@@ -33,6 +50,8 @@ export function VideoPreview({
   errorMessage,
   promptThumbUrl,
   bottomBarHeight = 130,
+  /** Bottom-bar aspect (9:16, 16:9, …) — frames preview until file metadata loads. */
+  aspectRatio = "9:16",
   className
 }: {
   actionTab: ActionTab;
@@ -46,12 +65,16 @@ export function VideoPreview({
   promptThumbUrl?: string | null;
   /** Measured fixed bottom bar height — drives preview card max-height. */
   bottomBarHeight?: number;
+  aspectRatio?: string;
   className?: string;
 }) {
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${TABS_ROW_H}px - ${bottomBarHeight}px)`;
   const [inlinePlaybackError, setInlinePlaybackError] = useState<string | null>(null);
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [intrinsicAspectCss, setIntrinsicAspectCss] = useState<string | null>(null);
+  const displayAspectCss = intrinsicAspectCss ?? uiAspectToCssRatio(aspectRatio);
+  const portraitFrame = isPortraitCssRatio(displayAspectCss);
   const canonicalDownloadUrl =
     videoDownloadUrl?.trim() ||
     (videoUrl ? extractCanonicalVideoUrlFromProxy(videoUrl) : null) ||
@@ -75,6 +98,7 @@ export function VideoPreview({
   useEffect(() => {
     setInlinePlaybackError(null);
     setDownloadError(null);
+    setIntrinsicAspectCss(null);
   }, [videoUrl]);
 
   useEffect(() => {
@@ -139,42 +163,59 @@ export function VideoPreview({
           <div className="relative flex min-h-0 flex-1 flex-col">
             <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center p-4">
               {videoUrl && !errorMessage ? (
-                <div className="flex h-full min-h-0 w-full flex-1 flex-col items-center justify-center gap-3">
-                  <video
-                    key={videoUrl ? `zorixa-preview:${videoUrl}` : "zorixa-preview:empty"}
-                    controls
-                    playsInline
-                    preload="auto"
-                    {...domVideoAttrs}
-                    className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)]"
-                    onLoadedMetadata={(e) => {
-                      const el = e.currentTarget;
-                      setInlinePlaybackError(null);
-                      console.log("[VideoPreview] <video> loadedmetadata", {
-                        duration: el.duration,
-                        videoWidth: el.videoWidth,
-                        videoHeight: el.videoHeight,
-                        currentSrc: el.currentSrc
-                      });
-                    }}
-                    onError={(e) => {
-                      const el = e.currentTarget;
-                      console.error("[VideoPreview] <video> error", {
-                        code: el.error?.code,
-                        message: el.error?.message,
-                        currentSrc: el.currentSrc,
-                        networkState: el.networkState
-                      });
-                      const code = el.error?.code;
-                      if (code === 4) {
-                        setInlinePlaybackError(
-                          "This output uses a format or codec your browser can't play inline (common with some Atlas / OSS files). Open in a new tab or download."
-                        );
-                      }
-                    }}
+                <motion.div className="flex h-full min-h-0 w-full flex-1 flex-col items-center justify-center gap-3">
+                  <div
+                    className={cn(
+                      "relative flex items-center justify-center",
+                      portraitFrame
+                        ? "h-full max-h-full w-auto max-w-full"
+                        : "h-auto max-h-full w-full max-w-full"
+                    )}
+                    style={{ aspectRatio: displayAspectCss }}
                   >
-                    <source src={videoUrl} type="video/mp4" />
-                  </video>
+                    <video
+                      key={videoUrl ? `zorixa-preview:${videoUrl}` : "zorixa-preview:empty"}
+                      controls
+                      playsInline
+                      preload="auto"
+                      {...domVideoAttrs}
+                      className="h-full w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)]"
+                      onLoadedMetadata={(e) => {
+                        const el = e.currentTarget;
+                        setInlinePlaybackError(null);
+                        if (el.videoWidth > 0 && el.videoHeight > 0) {
+                          setIntrinsicAspectCss(`${el.videoWidth}/${el.videoHeight}`);
+                        }
+                        console.log("[VideoPreview] <video> loadedmetadata", {
+                          duration: el.duration,
+                          videoWidth: el.videoWidth,
+                          videoHeight: el.videoHeight,
+                          aspectCss:
+                            el.videoWidth > 0 && el.videoHeight > 0
+                              ? `${el.videoWidth}/${el.videoHeight}`
+                              : displayAspectCss,
+                          currentSrc: el.currentSrc
+                        });
+                      }}
+                      onError={(e) => {
+                        const el = e.currentTarget;
+                        console.error("[VideoPreview] <video> error", {
+                          code: el.error?.code,
+                          message: el.error?.message,
+                          currentSrc: el.currentSrc,
+                          networkState: el.networkState
+                        });
+                        const code = el.error?.code;
+                        if (code === 4) {
+                          setInlinePlaybackError(
+                            "This output uses a format or codec your browser can't play inline (common with some Atlas / OSS files). Open in a new tab or download."
+                          );
+                        }
+                      }}
+                    >
+                      <source src={videoUrl} type="video/mp4" />
+                    </video>
+                  </div>
                   {inlinePlaybackError ? (
                     <div className="max-w-md rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-100/95">
                       <p>{inlinePlaybackError}</p>
@@ -195,7 +236,7 @@ export function VideoPreview({
                       </a>
                     </div>
                   ) : null}
-                </div>
+                </motion.div>
               ) : loading ? (
                 <div className="flex flex-col items-center justify-center gap-3">
                   <div className="size-12 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />

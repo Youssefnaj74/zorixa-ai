@@ -24,19 +24,22 @@ export function atlasModelSupportsGenerateAudio(atlasModelSlug: string): boolean
 
 /**
  * Atlas model families use different request fields:
- * - Seedance: `generate_audio: true`
- * - Kling v3: `sound: true` (see atlascloud.ai Kling v3.0 Pro docs)
+ * - Seedance: `generate_audio` (omit = often defaults ON for native-audio models)
+ * - Kling v3: `sound` (see atlascloud.ai Kling v3.0 Pro docs)
+ *
+ * Always set explicitly — UI "Audio Off" must send `false`, not omit the field.
  */
 export function applyAtlasNativeAudioFields(
   atlasBody: Record<string, unknown>,
-  atlasModelSlug: string
+  atlasModelSlug: string,
+  enabled: boolean
 ): void {
   if (isAtlasKlingModelSlug(atlasModelSlug)) {
-    atlasBody.sound = true;
+    atlasBody.sound = enabled;
     return;
   }
   if (isAtlasSeedanceModelSlug(atlasModelSlug)) {
-    atlasBody.generate_audio = true;
+    atlasBody.generate_audio = enabled;
   }
 }
 

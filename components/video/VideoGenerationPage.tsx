@@ -335,7 +335,12 @@ export function VideoGenerationPage() {
             };
         }
 
-        console.log("[VideoGenerationPage] POST /api/generate-video body", payload);
+        console.log("[VideoGenerationPage] POST /api/generate-video body", payload, {
+          aspectRatio,
+          resTier,
+          wantGenerateAudio,
+          speed_tier
+        });
         console.log(
           "[VideoGenerationPage] prompt sent to Atlas (stripped):",
           JSON.stringify(promptForAtlas),
@@ -357,6 +362,12 @@ export function VideoGenerationPage() {
           predictionId?: string;
           poll_interval_ms?: number;
           error?: string;
+          atlas_request?: {
+            width?: number;
+            height?: number;
+            aspect_ratio?: string;
+            generate_audio?: boolean;
+          };
         } = {};
         try {
           data = (await res.json()) as typeof data;
@@ -368,6 +379,10 @@ export function VideoGenerationPage() {
         if (!res.ok) {
           setGenerateError(data.error ?? `Generation failed (${res.status})`);
           return;
+        }
+
+        if (data.atlas_request) {
+          console.log("[VideoGenerationPage] Atlas request echoed from server", data.atlas_request);
         }
 
         let finalVideoUrl: string | null = null;
@@ -593,6 +608,7 @@ export function VideoGenerationPage() {
               errorMessage={generateError}
               promptThumbUrl={hidePromptThumb ? null : promptImageUrl}
               bottomBarHeight={bottomBarHeight}
+              aspectRatio={aspect}
               className="scrollbar-hide h-full min-h-0 w-full min-w-0 flex-1"
             />
           </div>
