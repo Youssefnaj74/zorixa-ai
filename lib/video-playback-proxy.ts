@@ -1,3 +1,14 @@
+/** Headers for server-side fetch to Atlas / Aliyun OSS (no browser Referer). */
+export function atlasCdnUpstreamFetchHeaders(
+  purpose: "playback" | "download"
+): Record<string, string> {
+  return {
+    Accept: "video/*,*/*;q=0.8",
+    "User-Agent": purpose === "download" ? "ZorixaVideoDownload/1.0" : "ZorixaVideoPlayback/1.0"
+    // Intentionally omit Referer — OSS referer policy blocks browser nav from zorixaai.com
+  };
+}
+
 /** Hosts we allow streaming through `/api/video-playback` (open redirect guard). */
 export function isAllowedVideoPlaybackHost(hostname: string): boolean {
   const h = hostname.toLowerCase();

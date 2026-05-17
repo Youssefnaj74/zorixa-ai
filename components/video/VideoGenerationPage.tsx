@@ -397,10 +397,11 @@ export function VideoGenerationPage() {
           const deadline = Date.now() + ATLAS_CLIENT_MAX_WAIT_MS;
           while (Date.now() < deadline) {
             await new Promise((r) => setTimeout(r, interval));
-            const pr = await fetch(
-              `/api/generate-video?predictionId=${encodeURIComponent(predictionId)}`,
-              { cache: "no-store" }
-            );
+            const pollQs = new URLSearchParams({ predictionId });
+            if (wantGenerateAudio) pollQs.set("generate_audio", "1");
+            const pr = await fetch(`/api/generate-video?${pollQs.toString()}`, {
+              cache: "no-store"
+            });
             let pd: {
               video_url?: string | null;
               videoUrl?: string | null;
@@ -440,7 +441,12 @@ export function VideoGenerationPage() {
               break;
             }
             if (statusNorm === "failed") {
-              setGenerateError(pd.error ?? "Atlas prediction failed");
+              setGenerateError(
+                pd.error ??
+                  (wantGenerateAudio
+                    ? "Atlas prediction failed. Try Audio Off on zorixaai.com, or check Atlas balance for your Vercel API key."
+                    : "Atlas prediction failed. Check Atlas Request History and Vercel ATLASCLOUD_API_KEY balance.")
+              );
               return;
             }
           }

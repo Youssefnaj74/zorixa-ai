@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 
-import { isAllowedVideoPlaybackHost } from "@/lib/video-playback-proxy";
+import {
+  atlasCdnUpstreamFetchHeaders,
+  isAllowedVideoPlaybackHost
+} from "@/lib/video-playback-proxy";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /** Longer runs when proxying multi‑MB clips from OSS (Vercel / Node). */
 export const maxDuration = 120;
+export const runtime = "nodejs";
 
 const UPSTREAM_HEADERS_TO_CLIENT = [
   "content-type",
@@ -52,10 +56,7 @@ export async function GET(request: Request) {
   }
 
   const range = request.headers.get("range");
-  const upstreamReqHeaders = new Headers({
-    Accept: "video/*,*/*;q=0.8",
-    "User-Agent": "ZorixaVideoPlayback/1.0"
-  });
+  const upstreamReqHeaders = new Headers(atlasCdnUpstreamFetchHeaders("playback"));
   if (range) upstreamReqHeaders.set("Range", range);
 
   let upstream: Response;

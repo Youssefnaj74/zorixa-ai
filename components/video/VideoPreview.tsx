@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState, type VideoHTMLAttributes } from "reac
 import { Button } from "@/components/ui/button";
 import { downloadVideoFile } from "@/lib/download-video-file";
 import {
+  buildVideoDownloadUrl,
   extractCanonicalVideoUrlFromProxy
 } from "@/lib/video-playback-proxy";
 import { cn } from "@/lib/utils";
@@ -49,22 +50,31 @@ export function VideoPreview({
 }) {
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${TABS_ROW_H}px - ${bottomBarHeight}px)`;
   const [inlinePlaybackError, setInlinePlaybackError] = useState<string | null>(null);
+  const [downloadBusy, setDownloadBusy] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const canonicalDownloadUrl =
     videoDownloadUrl?.trim() ||
     (videoUrl ? extractCanonicalVideoUrlFromProxy(videoUrl) : null) ||
     (videoUrl?.startsWith("https://") ? videoUrl : null);
 
-  const onDownloadClick = useCallback(() => {
-    if (!canonicalDownloadUrl) return;
+  const onDownloadClick = useCallback(async () => {
+    if (!canonicalDownloadUrl || downloadBusy) return;
+    setDownloadError(null);
+    setDownloadBusy(true);
     try {
-      downloadVideoFile(canonicalDownloadUrl);
-    } catch {
-      window.open(canonicalDownloadUrl, "_blank", "noopener,noreferrer");
+      await downloadVideoFile(canonicalDownloadUrl);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Download failed";
+      setDownloadError(msg);
+      console.error("[VideoPreview] download failed", e);
+    } finally {
+      setDownloadBusy(false);
     }
-  }, [canonicalDownloadUrl]);
+  }, [canonicalDownloadUrl, downloadBusy]);
 
   useEffect(() => {
     setInlinePlaybackError(null);
+    setDownloadError(null);
   }, [videoUrl]);
 
   useEffect(() => {
@@ -169,12 +179,19 @@ export function VideoPreview({
                     <div className="max-w-md rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-100/95">
                       <p>{inlinePlaybackError}</p>
                       <a
-                        href={videoUrl}
+                        href={
+                          canonicalDownloadUrl
+                            ? buildVideoDownloadUrl(
+                                canonicalDownloadUrl,
+                                typeof window !== "undefined" ? window.location.origin : ""
+                              )
+                            : videoUrl
+                        }
                         target="_blank"
                         rel="noreferrer"
                         className="mt-2 inline-block font-medium text-amber-200 underline underline-offset-2 hover:text-white"
                       >
-                        Open video URL in new tab
+                        Open download via Zorixa
                       </a>
                     </div>
                   ) : null}
@@ -203,6 +220,12 @@ export function VideoPreview({
               )}
             </div>
 
+            {downloadError ? (
+              <p className="pointer-events-none absolute bottom-14 left-4 right-4 z-10 text-center text-xs text-red-400/95">
+                {downloadError}
+              </p>
+            ) : null}
+
             <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-wrap justify-end gap-2">
               <Button
                 type="button"
@@ -216,12 +239,12 @@ export function VideoPreview({
                 <Button
                   type="button"
                   variant="ghost"
-                  disabled={!canonicalDownloadUrl}
-                  onClick={onDownloadClick}
+                  disabled={!canonicalDownloadUrl || downloadBusy}
+                  onClick={() => void onDownloadClick()}
                   className="pointer-events-auto h-9 rounded-lg border border-brand/50 bg-black/30 px-3 text-xs font-medium text-white hover:bg-brand/20 disabled:opacity-60"
                 >
                   <Download className="mr-1 size-3.5" />
-                  Download
+                  {downloadBusy ? "Downloading…" : "Download"}
                 </Button>
               ) : (
                 <Button

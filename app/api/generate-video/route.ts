@@ -15,6 +15,7 @@ import {
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { env } from "@/lib/env";
 import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
+import { formatAtlasVideoFailureForUi } from "@/lib/atlas-video-failure-message";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
@@ -143,6 +144,9 @@ type AtlasEnvelope = {
 export async function GET(request: Request) {
   const searchParams = new URL(request.url).searchParams;
   const predictionId = (searchParams.get("predictionId") ?? searchParams.get("prediction_id"))?.trim();
+  const pollGenerateAudio =
+    searchParams.get("generate_audio") === "1" ||
+    searchParams.get("generateAudio") === "true";
   if (!predictionId) {
     return NextResponse.json(
       { error: "Missing predictionId or prediction_id query parameter" },
@@ -159,7 +163,13 @@ export async function GET(request: Request) {
       video_url: poll.outputUrl,
       outputs: null,
       output: null,
-      error: statusNorm === "failed" ? poll.error : null,
+      error:
+        statusNorm === "failed"
+          ? formatAtlasVideoFailureForUi(poll.error, {
+              generateAudio: pollGenerateAudio,
+              hostIsProduction: process.env.VERCEL_ENV === "production"
+            })
+          : null,
       poll_interval_ms: CLIENT_POLL_HINT_MS
     });
   } catch (e) {
@@ -458,16 +468,21 @@ async function handleGenerateVideoPost(request: Request) {
   }
 
   if (initialStatus === "failed") {
-    const err =
-      createJson.data?.error ??
-      createJson.message ??
-      "Atlas prediction failed";
-    return NextResponse.json({ error: err }, { status: 502 });
+    const err = formatAtlasVideoFailureForUi(
+      createJson.data?.error ?? createJson.message ?? "Atlas prediction failed",
+      {
+        generateAudio,
+        hostIsProduction: process.env.VERCEL_ENV === "production"
+      }
+    );
+    return NextResponse.json({ error: err, atlas_model: model }, { status: 502 });
   }
 
   return NextResponse.json({
     pending: true,
     prediction_id: predictionId,
-    poll_interval_ms: CLIENT_POLL_HINT_MS
+    poll_interval_ms: CLIENT_POLL_HINT_MS,
+    atlas_model: model,
+    generate_audio: generateAudio
   });
 }
