@@ -384,7 +384,9 @@ export function VideoGenerationPage() {
           setGenerateError(
             formatAtlasVideoFailureForUi(data.error, {
               generateAudio: wantGenerateAudio,
-              hostIsProduction: typeof window !== "undefined" && !window.location.hostname.includes("localhost")
+              hostIsProduction:
+                typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
+              action: ctx.actionTab === "Image to Video" ? "image" : "text"
             }) || `Generation failed (${res.status})`
           );
           return;
@@ -423,6 +425,7 @@ export function VideoGenerationPage() {
             await new Promise((r) => setTimeout(r, interval));
             const pollQs = new URLSearchParams({ predictionId });
             if (wantGenerateAudio) pollQs.set("generate_audio", "1");
+            if (ctx.actionTab === "Image to Video") pollQs.set("action", "image");
             const pr = await fetch(`/api/generate-video?${pollQs.toString()}`, {
               cache: "no-store"
             });
@@ -476,7 +479,8 @@ export function VideoGenerationPage() {
               const msg = formatAtlasVideoFailureForUi(pd.atlas_error ?? pd.error, {
                 generateAudio: wantGenerateAudio,
                 hostIsProduction:
-                  typeof window !== "undefined" && !window.location.hostname.includes("localhost")
+                  typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
+                action: ctx.actionTab === "Image to Video" ? "image" : "text"
               });
               setGenerateError(
                 pd.prediction_id && !isAtlasRealPersonImageError(pd.atlas_error ?? pd.error)

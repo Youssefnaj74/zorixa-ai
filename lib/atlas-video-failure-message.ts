@@ -73,13 +73,26 @@ function atlasVideoFailureHint(message: string): string | null {
 /** User-facing message when Atlas video generation fails. */
 export function formatAtlasVideoFailureForUi(
   error: string | null | undefined,
-  opts?: { generateAudio?: boolean; hostIsProduction?: boolean }
+  opts?: {
+    generateAudio?: boolean;
+    hostIsProduction?: boolean;
+    /** When poll only returns "task failed", I2V failures are often real-person policy. */
+    action?: "text" | "image";
+  }
 ): string {
   if (isAtlasRealPersonImageError(error)) {
     return formatRealPersonImageBlockedForUi();
   }
 
   const parsed = parseAtlasErrorMessage(error);
+
+  if (parsed.toLowerCase() === "task failed" && opts?.action === "image") {
+    return [
+      formatRealPersonImageBlockedForUi(),
+      'Atlas only returned "task failed". Open the eye icon in Request History on atlascloud.ai for the full rejection reason.'
+    ].join("\n\n");
+  }
+
   const parts = [parsed];
 
   const hint = atlasVideoFailureHint(parsed);

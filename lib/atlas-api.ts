@@ -23,6 +23,8 @@ type AtlasEnvelope = {
     outputs?: unknown[];
     output?: unknown;
     error?: string | null;
+    /** Worker log blob — often contains the real rejection reason when `error` is only "task failed". */
+    logs?: string | null;
   };
   message?: string;
 };
@@ -159,9 +161,28 @@ export type AtlasPredictionPoll = {
 
 function atlasErrorFromEnvelope(json: AtlasEnvelope): string | null {
   const data = json.data;
-  if (typeof data?.error === "string" && data.error.length > 0) return data.error;
-  if (typeof json.message === "string" && json.message.length > 0) return json.message;
-  return null;
+  const candidates: string[] = [];
+
+  if (typeof data?.error === "string" && data.error.trim()) {
+    candidates.push(data.error.trim());
+  }
+  if (typeof data?.logs === "string" && data.logs.trim()) {
+    candidates.push(data.logs.trim());
+  }
+  if (typeof json.message === "string" && json.message.trim()) {
+    candidates.push(json.message.trim());
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Prefer the candidate that contains an explicit policy message (not bare "task failed").
+  const detailed = candidates.find(
+    (c) =>
+      c.length > 12 &&
+      !/^task failed$/i.test(c) &&
+      (c.includes("message") || c.includes("real person") || c.includes("http status"))
+  );
+  return detailed ?? candidates[0] ?? null;
 }
 
 /** GET `/api/v1/model/prediction/{id}` — used by generations poll route. */

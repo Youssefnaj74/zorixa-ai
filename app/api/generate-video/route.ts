@@ -169,6 +169,8 @@ export async function GET(request: Request) {
   const pollGenerateAudio =
     searchParams.get("generate_audio") === "1" ||
     searchParams.get("generateAudio") === "true";
+  const pollAction =
+    searchParams.get("action") === "image" ? ("image" as const) : ("text" as const);
   if (!predictionId) {
     return NextResponse.json(
       { error: "Missing predictionId or prediction_id query parameter" },
@@ -197,7 +199,8 @@ export async function GET(request: Request) {
         statusNorm === "failed"
           ? formatAtlasVideoFailureForUi(poll.error, {
               generateAudio: pollGenerateAudio,
-              hostIsProduction: process.env.VERCEL_ENV === "production"
+              hostIsProduction: process.env.VERCEL_ENV === "production",
+              action: pollAction
             })
           : null,
       atlas_error: statusNorm === "failed" ? poll.error : null,
@@ -551,7 +554,8 @@ async function handleGenerateVideoPost(request: Request) {
     });
     const err = formatAtlasVideoFailureForUi(atlasRaw, {
       generateAudio,
-      hostIsProduction: process.env.VERCEL_ENV === "production"
+      hostIsProduction: process.env.VERCEL_ENV === "production",
+      action: action === "image" ? "image" : "text"
     });
     return NextResponse.json(
       { error: err, atlas_error: atlasRaw, atlas_model: model, prediction_id: predictionId },
