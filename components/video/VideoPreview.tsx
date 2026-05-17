@@ -75,7 +75,7 @@ export function VideoPreview({
 }) {
   const showSeedanceI2vTip =
     actionTab === "Image to Video" &&
-    Boolean(composerModelId) &&
+    composerModelId != null &&
     isSeedanceVideoComposerId(composerModelId);
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${TABS_ROW_H}px - ${bottomBarHeight}px)`;
   const [inlinePlaybackError, setInlinePlaybackError] = useState<string | null>(null);
