@@ -660,7 +660,7 @@ export function VideoBottomBar({
               <div className="flex items-center gap-2">
                 <span
                   className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted"
-                  title="Generate native audio with the video (Atlas: Seedance, Kling v3)"
+                  title="Native soundtrack: Seedance uses generate_audio; Kling v3 uses sound (Atlas Cloud)"
                 >
                   Audio
                 </span>

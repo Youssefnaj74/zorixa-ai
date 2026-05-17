@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { atlasModelSupportsGenerateAudio } from "@/lib/atlas-video-generate-audio";
+import {
+  applyAtlasNativeAudioFields,
+  atlasModelSupportsGenerateAudio,
+  isAtlasKlingModelSlug,
+  normalizeAtlasKlingDurationSeconds
+} from "@/lib/atlas-video-generate-audio";
 import {
   type AtlasVideoRouteAction,
   normalizeAtlasVideoSpeedTier,
@@ -290,11 +295,15 @@ export async function POST(request: Request) {
 
   const aspectRatio = normalizeAspectRatio(body.aspectRatio);
   const resolution = normalizeResolution(body.resolution);
-  const durationSec = normalizeDurationSeconds(body.duration);
+  let durationSec = normalizeDurationSeconds(body.duration);
 
   const fps = 24;
 
   let atlasBody: Record<string, unknown>;
+
+  if (isAtlasKlingModelSlug(model)) {
+    durationSec = normalizeAtlasKlingDurationSeconds(durationSec);
+  }
 
   const seedance20I2v = isSeedance20ImageToVideo(model) && Boolean(image_url);
   const generateAudio =
@@ -314,7 +323,7 @@ export async function POST(request: Request) {
       fps
     };
     if (generateAudio) {
-      atlasBody.generate_audio = true;
+      applyAtlasNativeAudioFields(atlasBody, model);
     }
   } else {
     // Atlas `generateVideo` flat body (Kling, Veo, Wan, Hailuo, Seedance T2V, etc.).
@@ -340,7 +349,7 @@ export async function POST(request: Request) {
       atlasBody.video = video_url;
     }
     if (generateAudio) {
-      atlasBody.generate_audio = true;
+      applyAtlasNativeAudioFields(atlasBody, model);
     }
   }
 
@@ -356,6 +365,11 @@ export async function POST(request: Request) {
       promptLen: prompt.length,
       durationSec,
       generateAudio,
+      atlasAudioField: generateAudio
+        ? isAtlasKlingModelSlug(model)
+          ? "sound"
+          : "generate_audio"
+        : null,
       speedTier
     });
   }
