@@ -126,6 +126,20 @@ function dimensionsForAspectResolution(
   return { width: snapVideoDimension(width), height: snapVideoDimension(height) };
 }
 
+/** Log if pixel box does not match the UI aspect label (catches 9:16 sent as landscape). */
+function warnIfSeedanceDimensionsMismatch(
+  aspectRatio: string,
+  width: number,
+  height: number
+): void {
+  if (aspectRatio === "9:16" && width >= height) {
+    console.error("[generate-video] 9:16 selected but width >= height", { width, height });
+  }
+  if (aspectRatio === "16:9" && width <= height) {
+    console.error("[generate-video] 16:9 selected but width <= height", { width, height });
+  }
+}
+
 type AtlasEnvelope = {
   data?: {
     id?: string;
@@ -352,12 +366,15 @@ async function handleGenerateVideoPost(request: Request) {
 
   if (seedanceDimensions) {
     const { width, height } = dimensionsForAspectResolution(aspectRatio, resolution);
-    // Seedance: width/height define aspect (Atlas examples omit aspect_ratio).
+    warnIfSeedanceDimensionsMismatch(aspectRatio, width, height);
+    // Seedance: width/height + single `aspect_ratio` (no camelCase duplicate).
+    // Without aspect_ratio, cinematic prompts often default to 16:9 composition.
     atlasBody = {
       model,
       prompt,
       width,
       height,
+      aspect_ratio: aspectRatio,
       duration: durationSec,
       fps
     };

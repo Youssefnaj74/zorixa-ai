@@ -185,6 +185,16 @@ export function VideoPreview({
                         setInlinePlaybackError(null);
                         if (el.videoWidth > 0 && el.videoHeight > 0) {
                           setIntrinsicAspectCss(`${el.videoWidth}/${el.videoHeight}`);
+                          const uiPortrait = aspectRatio === "9:16";
+                          const filePortrait = el.videoWidth < el.videoHeight;
+                          if (uiPortrait !== filePortrait) {
+                            console.warn("[VideoPreview] aspect mismatch", {
+                              uiAspect: aspectRatio,
+                              filePixels: `${el.videoWidth}x${el.videoHeight}`,
+                              hint:
+                                "Atlas returned a different orientation than selected — check Request History body."
+                            });
+                          }
                         }
                         console.log("[VideoPreview] <video> loadedmetadata", {
                           duration: el.duration,
