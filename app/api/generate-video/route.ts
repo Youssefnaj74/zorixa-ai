@@ -16,6 +16,10 @@ import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { env } from "@/lib/env";
 import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
 import { formatAtlasVideoFailureForUi } from "@/lib/atlas-video-failure-message";
+import {
+  augmentSeedancePromptForAspect,
+  seedanceAtlasRequestDimensions
+} from "@/lib/seedance-atlas-dimensions";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
@@ -253,7 +257,7 @@ async function handleGenerateVideoPost(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const prompt = stripVideoComposerAssetTokens(
+  let prompt = stripVideoComposerAssetTokens(
     typeof body.prompt === "string" ? body.prompt.trim() : ""
   );
   if (!prompt) {
@@ -364,11 +368,16 @@ async function handleGenerateVideoPost(request: Request) {
   const applyNativeAudio =
     atlasModelSupportsGenerateAudio(model) && (action === "text" || action === "image");
 
-  if (seedanceDimensions) {
-    const { width, height } = dimensionsForAspectResolution(aspectRatio, resolution);
-    warnIfSeedanceDimensionsMismatch(aspectRatio, width, height);
-    // Seedance: width/height + single `aspect_ratio` (no camelCase duplicate).
-    // Without aspect_ratio, cinematic prompts often default to 16:9 composition.
+  const seedanceRequestDims = seedanceDimensions
+    ? seedanceAtlasRequestDimensions(aspectRatio, resolution)
+    : null;
+
+  if (seedanceDimensions && seedanceRequestDims) {
+    prompt = augmentSeedancePromptForAspect(prompt, aspectRatio);
+    const dims = seedanceRequestDims;
+    const { width, height } = dims;
+    warnIfSeedanceDimensionsMismatch(aspectRatio, dims.logical.width, dims.logical.height);
+    // Seedance T2V: swapped W/H in JSON + aspect_ratio + portrait/landscape hint in prompt.
     atlasBody = {
       model,
       prompt,
@@ -532,10 +541,12 @@ async function handleGenerateVideoPost(request: Request) {
   }
 
   const atlasDebug =
-    seedanceDimensions && atlasBody.width != null && atlasBody.height != null
+    seedanceDimensions && seedanceRequestDims && atlasBody.width != null && atlasBody.height != null
       ? {
           width: atlasBody.width,
           height: atlasBody.height,
+          logical_width: seedanceRequestDims.logical.width,
+          logical_height: seedanceRequestDims.logical.height,
           aspect_ratio: aspectRatio,
           generate_audio: applyNativeAudio ? generateAudio : undefined
         }
