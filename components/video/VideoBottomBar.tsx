@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 import {
   ASPECT_STEP_OPTIONS,
   BOTTOM_BAR_MODELS,
-  KLING_30_PRO_MODEL_ID,
   MODE_DROPUP_OPTIONS,
+  videoComposerUsesTextOnlyLayout,
   RESOLUTION_STEP_OPTIONS,
   STANDARD_DURATION_OPTIONS,
   TIME_SECONDS_OPTIONS,
@@ -310,7 +310,7 @@ export function VideoBottomBar({
     if (!promptImage2Url) setFile2Name(null);
   }, [promptImage2Url]);
 
-  const showKlingTextOnlyTab = actionTab === "Text to Video" && composerModelId === KLING_30_PRO_MODEL_ID;
+  const showTextOnlyPromptLayout = videoComposerUsesTextOnlyLayout(composerModelId, actionTab);
   const nativeAudioSupported = videoComposerSupportsGenerateAudio(composerModelId);
   const showGenerateAudioControl =
     nativeAudioSupported &&
@@ -387,7 +387,7 @@ export function VideoBottomBar({
       <div className="mx-auto flex max-w-[1920px] flex-col gap-3">
         {/* ROW 1 — Prompt */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3">
-          {!showKlingTextOnlyTab ? (
+          {!showTextOnlyPromptLayout ? (
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start">
               {actionTab === "Lipsyncing" ? (
                 <>
@@ -597,9 +597,9 @@ export function VideoBottomBar({
               suppressHydrationWarning
               value={prompt}
               onChange={(e) => onPromptChange(e.target.value)}
-              rows={composerModelId === KLING_30_PRO_MODEL_ID ? 3 : 2}
+              rows={showTextOnlyPromptLayout ? 3 : 2}
               placeholder={
-                composerModelId === KLING_30_PRO_MODEL_ID
+                showTextOnlyPromptLayout
                   ? "Describe the video you want to generate…"
                   : "Describe your image..."
               }

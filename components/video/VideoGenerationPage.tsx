@@ -6,7 +6,10 @@ import { Navbar } from "@/components/layout/Navbar";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
-import { KLING_30_PRO_MODEL_ID } from "@/components/video/bottom-bar-models";
+import {
+  KLING_30_PRO_MODEL_ID,
+  videoComposerUsesTextOnlyLayout
+} from "@/components/video/bottom-bar-models";
 import type { VideoHistoryEntry, VideoHistorySettingsSnapshot } from "@/components/video/VideoHistory";
 import {
   isAtlasVideoComposerId,
@@ -608,8 +611,7 @@ export function VideoGenerationPage() {
     ]
   );
 
-  const hidePromptThumb =
-    composerModelId === KLING_30_PRO_MODEL_ID && actionTab === "Text to Video";
+  const hidePromptThumb = videoComposerUsesTextOnlyLayout(composerModelId, actionTab);
 
   return (
     <div className="flex min-h-dvh flex-col bg-zorixa-bg">

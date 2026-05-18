@@ -20,6 +20,16 @@ export const BOTTOM_BAR_MODELS: BottomBarModel[] = [
   { id: "google-veo-3-1", label: "Google Veo 3.1", badge: "newTeal" }
 ];
 
+const TEXT_TO_VIDEO_PROMPT_ONLY_IDS = new Set(BOTTOM_BAR_MODELS.map((m) => m.id));
+
+/** Text to Video: full-width prompt only (no Products/Influencers slots) — same as Kling. */
+export function videoComposerUsesTextOnlyLayout(
+  composerModelId: string,
+  actionTab: string
+): boolean {
+  return actionTab === "Text to Video" && TEXT_TO_VIDEO_PROMPT_ONLY_IDS.has(composerModelId);
+}
+
 export const MODE_DROPUP_OPTIONS = [
   "Multi Reference",
   "Extend",
