@@ -27,10 +27,7 @@ import {
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import { ReferenceImageUploadStrip } from "@/components/video/ReferenceImageUploadStrip";
-import {
-  isSeedanceVideoComposerId,
-  SeedanceI2vReferenceTip
-} from "@/components/video/SeedanceI2vReferenceTip";
+import { SeedanceI2vReferenceTip } from "@/components/video/SeedanceI2vReferenceTip";
 
 export type VideoGenerateContext = {
   promptText: string;
@@ -338,7 +335,7 @@ export function VideoBottomBar({
   const showSpeedTierControl = videoComposerSupportsSpeedTier(composerModelId);
   const speedTier = parseVideoSpeedTierFromUiLabel(durationStandard);
   const showSeedanceI2vTip =
-    actionTab === "Image to Video" && isSeedanceVideoComposerId(composerModelId);
+    actionTab === "Image to Video" && composerModelId === "seedance-2";
   const showEndFrameSlot =
     actionTab === "Image to Video" && videoComposerSupportsEndFrame(composerModelId);
 

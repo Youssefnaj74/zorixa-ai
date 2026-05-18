@@ -9,7 +9,7 @@ export function isSeedanceVideoComposerId(composerModelId: string): boolean {
   return composerModelId === "seedance-2" || composerModelId === "seedance-1-5";
 }
 
-/** Shown for Seedance Image to Video — real photos are often blocked; AI reference works. */
+/** Image to Video — shown for Seedance 2.0 only (suggests 1.5 for real faces). */
 export function SeedanceI2vReferenceTip({ className }: { className?: string }) {
   return (
     <div
@@ -22,9 +22,9 @@ export function SeedanceI2vReferenceTip({ className }: { className?: string }) {
       <p className="flex items-start gap-2 text-xs leading-relaxed text-zorixa-muted">
         <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
         <span>
-          <span className="font-semibold text-white/90">Tip:</span> Seedance works best with{" "}
-          <span className="font-medium text-white/85">AI-generated</span> faces — real camera photos are
-          often blocked by ByteDance policy.
+          <span className="font-semibold text-white/90">Tip:</span> Seedance 2.0 often blocks real
+          faces. Try <span className="font-medium text-white/85">Seedance 1.5</span> — it&apos;s more
+          permissive with real-person images.
         </span>
       </p>
       <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
@@ -32,7 +32,8 @@ export function SeedanceI2vReferenceTip({ className }: { className?: string }) {
         <Link href="/image" className="font-medium text-brand underline-offset-2 hover:underline">
           Generate a reference image
         </Link>
-        {" → "}upload Start frame (and optional End frame for Seedance), then Generate video.
+        {" → "}upload Start frame (optional End frame), then Generate video. Multi-image refs: use the{" "}
+        <span className="font-medium text-white/80">Reference to Video</span> tab (2.0 only).
       </p>
     </div>
   );
