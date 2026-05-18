@@ -7,12 +7,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 
+import type { KlingMotionCharacterOrientation } from "@/lib/atlas-kling-motion-control";
 import {
   ASPECT_STEP_OPTIONS,
-  BOTTOM_BAR_MODELS,
+  bottomBarModelsForActionTab,
   MODE_DROPUP_OPTIONS,
+  MOTION_CONTROL_DURATION_OPTIONS,
   videoComposerSupportsEndFrame,
-  videoComposerSupportsReferenceToVideo,
   videoComposerUsesTextOnlyLayout,
   RESOLUTION_STEP_OPTIONS,
   STANDARD_DURATION_OPTIONS,
@@ -42,6 +43,10 @@ export type VideoGenerateContext = {
   promptImage2Url: string | null;
   lipsyncAudioUrl: string | null;
   editSourceVideoUrl: string | null;
+  /** Motion Control — dance/action reference clip. */
+  motionVideoUrl: string | null;
+  characterOrientation: KlingMotionCharacterOrientation;
+  keepOriginalSound: boolean;
   /** Reference-to-video slots (Ref 1–4). */
   referenceImageUrls: (string | null)[];
   /** Native AI soundtrack (Seedance, Kling v3). */
@@ -63,6 +68,12 @@ export type VideoBottomBarProps = {
   onLipsyncAudioUrlChange: (url: string | null) => void;
   editSourceVideoUrl: string | null;
   onEditSourceVideoUrlChange: (url: string | null) => void;
+  motionVideoUrl?: string | null;
+  onMotionVideoUrlChange?: (url: string | null) => void;
+  characterOrientation?: KlingMotionCharacterOrientation;
+  onCharacterOrientationChange?: (v: KlingMotionCharacterOrientation) => void;
+  keepOriginalSound?: boolean;
+  onKeepOriginalSoundChange?: (v: boolean) => void;
   referenceImageUrls?: (string | null)[];
   onReferenceImageChange?: (index: number, url: string | null) => void;
   /** Bottom bar model (dropup). */
@@ -129,6 +140,12 @@ export function VideoBottomBar({
   onLipsyncAudioUrlChange,
   editSourceVideoUrl,
   onEditSourceVideoUrlChange,
+  motionVideoUrl = null,
+  onMotionVideoUrlChange,
+  characterOrientation = "image",
+  onCharacterOrientationChange,
+  keepOriginalSound = true,
+  onKeepOriginalSoundChange,
   referenceImageUrls = [null, null, null, null],
   onReferenceImageChange,
   composerModelId,
@@ -160,6 +177,7 @@ export function VideoBottomBar({
   const fileRef2 = useRef<HTMLInputElement>(null);
   const fileAudioRef = useRef<HTMLInputElement>(null);
   const fileVideoRef = useRef<HTMLInputElement>(null);
+  const fileMotionVideoRef = useRef<HTMLInputElement>(null);
   const [file1Name, setFile1Name] = useState<string | null>(null);
   const [file2Name, setFile2Name] = useState<string | null>(null);
 
@@ -192,12 +210,16 @@ export function VideoBottomBar({
 
   const applySlot1File = useCallback(
     (file: File) => {
-      if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) return;
+      if (actionTab === "Motion Control") {
+        if (!file.type.startsWith("image/")) return;
+      } else if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+        return;
+      }
       const url = URL.createObjectURL(file);
       onPromptImageChange(url);
       setFile1Name(file.name);
     },
-    [onPromptImageChange]
+    [actionTab, onPromptImageChange]
   );
 
   const applySlot2File = useCallback(
@@ -270,6 +292,16 @@ export function VideoBottomBar({
     [onEditSourceVideoUrlChange]
   );
 
+  const applyMotionVideoFile = useCallback(
+    (file: File) => {
+      if (!onMotionVideoUrlChange) return;
+      if (!file.type.startsWith("video/")) return;
+      const url = URL.createObjectURL(file);
+      onMotionVideoUrlChange(url);
+    },
+    [onMotionVideoUrlChange]
+  );
+
   const onAudioInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const f = e.target.files?.[0];
@@ -306,6 +338,24 @@ export function VideoBottomBar({
     [applyVideoFile, stopDragDefaults]
   );
 
+  const onMotionVideoInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const f = e.target.files?.[0];
+      if (f) applyMotionVideoFile(f);
+      e.target.value = "";
+    },
+    [applyMotionVideoFile]
+  );
+
+  const onDropMotionVideo = useCallback(
+    (e: React.DragEvent) => {
+      stopDragDefaults(e);
+      const f = e.dataTransfer.files?.[0];
+      if (f) applyMotionVideoFile(f);
+    },
+    [applyMotionVideoFile, stopDragDefaults]
+  );
+
   useEffect(() => {
     if (!promptImageUrl) setFile1Name(null);
   }, [promptImageUrl]);
@@ -314,14 +364,18 @@ export function VideoBottomBar({
     if (!promptImage2Url) setFile2Name(null);
   }, [promptImage2Url]);
 
+  useEffect(() => {
+    if (actionTab !== "Motion Control") return;
+    const max = characterOrientation === "video" ? 30 : 15;
+    if (timeSeconds > max) onTimeSecondsChange(max);
+  }, [actionTab, characterOrientation, timeSeconds, onTimeSecondsChange]);
+
   const showReferenceLayout = actionTab === "Reference to Video";
+  const showMotionControlLayout = actionTab === "Motion Control";
   const showTextOnlyPromptLayout = videoComposerUsesTextOnlyLayout(composerModelId, actionTab);
-  const pickerModels =
-    showReferenceLayout
-      ? BOTTOM_BAR_MODELS.filter((m) => videoComposerSupportsReferenceToVideo(m.id))
-      : BOTTOM_BAR_MODELS;
+  const pickerModels = bottomBarModelsForActionTab(actionTab);
   const selectedModel =
-    pickerModels.find((m) => m.id === composerModelId) ?? pickerModels[0] ?? BOTTOM_BAR_MODELS[0];
+    pickerModels.find((m) => m.id === composerModelId) ?? pickerModels[0] ?? pickerModels[0];
   const nativeAudioSupported = videoComposerSupportsGenerateAudio(composerModelId);
   const showGenerateAudioControl =
     nativeAudioSupported &&
@@ -330,7 +384,11 @@ export function VideoBottomBar({
       actionTab === "Reference to Video");
   const timeOptionsForTab = showReferenceLayout
     ? TIME_SECONDS_OPTIONS.filter((t) => t >= 4 && t <= 15)
-    : [...TIME_SECONDS_OPTIONS];
+    : showMotionControlLayout
+      ? MOTION_CONTROL_DURATION_OPTIONS.filter((t) =>
+          characterOrientation === "video" ? t <= 30 : t <= 15
+        )
+      : [...TIME_SECONDS_OPTIONS];
   const generateAudioEffective = generateAudioOn && showGenerateAudioControl;
   const showSpeedTierControl = videoComposerSupportsSpeedTier(composerModelId);
   const speedTier = parseVideoSpeedTierFromUiLabel(durationStandard);
@@ -356,6 +414,9 @@ export function VideoBottomBar({
       promptImage2Url,
       lipsyncAudioUrl,
       editSourceVideoUrl,
+      motionVideoUrl,
+      characterOrientation,
+      keepOriginalSound,
       referenceImageUrls,
       generateAudio: generateAudioEffective,
       speedTier: showSpeedTierControl ? speedTier : "standard"
@@ -458,6 +519,99 @@ export function VideoBottomBar({
                       </button>
                     ) : null}
                   </div>
+                </>
+              ) : showMotionControlLayout ? (
+                <>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    aria-hidden
+                    onChange={onFile1Input}
+                  />
+                  <input
+                    ref={fileMotionVideoRef}
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    aria-hidden
+                    onChange={onMotionVideoInput}
+                  />
+                  <motion.div className="grid grid-cols-2 gap-3">
+                    <div
+                      className="relative"
+                      onDragEnter={stopDragDefaults}
+                      onDragOver={stopDragDefaults}
+                      onDrop={(e) => {
+                        stopDragDefaults(e);
+                        const f = e.dataTransfer.files?.[0];
+                        if (f) applySlot1File(f);
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => fileRef.current?.click()}
+                        className={cn(
+                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                          "hover:border-white/30 hover:bg-black/55"
+                        )}
+                        aria-label={promptImageUrl ? "Change character image" : "Upload character image"}
+                      >
+                        <Upload className="size-5 opacity-60" />
+                        <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">Character</span>
+                      </button>
+                      {promptImageUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => onPromptImageChange(null)}
+                          className={cn(
+                            "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                            "hover:bg-black hover:text-white"
+                          )}
+                          aria-label="Remove character image"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      ) : null}
+                    </div>
+                    <motion.div
+                      className="relative"
+                      onDragEnter={stopDragDefaults}
+                      onDragOver={stopDragDefaults}
+                      onDrop={onDropMotionVideo}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => fileMotionVideoRef.current?.click()}
+                        className={cn(
+                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                          "hover:border-white/30 hover:bg-black/55"
+                        )}
+                        aria-label={motionVideoUrl ? "Change motion clip" : "Upload motion clip"}
+                      >
+                        <Film className="size-5 opacity-60" />
+                        <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">Motion clip</span>
+                      </button>
+                      {motionVideoUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => onMotionVideoUrlChange?.(null)}
+                          className={cn(
+                            "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                            "hover:bg-black hover:text-white"
+                          )}
+                          aria-label="Remove motion clip"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      ) : null}
+                    </motion.div>
+                  </motion.div>
                 </>
               ) : actionTab === "Video Edit" ? (
                 <>
@@ -635,9 +789,13 @@ export function VideoBottomBar({
               placeholder={
                 showReferenceLayout
                   ? "Describe the scene — e.g. image 1 is the character, image 2 is the background…"
-                  : showTextOnlyPromptLayout
-                    ? "Describe the video you want to generate…"
-                    : "Describe your image..."
+                  : showMotionControlLayout
+                    ? "Scene style, lighting, background (motion comes from the clip)…"
+                    : showTextOnlyPromptLayout
+                      ? "Describe the video you want to generate…"
+                      : actionTab === "Video Edit"
+                        ? "Describe how to transform the source video…"
+                        : "Describe your image..."
               }
               className={cn(
                 "w-full resize-y rounded-lg bg-[#0a0a0a] px-3 py-2.5 text-sm leading-relaxed text-white outline-none transition-shadow placeholder:text-zorixa-muted",
@@ -681,7 +839,7 @@ export function VideoBottomBar({
                     style={{ transformOrigin: "bottom left" }}
                     className={cn(dropupPanelClass, "left-0 min-w-[220px] py-1")}
                   >
-                    {BOTTOM_BAR_MODELS.map((m) => (
+                    {pickerModels.map((m) => (
                       <ModelRow
                         key={m.id}
                         model={m}
@@ -698,6 +856,44 @@ export function VideoBottomBar({
               </AnimatePresence>
             </div>
           </div>
+
+          {showMotionControlLayout ? (
+            <>
+              <motion.div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
+                  Framing
+                </span>
+                <motion.div className="flex gap-1">
+                  {(["image", "video"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => onCharacterOrientationChange?.(mode)}
+                      className={cn(
+                        "rounded-lg border px-2.5 py-1.5 text-xs font-medium capitalize transition-colors",
+                        characterOrientation === mode
+                          ? "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.15)] text-white"
+                          : "border-white/10 bg-[#1a1a24] text-zorixa-muted hover:text-white"
+                      )}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </motion.div>
+              </div>
+              <motion.div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
+                  Ref audio
+                </span>
+                <GenerateAudioToggle
+                  on={keepOriginalSound}
+                  onChange={(v) => onKeepOriginalSoundChange?.(v)}
+                />
+              </div>
+            </>
+          ) : null}
 
           {showGenerateAudioControl ? (
             <>

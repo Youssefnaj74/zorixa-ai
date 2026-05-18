@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 
+import type { KlingMotionCharacterOrientation } from "@/lib/atlas-kling-motion-control";
 import { cn } from "@/lib/utils";
 
 /** Stored when a run succeeds — reapplied on sidebar tap. */
@@ -23,6 +24,9 @@ export type VideoHistorySettingsSnapshot = {
   promptImage2Url: string | null;
   lipsyncAudioUrl: string | null;
   editSourceVideoUrl: string | null;
+  motionVideoUrl?: string | null;
+  characterOrientation?: KlingMotionCharacterOrientation;
+  keepOriginalSound?: boolean;
   referenceImageUrls?: (string | null)[];
 };
 

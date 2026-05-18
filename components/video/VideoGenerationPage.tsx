@@ -6,11 +6,15 @@ import { Navbar } from "@/components/layout/Navbar";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
+import type { KlingMotionCharacterOrientation } from "@/lib/atlas-kling-motion-control";
 import {
+  KLING_26_MOTION_COMPOSER_ID,
   KLING_30_PRO_MODEL_ID,
   REFERENCE_TO_VIDEO_MAX_IMAGES,
   videoComposerSupportsEndFrame,
+  videoComposerSupportsMotionControlTab,
   videoComposerSupportsReferenceToVideo,
+  videoComposerSupportsVideoEditTab,
   videoComposerUsesTextOnlyLayout
 } from "@/components/video/bottom-bar-models";
 import { normalizeSeedanceReferenceDurationSeconds } from "@/lib/atlas-seedance-reference-video";
@@ -170,6 +174,10 @@ export function VideoGenerationPage() {
   const [promptImage2Url, setPromptImage2Url] = useState<string | null>(null);
   const [lipsyncAudioUrl, setLipsyncAudioUrl] = useState<string | null>(null);
   const [editSourceVideoUrl, setEditSourceVideoUrl] = useState<string | null>(null);
+  const [motionVideoUrl, setMotionVideoUrl] = useState<string | null>(null);
+  const [characterOrientation, setCharacterOrientation] =
+    useState<KlingMotionCharacterOrientation>("image");
+  const [keepOriginalSound, setKeepOriginalSound] = useState(true);
   const [referenceImageUrls, setReferenceImageUrls] = useState<(string | null)[]>(() =>
     Array.from({ length: REFERENCE_TO_VIDEO_MAX_IMAGES }, () => null)
   );
@@ -212,6 +220,13 @@ export function VideoGenerationPage() {
     });
   }, []);
 
+  const setMotionVideoUrlSafe = useCallback((url: string | null) => {
+    setMotionVideoUrl((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return url;
+    });
+  }, []);
+
   const [loading, setLoading] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   /** Raw Atlas/CDN URL for full-file download (playback uses proxied `videoUrl`). */
@@ -241,7 +256,16 @@ export function VideoGenerationPage() {
     if (id === KLING_30_PRO_MODEL_ID) {
       setActionTab("Text to Video");
     }
+    if (videoComposerSupportsMotionControlTab(id)) {
+      setActionTab("Motion Control");
+    }
     if (!videoComposerSupportsReferenceToVideo(id) && actionTab === "Reference to Video") {
+      setActionTab("Image to Video");
+    }
+    if (!videoComposerSupportsMotionControlTab(id) && actionTab === "Motion Control") {
+      setActionTab("Image to Video");
+    }
+    if (!videoComposerSupportsVideoEditTab(id) && actionTab === "Video Edit") {
       setActionTab("Image to Video");
     }
   }, [actionTab]);
@@ -252,6 +276,12 @@ export function VideoGenerationPage() {
     if (tab === "Reference to Video") {
       setComposerModelId("seedance-2");
       setTimeSeconds((t) => normalizeSeedanceReferenceDurationSeconds(t));
+    }
+    if (tab === "Motion Control") {
+      setComposerModelId(KLING_26_MOTION_COMPOSER_ID);
+    }
+    if (tab === "Video Edit") {
+      setComposerModelId("wan-2-6");
     }
   }, []);
 
@@ -606,7 +636,8 @@ export function VideoGenerationPage() {
           generateAudioOn: wantGenerateAudio,
           promptRaw: promptValue,
           promptImageUrl:
-            ctx.actionTab === "Image to Video" && sourceInputForLog
+            (ctx.actionTab === "Image to Video" || ctx.actionTab === "Motion Control") &&
+            sourceInputForLog
               ? sourceInputForLog
               : ctx.promptImageUrl,
           promptImage2Url: ctx.promptImage2Url,
@@ -614,6 +645,9 @@ export function VideoGenerationPage() {
             ctx.actionTab === "Lipsyncing" && sourceInputForLog ? sourceInputForLog : ctx.lipsyncAudioUrl,
           editSourceVideoUrl:
             ctx.actionTab === "Video Edit" && sourceInputForLog ? sourceInputForLog : ctx.editSourceVideoUrl,
+          motionVideoUrl: ctx.motionVideoUrl,
+          characterOrientation: ctx.characterOrientation,
+          keepOriginalSound: ctx.keepOriginalSound,
           referenceImageUrls:
             ctx.actionTab === "Reference to Video" ? [...ctx.referenceImageUrls] : undefined
         };
@@ -700,6 +734,7 @@ export function VideoGenerationPage() {
     },
     [
       setEditSourceVideoUrlSafe,
+      setMotionVideoUrlSafe,
       setLipsyncAudioUrlSafe,
       setPromptImage2UrlSafe,
       setPromptImageUrlSafe
@@ -761,6 +796,12 @@ export function VideoGenerationPage() {
         onLipsyncAudioUrlChange={setLipsyncAudioUrlSafe}
         editSourceVideoUrl={editSourceVideoUrl}
         onEditSourceVideoUrlChange={setEditSourceVideoUrlSafe}
+        motionVideoUrl={motionVideoUrl}
+        onMotionVideoUrlChange={setMotionVideoUrlSafe}
+        characterOrientation={characterOrientation}
+        onCharacterOrientationChange={setCharacterOrientation}
+        keepOriginalSound={keepOriginalSound}
+        onKeepOriginalSoundChange={setKeepOriginalSound}
         referenceImageUrls={referenceImageUrls}
         onReferenceImageChange={setReferenceImageAt}
         composerModelId={composerModelId}

@@ -14,7 +14,10 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isAuthRoute = pathname === "/login" || pathname === "/signup";
   const isProtected =
-    pathname.startsWith("/dashboard") || pathname === "/image" || pathname === "/video";
+    pathname.startsWith("/dashboard") ||
+    pathname === "/image" ||
+    pathname === "/video" ||
+    pathname === "/tools";
 
   if (isAuthRoute && user) {
     const target = request.nextUrl.searchParams.get("redirect");

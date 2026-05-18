@@ -12,6 +12,7 @@ const IMAGE_COMPOSER_LABELS: Record<string, string> = {
 
 const VIDEO_COMPOSER_LABELS: Record<string, string> = {
   "kling-3-pro": "Kling 3.0 Pro",
+  "kling-2-6-motion": "Kling 2.6 Motion",
   "seedance-2": "Seedance 2.0",
   "seedance-1-5": "Seedance 1.5 Pro",
   "wan-2-6": "Wan 2.6",

@@ -8,9 +8,15 @@ import {
   normalizeAtlasKlingDurationSeconds
 } from "@/lib/atlas-video-generate-audio";
 import {
+  isKlingMotionControlAtlasModel,
+  normalizeKlingMotionCharacterOrientation,
+  normalizeKlingMotionDurationSeconds
+} from "@/lib/atlas-kling-motion-control";
+import {
   type AtlasVideoRouteAction,
   normalizeAtlasVideoSpeedTier,
-  resolveAtlasVideoModelId
+  resolveAtlasVideoModelId,
+  videoComposerSupportsMotionControl
 } from "@/lib/atlas-video-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { env } from "@/lib/env";
@@ -45,6 +51,10 @@ type ClientBody = {
   reference_images?: string[];
   audio_url?: string;
   video_url?: string;
+  /** Kling 2.6 motion control — `image` (match ref image) or `video` (match ref motion clip). */
+  character_orientation?: string;
+  /** Kling 2.6 motion control — preserve audio from motion reference video. */
+  keep_original_sound?: boolean;
   /** UI aspect selector (16:9, 9:16, 1:1, 4:3) — forwarded to Atlas. */
   aspectRatio?: string;
   /** UI resolution tier (480p, 720p, 1080p) — forwarded to Atlas `resolution`. */
@@ -376,8 +386,28 @@ async function handleGenerateVideoPost(request: Request) {
       { status: 400 }
     );
   }
+  if (action === "motion-control") {
+    if (!videoComposerSupportsMotionControl(videoModel)) {
+      return NextResponse.json(
+        { error: "Motion Control requires Kling 2.6 Motion in the model picker." },
+        { status: 400 }
+      );
+    }
+    if (!image_url) {
+      return NextResponse.json(
+        { error: "Missing image_url (character image) for Motion Control." },
+        { status: 400 }
+      );
+    }
+    if (!video_url) {
+      return NextResponse.json(
+        { error: "Missing video_url (motion reference clip) for Motion Control." },
+        { status: 400 }
+      );
+    }
+  }
 
-  if (action === "image" && image_url) {
+  if ((action === "image" || action === "motion-control") && image_url) {
     const c = coerceToPublicHttpsUrl(image_url);
     if (!c) {
       return NextResponse.json(
@@ -425,7 +455,7 @@ async function handleGenerateVideoPost(request: Request) {
     }
     audio_url = c;
   }
-  if (action === "edit" && video_url) {
+  if ((action === "edit" || action === "motion-control") && video_url) {
     const c = coerceToPublicHttpsUrl(video_url);
     if (!c) {
       return NextResponse.json(
@@ -447,7 +477,14 @@ async function handleGenerateVideoPost(request: Request) {
 
   let atlasBody: Record<string, unknown>;
 
-  if (isAtlasKlingModelSlug(model)) {
+  const motionOrientation =
+    action === "motion-control"
+      ? normalizeKlingMotionCharacterOrientation(body.character_orientation)
+      : null;
+
+  if (action === "motion-control" && isKlingMotionControlAtlasModel(model)) {
+    durationSec = normalizeKlingMotionDurationSeconds(durationSec, motionOrientation!);
+  } else if (isAtlasKlingModelSlug(model)) {
     durationSec = normalizeAtlasKlingDurationSeconds(durationSec);
   }
 
@@ -468,7 +505,17 @@ async function handleGenerateVideoPost(request: Request) {
     ? seedanceAtlasRequestDimensions(aspectRatio, resolution, seedanceRouteAction)
     : null;
 
-  if (action === "reference" && isSeedanceReferenceToVideoModel(model)) {
+  if (action === "motion-control" && isKlingMotionControlAtlasModel(model)) {
+    atlasBody = {
+      model,
+      prompt,
+      image: image_url,
+      video: video_url,
+      character_orientation: motionOrientation,
+      keep_original_sound: body.keep_original_sound !== false,
+      duration: durationSec
+    };
+  } else if (action === "reference" && isSeedanceReferenceToVideoModel(model)) {
     durationSec = normalizeSeedanceReferenceDurationSeconds(durationSec);
     atlasBody = {
       model,

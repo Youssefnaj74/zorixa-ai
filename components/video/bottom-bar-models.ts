@@ -1,7 +1,15 @@
 import type { BadgeVariant } from "@/components/ui/Badge";
 
+import { KLING_26_MOTION_COMPOSER_ID } from "@/lib/atlas-kling-motion-control";
+import {
+  videoComposerSupportsMotionControl,
+  videoComposerSupportsWanVideoToVideo
+} from "@/lib/atlas-video-model-ids";
+
 /** Use this for Kling 3.0 Pro in UI state and API gating (must match BOTTOM_BAR_MODELS id). */
 export const KLING_30_PRO_MODEL_ID = "kling-3-pro" as const;
+
+export { KLING_26_MOTION_COMPOSER_ID };
 
 /** Bottom bar MODEL dropup — Atlas-backed video models only. */
 export type BottomBarModel = {
@@ -13,6 +21,7 @@ export type BottomBarModel = {
 
 export const BOTTOM_BAR_MODELS: BottomBarModel[] = [
   { id: KLING_30_PRO_MODEL_ID, label: "Kling 3.0 Pro", badge: "pro" },
+  { id: KLING_26_MOTION_COMPOSER_ID, label: "Kling 2.6 Motion", badge: "pro" },
   { id: "seedance-2", label: "Seedance 2.0", badge: "newTeal" },
   { id: "seedance-1-5", label: "Seedance 1.5 Pro", badge: "pro" },
   { id: "wan-2-6", label: "Wan 2.6" },
@@ -43,6 +52,29 @@ export function videoComposerSupportsReferenceToVideo(composerModelId: string): 
   return composerModelId === "seedance-2";
 }
 
+/** Motion Control tab — Kling 2.6 Pro/Std motion-transfer endpoints only. */
+export function videoComposerSupportsMotionControlTab(composerModelId: string): boolean {
+  return videoComposerSupportsMotionControl(composerModelId);
+}
+
+/** Video Edit tab — Wan 2.6 video-to-video on Atlas. */
+export function videoComposerSupportsVideoEditTab(composerModelId: string): boolean {
+  return videoComposerSupportsWanVideoToVideo(composerModelId);
+}
+
+export function bottomBarModelsForActionTab(actionTab: string): BottomBarModel[] {
+  if (actionTab === "Reference to Video") {
+    return BOTTOM_BAR_MODELS.filter((m) => videoComposerSupportsReferenceToVideo(m.id));
+  }
+  if (actionTab === "Motion Control") {
+    return BOTTOM_BAR_MODELS.filter((m) => videoComposerSupportsMotionControlTab(m.id));
+  }
+  if (actionTab === "Video Edit") {
+    return BOTTOM_BAR_MODELS.filter((m) => videoComposerSupportsVideoEditTab(m.id));
+  }
+  return BOTTOM_BAR_MODELS.filter((m) => !videoComposerSupportsMotionControlTab(m.id));
+}
+
 export const REFERENCE_TO_VIDEO_MAX_IMAGES = 4;
 
 export const MODE_DROPUP_OPTIONS = [
@@ -56,6 +88,9 @@ export const MODE_DROPUP_OPTIONS = [
 ] as const;
 
 export const TIME_SECONDS_OPTIONS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as const;
+
+/** Kling 2.6 motion control — Atlas max duration depends on character_orientation. */
+export const MOTION_CONTROL_DURATION_OPTIONS = [5, 10, 15, 30] as const;
 
 export const ASPECT_STEP_OPTIONS = ["16:9", "9:16", "1:1", "4:3"] as const;
 

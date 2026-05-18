@@ -149,8 +149,8 @@ export function NavbarToolsMenu() {
         aria-expanded={open}
         aria-haspopup="dialog"
         className={cn(
-          "relative flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
-          open ? "text-white" : "text-zorixa-muted hover:text-white"
+          "relative flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
+          open ? "bg-white/10 text-white" : "text-white/50 hover:text-white"
         )}
       >
         <span>Tools</span>
