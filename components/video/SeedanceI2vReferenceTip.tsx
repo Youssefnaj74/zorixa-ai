@@ -23,7 +23,7 @@ export function SeedanceI2vReferenceTip({ className }: { className?: string }) {
         <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
         <span>
           <span className="font-semibold text-white/90">Tip:</span> Seedance 2.0 often blocks real
-          faces. Try <span className="font-medium text-white/85">Seedance 1.5</span> — it&apos;s more
+          faces. Try <span className="font-medium text-white/85">Seedance 1.5 Pro</span> — it&apos;s more
           permissive with real-person images.
         </span>
       </p>

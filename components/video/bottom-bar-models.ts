@@ -14,7 +14,7 @@ export type BottomBarModel = {
 export const BOTTOM_BAR_MODELS: BottomBarModel[] = [
   { id: KLING_30_PRO_MODEL_ID, label: "Kling 3.0 Pro", badge: "pro" },
   { id: "seedance-2", label: "Seedance 2.0", badge: "newTeal" },
-  { id: "seedance-1-5", label: "Seedance 1.5", badge: "newTeal" },
+  { id: "seedance-1-5", label: "Seedance 1.5 Pro", badge: "pro" },
   { id: "wan-2-6", label: "Wan 2.6" },
   { id: "hailuo-2-3", label: "Hailuo 2.3", badge: "newTeal" },
   { id: "google-veo-3-1", label: "Google Veo 3.1", badge: "newTeal" }
