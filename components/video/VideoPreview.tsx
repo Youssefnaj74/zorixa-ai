@@ -15,10 +15,6 @@ import { cn } from "@/lib/utils";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import { ActionTabsRow } from "@/components/video/ActionTabsRow";
-import {
-  isSeedanceVideoComposerId,
-  SeedanceI2vReferenceTip
-} from "@/components/video/SeedanceI2vReferenceTip";
 
 const NAV_H = 56;
 const TABS_ROW_H = 48;
@@ -54,7 +50,6 @@ export function VideoPreview({
   bottomBarHeight = 130,
   /** Bottom-bar aspect (9:16, 16:9, …) — frames preview until file metadata loads. */
   aspectRatio = "9:16",
-  composerModelId,
   className
 }: {
   actionTab: ActionTab;
@@ -69,14 +64,8 @@ export function VideoPreview({
   /** Measured fixed bottom bar height — drives preview card max-height. */
   bottomBarHeight?: number;
   aspectRatio?: string;
-  /** Zorixa composer id (seedance-2, kling-3-pro, …) — drives Seedance I2V tips. */
-  composerModelId?: string;
   className?: string;
 }) {
-  const showSeedanceI2vTip =
-    actionTab === "Image to Video" &&
-    composerModelId != null &&
-    isSeedanceVideoComposerId(composerModelId);
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${TABS_ROW_H}px - ${bottomBarHeight}px)`;
   const [inlinePlaybackError, setInlinePlaybackError] = useState<string | null>(null);
   const [downloadBusy, setDownloadBusy] = useState(false);
@@ -267,7 +256,7 @@ export function VideoPreview({
                   </p>
                 </div>
               ) : (
-                <div className="flex max-w-md flex-col items-center justify-center gap-4 px-4">
+                <div className="flex flex-col items-center justify-center gap-4">
                   <motion.button
                     type="button"
                     whileHover={{ scale: 1.06 }}
@@ -277,7 +266,6 @@ export function VideoPreview({
                     <Play className="ml-1 size-7 fill-white" />
                   </motion.button>
                   <p className="text-sm text-zorixa-muted">Video preview</p>
-                  {showSeedanceI2vTip ? <SeedanceI2vReferenceTip className="w-full" /> : null}
                 </div>
               )}
             </div>

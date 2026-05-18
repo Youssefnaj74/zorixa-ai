@@ -634,7 +634,6 @@ export function VideoGenerationPage() {
               promptThumbUrl={hidePromptThumb ? null : promptImageUrl}
               bottomBarHeight={bottomBarHeight}
               aspectRatio={aspect}
-              composerModelId={composerModelId}
               className="scrollbar-hide h-full min-h-0 w-full min-w-0 flex-1"
             />
           </div>
