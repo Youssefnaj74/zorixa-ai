@@ -32,7 +32,7 @@ export function SeedanceI2vReferenceTip({ className }: { className?: string }) {
         <Link href="/image" className="font-medium text-brand underline-offset-2 hover:underline">
           Generate a reference image
         </Link>
-        {" → "}upload under Products, then Generate video.
+        {" → "}upload Start frame (and optional End frame for Seedance), then Generate video.
       </p>
     </div>
   );

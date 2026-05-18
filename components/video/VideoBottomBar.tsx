@@ -11,6 +11,7 @@ import {
   ASPECT_STEP_OPTIONS,
   BOTTOM_BAR_MODELS,
   MODE_DROPUP_OPTIONS,
+  videoComposerSupportsEndFrame,
   videoComposerUsesTextOnlyLayout,
   RESOLUTION_STEP_OPTIONS,
   STANDARD_DURATION_OPTIONS,
@@ -320,6 +321,8 @@ export function VideoBottomBar({
   const speedTier = parseVideoSpeedTierFromUiLabel(durationStandard);
   const showSeedanceI2vTip =
     actionTab === "Image to Video" && isSeedanceVideoComposerId(composerModelId);
+  const showEndFrameSlot =
+    actionTab === "Image to Video" && videoComposerSupportsEndFrame(composerModelId);
 
   const emitGenerate = useCallback(() => {
     const el = promptTextareaRef.current;
@@ -500,7 +503,9 @@ export function VideoBottomBar({
                     onChange={onFile2Input}
                   />
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div
+                    className={cn("grid gap-3", showEndFrameSlot ? "grid-cols-2" : "grid-cols-1")}
+                  >
                     <div
                       className="relative"
                       onDragEnter={stopDragDefaults}
@@ -515,7 +520,7 @@ export function VideoBottomBar({
                           "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
                           "hover:border-white/30 hover:bg-black/55"
                         )}
-                        aria-label={promptImageUrl ? "Change Products image" : "Upload Products image"}
+                        aria-label={promptImageUrl ? "Change Start frame" : "Upload Start frame"}
                       >
                         {promptImageUrl ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
@@ -523,7 +528,7 @@ export function VideoBottomBar({
                         ) : (
                           <>
                             <Upload className="size-5 opacity-60" />
-                            <span className="mt-2 text-xs font-medium text-zorixa-muted">Products</span>
+                            <span className="mt-2 text-xs font-medium text-zorixa-muted">Start frame</span>
                           </>
                         )}
                       </button>
@@ -535,13 +540,14 @@ export function VideoBottomBar({
                             "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
                             "hover:bg-black hover:text-white"
                           )}
-                          aria-label="Remove Products image"
+                          aria-label="Remove Start frame"
                         >
                           <X className="size-3.5" />
                         </button>
                       ) : null}
                     </div>
 
+                    {showEndFrameSlot ? (
                     <div
                       onDragEnter={stopDragDefaults}
                       onDragOver={stopDragDefaults}
@@ -556,7 +562,7 @@ export function VideoBottomBar({
                           "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
                           "hover:border-white/30 hover:bg-black/55"
                         )}
-                        aria-label={promptImage2Url ? "Change Influencers image" : "Upload Influencers image"}
+                        aria-label={promptImage2Url ? "Change End frame" : "Upload End frame (optional)"}
                       >
                         {promptImage2Url ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
@@ -564,7 +570,12 @@ export function VideoBottomBar({
                         ) : (
                           <>
                             <Upload className="size-5 opacity-60" />
-                            <span className="mt-2 text-xs font-medium text-zorixa-muted">Influencers</span>
+                            <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">
+                              End frame
+                              <span className="block text-[10px] font-normal text-zorixa-muted/80">
+                                optional
+                              </span>
+                            </span>
                           </>
                         )}
                       </button>
@@ -576,12 +587,13 @@ export function VideoBottomBar({
                             "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
                             "hover:bg-black hover:text-white"
                           )}
-                          aria-label="Remove Influencers image"
+                          aria-label="Remove End frame"
                         >
                           <X className="size-3.5" />
                         </button>
                       ) : null}
                     </div>
+                    ) : null}
                   </div>
                   {showSeedanceI2vTip ? (
                     <SeedanceI2vReferenceTip className="w-full max-w-[312px]" />

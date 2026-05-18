@@ -22,12 +22,17 @@ export const BOTTOM_BAR_MODELS: BottomBarModel[] = [
 
 const TEXT_TO_VIDEO_PROMPT_ONLY_IDS = new Set(BOTTOM_BAR_MODELS.map((m) => m.id));
 
-/** Text to Video: full-width prompt only (no Products/Influencers slots) — same as Kling. */
+/** Text to Video: full-width prompt only (no frame upload slots) — same as Kling. */
 export function videoComposerUsesTextOnlyLayout(
   composerModelId: string,
   actionTab: string
 ): boolean {
   return actionTab === "Text to Video" && TEXT_TO_VIDEO_PROMPT_ONLY_IDS.has(composerModelId);
+}
+
+/** Seedance 2.0 / 1.5 I2V on Atlas accept optional `last_image` (end frame). */
+export function videoComposerSupportsEndFrame(composerModelId: string): boolean {
+  return composerModelId === "seedance-2" || composerModelId === "seedance-1-5";
 }
 
 export const MODE_DROPUP_OPTIONS = [

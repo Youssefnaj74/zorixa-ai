@@ -8,6 +8,7 @@ import type { ActionTab } from "@/components/video/ActionTabsRow";
 import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
 import {
   KLING_30_PRO_MODEL_ID,
+  videoComposerSupportsEndFrame,
   videoComposerUsesTextOnlyLayout
 } from "@/components/video/bottom-bar-models";
 import type { VideoHistoryEntry, VideoHistorySettingsSnapshot } from "@/components/video/VideoHistory";
@@ -210,6 +211,9 @@ export function VideoGenerationPage() {
     if (!videoComposerSupportsSpeedTier(id)) {
       setDurationStandard("Standard");
     }
+    if (!videoComposerSupportsEndFrame(id)) {
+      setPromptImage2UrlSafe(null);
+    }
     if (id === KLING_30_PRO_MODEL_ID) {
       setActionTab("Text to Video");
     }
@@ -275,15 +279,19 @@ export function VideoGenerationPage() {
           case "Image to Video": {
             const image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImageUrl);
             if (!image_url) {
-              setGenerateError("Add a Products image for Image to Video.");
+              setGenerateError("Add a Start frame image for Image to Video.");
               return;
             }
+            const last_image_url = videoComposerSupportsEndFrame(videoModel)
+              ? await ensureAtlasPublicHttpsMediaUrl(ctx.promptImage2Url)
+              : null;
             sourceInputForLog = image_url;
             payload = {
               prompt: promptForAtlas,
               action: "image",
               videoModel,
               image_url,
+              ...(last_image_url ? { last_image_url } : {}),
               aspectRatio,
               resolution: resTier,
               duration,

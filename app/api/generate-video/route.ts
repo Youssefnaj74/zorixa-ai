@@ -34,6 +34,8 @@ type ClientBody = {
   /** Zorixa composer row id (e.g. kling-3-pro) — maps to Atlas `model` slug. */
   videoModel?: string;
   image_url?: string;
+  /** Seedance I2V optional end frame (Atlas `last_image`). */
+  last_image_url?: string;
   audio_url?: string;
   video_url?: string;
   /** UI aspect selector (16:9, 9:16, 1:1, 4:3) — forwarded to Atlas. */
@@ -290,6 +292,8 @@ async function handleGenerateVideoPost(request: Request) {
 
   let image_url =
     typeof body.image_url === "string" ? body.image_url.trim() : "";
+  let last_image_url =
+    typeof body.last_image_url === "string" ? body.last_image_url.trim() : "";
   let audio_url =
     typeof body.audio_url === "string" ? body.audio_url.trim() : "";
   let video_url =
@@ -326,6 +330,28 @@ async function handleGenerateVideoPost(request: Request) {
       );
     }
     image_url = c;
+  }
+  if (last_image_url) {
+    const c = coerceToPublicHttpsUrl(last_image_url);
+    if (!c) {
+      return NextResponse.json(
+        {
+          error:
+            "last_image_url must be a public https:// URL so Atlas can fetch the end frame (upload local or data URLs first)."
+        },
+        { status: 400 }
+      );
+    }
+    last_image_url = c;
+  }
+  if (action === "image" && last_image_url && !isSeedanceImageToVideoModel(model)) {
+    return NextResponse.json(
+      {
+        error:
+          "End frame (last_image) is only supported for Seedance 2.0 and Seedance 1.5 Image to Video."
+      },
+      { status: 400 }
+    );
   }
   if (action === "lipsync" && audio_url) {
     const c = coerceToPublicHttpsUrl(audio_url);
@@ -407,6 +433,9 @@ async function handleGenerateVideoPost(request: Request) {
         );
       }
       atlasBody.image = image_url;
+      if (last_image_url) {
+        atlasBody.last_image = last_image_url;
+      }
     } else if (image_url) {
       atlasBody.image = image_url;
     }
@@ -575,6 +604,7 @@ async function handleGenerateVideoPost(request: Request) {
     action,
     atlas_model_slug: model,
     has_image: Boolean(atlasImage),
+    has_last_image: typeof atlasBody.last_image === "string",
     image_host: atlasImage
       ? (() => {
           try {
