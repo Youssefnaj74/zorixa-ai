@@ -17,6 +17,11 @@ import { env } from "@/lib/env";
 import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
 import { formatAtlasVideoFailureForUi } from "@/lib/atlas-video-failure-message";
 import {
+  isSeedanceReferenceToVideoModel,
+  normalizeSeedanceReferenceDurationSeconds,
+  uiAspectToAtlasRatio
+} from "@/lib/atlas-seedance-reference-video";
+import {
   augmentSeedancePromptForAspect,
   seedanceAtlasRequestDimensions
 } from "@/lib/seedance-atlas-dimensions";
@@ -36,6 +41,8 @@ type ClientBody = {
   image_url?: string;
   /** Seedance I2V optional end frame (Atlas `last_image`). */
   last_image_url?: string;
+  /** Seedance reference-to-video — 1–9 public image URLs. */
+  reference_images?: string[];
   audio_url?: string;
   video_url?: string;
   /** UI aspect selector (16:9, 9:16, 1:1, 4:3) — forwarded to Atlas. */
@@ -79,7 +86,13 @@ function normalizeDurationSeconds(raw: unknown): number {
  * `aspect_ratio` + `resolution` alone are ignored → defaults to landscape (~16:9).
  */
 function atlasSeedanceModelUsesDimensions(model: string): boolean {
-  return /seedance/i.test(model);
+  return /seedance/i.test(model) && !/reference-to-video/i.test(model);
+}
+
+const REFERENCE_VIDEO_COMPOSER_IDS = new Set(["seedance-2"]);
+
+function isReferenceVideoComposerId(composerId: string): boolean {
+  return REFERENCE_VIDEO_COMPOSER_IDS.has(composerId);
 }
 
 function isSeedanceImageToVideoModel(model: string): boolean {
@@ -171,8 +184,13 @@ export async function GET(request: Request) {
   const pollGenerateAudio =
     searchParams.get("generate_audio") === "1" ||
     searchParams.get("generateAudio") === "true";
-  const pollAction =
-    searchParams.get("action") === "image" ? ("image" as const) : ("text" as const);
+  const pollActionRaw = searchParams.get("action");
+  const pollAction: "text" | "image" | "reference" =
+    pollActionRaw === "image"
+      ? "image"
+      : pollActionRaw === "reference"
+        ? "reference"
+        : "text";
   if (!predictionId) {
     return NextResponse.json(
       { error: "Missing predictionId or prediction_id query parameter" },
@@ -305,6 +323,47 @@ async function handleGenerateVideoPost(request: Request) {
       { status: 400 }
     );
   }
+
+  const rawReferenceImages = Array.isArray(body.reference_images) ? body.reference_images : [];
+  let reference_images: string[] = [];
+  for (const raw of rawReferenceImages) {
+    if (typeof raw !== "string") continue;
+    const t = raw.trim();
+    if (!t) continue;
+    const c = coerceToPublicHttpsUrl(t);
+    if (!c) {
+      return NextResponse.json(
+        {
+          error:
+            "Each reference image must be a public https:// URL (upload local or data URLs first)."
+        },
+        { status: 400 }
+      );
+    }
+    reference_images.push(c);
+  }
+  reference_images = reference_images.slice(0, 9);
+
+  if (action === "reference") {
+    if (!isReferenceVideoComposerId(videoModel)) {
+      return NextResponse.json(
+        { error: "Reference to Video requires Seedance 2.0 in the model picker." },
+        { status: 400 }
+      );
+    }
+    if (!isSeedanceReferenceToVideoModel(model)) {
+      return NextResponse.json(
+        { error: "Reference to Video model slug is not configured for this tier." },
+        { status: 400 }
+      );
+    }
+    if (reference_images.length < 1) {
+      return NextResponse.json(
+        { error: "Add at least one reference image for Reference to Video." },
+        { status: 400 }
+      );
+    }
+  }
   if (action === "lipsync" && !audio_url) {
     return NextResponse.json(
       { error: "Missing audio_url for Lipsyncing" },
@@ -396,10 +455,11 @@ async function handleGenerateVideoPost(request: Request) {
   const generateAudio =
     body.generate_audio === true &&
     atlasModelSupportsGenerateAudio(model) &&
-    (action === "text" || action === "image");
+    (action === "text" || action === "image" || action === "reference");
 
   const applyNativeAudio =
-    atlasModelSupportsGenerateAudio(model) && (action === "text" || action === "image");
+    atlasModelSupportsGenerateAudio(model) &&
+    (action === "text" || action === "image" || action === "reference");
 
   const seedanceI2v = isSeedanceImageToVideoModel(model);
   const seedanceRouteAction = action === "image" ? "image" : "text";
@@ -408,7 +468,20 @@ async function handleGenerateVideoPost(request: Request) {
     ? seedanceAtlasRequestDimensions(aspectRatio, resolution, seedanceRouteAction)
     : null;
 
-  if (seedanceDimensions && seedanceRequestDims) {
+  if (action === "reference" && isSeedanceReferenceToVideoModel(model)) {
+    durationSec = normalizeSeedanceReferenceDurationSeconds(durationSec);
+    atlasBody = {
+      model,
+      prompt,
+      reference_images,
+      duration: durationSec,
+      resolution,
+      ratio: uiAspectToAtlasRatio(aspectRatio)
+    };
+    if (applyNativeAudio) {
+      applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
+    }
+  } else if (seedanceDimensions && seedanceRequestDims) {
     prompt = augmentSeedancePromptForAspect(prompt, aspectRatio);
     const dims = seedanceRequestDims;
     const { width, height } = dims;
@@ -584,7 +657,8 @@ async function handleGenerateVideoPost(request: Request) {
     const err = formatAtlasVideoFailureForUi(atlasRaw, {
       generateAudio,
       hostIsProduction: process.env.VERCEL_ENV === "production",
-      action: action === "image" ? "image" : "text"
+      action:
+        action === "image" ? "image" : action === "reference" ? "reference" : "text"
     });
     return NextResponse.json(
       { error: err, atlas_error: atlasRaw, atlas_model: model, prediction_id: predictionId },
@@ -605,6 +679,9 @@ async function handleGenerateVideoPost(request: Request) {
     atlas_model_slug: model,
     has_image: Boolean(atlasImage),
     has_last_image: typeof atlasBody.last_image === "string",
+    reference_image_count: Array.isArray(atlasBody.reference_images)
+      ? (atlasBody.reference_images as string[]).length
+      : 0,
     image_host: atlasImage
       ? (() => {
           try {

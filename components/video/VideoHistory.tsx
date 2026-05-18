@@ -23,6 +23,7 @@ export type VideoHistorySettingsSnapshot = {
   promptImage2Url: string | null;
   lipsyncAudioUrl: string | null;
   editSourceVideoUrl: string | null;
+  referenceImageUrls?: (string | null)[];
 };
 
 export type VideoHistoryEntry = {

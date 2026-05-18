@@ -77,7 +77,7 @@ export function formatAtlasVideoFailureForUi(
     generateAudio?: boolean;
     hostIsProduction?: boolean;
     /** When poll only returns "task failed", I2V failures are often real-person policy. */
-    action?: "text" | "image";
+    action?: "text" | "image" | "reference";
   }
 ): string {
   if (isAtlasRealPersonImageError(error)) {
@@ -85,8 +85,9 @@ export function formatAtlasVideoFailureForUi(
   }
 
   const parsed = parseAtlasErrorMessage(error);
+  const imageLikeAction = opts?.action === "image" || opts?.action === "reference";
 
-  if (parsed.toLowerCase() === "task failed" && opts?.action === "image") {
+  if (parsed.toLowerCase() === "task failed" && imageLikeAction) {
     return [
       formatRealPersonImageBlockedForUi(),
       'Atlas only returned "task failed". Open the eye icon in Request History on atlascloud.ai for the full rejection reason.'

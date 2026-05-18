@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import { ActionTabsRow } from "@/components/video/ActionTabsRow";
+import { SeedanceReferenceToVideoTip } from "@/components/video/SeedanceReferenceToVideoTip";
 
 const NAV_H = 56;
 const TABS_ROW_H = 48;
@@ -311,6 +312,10 @@ export function VideoPreview({
           </div>
         </div>
       </div>
+
+      {actionTab === "Reference to Video" ? (
+        <SeedanceReferenceToVideoTip className="w-full shrink-0" />
+      ) : null}
 
       <div className="relative z-10 flex h-12 w-full shrink-0 items-center bg-[#0a0a0f]">
         <ActionTabsRow active={actionTab} onChange={onActionTabChange} className="h-full min-h-0 w-full flex-1" />

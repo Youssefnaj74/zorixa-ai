@@ -22,18 +22,28 @@ export const BOTTOM_BAR_MODELS: BottomBarModel[] = [
 
 const TEXT_TO_VIDEO_PROMPT_ONLY_IDS = new Set(BOTTOM_BAR_MODELS.map((m) => m.id));
 
-/** Text to Video: full-width prompt only (no frame upload slots) — same as Kling. */
+/** Full-width prompt row (no Products slots) — Text to Video or Reference uses ref grid separately. */
 export function videoComposerUsesTextOnlyLayout(
   composerModelId: string,
   actionTab: string
 ): boolean {
-  return actionTab === "Text to Video" && TEXT_TO_VIDEO_PROMPT_ONLY_IDS.has(composerModelId);
+  return (
+    (actionTab === "Text to Video" && TEXT_TO_VIDEO_PROMPT_ONLY_IDS.has(composerModelId)) ||
+    actionTab === "Reference to Video"
+  );
 }
 
 /** Seedance 2.0 / 1.5 I2V on Atlas accept optional `last_image` (end frame). */
 export function videoComposerSupportsEndFrame(composerModelId: string): boolean {
   return composerModelId === "seedance-2" || composerModelId === "seedance-1-5";
 }
+
+/** Multimodal reference-to-video (3–9 images) — Seedance 2.0 on Atlas only. */
+export function videoComposerSupportsReferenceToVideo(composerModelId: string): boolean {
+  return composerModelId === "seedance-2";
+}
+
+export const REFERENCE_TO_VIDEO_MAX_IMAGES = 4;
 
 export const MODE_DROPUP_OPTIONS = [
   "Multi Reference",

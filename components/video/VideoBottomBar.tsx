@@ -12,6 +12,7 @@ import {
   BOTTOM_BAR_MODELS,
   MODE_DROPUP_OPTIONS,
   videoComposerSupportsEndFrame,
+  videoComposerSupportsReferenceToVideo,
   videoComposerUsesTextOnlyLayout,
   RESOLUTION_STEP_OPTIONS,
   STANDARD_DURATION_OPTIONS,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/atlas-video-model-ids";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
+import { ReferenceImageUploadStrip } from "@/components/video/ReferenceImageUploadStrip";
 import {
   isSeedanceVideoComposerId,
   SeedanceI2vReferenceTip
@@ -43,6 +45,8 @@ export type VideoGenerateContext = {
   promptImage2Url: string | null;
   lipsyncAudioUrl: string | null;
   editSourceVideoUrl: string | null;
+  /** Reference-to-video slots (Ref 1–4). */
+  referenceImageUrls: (string | null)[];
   /** Native AI soundtrack (Seedance, Kling v3). */
   generateAudio: boolean;
   /** Standard vs Fast Atlas model tier (Seedance + Kling). */
@@ -62,6 +66,8 @@ export type VideoBottomBarProps = {
   onLipsyncAudioUrlChange: (url: string | null) => void;
   editSourceVideoUrl: string | null;
   onEditSourceVideoUrlChange: (url: string | null) => void;
+  referenceImageUrls?: (string | null)[];
+  onReferenceImageChange?: (index: number, url: string | null) => void;
   /** Bottom bar model (dropup). */
   composerModelId: string;
   onComposerModelChange: (id: string) => void;
@@ -126,6 +132,8 @@ export function VideoBottomBar({
   onLipsyncAudioUrlChange,
   editSourceVideoUrl,
   onEditSourceVideoUrlChange,
+  referenceImageUrls = [null, null, null, null],
+  onReferenceImageChange,
   composerModelId,
   onComposerModelChange,
   generateAudioOn,
@@ -184,8 +192,6 @@ export function VideoBottomBar({
   const openOnly = useCallback((panel: OpenPanel) => {
     setOpen((prev) => (prev === panel ? null : panel));
   }, []);
-
-  const selectedModel = BOTTOM_BAR_MODELS.find((m) => m.id === composerModelId) ?? BOTTOM_BAR_MODELS[0];
 
   const applySlot1File = useCallback(
     (file: File) => {
@@ -311,11 +317,23 @@ export function VideoBottomBar({
     if (!promptImage2Url) setFile2Name(null);
   }, [promptImage2Url]);
 
+  const showReferenceLayout = actionTab === "Reference to Video";
   const showTextOnlyPromptLayout = videoComposerUsesTextOnlyLayout(composerModelId, actionTab);
+  const pickerModels =
+    showReferenceLayout
+      ? BOTTOM_BAR_MODELS.filter((m) => videoComposerSupportsReferenceToVideo(m.id))
+      : BOTTOM_BAR_MODELS;
+  const selectedModel =
+    pickerModels.find((m) => m.id === composerModelId) ?? pickerModels[0] ?? BOTTOM_BAR_MODELS[0];
   const nativeAudioSupported = videoComposerSupportsGenerateAudio(composerModelId);
   const showGenerateAudioControl =
     nativeAudioSupported &&
-    (actionTab === "Text to Video" || actionTab === "Image to Video");
+    (actionTab === "Text to Video" ||
+      actionTab === "Image to Video" ||
+      actionTab === "Reference to Video");
+  const timeOptionsForTab = showReferenceLayout
+    ? TIME_SECONDS_OPTIONS.filter((t) => t >= 4 && t <= 15)
+    : [...TIME_SECONDS_OPTIONS];
   const generateAudioEffective = generateAudioOn && showGenerateAudioControl;
   const showSpeedTierControl = videoComposerSupportsSpeedTier(composerModelId);
   const speedTier = parseVideoSpeedTierFromUiLabel(durationStandard);
@@ -341,6 +359,7 @@ export function VideoBottomBar({
       promptImage2Url,
       lipsyncAudioUrl,
       editSourceVideoUrl,
+      referenceImageUrls,
       generateAudio: generateAudioEffective,
       speedTier: showSpeedTierControl ? speedTier : "standard"
     };
@@ -373,6 +392,7 @@ export function VideoBottomBar({
     onGenerate,
     promptImage2Url,
     promptImageUrl,
+    referenceImageUrls,
     resolution,
     showSpeedTierControl,
     speedTier,
@@ -390,7 +410,12 @@ export function VideoBottomBar({
       <div className="mx-auto flex max-w-[1920px] flex-col gap-3">
         {/* ROW 1 — Prompt */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3">
-          {!showTextOnlyPromptLayout ? (
+          {showReferenceLayout ? (
+            <ReferenceImageUploadStrip
+              referenceImageUrls={referenceImageUrls}
+              onReferenceImageChange={onReferenceImageChange}
+            />
+          ) : !showTextOnlyPromptLayout ? (
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start">
               {actionTab === "Lipsyncing" ? (
                 <>
@@ -611,9 +636,11 @@ export function VideoBottomBar({
               onChange={(e) => onPromptChange(e.target.value)}
               rows={showTextOnlyPromptLayout ? 3 : 2}
               placeholder={
-                showTextOnlyPromptLayout
-                  ? "Describe the video you want to generate…"
-                  : "Describe your image..."
+                showReferenceLayout
+                  ? "Describe the scene — e.g. image 1 is the character, image 2 is the background…"
+                  : showTextOnlyPromptLayout
+                    ? "Describe the video you want to generate…"
+                    : "Describe your image..."
               }
               className={cn(
                 "w-full resize-y rounded-lg bg-[#0a0a0a] px-3 py-2.5 text-sm leading-relaxed text-white outline-none transition-shadow placeholder:text-zorixa-muted",
@@ -834,7 +861,7 @@ export function VideoBottomBar({
                   style={{ transformOrigin: "bottom left" }}
                   className={cn(dropupPanelClass, "left-0 max-h-52 min-w-[100px] overflow-y-auto py-1")}
                 >
-                  {TIME_SECONDS_OPTIONS.map((t) => (
+                  {timeOptionsForTab.map((t) => (
                     <button
                       key={t}
                       type="button"

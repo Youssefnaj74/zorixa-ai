@@ -2,7 +2,7 @@
  * Maps Zorixa video composer IDs → Atlas Cloud `generateVideo` `model` slugs.
  * Slugs follow Atlas model library paths (see atlascloud.ai/models).
  */
-export type AtlasVideoRouteAction = "text" | "image" | "lipsync" | "edit";
+export type AtlasVideoRouteAction = "text" | "image" | "reference" | "lipsync" | "edit";
 
 export type AtlasVideoSpeedTier = "standard" | "fast";
 
@@ -13,36 +13,42 @@ export const ATLAS_VIDEO_MODEL_MAP: Record<string, AtlasModelRow> = {
   "kling-3-pro": {
     text: "kwaivgi/kling-v3.0-pro/text-to-video",
     image: "kwaivgi/kling-v3.0-pro/image-to-video",
+    reference: "kwaivgi/kling-v3.0-pro/text-to-video",
     lipsync: "kwaivgi/kling-v3.0-pro/text-to-video",
     edit: "kwaivgi/kling-v3.0-pro/text-to-video"
   },
   "seedance-2": {
     text: "bytedance/seedance-2.0/text-to-video",
     image: "bytedance/seedance-2.0/image-to-video",
+    reference: "bytedance/seedance-2.0/reference-to-video",
     lipsync: "bytedance/seedance-2.0/text-to-video",
     edit: "bytedance/seedance-2.0/text-to-video"
   },
   "seedance-1-5": {
     text: "bytedance/seedance-v1.5-pro/text-to-video",
     image: "bytedance/seedance-v1.5-pro/image-to-video",
+    reference: "bytedance/seedance-v1.5-pro/text-to-video",
     lipsync: "bytedance/seedance-v1.5-pro/text-to-video",
     edit: "bytedance/seedance-v1.5-pro/text-to-video"
   },
   "wan-2-6": {
     text: "alibaba/wan-2.6/text-to-video",
     image: "alibaba/wan-2.6/image-to-video",
+    reference: "alibaba/wan-2.6/text-to-video",
     lipsync: "alibaba/wan-2.6/text-to-video",
     edit: "alibaba/wan-2.6/text-to-video"
   },
   "hailuo-2-3": {
     text: "minimax/hailuo-2.3/t2v-pro",
     image: "minimax/hailuo-2.3/i2v-standard",
+    reference: "minimax/hailuo-2.3/t2v-pro",
     lipsync: "minimax/hailuo-2.3/t2v-pro",
     edit: "minimax/hailuo-2.3/t2v-pro"
   },
   "google-veo-3-1": {
     text: "google/veo3.1/text-to-video",
     image: "google/veo3.1/image-to-video",
+    reference: "google/veo3.1/text-to-video",
     lipsync: "google/veo3.1/text-to-video",
     edit: "google/veo3.1/text-to-video"
   }
@@ -53,18 +59,21 @@ const ATLAS_VIDEO_MODEL_FAST_MAP: Partial<Record<string, AtlasModelRow>> = {
   "kling-3-pro": {
     text: "kwaivgi/kling-v3.0-std/text-to-video",
     image: "kwaivgi/kling-v3.0-std/image-to-video",
+    reference: "kwaivgi/kling-v3.0-std/text-to-video",
     lipsync: "kwaivgi/kling-v3.0-std/text-to-video",
     edit: "kwaivgi/kling-v3.0-std/text-to-video"
   },
   "seedance-2": {
     text: "bytedance/seedance-2.0-fast/text-to-video",
     image: "bytedance/seedance-2.0-fast/image-to-video",
+    reference: "bytedance/seedance-2.0-fast/reference-to-video",
     lipsync: "bytedance/seedance-2.0-fast/text-to-video",
     edit: "bytedance/seedance-2.0-fast/text-to-video"
   },
   "seedance-1-5": {
     text: "bytedance/seedance-v1.5-pro/text-to-video-fast",
     image: "bytedance/seedance-v1.5-pro/image-to-video-fast",
+    reference: "bytedance/seedance-v1.5-pro/text-to-video-fast",
     lipsync: "bytedance/seedance-v1.5-pro/text-to-video-fast",
     edit: "bytedance/seedance-v1.5-pro/text-to-video-fast"
   }

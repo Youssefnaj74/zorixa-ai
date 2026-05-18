@@ -4,7 +4,13 @@ import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
-const TABS = ["Text to Video", "Image to Video", "Lipsyncing", "Video Edit"] as const;
+const TABS = [
+  "Text to Video",
+  "Image to Video",
+  "Reference to Video",
+  "Lipsyncing",
+  "Video Edit"
+] as const;
 
 export type ActionTab = (typeof TABS)[number];
 
@@ -20,7 +26,7 @@ export function ActionTabsRow({
   return (
     <div
       className={cn(
-        "grid h-full min-h-0 w-full shrink-0 grid-cols-2 gap-1 rounded-xl border border-white/10 bg-[#0d0d14] p-1 sm:grid-cols-4",
+        "grid h-full min-h-0 w-full shrink-0 grid-cols-2 gap-1 rounded-xl border border-white/10 bg-[#0d0d14] p-1 sm:grid-cols-3 lg:grid-cols-5",
         className
       )}
     >

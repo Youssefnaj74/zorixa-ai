@@ -8,9 +8,12 @@ import type { ActionTab } from "@/components/video/ActionTabsRow";
 import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
 import {
   KLING_30_PRO_MODEL_ID,
+  REFERENCE_TO_VIDEO_MAX_IMAGES,
   videoComposerSupportsEndFrame,
+  videoComposerSupportsReferenceToVideo,
   videoComposerUsesTextOnlyLayout
 } from "@/components/video/bottom-bar-models";
+import { normalizeSeedanceReferenceDurationSeconds } from "@/lib/atlas-seedance-reference-video";
 import type { VideoHistoryEntry, VideoHistorySettingsSnapshot } from "@/components/video/VideoHistory";
 import {
   isAtlasVideoComposerId,
@@ -41,6 +44,14 @@ const ATLAS_CLIENT_MAX_WAIT_MS = 15 * 60 * 1000;
 function atlasTerminalSuccessStatus(status: string | undefined): boolean {
   const s = (status ?? "").toLowerCase();
   return s === "succeeded" || s === "completed";
+}
+
+function atlasPollActionForTab(
+  tab: ActionTab
+): "text" | "image" | "reference" {
+  if (tab === "Image to Video") return "image";
+  if (tab === "Reference to Video") return "reference";
+  return "text";
 }
 
 /** POST /api/generate-video returns snake_case; tolerate camelCase if a proxy changes keys. */
@@ -159,6 +170,19 @@ export function VideoGenerationPage() {
   const [promptImage2Url, setPromptImage2Url] = useState<string | null>(null);
   const [lipsyncAudioUrl, setLipsyncAudioUrl] = useState<string | null>(null);
   const [editSourceVideoUrl, setEditSourceVideoUrl] = useState<string | null>(null);
+  const [referenceImageUrls, setReferenceImageUrls] = useState<(string | null)[]>(() =>
+    Array.from({ length: REFERENCE_TO_VIDEO_MAX_IMAGES }, () => null)
+  );
+
+  const setReferenceImageAt = useCallback((index: number, url: string | null) => {
+    setReferenceImageUrls((prev) => {
+      const next = [...prev];
+      const old = next[index];
+      if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
+      next[index] = url;
+      return next;
+    });
+  }, []);
 
   const setPromptImageUrlSafe = useCallback((url: string | null) => {
     setPromptImageUrl((prev) => {
@@ -217,6 +241,18 @@ export function VideoGenerationPage() {
     if (id === KLING_30_PRO_MODEL_ID) {
       setActionTab("Text to Video");
     }
+    if (!videoComposerSupportsReferenceToVideo(id) && actionTab === "Reference to Video") {
+      setActionTab("Image to Video");
+    }
+  }, [actionTab]);
+
+  const handleActionTabChange = useCallback((tab: ActionTab) => {
+    setActionTab(tab);
+    setGenerateError(null);
+    if (tab === "Reference to Video") {
+      setComposerModelId("seedance-2");
+      setTimeSeconds((t) => normalizeSeedanceReferenceDurationSeconds(t));
+    }
   }, []);
 
   const runGeneration = useCallback(
@@ -259,7 +295,9 @@ export function VideoGenerationPage() {
         const wantGenerateAudio =
           ctx.generateAudio &&
           videoComposerSupportsGenerateAudio(videoModel) &&
-          (ctx.actionTab === "Text to Video" || ctx.actionTab === "Image to Video");
+          (ctx.actionTab === "Text to Video" ||
+            ctx.actionTab === "Image to Video" ||
+            ctx.actionTab === "Reference to Video");
 
         const speed_tier = ctx.speedTier;
 
@@ -295,6 +333,41 @@ export function VideoGenerationPage() {
               aspectRatio,
               resolution: resTier,
               duration,
+              speed_tier,
+              ...(wantGenerateAudio ? { generate_audio: true } : {})
+            };
+            break;
+          }
+          case "Reference to Video": {
+            if (!videoComposerSupportsReferenceToVideo(videoModel)) {
+              setGenerateError("Reference to Video requires Seedance 2.0.");
+              return;
+            }
+            const reference_images: string[] = [];
+            for (let i = 0; i < ctx.referenceImageUrls.length; i++) {
+              const raw = ctx.referenceImageUrls[i];
+              if (!raw) continue;
+              const u = await ensureAtlasPublicHttpsMediaUrl(raw);
+              if (!u) {
+                setGenerateError(`Could not upload reference image ${i + 1}. Try again.`);
+                return;
+              }
+              reference_images.push(u);
+            }
+            if (reference_images.length < 1) {
+              setGenerateError("Add at least one reference image for Reference to Video.");
+              return;
+            }
+            sourceInputForLog = reference_images[0] ?? null;
+            const refDuration = normalizeSeedanceReferenceDurationSeconds(duration);
+            payload = {
+              prompt: promptForAtlas,
+              action: "reference",
+              videoModel,
+              reference_images,
+              aspectRatio,
+              resolution: resTier,
+              duration: refDuration,
               speed_tier,
               ...(wantGenerateAudio ? { generate_audio: true } : {})
             };
@@ -397,7 +470,7 @@ export function VideoGenerationPage() {
               generateAudio: wantGenerateAudio,
               hostIsProduction:
                 typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
-              action: ctx.actionTab === "Image to Video" ? "image" : "text"
+              action: atlasPollActionForTab(ctx.actionTab)
             }) || `Generation failed (${res.status})`
           );
           return;
@@ -436,7 +509,8 @@ export function VideoGenerationPage() {
             await new Promise((r) => setTimeout(r, interval));
             const pollQs = new URLSearchParams({ predictionId });
             if (wantGenerateAudio) pollQs.set("generate_audio", "1");
-            if (ctx.actionTab === "Image to Video") pollQs.set("action", "image");
+            const pollAction = atlasPollActionForTab(ctx.actionTab);
+            if (pollAction !== "text") pollQs.set("action", pollAction);
             const pr = await fetch(`/api/generate-video?${pollQs.toString()}`, {
               cache: "no-store"
             });
@@ -491,7 +565,7 @@ export function VideoGenerationPage() {
                 generateAudio: wantGenerateAudio,
                 hostIsProduction:
                   typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
-                action: ctx.actionTab === "Image to Video" ? "image" : "text"
+                action: atlasPollActionForTab(ctx.actionTab)
               });
               setGenerateError(
                 pd.prediction_id && !isAtlasRealPersonImageError(pd.atlas_error ?? pd.error)
@@ -514,7 +588,8 @@ export function VideoGenerationPage() {
         const displayTitle =
           stripVideoComposerAssetTokens(promptValue).slice(0, 48) || videoModel;
         const thumbForHistory =
-          ctx.actionTab === "Image to Video" && sourceInputForLog
+          (ctx.actionTab === "Image to Video" || ctx.actionTab === "Reference to Video") &&
+          sourceInputForLog
             ? sourceInputForLog
             : `https://picsum.photos/seed/${id.slice(-6)}/96/96`;
 
@@ -538,7 +613,9 @@ export function VideoGenerationPage() {
           lipsyncAudioUrl:
             ctx.actionTab === "Lipsyncing" && sourceInputForLog ? sourceInputForLog : ctx.lipsyncAudioUrl,
           editSourceVideoUrl:
-            ctx.actionTab === "Video Edit" && sourceInputForLog ? sourceInputForLog : ctx.editSourceVideoUrl
+            ctx.actionTab === "Video Edit" && sourceInputForLog ? sourceInputForLog : ctx.editSourceVideoUrl,
+          referenceImageUrls:
+            ctx.actionTab === "Reference to Video" ? [...ctx.referenceImageUrls] : undefined
         };
 
         setHistory((prev) => [
@@ -593,6 +670,16 @@ export function VideoGenerationPage() {
         setPromptImage2UrlSafe(snap.promptImage2Url);
         setLipsyncAudioUrlSafe(snap.lipsyncAudioUrl);
         setEditSourceVideoUrlSafe(snap.editSourceVideoUrl);
+        if (snap.referenceImageUrls?.length) {
+          const padded = Array.from({ length: REFERENCE_TO_VIDEO_MAX_IMAGES }, (_, i) =>
+            snap.referenceImageUrls?.[i] ?? null
+          );
+          setReferenceImageUrls(padded);
+        } else {
+          setReferenceImageUrls(
+            Array.from({ length: REFERENCE_TO_VIDEO_MAX_IMAGES }, () => null)
+          );
+        }
       } else if (item.title) {
         setPrompt((p) => `${p.split("\n")[0]}\n(Restored: ${item.title})`);
       }
@@ -619,7 +706,9 @@ export function VideoGenerationPage() {
     ]
   );
 
-  const hidePromptThumb = videoComposerUsesTextOnlyLayout(composerModelId, actionTab);
+  const hidePromptThumb =
+    videoComposerUsesTextOnlyLayout(composerModelId, actionTab) ||
+    actionTab === "Reference to Video";
 
   return (
     <div className="flex min-h-dvh flex-col bg-zorixa-bg">
@@ -636,7 +725,7 @@ export function VideoGenerationPage() {
           <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:min-h-0">
             <VideoPreview
               actionTab={actionTab}
-              onActionTabChange={setActionTab}
+              onActionTabChange={handleActionTabChange}
               videoUrl={videoUrl}
               videoDownloadUrl={videoDownloadUrl}
               loading={loading}
@@ -672,6 +761,8 @@ export function VideoGenerationPage() {
         onLipsyncAudioUrlChange={setLipsyncAudioUrlSafe}
         editSourceVideoUrl={editSourceVideoUrl}
         onEditSourceVideoUrlChange={setEditSourceVideoUrlSafe}
+        referenceImageUrls={referenceImageUrls}
+        onReferenceImageChange={setReferenceImageAt}
         composerModelId={composerModelId}
         onComposerModelChange={handleComposerModelChange}
         generateAudioOn={generateAudioOn}
