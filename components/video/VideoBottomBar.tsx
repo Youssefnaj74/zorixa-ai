@@ -15,6 +15,7 @@ import {
   MOTION_CONTROL_DURATION_OPTIONS,
   videoComposerSupportsEndFrame,
   videoComposerUsesTextOnlyLayout,
+  videoToVideoTabUsesKlingMotion,
   RESOLUTION_STEP_OPTIONS,
   STANDARD_DURATION_OPTIONS,
   TIME_SECONDS_OPTIONS,
@@ -210,7 +211,7 @@ export function VideoBottomBar({
 
   const applySlot1File = useCallback(
     (file: File) => {
-      if (actionTab === "Motion Control") {
+      if (actionTab === "Video to Video" && videoToVideoTabUsesKlingMotion(composerModelId)) {
         if (!file.type.startsWith("image/")) return;
       } else if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
         return;
@@ -219,7 +220,7 @@ export function VideoBottomBar({
       onPromptImageChange(url);
       setFile1Name(file.name);
     },
-    [actionTab, onPromptImageChange]
+    [actionTab, composerModelId, onPromptImageChange]
   );
 
   const applySlot2File = useCallback(
@@ -365,13 +366,16 @@ export function VideoBottomBar({
   }, [promptImage2Url]);
 
   useEffect(() => {
-    if (actionTab !== "Motion Control") return;
+    if (actionTab !== "Video to Video" || !videoToVideoTabUsesKlingMotion(composerModelId)) return;
     const max = characterOrientation === "video" ? 30 : 15;
     if (timeSeconds > max) onTimeSecondsChange(max);
-  }, [actionTab, characterOrientation, timeSeconds, onTimeSecondsChange]);
+  }, [actionTab, characterOrientation, composerModelId, timeSeconds, onTimeSecondsChange]);
 
   const showReferenceLayout = actionTab === "Reference to Video";
-  const showMotionControlLayout = actionTab === "Motion Control";
+  const showMotionControlLayout =
+    actionTab === "Video to Video" && videoToVideoTabUsesKlingMotion(composerModelId);
+  const showWanV2vLayout =
+    actionTab === "Video to Video" && !showMotionControlLayout;
   const showTextOnlyPromptLayout = videoComposerUsesTextOnlyLayout(composerModelId, actionTab);
   const pickerModels = bottomBarModelsForActionTab(actionTab);
   const selectedModel =
@@ -613,7 +617,7 @@ export function VideoBottomBar({
                     </motion.div>
                   </motion.div>
                 </>
-              ) : actionTab === "Video Edit" ? (
+              ) : showWanV2vLayout ? (
                 <>
                   <input
                     ref={fileVideoRef}
@@ -791,10 +795,10 @@ export function VideoBottomBar({
                   ? "Describe the scene — e.g. image 1 is the character, image 2 is the background…"
                   : showMotionControlLayout
                     ? "Scene style, lighting, background (motion comes from the clip)…"
-                    : showTextOnlyPromptLayout
-                      ? "Describe the video you want to generate…"
-                      : actionTab === "Video Edit"
-                        ? "Describe how to transform the source video…"
+                    : showWanV2vLayout
+                      ? "Describe how to transform the source video…"
+                      : showTextOnlyPromptLayout
+                        ? "Describe the video you want to generate…"
                         : "Describe your image..."
               }
               className={cn(

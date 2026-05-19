@@ -148,11 +148,8 @@ export function buildToolsCatalog(): ToolCatalogSection[] {
       title: "VIDEO TO VIDEO",
       items: [
         ...videoItems("video-to-video", "Video to Video", "v2v", {
-          filter: (id) => id === "wan-2-6"
-        }),
-        ...videoItems("video-to-video", "Motion Control", "motion", {
-          filter: (id) => id === "kling-2-6-motion",
-          badge: () => "PRO"
+          filter: (id) => id === "wan-2-6" || id === "kling-2-6-motion",
+          badge: (id) => (id === "kling-2-6-motion" ? "PRO" : undefined)
         }),
         {
           id: "v2v-lipsync",

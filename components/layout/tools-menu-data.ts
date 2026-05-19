@@ -50,11 +50,12 @@ export const TOOLS_MENU_COLUMNS: ToolMenuItem[][] = [
   ],
   [
     {
-      id: "video-edit",
-      title: "Video Edit",
-      subtitle: "Advanced video editing",
+      id: "video-to-video",
+      title: "Video to Video",
+      subtitle: "Wan 2.6 V2V · Kling 2.6 Motion",
       icon: "✂️",
-      href: "/dashboard",
+      href: "/video",
+      isNew: true,
       categories: ["video"]
     },
     {
@@ -64,15 +65,6 @@ export const TOOLS_MENU_COLUMNS: ToolMenuItem[][] = [
       icon: "↔️",
       href: "/dashboard",
       categories: ["animation"]
-    },
-    {
-      id: "motion-control",
-      title: "Motion Control",
-      subtitle: "Control video motion",
-      icon: "⚙️",
-      href: "/dashboard",
-      isNew: true,
-      categories: ["video", "animation"]
     },
     {
       id: "lipsyncing",

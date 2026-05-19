@@ -52,25 +52,32 @@ export function videoComposerSupportsReferenceToVideo(composerModelId: string): 
   return composerModelId === "seedance-2";
 }
 
-/** Motion Control tab — Kling 2.6 Pro/Std motion-transfer endpoints only. */
+/** Kling 2.6 motion-transfer — picker under Video to Video tab. */
 export function videoComposerSupportsMotionControlTab(composerModelId: string): boolean {
   return videoComposerSupportsMotionControl(composerModelId);
 }
 
-/** Video Edit tab — Wan 2.6 video-to-video on Atlas. */
+/** Wan 2.6 video-to-video — picker under Video to Video tab. */
 export function videoComposerSupportsVideoEditTab(composerModelId: string): boolean {
   return videoComposerSupportsWanVideoToVideo(composerModelId);
+}
+
+export function videoToVideoTabUsesKlingMotion(composerModelId: string): boolean {
+  return videoComposerSupportsMotionControlTab(composerModelId);
+}
+
+export function videoToVideoTabUsesWanV2v(composerModelId: string): boolean {
+  return videoComposerSupportsVideoEditTab(composerModelId);
 }
 
 export function bottomBarModelsForActionTab(actionTab: string): BottomBarModel[] {
   if (actionTab === "Reference to Video") {
     return BOTTOM_BAR_MODELS.filter((m) => videoComposerSupportsReferenceToVideo(m.id));
   }
-  if (actionTab === "Motion Control") {
-    return BOTTOM_BAR_MODELS.filter((m) => videoComposerSupportsMotionControlTab(m.id));
-  }
-  if (actionTab === "Video Edit") {
-    return BOTTOM_BAR_MODELS.filter((m) => videoComposerSupportsVideoEditTab(m.id));
+  if (actionTab === "Video to Video") {
+    return BOTTOM_BAR_MODELS.filter(
+      (m) => videoComposerSupportsVideoEditTab(m.id) || videoComposerSupportsMotionControlTab(m.id)
+    );
   }
   return BOTTOM_BAR_MODELS.filter((m) => !videoComposerSupportsMotionControlTab(m.id));
 }

@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import { ActionTabsRow } from "@/components/video/ActionTabsRow";
 import { SeedanceReferenceToVideoTip } from "@/components/video/SeedanceReferenceToVideoTip";
+import { VideoToVideoModelTip } from "@/components/video/VideoToVideoModelTip";
 
 const NAV_H = 56;
 const TABS_ROW_H = 48;
@@ -51,10 +52,13 @@ export function VideoPreview({
   bottomBarHeight = 130,
   /** Bottom-bar aspect (9:16, 16:9, …) — frames preview until file metadata loads. */
   aspectRatio = "9:16",
+  composerModelId = "seedance-2",
   className
 }: {
   actionTab: ActionTab;
   onActionTabChange: (t: ActionTab) => void;
+  /** Bottom-bar model — drives Video to Video tip highlighting. */
+  composerModelId?: string;
   videoUrl: string | null;
   /** Raw Atlas/CDN https URL — used for full-file download (not the playback proxy). */
   videoDownloadUrl?: string | null;
@@ -315,6 +319,9 @@ export function VideoPreview({
 
       {actionTab === "Reference to Video" ? (
         <SeedanceReferenceToVideoTip className="w-full shrink-0" />
+      ) : null}
+      {actionTab === "Video to Video" ? (
+        <VideoToVideoModelTip composerModelId={composerModelId} className="w-full shrink-0" />
       ) : null}
 
       <div className="relative z-10 flex h-12 w-full shrink-0 items-center bg-[#0a0a0f]">

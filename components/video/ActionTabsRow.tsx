@@ -8,9 +8,8 @@ const TABS = [
   "Text to Video",
   "Image to Video",
   "Reference to Video",
-  "Motion Control",
-  "Lipsyncing",
-  "Video Edit"
+  "Video to Video",
+  "Lipsyncing"
 ] as const;
 
 export type ActionTab = (typeof TABS)[number];
@@ -27,7 +26,7 @@ export function ActionTabsRow({
   return (
     <div
       className={cn(
-        "grid h-full min-h-0 w-full shrink-0 grid-cols-2 gap-1 rounded-xl border border-white/10 bg-[#0d0d14] p-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6",
+        "grid h-full min-h-0 w-full shrink-0 grid-cols-2 gap-1 rounded-xl border border-white/10 bg-[#0d0d14] p-1 sm:grid-cols-3 lg:grid-cols-5",
         className
       )}
     >

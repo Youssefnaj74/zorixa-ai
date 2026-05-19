@@ -12,9 +12,9 @@ import {
   KLING_30_PRO_MODEL_ID,
   REFERENCE_TO_VIDEO_MAX_IMAGES,
   videoComposerSupportsEndFrame,
-  videoComposerSupportsMotionControlTab,
   videoComposerSupportsReferenceToVideo,
   videoComposerSupportsVideoEditTab,
+  videoToVideoTabUsesKlingMotion,
   videoComposerUsesTextOnlyLayout
 } from "@/components/video/bottom-bar-models";
 import { normalizeSeedanceReferenceDurationSeconds } from "@/lib/atlas-seedance-reference-video";
@@ -256,16 +256,14 @@ export function VideoGenerationPage() {
     if (id === KLING_30_PRO_MODEL_ID) {
       setActionTab("Text to Video");
     }
-    if (videoComposerSupportsMotionControlTab(id)) {
-      setActionTab("Motion Control");
-    }
     if (!videoComposerSupportsReferenceToVideo(id) && actionTab === "Reference to Video") {
       setActionTab("Image to Video");
     }
-    if (!videoComposerSupportsMotionControlTab(id) && actionTab === "Motion Control") {
-      setActionTab("Image to Video");
-    }
-    if (!videoComposerSupportsVideoEditTab(id) && actionTab === "Video Edit") {
+    if (
+      actionTab === "Video to Video" &&
+      !videoComposerSupportsVideoEditTab(id) &&
+      !videoToVideoTabUsesKlingMotion(id)
+    ) {
       setActionTab("Image to Video");
     }
   }, [actionTab]);
@@ -277,10 +275,7 @@ export function VideoGenerationPage() {
       setComposerModelId("seedance-2");
       setTimeSeconds((t) => normalizeSeedanceReferenceDurationSeconds(t));
     }
-    if (tab === "Motion Control") {
-      setComposerModelId(KLING_26_MOTION_COMPOSER_ID);
-    }
-    if (tab === "Video Edit") {
+    if (tab === "Video to Video") {
       setComposerModelId("wan-2-6");
     }
   }, []);
@@ -403,6 +398,54 @@ export function VideoGenerationPage() {
             };
             break;
           }
+          case "Video to Video": {
+            if (videoToVideoTabUsesKlingMotion(videoModel)) {
+              const image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImageUrl);
+              const video_url = await ensureAtlasPublicHttpsMediaUrl(ctx.motionVideoUrl);
+              if (!image_url) {
+                setGenerateError("Add a character image (Kling Motion Control).");
+                return;
+              }
+              if (!video_url) {
+                setGenerateError("Add a motion reference clip (Kling Motion Control).");
+                return;
+              }
+              sourceInputForLog = image_url;
+              payload = {
+                prompt: promptForAtlas,
+                action: "motion-control",
+                videoModel,
+                image_url,
+                video_url,
+                character_orientation: ctx.characterOrientation,
+                keep_original_sound: ctx.keepOriginalSound,
+                duration,
+                speed_tier
+              };
+              break;
+            }
+            const video_url = await ensureAtlasPublicHttpsMediaUrl(ctx.editSourceVideoUrl);
+            if (!video_url) {
+              setGenerateError("Add a source video for Video to Video.");
+              return;
+            }
+            if (!videoComposerSupportsVideoEditTab(videoModel)) {
+              setGenerateError("Video to Video requires Wan 2.6 or Kling 2.6 Motion.");
+              return;
+            }
+            sourceInputForLog = video_url;
+            payload = {
+              prompt: promptForAtlas,
+              action: "edit",
+              videoModel,
+              video_url,
+              aspectRatio,
+              resolution: resTier,
+              duration,
+              speed_tier
+            };
+            break;
+          }
           case "Lipsyncing": {
             const audio_url = await ensureAtlasPublicHttpsMediaUrl(ctx.lipsyncAudioUrl);
             if (!audio_url) {
@@ -415,25 +458,6 @@ export function VideoGenerationPage() {
               action: "lipsync",
               videoModel,
               audio_url,
-              aspectRatio,
-              resolution: resTier,
-              duration,
-              speed_tier
-            };
-            break;
-          }
-          case "Video Edit": {
-            const video_url = await ensureAtlasPublicHttpsMediaUrl(ctx.editSourceVideoUrl);
-            if (!video_url) {
-              setGenerateError("Add a source video for Video Edit.");
-              return;
-            }
-            sourceInputForLog = video_url;
-            payload = {
-              prompt: promptForAtlas,
-              action: "edit",
-              videoModel,
-              video_url,
               aspectRatio,
               resolution: resTier,
               duration,
@@ -618,7 +642,9 @@ export function VideoGenerationPage() {
         const displayTitle =
           stripVideoComposerAssetTokens(promptValue).slice(0, 48) || videoModel;
         const thumbForHistory =
-          (ctx.actionTab === "Image to Video" || ctx.actionTab === "Reference to Video") &&
+          (ctx.actionTab === "Image to Video" ||
+            ctx.actionTab === "Reference to Video" ||
+            (ctx.actionTab === "Video to Video" && videoToVideoTabUsesKlingMotion(videoModel))) &&
           sourceInputForLog
             ? sourceInputForLog
             : `https://picsum.photos/seed/${id.slice(-6)}/96/96`;
@@ -636,7 +662,8 @@ export function VideoGenerationPage() {
           generateAudioOn: wantGenerateAudio,
           promptRaw: promptValue,
           promptImageUrl:
-            (ctx.actionTab === "Image to Video" || ctx.actionTab === "Motion Control") &&
+            (ctx.actionTab === "Image to Video" ||
+              (ctx.actionTab === "Video to Video" && videoToVideoTabUsesKlingMotion(videoModel))) &&
             sourceInputForLog
               ? sourceInputForLog
               : ctx.promptImageUrl,
@@ -644,7 +671,11 @@ export function VideoGenerationPage() {
           lipsyncAudioUrl:
             ctx.actionTab === "Lipsyncing" && sourceInputForLog ? sourceInputForLog : ctx.lipsyncAudioUrl,
           editSourceVideoUrl:
-            ctx.actionTab === "Video Edit" && sourceInputForLog ? sourceInputForLog : ctx.editSourceVideoUrl,
+            ctx.actionTab === "Video to Video" &&
+            sourceInputForLog &&
+            !videoToVideoTabUsesKlingMotion(videoModel)
+              ? sourceInputForLog
+              : ctx.editSourceVideoUrl,
           motionVideoUrl: ctx.motionVideoUrl,
           characterOrientation: ctx.characterOrientation,
           keepOriginalSound: ctx.keepOriginalSound,
@@ -697,6 +728,8 @@ export function VideoGenerationPage() {
         );
         if (snap.composerModelId === KLING_30_PRO_MODEL_ID) {
           setActionTab("Text to Video");
+        } else if ((snap.actionTab as string) === "Motion Control") {
+          setActionTab("Video to Video");
         } else {
           setActionTab(snap.actionTab);
         }
@@ -761,6 +794,7 @@ export function VideoGenerationPage() {
             <VideoPreview
               actionTab={actionTab}
               onActionTabChange={handleActionTabChange}
+              composerModelId={composerModelId}
               videoUrl={videoUrl}
               videoDownloadUrl={videoDownloadUrl}
               loading={loading}

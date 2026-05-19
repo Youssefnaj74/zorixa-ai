@@ -382,7 +382,7 @@ async function handleGenerateVideoPost(request: Request) {
   }
   if (action === "edit" && !video_url) {
     return NextResponse.json(
-      { error: "Missing video_url for Video Edit" },
+      { error: "Missing video_url for Video to Video" },
       { status: 400 }
     );
   }
