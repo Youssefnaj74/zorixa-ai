@@ -13,6 +13,33 @@ import {
   normalizeKlingMotionDurationSeconds
 } from "@/lib/atlas-kling-motion-control";
 import {
+  buildHappyHorseAtlasBody,
+  isHappyHorseAtlasModel,
+  isHappyHorseComposerId,
+  isHappyHorseReferenceToVideoModel,
+  isHappyHorseVideoEditModel,
+  normalizeHappyHorseDurationSeconds
+} from "@/lib/atlas-happyhorse-video";
+import {
+  buildWan27AtlasBody,
+  isWan27AtlasModel,
+  isWan27ComposerId,
+  isWan27ReferenceToVideoModel,
+  isWan27VideoEditModel,
+  normalizeWan27DurationSeconds
+} from "@/lib/atlas-wan-27-video";
+import {
+  buildWanCharacterSwapAtlasBody,
+  isWanCharacterSwapAtlasModel,
+  videoComposerSupportsWanCharacterSwap
+} from "@/lib/atlas-wan-character-swap";
+import {
+  buildAudioToVideoAtlasBody,
+  isAudioToVideoAtlasModelSlug,
+  isAudioToVideoComposerId,
+  resolveAudioToVideoAtlasSlug
+} from "@/lib/atlas-audio-to-video";
+import {
   type AtlasVideoRouteAction,
   normalizeAtlasVideoSpeedTier,
   resolveAtlasVideoModelId,
@@ -27,6 +54,13 @@ import {
   normalizeSeedanceReferenceDurationSeconds,
   uiAspectToAtlasRatio
 } from "@/lib/atlas-seedance-reference-video";
+import {
+  isViduAtlasModelSlug,
+  isViduQ3ProComposerId,
+  isViduReferenceToVideoModel,
+  isViduStartEndToVideoModel,
+  normalizeViduDurationSeconds
+} from "@/lib/atlas-vidu-video";
 import {
   augmentSeedancePromptForAspect,
   seedanceAtlasRequestDimensions
@@ -68,7 +102,7 @@ type ClientBody = {
   speedTier?: string;
 };
 
-const ALLOWED_ASPECT_RATIOS = new Set(["16:9", "9:16", "1:1", "4:3"]);
+const ALLOWED_ASPECT_RATIOS = new Set(["16:9", "9:16", "1:1", "4:3", "3:4"]);
 const DEFAULT_ASPECT_RATIO = "9:16";
 
 function normalizeAspectRatio(raw: unknown): string {
@@ -99,7 +133,12 @@ function atlasSeedanceModelUsesDimensions(model: string): boolean {
   return /seedance/i.test(model) && !/reference-to-video/i.test(model);
 }
 
-const REFERENCE_VIDEO_COMPOSER_IDS = new Set(["seedance-2"]);
+const REFERENCE_VIDEO_COMPOSER_IDS = new Set([
+  "seedance-2",
+  "vidu-q3",
+  "happyhorse-1",
+  "wan-2-7"
+]);
 
 function isReferenceVideoComposerId(composerId: string): boolean {
   return REFERENCE_VIDEO_COMPOSER_IDS.has(composerId);
@@ -310,7 +349,10 @@ async function handleGenerateVideoPost(request: Request) {
   }
 
   const speedTier = normalizeAtlasVideoSpeedTier(body.speed_tier ?? body.speedTier);
-  const model = resolveAtlasVideoModelId(videoModel, action, speedTier);
+  const model =
+    action === "lipsync" && isAudioToVideoComposerId(videoModel)
+      ? resolveAudioToVideoAtlasSlug(videoModel)
+      : resolveAtlasVideoModelId(videoModel, action, speedTier);
   if (!model) {
     return NextResponse.json(
       { error: `Unknown video model: ${videoModel}` },
@@ -357,11 +399,16 @@ async function handleGenerateVideoPost(request: Request) {
   if (action === "reference") {
     if (!isReferenceVideoComposerId(videoModel)) {
       return NextResponse.json(
-        { error: "Reference to Video requires Seedance 2.0 in the model picker." },
+        { error: "Reference to Video requires Seedance 2.0 or Vidu Q3 in the model picker." },
         { status: 400 }
       );
     }
-    if (!isSeedanceReferenceToVideoModel(model)) {
+    if (
+      !isSeedanceReferenceToVideoModel(model) &&
+      !isViduReferenceToVideoModel(model) &&
+      !isHappyHorseReferenceToVideoModel(model) &&
+      !isWan27ReferenceToVideoModel(model)
+    ) {
       return NextResponse.json(
         { error: "Reference to Video model slug is not configured for this tier." },
         { status: 400 }
@@ -376,7 +423,13 @@ async function handleGenerateVideoPost(request: Request) {
   }
   if (action === "lipsync" && !audio_url) {
     return NextResponse.json(
-      { error: "Missing audio_url for Lipsyncing" },
+      { error: "Missing audio_url for Audio to Video" },
+      { status: 400 }
+    );
+  }
+  if (action === "lipsync" && isAudioToVideoComposerId(videoModel) && !image_url) {
+    return NextResponse.json(
+      { error: "Missing portrait image for Audio to Video" },
       { status: 400 }
     );
   }
@@ -386,10 +439,42 @@ async function handleGenerateVideoPost(request: Request) {
       { status: 400 }
     );
   }
-  if (action === "motion-control") {
-    if (!videoComposerSupportsMotionControl(videoModel)) {
+  if (action === "start-end") {
+    if (!isViduQ3ProComposerId(videoModel)) {
       return NextResponse.json(
-        { error: "Motion Control requires Kling 2.6 Motion in the model picker." },
+        { error: "Start/End frames require Vidu Q3-Pro in the model picker." },
+        { status: 400 }
+      );
+    }
+    if (!isViduStartEndToVideoModel(model)) {
+      return NextResponse.json(
+        { error: "Start-End model slug is not configured." },
+        { status: 400 }
+      );
+    }
+    if (!image_url) {
+      return NextResponse.json(
+        { error: "Missing image (start frame) for Vidu Start-End to Video." },
+        { status: 400 }
+      );
+    }
+    if (!last_image_url) {
+      return NextResponse.json(
+        { error: "Missing end_image (end frame) for Vidu Start-End to Video." },
+        { status: 400 }
+      );
+    }
+  }
+  if (action === "motion-control") {
+    if (
+      !videoComposerSupportsMotionControl(videoModel) &&
+      !videoComposerSupportsWanCharacterSwap(videoModel)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Character Swap requires Kling 2.6 Motion or Wan 2.2 Character Swap in the model picker."
+        },
         { status: 400 }
       );
     }
@@ -486,17 +571,29 @@ async function handleGenerateVideoPost(request: Request) {
     durationSec = normalizeKlingMotionDurationSeconds(durationSec, motionOrientation!);
   } else if (isAtlasKlingModelSlug(model)) {
     durationSec = normalizeAtlasKlingDurationSeconds(durationSec);
+  } else if (isViduAtlasModelSlug(model) || isViduQ3ProComposerId(videoModel)) {
+    durationSec = normalizeViduDurationSeconds(durationSec);
+  } else if (isHappyHorseAtlasModel(model) || isHappyHorseComposerId(videoModel)) {
+    durationSec = normalizeHappyHorseDurationSeconds(durationSec);
+  } else if (isWan27AtlasModel(model) || isWan27ComposerId(videoModel)) {
+    durationSec = normalizeWan27DurationSeconds(durationSec);
   }
 
   const seedanceDimensions = atlasSeedanceModelUsesDimensions(model);
   const generateAudio =
     body.generate_audio === true &&
     atlasModelSupportsGenerateAudio(model) &&
-    (action === "text" || action === "image" || action === "reference");
+    (action === "text" ||
+      action === "image" ||
+      action === "reference" ||
+      action === "start-end");
 
   const applyNativeAudio =
     atlasModelSupportsGenerateAudio(model) &&
-    (action === "text" || action === "image" || action === "reference");
+    (action === "text" ||
+      action === "image" ||
+      action === "reference" ||
+      action === "start-end");
 
   const seedanceI2v = isSeedanceImageToVideoModel(model);
   const seedanceRouteAction = action === "image" ? "image" : "text";
@@ -515,6 +612,22 @@ async function handleGenerateVideoPost(request: Request) {
       keep_original_sound: body.keep_original_sound !== false,
       duration: durationSec
     };
+  } else if (action === "motion-control" && isWanCharacterSwapAtlasModel(model)) {
+    atlasBody = buildWanCharacterSwapAtlasBody({
+      model,
+      prompt,
+      image_url,
+      video_url,
+      speedTier
+    });
+  } else if (action === "lipsync" && isAudioToVideoAtlasModelSlug(model)) {
+    atlasBody = buildAudioToVideoAtlasBody({
+      model,
+      prompt,
+      image_url,
+      audio_url,
+      resolution
+    });
   } else if (action === "reference" && isSeedanceReferenceToVideoModel(model)) {
     durationSec = normalizeSeedanceReferenceDurationSeconds(durationSec);
     atlasBody = {
@@ -528,6 +641,90 @@ async function handleGenerateVideoPost(request: Request) {
     if (applyNativeAudio) {
       applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
     }
+  } else if (action === "reference" && isViduReferenceToVideoModel(model)) {
+    durationSec = normalizeViduDurationSeconds(durationSec);
+    atlasBody = {
+      model,
+      prompt,
+      reference_images,
+      duration: durationSec,
+      aspect_ratio: aspectRatio,
+      resolution,
+      fps
+    };
+    if (applyNativeAudio) {
+      applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
+    }
+  } else if (action === "start-end" && isViduStartEndToVideoModel(model)) {
+    atlasBody = {
+      model,
+      prompt,
+      image: image_url,
+      end_image: last_image_url,
+      duration: durationSec,
+      aspect_ratio: aspectRatio,
+      resolution,
+      fps
+    };
+    if (applyNativeAudio) {
+      applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
+    }
+  } else if (action === "reference" && isHappyHorseReferenceToVideoModel(model)) {
+    atlasBody = buildHappyHorseAtlasBody({
+      model,
+      prompt,
+      aspectRatio,
+      resolution,
+      durationSec,
+      referenceImages: reference_images
+    });
+  } else if (action === "edit" && isHappyHorseVideoEditModel(model)) {
+    atlasBody = buildHappyHorseAtlasBody({
+      model,
+      prompt,
+      aspectRatio,
+      resolution,
+      durationSec,
+      videoUrl: video_url,
+      referenceImages: reference_images.length > 0 ? reference_images : undefined
+    });
+  } else if (isHappyHorseAtlasModel(model)) {
+    atlasBody = buildHappyHorseAtlasBody({
+      model,
+      prompt,
+      aspectRatio,
+      resolution,
+      durationSec,
+      imageUrl: action === "image" ? image_url : undefined
+    });
+  } else if (action === "reference" && isWan27ReferenceToVideoModel(model)) {
+    atlasBody = buildWan27AtlasBody({
+      model,
+      prompt,
+      aspectRatio,
+      resolution,
+      durationSec,
+      referenceImages: reference_images
+    });
+  } else if (action === "edit" && isWan27VideoEditModel(model)) {
+    atlasBody = buildWan27AtlasBody({
+      model,
+      prompt,
+      aspectRatio,
+      resolution,
+      durationSec,
+      videoUrl: video_url,
+      referenceImages: reference_images.length > 0 ? reference_images : undefined
+    });
+  } else if (isWan27AtlasModel(model)) {
+    atlasBody = buildWan27AtlasBody({
+      model,
+      prompt,
+      aspectRatio,
+      resolution,
+      durationSec,
+      imageUrl: action === "image" ? image_url : undefined
+    });
   } else if (seedanceDimensions && seedanceRequestDims) {
     prompt = augmentSeedancePromptForAspect(prompt, aspectRatio);
     const dims = seedanceRequestDims;

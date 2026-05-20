@@ -5,8 +5,17 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 
-/** Shown under Video Preview on Reference to Video — Seedance 2.0 Atlas R2V only. */
-export function SeedanceReferenceToVideoTip({ className }: { className?: string }) {
+import { isViduQ3ComposerId } from "@/lib/atlas-vidu-video";
+
+/** Shown under Video Preview on Reference to Video. */
+export function SeedanceReferenceToVideoTip({
+  composerModelId = "seedance-2",
+  className
+}: {
+  composerModelId?: string;
+  className?: string;
+}) {
+  const vidu = isViduQ3ComposerId(composerModelId);
   return (
     <div
       role="note"
@@ -18,18 +27,28 @@ export function SeedanceReferenceToVideoTip({ className }: { className?: string 
       <p className="flex items-start gap-2 text-xs leading-relaxed text-zorixa-muted">
         <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
         <span>
-          <span className="font-semibold text-white/90">Seedance 2.0 · Atlas Reference-to-Video:</span>{" "}
-          upload up to 4 <span className="font-medium text-white/85">AI-generated</span> images (Ref
-          1–4), then describe the scene using{" "}
+          <span className="font-semibold text-white/90">
+            {vidu ? "Vidu Q3 · Atlas Reference-to-Video" : "Seedance 2.0 · Atlas Reference-to-Video"}:
+          </span>{" "}
+          upload up to 4 reference images (Ref 1–4), then describe the scene using{" "}
           <span className="font-medium text-white/85">image 1</span>,{" "}
           <span className="font-medium text-white/85">image 2</span>, etc. in the prompt.
         </span>
       </p>
       <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
-        This tab uses the Atlas Cloud{" "}
-        <span className="font-medium text-white/80">reference-to-video</span> API for Seedance 2.0
-        only. Kling and other models have their own pipelines — pick Seedance 2.0 here (locked in the
-        model menu).
+        Atlas:{" "}
+        <span className="font-medium text-white/80">
+          {vidu ? "vidu/q3/reference-to-video" : "bytedance/seedance-2.0/reference-to-video"}
+        </span>
+        {vidu ? (
+          <>
+            {" "}
+            or <span className="font-medium text-white/80">vidu/q3-mix/reference-to-video</span> via
+            SPEED <span className="font-medium text-white/85">Mix</span>
+          </>
+        ) : null}
+        . Pick <span className="font-medium text-white/85">Vidu Q3</span> or{" "}
+        <span className="font-medium text-white/85">Seedance 2.0</span> in the model menu.
       </p>
       <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
         <span className="font-medium text-brand/90">Workflow:</span>{" "}

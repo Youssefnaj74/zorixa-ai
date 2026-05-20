@@ -14,7 +14,9 @@ const FILTER_PILLS: { id: "all" | ToolCatalogSectionId; label: string }[] = [
   { id: "text-to-video", label: "Text to Video" },
   { id: "image-to-video", label: "Image to Video" },
   { id: "reference-to-video", label: "Reference to Video" },
-  { id: "video-to-video", label: "Video to Video" }
+  { id: "video-to-video", label: "Video to Video" },
+  { id: "character-swap", label: "Character Swap" },
+  { id: "audio-to-video", label: "Audio to Video" }
 ];
 
 const triggerClass =

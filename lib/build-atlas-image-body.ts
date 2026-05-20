@@ -31,6 +31,14 @@ function isSeedreamAtlasModel(model: string): boolean {
   return model.includes("seedream");
 }
 
+function isFluxAtlasModel(model: string): boolean {
+  return /black-forest-labs\/flux/i.test(model);
+}
+
+function isWanImageAtlasModel(model: string): boolean {
+  return /alibaba\/wan-2\.[67]/i.test(model);
+}
+
 /** Qwen Image uses `size` as `width*height` (512–2048). */
 export function qwenSizeFromAspectAndResolution(
   aspectRatio: string | null,
@@ -190,6 +198,25 @@ export function buildAtlasImageBody(input: BuildAtlasImageBodyInput): Record<str
     if (isEdit && imageUrls.length > 0) {
       body.image = imageUrls[0];
       body.images = imageUrls;
+    }
+    return body;
+  }
+
+  if (isFluxAtlasModel(model) || isWanImageAtlasModel(model)) {
+    const sizePair = qwenSizeFromAspectAndResolution(aspectRatio, resolution || "1K");
+    const [widthRaw, heightRaw] = sizePair.split("*");
+    const width = Number(widthRaw);
+    const height = Number(heightRaw);
+    const body: Record<string, unknown> = {
+      model,
+      prompt,
+      width: Number.isFinite(width) ? width : 1024,
+      height: Number.isFinite(height) ? height : 1024
+    };
+    if (isEdit && imageUrls.length > 0) {
+      body.image = imageUrls[0];
+      body.images = imageUrls;
+      body.image_url = imageUrls[0];
     }
     return body;
   }

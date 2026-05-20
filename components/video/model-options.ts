@@ -16,7 +16,8 @@ export const VIDEO_MODELS: VideoModelOption[] = [
   { id: "seedance-1-5", label: "Seedance 1.5 Pro", badge: "pro" },
   { id: "wan-2-6", label: "Wan 2.6" },
   { id: "hailuo-2-3", label: "Hailuo 2.3", badge: "newTeal" },
-  { id: "google-veo-3-1", label: "Google Veo 3.1", badge: "newTeal" }
+  { id: "google-veo-3-1", label: "Google Veo 3.1", badge: "newTeal" },
+  { id: "vidu-q3-pro", label: "Vidu Q3-Pro", badge: "pro" }
 ];
 
 export const TYPE_OPTIONS = [
@@ -25,7 +26,7 @@ export const TYPE_OPTIONS = [
   "First and Last Frames",
   "Multi Frame",
   "UGC",
-  "Lipsyncing",
+  "Audio to Video",
   "Voice Clone"
 ] as const;
 

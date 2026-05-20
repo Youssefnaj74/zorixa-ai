@@ -24,7 +24,9 @@ const SECTION_ICONS: Record<ToolCatalogSectionId, LucideIcon> = {
   "text-to-video": Clapperboard,
   "image-to-video": Film,
   "reference-to-video": Wand2,
-  "video-to-video": Mic2
+  "video-to-video": Film,
+  "character-swap": Wand2,
+  "audio-to-video": Mic2
 };
 
 export function ToolCatalogCard({ item }: { item: ToolCatalogItem }) {

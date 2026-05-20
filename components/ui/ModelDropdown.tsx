@@ -46,6 +46,46 @@ export const MODEL_OPTIONS: ModelOption[] = [
   {
     id: "grok-imagine",
     label: "Grok Imagine"
+  },
+  {
+    id: "flux-dev",
+    label: "Flux Dev",
+    badge: <Badge variant="newTeal">NEW</Badge>
+  },
+  {
+    id: "flux-schnell",
+    label: "Flux Schnell",
+    badge: <Badge variant="newTeal">NEW</Badge>
+  },
+  {
+    id: "flux-dev-lora",
+    label: "Flux Dev LoRA",
+    badge: <Badge variant="pro">PRO</Badge>
+  },
+  {
+    id: "flux-kontext-dev",
+    label: "Flux Kontext Dev",
+    badge: <Badge variant="newTeal">NEW</Badge>
+  },
+  {
+    id: "flux-kontext-dev-lora",
+    label: "Flux Kontext LoRA",
+    badge: <Badge variant="pro">PRO</Badge>
+  },
+  {
+    id: "wan-image-2-7",
+    label: "Wan 2.7",
+    badge: <Badge variant="newTeal">NEW</Badge>
+  },
+  {
+    id: "wan-image-2-7-pro",
+    label: "Wan 2.7 Pro",
+    badge: <Badge variant="pro">PRO</Badge>
+  },
+  {
+    id: "wan-image-2-6",
+    label: "Wan 2.6",
+    badge: <Badge variant="newTeal">NEW</Badge>
   }
 ];
 

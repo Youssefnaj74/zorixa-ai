@@ -52,7 +52,7 @@ export const TOOLS_MENU_COLUMNS: ToolMenuItem[][] = [
     {
       id: "video-to-video",
       title: "Video to Video",
-      subtitle: "Wan 2.6 V2V · Kling 2.6 Motion",
+      subtitle: "Wan 2.6/2.7 · HappyHorse · Vidu",
       icon: "✂️",
       href: "/video",
       isNew: true,
@@ -67,11 +67,20 @@ export const TOOLS_MENU_COLUMNS: ToolMenuItem[][] = [
       categories: ["animation"]
     },
     {
-      id: "lipsyncing",
-      title: "Lipsyncing",
-      subtitle: "Create lipsync videos",
+      id: "character-swap",
+      title: "Character Swap",
+      subtitle: "Kling 2.6 Motion · Wan 2.2",
+      icon: "🎭",
+      href: "/video?tab=Character%20Swap",
+      isNew: true,
+      categories: ["video"]
+    },
+    {
+      id: "audio-to-video",
+      title: "Audio to Video",
+      subtitle: "Drive video from audio (Atlas)",
       icon: "🎤",
-      href: "/dashboard",
+      href: "/video?tab=Audio%20to%20Video",
       categories: ["video"]
     },
     {

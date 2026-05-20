@@ -2,7 +2,10 @@
 const GENERATE_AUDIO_COMPOSER_IDS = new Set([
   "seedance-2",
   "seedance-1-5",
-  "kling-3-pro"
+  "kling-3-pro",
+  "vidu-q3",
+  "vidu-q3-pro",
+  "wan-2-7"
 ]);
 
 export function videoComposerSupportsGenerateAudio(composerModelId: string): boolean {
@@ -17,9 +20,22 @@ export function isAtlasSeedanceModelSlug(atlasModelSlug: string): boolean {
   return /seedance/i.test(atlasModelSlug);
 }
 
+export function isAtlasViduModelSlug(atlasModelSlug: string): boolean {
+  return /vidu/i.test(atlasModelSlug);
+}
+
 /** Atlas `model` slug supports native audio synthesis (Seedance, Kling v3, etc.). */
+export function isAtlasWan27ModelSlug(atlasModelSlug: string): boolean {
+  return /wan-2\.7/i.test(atlasModelSlug);
+}
+
 export function atlasModelSupportsGenerateAudio(atlasModelSlug: string): boolean {
-  return isAtlasKlingModelSlug(atlasModelSlug) || isAtlasSeedanceModelSlug(atlasModelSlug);
+  return (
+    isAtlasKlingModelSlug(atlasModelSlug) ||
+    isAtlasSeedanceModelSlug(atlasModelSlug) ||
+    isAtlasViduModelSlug(atlasModelSlug) ||
+    isAtlasWan27ModelSlug(atlasModelSlug)
+  );
 }
 
 /**
@@ -38,7 +54,11 @@ export function applyAtlasNativeAudioFields(
     atlasBody.sound = enabled;
     return;
   }
-  if (isAtlasSeedanceModelSlug(atlasModelSlug)) {
+  if (
+    isAtlasSeedanceModelSlug(atlasModelSlug) ||
+    isAtlasViduModelSlug(atlasModelSlug) ||
+    isAtlasWan27ModelSlug(atlasModelSlug)
+  ) {
     atlasBody.generate_audio = enabled;
   }
 }

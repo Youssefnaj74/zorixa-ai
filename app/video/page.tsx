@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { VideoGenerationPage } from "@/components/video/VideoGenerationPage";
 
 export const metadata = {
@@ -5,5 +7,9 @@ export const metadata = {
 };
 
 export default function VideoPage() {
-  return <VideoGenerationPage />;
+  return (
+    <Suspense fallback={<div className="min-h-dvh bg-zorixa-bg" />}>
+      <VideoGenerationPage />
+    </Suspense>
+  );
 }

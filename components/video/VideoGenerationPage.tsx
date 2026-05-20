@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 import { Navbar } from "@/components/layout/Navbar";
 
@@ -13,17 +14,39 @@ import {
   REFERENCE_TO_VIDEO_MAX_IMAGES,
   videoComposerSupportsEndFrame,
   videoComposerSupportsReferenceToVideo,
+  characterSwapTabSupportsModel,
   videoComposerSupportsVideoEditTab,
+  characterSwapTabUsesDualAssetPipeline,
   videoToVideoTabUsesKlingMotion,
+  videoToVideoTabUsesWanCharacterSwap,
+  videoToVideoTabUsesViduStartEnd,
   videoComposerUsesTextOnlyLayout
 } from "@/components/video/bottom-bar-models";
 import { normalizeSeedanceReferenceDurationSeconds } from "@/lib/atlas-seedance-reference-video";
+import {
+  normalizeViduDurationSeconds,
+  VIDU_Q3_COMPOSER_ID,
+  VIDU_Q3_PRO_COMPOSER_ID
+} from "@/lib/atlas-vidu-video";
 import type { VideoHistoryEntry, VideoHistorySettingsSnapshot } from "@/components/video/VideoHistory";
 import {
   isAtlasVideoComposerId,
   videoComposerSupportsSpeedTier
 } from "@/lib/atlas-video-model-ids";
 import { videoComposerSupportsGenerateAudio } from "@/lib/atlas-video-generate-audio";
+import {
+  DEFAULT_AUDIO_TO_VIDEO_RESOLUTION,
+  INFINITETALK_COMPOSER_ID,
+  isAudioToVideoComposerId,
+  isAudioToVideoResolution,
+  normalizeAudioToVideoResolution
+} from "@/lib/atlas-audio-to-video";
+import {
+  HAPPYHORSE_1_COMPOSER_ID,
+  isHappyHorseComposerId,
+  normalizeHappyHorseDurationSeconds
+} from "@/lib/atlas-happyhorse-video";
+import { isWan27ComposerId, normalizeWan27DurationSeconds } from "@/lib/atlas-wan-27-video";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import {
   extractAtlasVideoOutputUrl,
@@ -34,6 +57,7 @@ import {
   formatAtlasVideoFailureForUi,
   isAtlasRealPersonImageError
 } from "@/lib/atlas-video-failure-message";
+import { resolveVideoStudioFromQuery } from "@/lib/studio-catalog-link";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
@@ -157,6 +181,7 @@ function logAtlasComposerVideoToSupabase(payload: {
 }
 
 export function VideoGenerationPage() {
+  const searchParams = useSearchParams();
   const [bottomBarHeight, setBottomBarHeight] = useState(130);
 
   const [modeValue, setModeValue] = useState("UGC");
@@ -253,20 +278,82 @@ export function VideoGenerationPage() {
     if (!videoComposerSupportsEndFrame(id)) {
       setPromptImage2UrlSafe(null);
     }
+    if (isHappyHorseComposerId(id)) {
+      setTimeSeconds((t) => normalizeHappyHorseDurationSeconds(t));
+      if (resolution === "480p") setResolution("720p");
+      const happyAspects = ["16:9", "9:16", "1:1", "4:3", "3:4"] as const;
+      if (!happyAspects.includes(aspect as (typeof happyAspects)[number])) {
+        setAspect("16:9");
+      }
+    }
+    if (isWan27ComposerId(id)) {
+      setTimeSeconds((t) => normalizeWan27DurationSeconds(t));
+      if (resolution === "480p") setResolution("720p");
+      const wanAspects = ["16:9", "9:16", "1:1", "4:3", "3:4"] as const;
+      if (!wanAspects.includes(aspect as (typeof wanAspects)[number])) {
+        setAspect("16:9");
+      }
+    }
     if (id === KLING_30_PRO_MODEL_ID) {
       setActionTab("Text to Video");
     }
-    if (!videoComposerSupportsReferenceToVideo(id) && actionTab === "Reference to Video") {
+    if (actionTab === "Reference to Video") {
+      if (id === VIDU_Q3_PRO_COMPOSER_ID) {
+        setComposerModelId(VIDU_Q3_COMPOSER_ID);
+      } else if (!videoComposerSupportsReferenceToVideo(id)) {
+        setActionTab("Image to Video");
+      }
+    }
+    if (actionTab === "Character Swap" && !characterSwapTabSupportsModel(id)) {
       setActionTab("Image to Video");
     }
     if (
       actionTab === "Video to Video" &&
       !videoComposerSupportsVideoEditTab(id) &&
-      !videoToVideoTabUsesKlingMotion(id)
+      !videoToVideoTabUsesViduStartEnd(id)
     ) {
       setActionTab("Image to Video");
     }
   }, [actionTab]);
+
+  useEffect(() => {
+    if (
+      actionTab === "Reference to Video" &&
+      composerModelId === VIDU_Q3_PRO_COMPOSER_ID
+    ) {
+      setComposerModelId(VIDU_Q3_COMPOSER_ID);
+    }
+    if (actionTab === "Audio to Video" && !isAudioToVideoComposerId(composerModelId)) {
+      setComposerModelId(INFINITETALK_COMPOSER_ID);
+    }
+    if (actionTab === "Character Swap" && !characterSwapTabSupportsModel(composerModelId)) {
+      setComposerModelId(KLING_26_MOTION_COMPOSER_ID);
+    }
+  }, [actionTab, composerModelId]);
+
+  useEffect(() => {
+    const resolved = resolveVideoStudioFromQuery(
+      searchParams.get("tab"),
+      searchParams.get("model")
+    );
+    if (!resolved) return;
+    setActionTab(resolved.tab);
+    setComposerModelId(resolved.model);
+    setGenerateError(null);
+    if (!videoComposerSupportsGenerateAudio(resolved.model)) {
+      setGenerateAudioOn(false);
+    }
+    if (!videoComposerSupportsSpeedTier(resolved.model)) {
+      setDurationStandard("Standard");
+    }
+    if (resolved.tab === "Reference to Video") {
+      setTimeSeconds((t) =>
+        resolved.model === VIDU_Q3_COMPOSER_ID || resolved.model === VIDU_Q3_PRO_COMPOSER_ID
+          ? normalizeViduDurationSeconds(t)
+          : normalizeSeedanceReferenceDurationSeconds(t)
+      );
+    }
+  }, [searchParams]);
 
   const handleActionTabChange = useCallback((tab: ActionTab) => {
     setActionTab(tab);
@@ -277,6 +364,12 @@ export function VideoGenerationPage() {
     }
     if (tab === "Video to Video") {
       setComposerModelId("wan-2-6");
+    }
+    if (tab === "Audio to Video") {
+      setComposerModelId(INFINITETALK_COMPOSER_ID);
+      setResolution((r) =>
+        isAudioToVideoResolution(r) ? r : DEFAULT_AUDIO_TO_VIDEO_RESOLUTION
+      );
     }
   }, []);
 
@@ -313,7 +406,10 @@ export function VideoGenerationPage() {
         let sourceInputForLog: string | null = null;
 
         const aspectRatio = ctx.aspectRatio.trim() || aspect.trim();
-        const resTier = ctx.resolution.trim() || resolution.trim();
+        const resTier =
+          ctx.actionTab === "Audio to Video"
+            ? normalizeAudioToVideoResolution(ctx.resolution.trim() || resolution.trim())
+            : ctx.resolution.trim() || resolution.trim();
         const videoModel = composerModelId;
         const duration = ctx.durationSeconds;
 
@@ -322,7 +418,8 @@ export function VideoGenerationPage() {
           videoComposerSupportsGenerateAudio(videoModel) &&
           (ctx.actionTab === "Text to Video" ||
             ctx.actionTab === "Image to Video" ||
-            ctx.actionTab === "Reference to Video");
+            ctx.actionTab === "Reference to Video" ||
+            (ctx.actionTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(videoModel)));
 
         const speed_tier = ctx.speedTier;
 
@@ -365,7 +462,9 @@ export function VideoGenerationPage() {
           }
           case "Reference to Video": {
             if (!videoComposerSupportsReferenceToVideo(videoModel)) {
-              setGenerateError("Reference to Video requires Seedance 2.0.");
+              setGenerateError(
+                "Reference to Video requires Seedance 2.0, Vidu Q3, HappyHorse 1.0, or Wan 2.7."
+              );
               return;
             }
             const reference_images: string[] = [];
@@ -398,19 +497,31 @@ export function VideoGenerationPage() {
             };
             break;
           }
-          case "Video to Video": {
+          case "Character Swap": {
+            const image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImageUrl);
+            const video_url = await ensureAtlasPublicHttpsMediaUrl(ctx.motionVideoUrl);
+            if (!image_url) {
+              setGenerateError(
+                videoToVideoTabUsesWanCharacterSwap(videoModel)
+                  ? "Add a character portrait for Wan 2.2 Character Swap."
+                  : "Add a character image (Kling 2.6 Motion)."
+              );
+              return;
+            }
+            if (!video_url) {
+              setGenerateError(
+                videoToVideoTabUsesWanCharacterSwap(videoModel)
+                  ? "Add a source video for Wan 2.2 Character Swap."
+                  : "Add a motion reference clip (Kling 2.6 Motion)."
+              );
+              return;
+            }
+            if (!characterSwapTabSupportsModel(videoModel)) {
+              setGenerateError("Select Kling 2.6 Motion or Wan 2.2 Character Swap.");
+              return;
+            }
+            sourceInputForLog = image_url;
             if (videoToVideoTabUsesKlingMotion(videoModel)) {
-              const image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImageUrl);
-              const video_url = await ensureAtlasPublicHttpsMediaUrl(ctx.motionVideoUrl);
-              if (!image_url) {
-                setGenerateError("Add a character image (Kling Motion Control).");
-                return;
-              }
-              if (!video_url) {
-                setGenerateError("Add a motion reference clip (Kling Motion Control).");
-                return;
-              }
-              sourceInputForLog = image_url;
               payload = {
                 prompt: promptForAtlas,
                 action: "motion-control",
@@ -422,6 +533,43 @@ export function VideoGenerationPage() {
                 duration,
                 speed_tier
               };
+            } else {
+              payload = {
+                prompt: promptForAtlas,
+                action: "motion-control",
+                videoModel,
+                image_url,
+                video_url,
+                speed_tier
+              };
+            }
+            break;
+          }
+          case "Video to Video": {
+            if (videoToVideoTabUsesViduStartEnd(videoModel)) {
+              const image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImageUrl);
+              const end_image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImage2Url);
+              if (!image_url) {
+                setGenerateError("Add a start frame image for Vidu Start-End.");
+                return;
+              }
+              if (!end_image_url) {
+                setGenerateError("Add an end frame image for Vidu Start-End.");
+                return;
+              }
+              sourceInputForLog = image_url;
+              payload = {
+                prompt: promptForAtlas,
+                action: "start-end",
+                videoModel,
+                image_url,
+                last_image_url: end_image_url,
+                aspectRatio,
+                resolution: resTier,
+                duration,
+                speed_tier,
+                ...(wantGenerateAudio ? { generate_audio: true } : {})
+              };
               break;
             }
             const video_url = await ensureAtlasPublicHttpsMediaUrl(ctx.editSourceVideoUrl);
@@ -430,7 +578,9 @@ export function VideoGenerationPage() {
               return;
             }
             if (!videoComposerSupportsVideoEditTab(videoModel)) {
-              setGenerateError("Video to Video requires Wan 2.6 or Kling 2.6 Motion.");
+              setGenerateError(
+                "Video to Video requires Wan 2.6/2.7, HappyHorse 1.0, or Vidu Q3-Pro."
+              );
               return;
             }
             sourceInputForLog = video_url;
@@ -446,10 +596,19 @@ export function VideoGenerationPage() {
             };
             break;
           }
-          case "Lipsyncing": {
+          case "Audio to Video": {
+            const image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImageUrl);
+            if (!image_url) {
+              setGenerateError("Add a portrait image for Audio to Video.");
+              return;
+            }
             const audio_url = await ensureAtlasPublicHttpsMediaUrl(ctx.lipsyncAudioUrl);
             if (!audio_url) {
-              setGenerateError("Add an audio file for Lipsyncing.");
+              setGenerateError("Add an audio file for Audio to Video.");
+              return;
+            }
+            if (!isAudioToVideoComposerId(videoModel)) {
+              setGenerateError("Select InfiniteTalk or VEED Fabric for Audio to Video.");
               return;
             }
             sourceInputForLog = audio_url;
@@ -457,6 +616,7 @@ export function VideoGenerationPage() {
               prompt: promptForAtlas,
               action: "lipsync",
               videoModel,
+              image_url,
               audio_url,
               aspectRatio,
               resolution: resTier,
@@ -644,7 +804,8 @@ export function VideoGenerationPage() {
         const thumbForHistory =
           (ctx.actionTab === "Image to Video" ||
             ctx.actionTab === "Reference to Video" ||
-            (ctx.actionTab === "Video to Video" && videoToVideoTabUsesKlingMotion(videoModel))) &&
+            (ctx.actionTab === "Character Swap" &&
+              characterSwapTabUsesDualAssetPipeline(videoModel))) &&
           sourceInputForLog
             ? sourceInputForLog
             : `https://picsum.photos/seed/${id.slice(-6)}/96/96`;
@@ -663,17 +824,16 @@ export function VideoGenerationPage() {
           promptRaw: promptValue,
           promptImageUrl:
             (ctx.actionTab === "Image to Video" ||
-              (ctx.actionTab === "Video to Video" && videoToVideoTabUsesKlingMotion(videoModel))) &&
+              (ctx.actionTab === "Video to Video" &&
+                videoToVideoTabUsesDualAssetPipeline(videoModel))) &&
             sourceInputForLog
               ? sourceInputForLog
               : ctx.promptImageUrl,
           promptImage2Url: ctx.promptImage2Url,
           lipsyncAudioUrl:
-            ctx.actionTab === "Lipsyncing" && sourceInputForLog ? sourceInputForLog : ctx.lipsyncAudioUrl,
+            ctx.actionTab === "Audio to Video" && sourceInputForLog ? sourceInputForLog : ctx.lipsyncAudioUrl,
           editSourceVideoUrl:
-            ctx.actionTab === "Video to Video" &&
-            sourceInputForLog &&
-            !videoToVideoTabUsesKlingMotion(videoModel)
+            ctx.actionTab === "Video to Video" && sourceInputForLog
               ? sourceInputForLog
               : ctx.editSourceVideoUrl,
           motionVideoUrl: ctx.motionVideoUrl,
@@ -729,7 +889,7 @@ export function VideoGenerationPage() {
         if (snap.composerModelId === KLING_30_PRO_MODEL_ID) {
           setActionTab("Text to Video");
         } else if ((snap.actionTab as string) === "Motion Control") {
-          setActionTab("Video to Video");
+          setActionTab("Character Swap");
         } else {
           setActionTab(snap.actionTab);
         }
@@ -775,8 +935,10 @@ export function VideoGenerationPage() {
   );
 
   const hidePromptThumb =
-    videoComposerUsesTextOnlyLayout(composerModelId, actionTab) ||
-    actionTab === "Reference to Video";
+    actionTab === "Audio to Video"
+      ? false
+      : videoComposerUsesTextOnlyLayout(composerModelId, actionTab) ||
+        actionTab === "Reference to Video";
 
   return (
     <div className="flex min-h-dvh flex-col bg-zorixa-bg">

@@ -13,7 +13,10 @@ import {
   SEEDREAM_ATLAS_SIZE_GROUPS
 } from "@/components/image/image-bottom-bar-constants";
 import { MODEL_OPTIONS, type ModelOption } from "@/components/ui/ModelDropdown";
-import { getAtlasImageModelLimits } from "@/lib/atlas-image-model-ids";
+import {
+  getAtlasImageModelLimits,
+  imageComposerSupportedOnActionTab
+} from "@/lib/atlas-image-model-ids";
 import { cn } from "@/lib/utils";
 
 export type ImageGenerateContext = {
@@ -137,7 +140,11 @@ export function ImageBottomBar({
   const fileRef1 = useRef<HTMLInputElement>(null);
   const fileRef2 = useRef<HTMLInputElement>(null);
 
-  const selectedModel = MODEL_OPTIONS.find((m) => m.id === modelId) ?? MODEL_OPTIONS[0];
+  const pickerModels = MODEL_OPTIONS.filter((m) =>
+    imageComposerSupportedOnActionTab(m.id, actionTab)
+  );
+  const selectedModel =
+    pickerModels.find((m) => m.id === modelId) ?? pickerModels[0] ?? MODEL_OPTIONS[0];
   const maxRefs = getAtlasImageModelLimits(modelId).maxImages;
   const defaultBatch = getAtlasImageModelLimits(modelId).defaultBatch;
   const showUploads = actionTab === "Image to Image";
@@ -351,7 +358,7 @@ export function ImageBottomBar({
                     style={{ transformOrigin: "bottom left" }}
                     className={cn(dropupPanelClass, "left-0 min-w-[240px] py-1")}
                   >
-                    {MODEL_OPTIONS.map((m) => (
+                    {pickerModels.map((m) => (
                       <ModelPickRow
                         key={m.id}
                         model={m}

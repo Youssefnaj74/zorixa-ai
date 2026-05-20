@@ -7,7 +7,15 @@ const IMAGE_COMPOSER_LABELS: Record<string, string> = {
   "nano-banana-pro": "Nano Banana Pro",
   zorixa: "Zorixa",
   "seedream-5": "Seedream 5 Lite",
-  "grok-imagine": "Grok Imagine"
+  "grok-imagine": "Grok Imagine",
+  "flux-dev": "Flux Dev",
+  "flux-schnell": "Flux Schnell",
+  "flux-dev-lora": "Flux Dev LoRA",
+  "flux-kontext-dev": "Flux Kontext Dev",
+  "flux-kontext-dev-lora": "Flux Kontext Dev LoRA",
+  "wan-image-2-7": "Wan 2.7",
+  "wan-image-2-7-pro": "Wan 2.7 Pro",
+  "wan-image-2-6": "Wan 2.6"
 };
 
 const VIDEO_COMPOSER_LABELS: Record<string, string> = {
@@ -16,8 +24,16 @@ const VIDEO_COMPOSER_LABELS: Record<string, string> = {
   "seedance-2": "Seedance 2.0",
   "seedance-1-5": "Seedance 1.5 Pro",
   "wan-2-6": "Wan 2.6",
+  "wan-2-7": "Wan 2.7",
+  "wan-2-2-character-swap": "Wan 2.2 Character Swap",
+  "happyhorse-1": "HappyHorse 1.0",
   "hailuo-2-3": "Hailuo 2.3",
-  "google-veo-3-1": "Google Veo 3.1"
+  "google-veo-3-1": "Google Veo 3.1",
+  "vidu-q3": "Vidu Q3",
+  "vidu-q3-pro": "Vidu Q3-Pro",
+  infinitetalk: "InfiniteTalk",
+  "veed-fabric-1": "VEED Fabric 1.0",
+  "veed-fabric-1-fast": "VEED Fabric 1.0 Fast"
 };
 
 const ENHANCE_LABEL_BY_ID = new Map(ENHANCE_MODELS.map((m) => [m.id, m.name]));

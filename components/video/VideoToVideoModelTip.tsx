@@ -3,7 +3,7 @@
 import { Sparkles } from "lucide-react";
 
 import {
-  videoToVideoTabUsesKlingMotion,
+  videoToVideoTabUsesViduStartEnd,
   videoToVideoTabUsesWanV2v
 } from "@/components/video/bottom-bar-models";
 import { cn } from "@/lib/utils";
@@ -15,8 +15,9 @@ export function VideoToVideoModelTip({
   composerModelId: string;
   className?: string;
 }) {
-  const kling = videoToVideoTabUsesKlingMotion(composerModelId);
-  const wan = videoToVideoTabUsesWanV2v(composerModelId);
+  const wanEdit = videoToVideoTabUsesWanV2v(composerModelId);
+  const happyhorse = composerModelId === "happyhorse-1";
+  const vidu = videoToVideoTabUsesViduStartEnd(composerModelId);
 
   return (
     <div
@@ -29,31 +30,32 @@ export function VideoToVideoModelTip({
       <p className="flex items-start gap-2 text-xs leading-relaxed text-zorixa-muted">
         <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
         <span>
-          <span className="font-semibold text-white/90">Video to Video —</span> same tab, two Atlas
-          models. Pick one in the bottom bar <span className="font-medium text-white/85">Model</span>{" "}
-          menu.
+          <span className="font-semibold text-white/90">Video to Video —</span> edit or transform an
+          existing clip. Character swap pipelines live on the{" "}
+          <span className="font-medium text-white/85">Character Swap</span> tab.
         </span>
       </p>
       <ul className="mt-2 space-y-1.5 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
-        <li className={cn(wan && "font-medium text-white/90")}>
-          <span className="text-white/80">Wan 2.6</span> — source video + prompt (transform / restyle
-          the clip).
+        <li className={cn(wanEdit && "font-medium text-white/90")}>
+          <span className="text-white/80">Wan 2.6 / 2.7</span> — source video + prompt (Atlas
+          video-edit).
         </li>
-        <li className={cn(kling && "font-medium text-white/90")}>
-          <span className="text-white/80">Kling 2.6 Motion</span> — character image + motion clip
-          (dance, gesture). Prompt = style / lighting only.
+        <li className={cn(happyhorse && "font-medium text-white/90")}>
+          <span className="text-white/80">HappyHorse 1.0</span> — source video + prompt.
+        </li>
+        <li className={cn(vidu && "font-medium text-white/90")}>
+          <span className="text-white/80">Vidu Q3-Pro</span> — start + end frame + prompt.
         </li>
       </ul>
-      {kling ? (
+      {wanEdit || happyhorse ? (
         <p className="mt-2 border-t border-white/10 pt-2 pl-5 text-[11px] leading-relaxed text-brand/95">
-          Selected: Kling — upload <span className="font-medium text-white/85">Character</span> +{" "}
-          <span className="font-medium text-white/85">Motion clip</span>. Use Standard/Fast for Pro vs
-          Std on Atlas.
+          Selected: {happyhorse ? "HappyHorse 1.0" : "Wan 2.6 / 2.7"} — upload{" "}
+          <span className="font-medium text-white/85">Source video</span>, then describe the change.
         </p>
-      ) : wan ? (
+      ) : vidu ? (
         <p className="mt-2 border-t border-white/10 pt-2 pl-5 text-[11px] leading-relaxed text-brand/95">
-          Selected: Wan — upload <span className="font-medium text-white/85">Source video</span>, then
-          describe the change in the prompt.
+          Selected: Vidu Q3-Pro — <span className="font-medium text-white/85">Start</span> +{" "}
+          <span className="font-medium text-white/85">End</span> frames + prompt.
         </p>
       ) : null}
     </div>

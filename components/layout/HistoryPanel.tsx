@@ -75,7 +75,7 @@ export function LipsyncStrip({ className }: { className?: string }) {
         className="font-display text-[11px] font-bold uppercase tracking-[0.2em] text-zorixa-muted [writing-mode:vertical-rl] rotate-180"
         style={{ textOrientation: "mixed" }}
       >
-        Lipsyncing
+        Audio to Video
       </span>
       <span className="size-2 rounded-full bg-brand/50 ring-2 ring-brand/30" aria-hidden />
     </div>

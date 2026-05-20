@@ -50,8 +50,103 @@ export const ATLAS_IMAGE_MODEL_MAP: Record<string, AtlasImageModelRow> = {
     edit: "xai/grok-imagine-image-quality/edit",
     maxImages: 1,
     defaultBatch: 1
+  },
+  "flux-dev": {
+    text: "black-forest-labs/flux-dev",
+    edit: "black-forest-labs/flux-dev",
+    maxImages: 1,
+    defaultBatch: 1
+  },
+  "flux-schnell": {
+    text: "black-forest-labs/flux-schnell",
+    edit: "black-forest-labs/flux-schnell",
+    maxImages: 1,
+    defaultBatch: 1
+  },
+  "flux-dev-lora": {
+    text: "black-forest-labs/flux-dev-lora",
+    edit: "black-forest-labs/flux-dev-lora",
+    maxImages: 1,
+    defaultBatch: 1
+  },
+  "flux-kontext-dev": {
+    text: "black-forest-labs/flux-kontext-dev",
+    edit: "black-forest-labs/flux-kontext-dev",
+    maxImages: 4,
+    defaultBatch: 1
+  },
+  "flux-kontext-dev-lora": {
+    text: "black-forest-labs/flux-kontext-dev-lora",
+    edit: "black-forest-labs/flux-kontext-dev-lora",
+    maxImages: 4,
+    defaultBatch: 1
+  },
+  /** Image only — video uses composer id `wan-2-7` in ATLAS_VIDEO_MODEL_MAP. */
+  "wan-image-2-7": {
+    text: "alibaba/wan-2.7/text-to-image",
+    edit: "alibaba/wan-2.7/image-edit",
+    maxImages: 14,
+    defaultBatch: 1
+  },
+  "wan-image-2-7-pro": {
+    text: "alibaba/wan-2.7-pro/text-to-image",
+    edit: "alibaba/wan-2.7-pro/image-edit",
+    maxImages: 14,
+    defaultBatch: 1
+  },
+  "wan-image-2-6": {
+    text: "alibaba/wan-2.6/text-to-image",
+    edit: "alibaba/wan-2.6/image-edit",
+    maxImages: 14,
+    defaultBatch: 1
   }
 };
+
+/** Flux text-to-image only (Atlas black-forest-labs). */
+export const FLUX_TEXT_TO_IMAGE_COMPOSER_IDS = [
+  "flux-dev",
+  "flux-schnell",
+  "flux-dev-lora"
+] as const;
+
+/** Flux image-to-image / edit (Kontext). */
+export const FLUX_IMAGE_TO_IMAGE_COMPOSER_IDS = [
+  "flux-kontext-dev",
+  "flux-kontext-dev-lora"
+] as const;
+
+const FLUX_T2I_SET = new Set<string>(FLUX_TEXT_TO_IMAGE_COMPOSER_IDS);
+const FLUX_I2I_SET = new Set<string>(FLUX_IMAGE_TO_IMAGE_COMPOSER_IDS);
+
+export function isFluxTextToImageComposerId(id: string): boolean {
+  return FLUX_T2I_SET.has(id);
+}
+
+export function isFluxImageToImageComposerId(id: string): boolean {
+  return FLUX_I2I_SET.has(id);
+}
+
+export type ImageToolsSectionId = "text-to-image" | "image-to-image" | "image-editing";
+
+export function imageComposerVisibleInToolsSection(
+  sectionId: ImageToolsSectionId,
+  composerId: string
+): boolean {
+  if (FLUX_T2I_SET.has(composerId)) return sectionId === "text-to-image";
+  if (FLUX_I2I_SET.has(composerId)) {
+    return sectionId === "image-to-image" || sectionId === "image-editing";
+  }
+  return true;
+}
+
+export function imageComposerSupportedOnActionTab(
+  composerId: string,
+  actionTab: "Text to Image" | "Image to Image"
+): boolean {
+  if (FLUX_T2I_SET.has(composerId)) return actionTab === "Text to Image";
+  if (FLUX_I2I_SET.has(composerId)) return actionTab === "Image to Image";
+  return true;
+}
 
 export const ATLAS_IMAGE_COMPOSER_IDS = Object.keys(ATLAS_IMAGE_MODEL_MAP);
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import type { ImageActionTab } from "@/components/image/ImageActionTabsRow";
@@ -16,12 +17,16 @@ import {
   isSeedreamSizeSelection
 } from "@/components/image/image-bottom-bar-constants";
 import { Navbar } from "@/components/layout/Navbar";
-import { isAtlasImageComposerId } from "@/lib/atlas-image-model-ids";
+import {
+  imageComposerSupportedOnActionTab,
+  isAtlasImageComposerId
+} from "@/lib/atlas-image-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import {
   extractAtlasVideoOutputUrl,
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
+import { resolveImageStudioFromQuery } from "@/lib/studio-catalog-link";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 
 const NAV_H = 56;
@@ -94,6 +99,7 @@ async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<strin
 }
 
 export function ImageGenerationPage() {
+  const searchParams = useSearchParams();
   const [bottomBarHeight, setBottomBarHeight] = useState(130);
 
   const [actionTab, setActionTab] = useState<ImageActionTab>("Text to Image");
@@ -111,6 +117,17 @@ export function ImageGenerationPage() {
   const [history, setHistory] = useState<ImageHistoryEntry[]>([]);
 
   const creditsLine = "-90.00 CR";
+
+  useEffect(() => {
+    const resolved = resolveImageStudioFromQuery(
+      searchParams.get("tab"),
+      searchParams.get("model")
+    );
+    if (!resolved) return;
+    setActionTab(resolved.tab);
+    setModelId(resolved.model);
+    setGenerateError(null);
+  }, [searchParams]);
 
   useEffect(() => {
     if (modelId === "gpt-image-2") {
@@ -308,7 +325,10 @@ export function ImageGenerationPage() {
           <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:min-h-0">
             <ImagePreview
               actionTab={actionTab}
-              onActionTabChange={setActionTab}
+              onActionTabChange={(tab) => {
+                setActionTab(tab);
+                setGenerateError(null);
+              }}
               imageUrl={imageUrl}
               loading={loading}
               errorMessage={generateError}

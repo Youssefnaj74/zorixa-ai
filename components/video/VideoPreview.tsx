@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import { ActionTabsRow } from "@/components/video/ActionTabsRow";
 import { SeedanceReferenceToVideoTip } from "@/components/video/SeedanceReferenceToVideoTip";
+import { CharacterSwapModelTip } from "@/components/video/CharacterSwapModelTip";
 import { VideoToVideoModelTip } from "@/components/video/VideoToVideoModelTip";
 
 const NAV_H = 56;
@@ -318,10 +319,13 @@ export function VideoPreview({
       </div>
 
       {actionTab === "Reference to Video" ? (
-        <SeedanceReferenceToVideoTip className="w-full shrink-0" />
+        <SeedanceReferenceToVideoTip composerModelId={composerModelId} className="w-full shrink-0" />
       ) : null}
       {actionTab === "Video to Video" ? (
         <VideoToVideoModelTip composerModelId={composerModelId} className="w-full shrink-0" />
+      ) : null}
+      {actionTab === "Character Swap" ? (
+        <CharacterSwapModelTip composerModelId={composerModelId} className="w-full shrink-0" />
       ) : null}
 
       <div className="relative z-10 flex h-12 w-full shrink-0 items-center bg-[#0a0a0f]">

@@ -11,11 +11,22 @@ import type { KlingMotionCharacterOrientation } from "@/lib/atlas-kling-motion-c
 import {
   ASPECT_STEP_OPTIONS,
   bottomBarModelsForActionTab,
+  HAPPYHORSE_DURATION_OPTIONS,
+  WAN27_DURATION_OPTIONS,
+  videoComposerUsesAudioToVideoBarLayout,
+  videoComposerUses720p1080pOnly,
+  videoComposerUsesHappyHorse,
+  videoComposerUsesWan27,
   MODE_DROPUP_OPTIONS,
   MOTION_CONTROL_DURATION_OPTIONS,
   videoComposerSupportsEndFrame,
   videoComposerUsesTextOnlyLayout,
+  atlasSpeedTierUiLabel,
+  characterSwapTabUsesDualAssetPipeline,
+  videoComposerUsesCharacterSwapBarLayout,
   videoToVideoTabUsesKlingMotion,
+  videoToVideoTabUsesWanCharacterSwap,
+  videoToVideoTabUsesViduStartEnd,
   RESOLUTION_STEP_OPTIONS,
   STANDARD_DURATION_OPTIONS,
   TIME_SECONDS_OPTIONS,
@@ -26,6 +37,8 @@ import {
   parseVideoSpeedTierFromUiLabel,
   videoComposerSupportsSpeedTier
 } from "@/lib/atlas-video-model-ids";
+import { AUDIO_TO_VIDEO_RESOLUTION_OPTIONS } from "@/lib/atlas-audio-to-video";
+import { isViduQ3ComposerId, isViduQ3ProComposerId } from "@/lib/atlas-vidu-video";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import { ReferenceImageUploadStrip } from "@/components/video/ReferenceImageUploadStrip";
@@ -211,7 +224,10 @@ export function VideoBottomBar({
 
   const applySlot1File = useCallback(
     (file: File) => {
-      if (actionTab === "Video to Video" && videoToVideoTabUsesKlingMotion(composerModelId)) {
+      if (
+        (actionTab === "Character Swap" && characterSwapTabUsesDualAssetPipeline(composerModelId)) ||
+        (actionTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(composerModelId))
+      ) {
         if (!file.type.startsWith("image/")) return;
       } else if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
         return;
@@ -366,16 +382,37 @@ export function VideoBottomBar({
   }, [promptImage2Url]);
 
   useEffect(() => {
-    if (actionTab !== "Video to Video" || !videoToVideoTabUsesKlingMotion(composerModelId)) return;
+    if (actionTab !== "Character Swap" || !videoToVideoTabUsesKlingMotion(composerModelId)) return;
     const max = characterOrientation === "video" ? 30 : 15;
     if (timeSeconds > max) onTimeSecondsChange(max);
   }, [actionTab, characterOrientation, composerModelId, timeSeconds, onTimeSecondsChange]);
 
   const showReferenceLayout = actionTab === "Reference to Video";
+  const showCharacterSwapLayout = actionTab === "Character Swap";
+  const showWanCharacterSwapLayout =
+    showCharacterSwapLayout && videoToVideoTabUsesWanCharacterSwap(composerModelId);
   const showMotionControlLayout =
-    actionTab === "Video to Video" && videoToVideoTabUsesKlingMotion(composerModelId);
+    showCharacterSwapLayout && videoToVideoTabUsesKlingMotion(composerModelId);
+  const showDualAssetV2vLayout = showMotionControlLayout || showWanCharacterSwapLayout;
+  const showViduStartEndLayout =
+    actionTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(composerModelId);
   const showWanV2vLayout =
-    actionTab === "Video to Video" && !showMotionControlLayout;
+    actionTab === "Video to Video" && !showViduStartEndLayout;
+  const showHappyHorseLayout = videoComposerUsesHappyHorse(composerModelId);
+  const showWan27Layout = videoComposerUsesWan27(composerModelId);
+  const show720p1080pOnlyLayout = videoComposerUses720p1080pOnly(composerModelId);
+  const showAudioToVideoLayout = videoComposerUsesAudioToVideoBarLayout(composerModelId, actionTab);
+  /** Kling motion / Wan character swap — hides mode, aspect, resolution. */
+  const hideWanOnlyBarControls = showDualAssetV2vLayout;
+  /** Audio to Video — hide mode/aspect/time; keep model + resolution (480p/720p). */
+  const hideModeAspectControls = showDualAssetV2vLayout || showAudioToVideoLayout;
+  const showResolutionControl = showAudioToVideoLayout || !showDualAssetV2vLayout;
+  const resolutionOptions = showAudioToVideoLayout
+    ? [...AUDIO_TO_VIDEO_RESOLUTION_OPTIONS]
+    : show720p1080pOnlyLayout
+      ? RESOLUTION_STEP_OPTIONS.filter((r) => r.id !== "480p")
+      : RESOLUTION_STEP_OPTIONS;
+  const characterSwapBar = videoComposerUsesCharacterSwapBarLayout(composerModelId, actionTab);
   const showTextOnlyPromptLayout = videoComposerUsesTextOnlyLayout(composerModelId, actionTab);
   const pickerModels = bottomBarModelsForActionTab(actionTab);
   const selectedModel =
@@ -385,21 +422,35 @@ export function VideoBottomBar({
     nativeAudioSupported &&
     (actionTab === "Text to Video" ||
       actionTab === "Image to Video" ||
-      actionTab === "Reference to Video");
+      actionTab === "Reference to Video" ||
+      (actionTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(composerModelId)));
   const timeOptionsForTab = showReferenceLayout
-    ? TIME_SECONDS_OPTIONS.filter((t) => t >= 4 && t <= 15)
-    : showMotionControlLayout
-      ? MOTION_CONTROL_DURATION_OPTIONS.filter((t) =>
-          characterOrientation === "video" ? t <= 30 : t <= 15
-        )
-      : [...TIME_SECONDS_OPTIONS];
+    ? isViduQ3ComposerId(composerModelId)
+      ? Array.from({ length: 16 }, (_, i) => i + 1)
+      : TIME_SECONDS_OPTIONS.filter((t) => t >= 4 && t <= 15)
+    : showViduStartEndLayout ||
+        isViduQ3ProComposerId(composerModelId) ||
+        (showReferenceLayout && isViduQ3ComposerId(composerModelId))
+      ? Array.from({ length: 16 }, (_, i) => i + 1)
+      : showMotionControlLayout
+        ? MOTION_CONTROL_DURATION_OPTIONS.filter((t) =>
+            characterOrientation === "video" ? t <= 30 : t <= 15
+          )
+        : showWanCharacterSwapLayout
+          ? []
+          : showHappyHorseLayout
+            ? [...HAPPYHORSE_DURATION_OPTIONS]
+            : showWan27Layout
+              ? [...WAN27_DURATION_OPTIONS]
+              : [...TIME_SECONDS_OPTIONS];
   const generateAudioEffective = generateAudioOn && showGenerateAudioControl;
   const showSpeedTierControl = videoComposerSupportsSpeedTier(composerModelId);
   const speedTier = parseVideoSpeedTierFromUiLabel(durationStandard);
   const showSeedanceI2vTip =
     actionTab === "Image to Video" && composerModelId === "seedance-2";
   const showEndFrameSlot =
-    actionTab === "Image to Video" && videoComposerSupportsEndFrame(composerModelId);
+    (actionTab === "Image to Video" && videoComposerSupportsEndFrame(composerModelId)) ||
+    showViduStartEndLayout;
 
   const emitGenerate = useCallback(() => {
     const el = promptTextareaRef.current;
@@ -479,8 +530,17 @@ export function VideoBottomBar({
             />
           ) : !showTextOnlyPromptLayout ? (
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start">
-              {actionTab === "Lipsyncing" ? (
+              {showAudioToVideoLayout ? (
                 <>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    aria-hidden
+                    onChange={onFile1Input}
+                  />
                   <input
                     ref={fileAudioRef}
                     type="file"
@@ -490,41 +550,83 @@ export function VideoBottomBar({
                     aria-hidden
                     onChange={onAudioInput}
                   />
-                  <div
-                    className="relative"
-                    onDragEnter={stopDragDefaults}
-                    onDragOver={stopDragDefaults}
-                    onDrop={onDropAudio}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => fileAudioRef.current?.click()}
-                      className={cn(
-                        "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                        "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                        "hover:border-white/30 hover:bg-black/55"
-                      )}
-                      aria-label={lipsyncAudioUrl ? "Change audio" : "Upload audio"}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div
+                      className="relative"
+                      onDragEnter={stopDragDefaults}
+                      onDragOver={stopDragDefaults}
+                      onDrop={onDropSlot1}
                     >
-                      <Mic2 className="size-5 opacity-60" />
-                      <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">Audio</span>
-                    </button>
-                    {lipsyncAudioUrl ? (
                       <button
                         type="button"
-                        onClick={() => onLipsyncAudioUrlChange(null)}
+                        onClick={() => fileRef.current?.click()}
                         className={cn(
-                          "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
-                          "hover:bg-black hover:text-white"
+                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                          "hover:border-white/30 hover:bg-black/55"
                         )}
-                        aria-label="Remove audio"
+                        aria-label={promptImageUrl ? "Change portrait" : "Upload portrait"}
                       >
-                        <X className="size-3.5" />
+                        {promptImageUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={promptImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+                        ) : (
+                          <>
+                            <Upload className="size-5 opacity-60" />
+                            <span className="mt-2 text-xs font-medium text-zorixa-muted">Portrait</span>
+                          </>
+                        )}
                       </button>
-                    ) : null}
+                      {promptImageUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => onPromptImageChange(null)}
+                          className={cn(
+                            "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                            "hover:bg-black hover:text-white"
+                          )}
+                          aria-label="Remove portrait"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      ) : null}
+                    </div>
+                    <div
+                      className="relative"
+                      onDragEnter={stopDragDefaults}
+                      onDragOver={stopDragDefaults}
+                      onDrop={onDropAudio}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => fileAudioRef.current?.click()}
+                        className={cn(
+                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                          "hover:border-white/30 hover:bg-black/55"
+                        )}
+                        aria-label={lipsyncAudioUrl ? "Change audio" : "Upload audio"}
+                      >
+                        <Mic2 className="size-5 opacity-60" />
+                        <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">Audio</span>
+                      </button>
+                      {lipsyncAudioUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => onLipsyncAudioUrlChange(null)}
+                          className={cn(
+                            "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                            "hover:bg-black hover:text-white"
+                          )}
+                          aria-label="Remove audio"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </>
-              ) : showMotionControlLayout ? (
+              ) : showDualAssetV2vLayout ? (
                 <>
                   <input
                     ref={fileRef}
@@ -563,10 +665,27 @@ export function VideoBottomBar({
                           "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
                           "hover:border-white/30 hover:bg-black/55"
                         )}
-                        aria-label={promptImageUrl ? "Change character image" : "Upload character image"}
+                        aria-label={
+                          promptImageUrl
+                            ? showWanCharacterSwapLayout
+                              ? "Change character portrait"
+                              : "Change character image"
+                            : showWanCharacterSwapLayout
+                              ? "Upload character portrait"
+                              : "Upload character image"
+                        }
                       >
-                        <Upload className="size-5 opacity-60" />
-                        <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">Character</span>
+                        {promptImageUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={promptImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+                        ) : (
+                          <>
+                            <Upload className="size-5 opacity-60" />
+                            <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">
+                              {showWanCharacterSwapLayout ? "Portrait" : "Character"}
+                            </span>
+                          </>
+                        )}
                       </button>
                       {promptImageUrl ? (
                         <button
@@ -596,10 +715,20 @@ export function VideoBottomBar({
                           "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
                           "hover:border-white/30 hover:bg-black/55"
                         )}
-                        aria-label={motionVideoUrl ? "Change motion clip" : "Upload motion clip"}
+                        aria-label={
+                          motionVideoUrl
+                            ? showWanCharacterSwapLayout
+                              ? "Change source video"
+                              : "Change motion clip"
+                            : showWanCharacterSwapLayout
+                              ? "Upload source video"
+                              : "Upload motion clip"
+                        }
                       >
                         <Film className="size-5 opacity-60" />
-                        <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">Motion clip</span>
+                        <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">
+                          {showWanCharacterSwapLayout ? "Source video" : "Motion clip"}
+                        </span>
                       </button>
                       {motionVideoUrl ? (
                         <button
@@ -616,6 +745,109 @@ export function VideoBottomBar({
                       ) : null}
                     </motion.div>
                   </motion.div>
+                </>
+              ) : showViduStartEndLayout ? (
+                <>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    aria-hidden
+                    onChange={onFile1Input}
+                  />
+                  <input
+                    ref={fileRef2}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    aria-hidden
+                    onChange={onFile2Input}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div
+                      className="relative"
+                      onDragEnter={stopDragDefaults}
+                      onDragOver={stopDragDefaults}
+                      onDrop={onDropSlot1}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => fileRef.current?.click()}
+                        className={cn(
+                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                          "hover:border-white/30 hover:bg-black/55"
+                        )}
+                        aria-label={promptImageUrl ? "Change start frame" : "Upload start frame"}
+                      >
+                        {promptImageUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={promptImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+                        ) : (
+                          <>
+                            <Upload className="size-5 opacity-60" />
+                            <span className="mt-2 text-xs font-medium text-zorixa-muted">Start frame</span>
+                          </>
+                        )}
+                      </button>
+                      {promptImageUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => onPromptImageChange(null)}
+                          className={cn(
+                            "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                            "hover:bg-black hover:text-white"
+                          )}
+                          aria-label="Remove start frame"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      ) : null}
+                    </div>
+                    <div
+                      className="relative"
+                      onDragEnter={stopDragDefaults}
+                      onDragOver={stopDragDefaults}
+                      onDrop={onDropSlot2}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => fileRef2.current?.click()}
+                        className={cn(
+                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                          "hover:border-white/30 hover:bg-black/55"
+                        )}
+                        aria-label={promptImage2Url ? "Change end frame" : "Upload end frame"}
+                      >
+                        {promptImage2Url ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={promptImage2Url} alt="" className="absolute inset-0 size-full object-cover" />
+                        ) : (
+                          <>
+                            <Upload className="size-5 opacity-60" />
+                            <span className="mt-2 text-xs font-medium text-zorixa-muted">End frame</span>
+                          </>
+                        )}
+                      </button>
+                      {promptImage2Url ? (
+                        <button
+                          type="button"
+                          onClick={() => onPromptImage2Change?.(null)}
+                          className={cn(
+                            "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                            "hover:bg-black hover:text-white"
+                          )}
+                          aria-label="Remove end frame"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
                 </>
               ) : showWanV2vLayout ? (
                 <>
@@ -791,15 +1023,19 @@ export function VideoBottomBar({
               onChange={(e) => onPromptChange(e.target.value)}
               rows={showTextOnlyPromptLayout ? 3 : 2}
               placeholder={
-                showReferenceLayout
-                  ? "Describe the scene — e.g. image 1 is the character, image 2 is the background…"
-                  : showMotionControlLayout
-                    ? "Scene style, lighting, background (motion comes from the clip)…"
-                    : showWanV2vLayout
-                      ? "Describe how to transform the source video…"
-                      : showTextOnlyPromptLayout
-                        ? "Describe the video you want to generate…"
-                        : "Describe your image..."
+                showAudioToVideoLayout
+                  ? "Optional: expression, posture, scene style…"
+                  : showReferenceLayout
+                    ? "Describe the scene — e.g. image 1 is the character, image 2 is the background…"
+                    : showWanCharacterSwapLayout
+                      ? "Optional: scene notes — motion comes from the source video…"
+                      : showMotionControlLayout
+                        ? "Scene style, lighting, background (motion comes from the clip)…"
+                      : showWanV2vLayout
+                        ? "Describe how to transform the source video…"
+                        : showTextOnlyPromptLayout
+                          ? "Describe the video you want to generate…"
+                          : "Describe your image..."
               }
               className={cn(
                 "w-full resize-y rounded-lg bg-[#0a0a0a] px-3 py-2.5 text-sm leading-relaxed text-white outline-none transition-shadow placeholder:text-zorixa-muted",
@@ -825,7 +1061,7 @@ export function VideoBottomBar({
                   open === "model" && "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.1)]"
                 )}
               >
-                <span className="max-w-[140px] truncate">{selectedModel.label}</span>
+                <span className="max-w-[160px] truncate">{selectedModel.label}</span>
                 <ChevronUp
                   className={cn(
                     "size-3.5 shrink-0 text-zorixa-muted transition-transform",
@@ -905,7 +1141,7 @@ export function VideoBottomBar({
               <div className="flex items-center gap-2">
                 <span
                   className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted"
-                  title="Native soundtrack: Seedance uses generate_audio; Kling v3 uses sound (Atlas Cloud)"
+                  title="Native soundtrack (Atlas): Seedance/Vidu use generate_audio; Kling v3 uses sound"
                 >
                   Audio
                 </span>
@@ -914,6 +1150,8 @@ export function VideoBottomBar({
             </>
           ) : null}
 
+          {!hideModeAspectControls ? (
+          <>
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
 
           {/* MODE */}
@@ -967,6 +1205,8 @@ export function VideoBottomBar({
               </AnimatePresence>
             </div>
           </div>
+          </>
+          ) : null}
 
           {showSpeedTierControl ? (
           <>
@@ -975,12 +1215,16 @@ export function VideoBottomBar({
             <span
               className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted"
               title={
-                composerModelId === "kling-3-pro"
-                  ? "Standard = Kling Pro · Fast = Kling Std (cheaper)"
-                  : "Standard = full Seedance · Fast = Seedance fast tier"
+                showWanCharacterSwapLayout
+                  ? "Std = wan-std · Pro = wan-pro (Atlas animate-mix)"
+                  : characterSwapBar
+                    ? "Pro = kling-v2.6-pro/motion-control · Std = cheaper Std tier on Atlas"
+                    : composerModelId === "kling-3-pro"
+                    ? "Standard = Kling Pro · Fast = Kling Std (cheaper)"
+                    : "Standard = full Seedance · Fast = Seedance fast tier"
               }
             >
-              Speed
+              {characterSwapBar ? "Tier" : "Speed"}
             </span>
           <div className="relative">
             <button
@@ -991,7 +1235,12 @@ export function VideoBottomBar({
                 open === "standard" && "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.1)]"
               )}
             >
-              <span>{durationStandard}</span>
+              <span>
+                {atlasSpeedTierUiLabel(
+                  composerModelId,
+                  durationStandard === "Fast" ? "Fast" : "Standard"
+                )}
+              </span>
               <ChevronUp
                 className={cn(
                   "size-3.5 shrink-0 text-zorixa-muted transition-transform",
@@ -1021,7 +1270,7 @@ export function VideoBottomBar({
                         d === durationStandard ? "bg-zorixa-tab text-white" : "text-white/95 hover:bg-[rgba(131,56,235,0.1)]"
                       )}
                     >
-                      {d}
+                      {atlasSpeedTierUiLabel(composerModelId, d)}
                     </button>
                   ))}
                 </motion.div>
@@ -1032,6 +1281,8 @@ export function VideoBottomBar({
           </>
           ) : null}
 
+          {!showAudioToVideoLayout && !showWanCharacterSwapLayout ? (
+          <>
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
 
           {/* Time */}
@@ -1078,7 +1329,11 @@ export function VideoBottomBar({
               ) : null}
             </AnimatePresence>
           </div>
+          </>
+          ) : null}
 
+          {!hideModeAspectControls ? (
+          <>
           {/* Aspect */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Aspect</span>
@@ -1130,7 +1385,12 @@ export function VideoBottomBar({
               </AnimatePresence>
             </div>
           </div>
+          </>
+          ) : null}
 
+          {showResolutionControl ? (
+          <>
+          <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
           {/* Resolution */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Resolution</span>
@@ -1161,7 +1421,7 @@ export function VideoBottomBar({
                     style={{ transformOrigin: "bottom left" }}
                     className={cn(dropupPanelClass, "left-0 min-w-[140px] py-1")}
                   >
-                    {RESOLUTION_STEP_OPTIONS.map((r) => (
+                    {resolutionOptions.map((r) => (
                       <button
                         key={r.id}
                         type="button"
@@ -1185,6 +1445,8 @@ export function VideoBottomBar({
               </AnimatePresence>
             </div>
           </div>
+          </>
+          ) : null}
 
           </div>
 
