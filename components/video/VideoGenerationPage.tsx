@@ -101,7 +101,7 @@ function pickVideoUrlFromPollBody(data: Record<string, unknown>): string | null 
   return extractAtlasVideoOutputUrl(data as unknown as AtlasLikeVideoPayload);
 }
 
-/** Same-origin playback URL (cookie session) → 302 to CDN; falls back to raw if host not allowlisted. */
+/** Same-origin playback URL (cookie session) â†’ 302 to CDN; falls back to raw if host not allowlisted. */
 function toBrowserVideoSrc(canonicalHttps: string): string {
   if (typeof window === "undefined") return canonicalHttps;
   return buildSameOriginVideoPlaybackUrl(canonicalHttps, window.location.origin);
@@ -120,7 +120,7 @@ function extensionForUploadedBlob(blob: Blob): string {
 
 /**
  * Atlas `generateVideo` needs a public https:// URL in `image` / media fields.
- * Resolves blob: and data: sources via `/api/upload`, upgrades http→https.
+ * Resolves blob: and data: sources via `/api/upload`, upgrades httpâ†’https.
  */
 async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<string | null> {
   if (!url) return null;
@@ -144,7 +144,7 @@ async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<strin
     credentials: "include"
   });
   if (!up.ok) {
-    let msg = "Upload failed — sign in and try again.";
+    let msg = "Upload failed â€” sign in and try again.";
     try {
       const j = (await up.json()) as { error?: string };
       if (j.error) msg = j.error;
@@ -701,7 +701,7 @@ export function VideoGenerationPage() {
         if (syncUrl) {
           const rawOut = syncUrl;
           finalVideoUrl = normalizeAtlasVideoUrlForPlayback(rawOut);
-          console.log("[VideoGenerationPage] Atlas video URL → player (sync response)", {
+          console.log("[VideoGenerationPage] Atlas video URL â†’ player (sync response)", {
             rawLength: rawOut.length,
             resolvedLength: finalVideoUrl.length,
             looksLikeMp4Path: videoUrlLooksLikeMp4Path(finalVideoUrl),
@@ -755,7 +755,7 @@ export function VideoGenerationPage() {
             if (polledUrl) {
               const rawOut = polledUrl;
               finalVideoUrl = normalizeAtlasVideoUrlForPlayback(rawOut);
-              console.log("[VideoGenerationPage] Atlas video URL → player (after poll)", {
+              console.log("[VideoGenerationPage] Atlas video URL â†’ player (after poll)", {
                 status: pd.status,
                 terminalOk: atlasTerminalSuccessStatus(pd.status),
                 rawLength: rawOut.length,
@@ -783,7 +783,7 @@ export function VideoGenerationPage() {
               });
               setGenerateError(
                 pd.prediction_id && !isAtlasRealPersonImageError(pd.atlas_error ?? pd.error)
-                  ? `${msg}\n\n(prediction: ${pd.prediction_id.slice(0, 12)}…)`
+                  ? `${msg}\n\n(prediction: ${pd.prediction_id.slice(0, 12)}â€¦)`
                   : msg
               );
               return;
@@ -824,8 +824,8 @@ export function VideoGenerationPage() {
           promptRaw: promptValue,
           promptImageUrl:
             (ctx.actionTab === "Image to Video" ||
-              (ctx.actionTab === "Video to Video" &&
-                videoToVideoTabUsesDualAssetPipeline(videoModel))) &&
+              (ctx.actionTab === "Character Swap" &&
+                characterSwapTabUsesDualAssetPipeline(videoModel))) &&
             sourceInputForLog
               ? sourceInputForLog
               : ctx.promptImageUrl,
@@ -915,7 +915,7 @@ export function VideoGenerationPage() {
         setGenerateError(null);
         const raw = item.outputVideoUrl;
         const resolved = normalizeAtlasVideoUrlForPlayback(raw);
-        console.log("[VideoGenerationPage] restore history → player", {
+        console.log("[VideoGenerationPage] restore history â†’ player", {
           rawLength: raw.length,
           resolvedLength: resolved.length,
           looksLikeMp4Path: videoUrlLooksLikeMp4Path(resolved),
