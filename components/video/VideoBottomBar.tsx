@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
+import { VIDEO_SEEDANCE_R2V_DOCK_HEIGHT } from "@/lib/composer-dock-height";
 import { cn } from "@/lib/utils";
 
 import type { KlingMotionCharacterOrientation } from "@/lib/atlas-kling-motion-control";
@@ -12,6 +13,8 @@ import {
   ASPECT_STEP_OPTIONS,
   bottomBarModelsForActionTab,
   HAPPYHORSE_DURATION_OPTIONS,
+  referenceToVideoMaxImages,
+  seedanceComposerSupportsReferenceMedia,
   WAN27_DURATION_OPTIONS,
   videoComposerUsesAudioToVideoBarLayout,
   videoComposerUses720p1080pOnly,
@@ -40,8 +43,9 @@ import {
 import { AUDIO_TO_VIDEO_RESOLUTION_OPTIONS } from "@/lib/atlas-audio-to-video";
 import { isViduQ3ComposerId, isViduQ3ProComposerId } from "@/lib/atlas-vidu-video";
 
-import type { ActionTab } from "@/components/video/ActionTabsRow";
+import { ActionTabsRow, type ActionTab } from "@/components/video/ActionTabsRow";
 import { ReferenceImageUploadStrip } from "@/components/video/ReferenceImageUploadStrip";
+import { SeedanceReferenceUploadPanel } from "@/components/video/SeedanceReferenceUploadPanel";
 import { SeedanceI2vReferenceTip } from "@/components/video/SeedanceI2vReferenceTip";
 
 export type VideoGenerateContext = {
@@ -61,8 +65,12 @@ export type VideoGenerateContext = {
   motionVideoUrl: string | null;
   characterOrientation: KlingMotionCharacterOrientation;
   keepOriginalSound: boolean;
-  /** Reference-to-video slots (Ref 1–4). */
+  /** Reference-to-video slots (up to 9 for Seedance 2.0 / HappyHorse; 4 for others). */
   referenceImageUrls: (string | null)[];
+  /** Seedance 2.0 R2V — up to 3 reference videos. */
+  referenceVideoUrls: (string | null)[];
+  /** Seedance 2.0 R2V — up to 3 reference audios. */
+  referenceAudioUrls: (string | null)[];
   /** Native AI soundtrack (Seedance, Kling v3). */
   generateAudio: boolean;
   /** Standard vs Fast Atlas model tier (Seedance + Kling). */
@@ -74,6 +82,7 @@ export type VideoBottomBarProps = {
   onPromptChange: (v: string) => void;
   /** Active preview tab — drives which assets are shown and sent to the API. */
   actionTab: ActionTab;
+  onActionTabChange: (tab: ActionTab) => void;
   promptImageUrl: string | null;
   onPromptImageChange: (url: string | null) => void;
   promptImage2Url?: string | null;
@@ -146,6 +155,7 @@ export function VideoBottomBar({
   prompt,
   onPromptChange,
   actionTab,
+  onActionTabChange,
   promptImageUrl,
   onPromptImageChange,
   promptImage2Url = null,
@@ -162,6 +172,10 @@ export function VideoBottomBar({
   onKeepOriginalSoundChange,
   referenceImageUrls = [null, null, null, null],
   onReferenceImageChange,
+  referenceVideoUrls = [null, null, null],
+  onReferenceVideoChange,
+  referenceAudioUrls = [null, null, null],
+  onReferenceAudioChange,
   composerModelId,
   onComposerModelChange,
   generateAudioOn,
@@ -202,21 +216,6 @@ export function VideoBottomBar({
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
-
-  useEffect(() => {
-    const el = bottomBarRef.current;
-    if (!el || !onHeightChange) return;
-
-    function measure() {
-      const node = bottomBarRef.current;
-      if (node) onHeightChange?.(node.offsetHeight);
-    }
-
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [onHeightChange]);
 
   const openOnly = useCallback((panel: OpenPanel) => {
     setOpen((prev) => (prev === panel ? null : panel));
@@ -388,6 +387,32 @@ export function VideoBottomBar({
   }, [actionTab, characterOrientation, composerModelId, timeSeconds, onTimeSecondsChange]);
 
   const showReferenceLayout = actionTab === "Reference to Video";
+  const referenceMaxImages = referenceToVideoMaxImages(composerModelId);
+  const showSeedanceReferenceMedia =
+    showReferenceLayout && seedanceComposerSupportsReferenceMedia(composerModelId);
+  const useStableDockHeight = showSeedanceReferenceMedia;
+  const stableDockHeight = VIDEO_SEEDANCE_R2V_DOCK_HEIGHT;
+
+  useEffect(() => {
+    if (!onHeightChange) return;
+    if (useStableDockHeight) {
+      onHeightChange(stableDockHeight);
+      return;
+    }
+    const el = bottomBarRef.current;
+    if (!el) return;
+
+    function measure() {
+      const node = bottomBarRef.current;
+      if (node) onHeightChange?.(node.offsetHeight);
+    }
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [onHeightChange, stableDockHeight, useStableDockHeight]);
+
   const showCharacterSwapLayout = actionTab === "Character Swap";
   const showWanCharacterSwapLayout =
     showCharacterSwapLayout && videoToVideoTabUsesWanCharacterSwap(composerModelId);
@@ -473,6 +498,8 @@ export function VideoBottomBar({
       characterOrientation,
       keepOriginalSound,
       referenceImageUrls,
+      referenceVideoUrls,
+      referenceAudioUrls,
       generateAudio: generateAudioEffective,
       speedTier: showSpeedTierControl ? speedTier : "standard"
     };
@@ -506,6 +533,8 @@ export function VideoBottomBar({
     promptImage2Url,
     promptImageUrl,
     referenceImageUrls,
+    referenceVideoUrls,
+    referenceAudioUrls,
     resolution,
     showSpeedTierControl,
     speedTier,
@@ -515,19 +544,51 @@ export function VideoBottomBar({
   return (
     <footer
       ref={bottomBarRef}
+      style={useStableDockHeight ? { minHeight: stableDockHeight } : undefined}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 h-auto border-t border-[rgba(131,56,235,0.15)] bg-[#0d0d14]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-[12px)",
-        "px-5 py-3 font-body"
+        "fixed inset-x-0 bottom-0 z-50 flex flex-col border-t border-[rgba(131,56,235,0.15)] bg-[#0d0d14]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-[12px]",
+        "px-5 py-3 font-body",
+        useStableDockHeight && "overflow-hidden"
       )}
     >
-      <div className="mx-auto flex max-w-[1920px] flex-col gap-3">
-        {/* ROW 1 — Prompt */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3">
+      <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-3">
+        <div className="shrink-0">
+          <ActionTabsRow
+            active={actionTab}
+            onChange={onActionTabChange}
+            className="h-11 min-h-[44px] w-full"
+          />
+        </div>
+
+        {/* ROW 1 — uploads + prompt */}
+        <div
+          className={cn(
+            "flex min-h-0 gap-3",
+            useStableDockHeight && "items-stretch",
+            showSeedanceReferenceMedia
+              ? "flex-row items-stretch"
+              : "flex-col sm:flex-row sm:items-start"
+          )}
+        >
           {showReferenceLayout ? (
-            <ReferenceImageUploadStrip
-              referenceImageUrls={referenceImageUrls}
-              onReferenceImageChange={onReferenceImageChange}
-            />
+            showSeedanceReferenceMedia ? (
+              <SeedanceReferenceUploadPanel
+                className="max-w-[min(100%,58%)] shrink-0"
+                composerModelId={composerModelId}
+                referenceImageUrls={referenceImageUrls}
+                referenceVideoUrls={referenceVideoUrls}
+                referenceAudioUrls={referenceAudioUrls}
+                onReferenceImageChange={onReferenceImageChange}
+                onReferenceVideoChange={onReferenceVideoChange}
+                onReferenceAudioChange={onReferenceAudioChange}
+              />
+            ) : (
+              <ReferenceImageUploadStrip
+                referenceImageUrls={referenceImageUrls}
+                maxImages={referenceMaxImages}
+                onReferenceImageChange={onReferenceImageChange}
+              />
+            )
           ) : !showTextOnlyPromptLayout ? (
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start">
               {showAudioToVideoLayout ? (
@@ -1015,18 +1076,25 @@ export function VideoBottomBar({
             </div>
           ) : null}
 
-          <div className="min-w-0 flex-1">
+          <div
+            className={cn(
+              "flex min-w-0 flex-col",
+              "flex-1"
+            )}
+          >
             <textarea
               ref={promptTextareaRef}
               suppressHydrationWarning
               value={prompt}
               onChange={(e) => onPromptChange(e.target.value)}
-              rows={showTextOnlyPromptLayout ? 3 : 2}
+              rows={showSeedanceReferenceMedia ? 4 : showTextOnlyPromptLayout ? 3 : 2}
               placeholder={
                 showAudioToVideoLayout
                   ? "Optional: expression, posture, scene style…"
-                  : showReferenceLayout
-                    ? "Describe the scene — e.g. image 1 is the character, image 2 is the background…"
+                  : showReferenceLayout && showSeedanceReferenceMedia
+                    ? "Use @image1 @video1 @audio1 in your scene — e.g. In @image1 the hero from @image2 walks through @video1 with mood from @audio1…"
+                    : showReferenceLayout
+                      ? "Describe the scene — e.g. image 1 is the character, image 2 is the background…"
                     : showWanCharacterSwapLayout
                       ? "Optional: scene notes — motion comes from the source video…"
                       : showMotionControlLayout
@@ -1038,16 +1106,17 @@ export function VideoBottomBar({
                           : "Describe your image..."
               }
               className={cn(
-                "w-full resize-y rounded-lg bg-[#0a0a0a] px-3 py-2.5 text-sm leading-relaxed text-white outline-none transition-shadow placeholder:text-zorixa-muted",
-                "focus-visible:ring-2 focus-visible:ring-brand"
+                "w-full rounded-lg bg-[#0a0a0a] px-3 py-2.5 text-sm leading-relaxed text-white outline-none transition-shadow placeholder:text-zorixa-muted",
+                "focus-visible:ring-2 focus-visible:ring-brand",
+                showSeedanceReferenceMedia ? "min-h-[120px] resize-none" : "resize-y"
               )}
             />
           </div>
           <div className="hidden min-w-[24px] shrink-0 lg:block" aria-hidden />
         </div>
 
-        {/* ROW 2 — Controls wrap left; credits + GENERATE bottom-right */}
-        <div className="flex items-end gap-3">
+        {/* ROW 2 — controls (always visible at bottom of dock) */}
+        <div className={cn("flex shrink-0 items-end gap-3", useStableDockHeight && "border-t border-white/5 pt-2")}>
           <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">
           {/* MODEL */}
           <div className="flex items-center gap-2">

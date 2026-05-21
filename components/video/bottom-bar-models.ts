@@ -7,7 +7,17 @@ import {
   VEED_FABRIC_1_FAST_COMPOSER_ID
 } from "@/lib/atlas-audio-to-video";
 import { KLING_26_MOTION_COMPOSER_ID } from "@/lib/atlas-kling-motion-control";
-import { HAPPYHORSE_1_COMPOSER_ID, isHappyHorseComposerId } from "@/lib/atlas-happyhorse-video";
+import {
+  HAPPYHORSE_1_COMPOSER_ID,
+  HAPPYHORSE_REFERENCE_TO_VIDEO_MAX_IMAGES,
+  isHappyHorseComposerId
+} from "@/lib/atlas-happyhorse-video";
+import {
+  SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS,
+  SEEDANCE_REFERENCE_TO_VIDEO_MAX_IMAGES,
+  SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS,
+  seedanceComposerSupportsReferenceMedia
+} from "@/lib/atlas-seedance-reference-video";
 import { WAN_27_COMPOSER_ID, isWan27ComposerId } from "@/lib/atlas-wan-27-video";
 import {
   WAN_22_CHARACTER_SWAP_COMPOSER_ID,
@@ -192,6 +202,24 @@ export function videoComposerUsesAudioToVideoBarLayout(
 }
 
 export const REFERENCE_TO_VIDEO_MAX_IMAGES = 4;
+
+export {
+  HAPPYHORSE_REFERENCE_TO_VIDEO_MAX_IMAGES,
+  SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS,
+  SEEDANCE_REFERENCE_TO_VIDEO_MAX_IMAGES,
+  SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS,
+  seedanceComposerSupportsReferenceMedia
+};
+
+export function referenceToVideoMaxImages(composerModelId: string): number {
+  if (isHappyHorseComposerId(composerModelId)) {
+    return HAPPYHORSE_REFERENCE_TO_VIDEO_MAX_IMAGES;
+  }
+  if (composerModelId === "seedance-2") {
+    return SEEDANCE_REFERENCE_TO_VIDEO_MAX_IMAGES;
+  }
+  return REFERENCE_TO_VIDEO_MAX_IMAGES;
+}
 
 export const MODE_DROPUP_OPTIONS = [
   "Multi Reference",

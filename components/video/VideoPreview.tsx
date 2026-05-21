@@ -14,13 +14,11 @@ import {
 import { cn } from "@/lib/utils";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
-import { ActionTabsRow } from "@/components/video/ActionTabsRow";
 import { SeedanceReferenceToVideoTip } from "@/components/video/SeedanceReferenceToVideoTip";
 import { CharacterSwapModelTip } from "@/components/video/CharacterSwapModelTip";
 import { VideoToVideoModelTip } from "@/components/video/VideoToVideoModelTip";
 
 const NAV_H = 56;
-const TABS_ROW_H = 48;
 
 /** Tailwind frame for preview — driven by UI aspect, not file metadata. */
 function uiAspectFrameClass(aspect: string): string {
@@ -44,7 +42,6 @@ const domVideoAttrs = {
 
 export function VideoPreview({
   actionTab,
-  onActionTabChange,
   videoUrl,
   videoDownloadUrl,
   loading,
@@ -57,7 +54,6 @@ export function VideoPreview({
   className
 }: {
   actionTab: ActionTab;
-  onActionTabChange: (t: ActionTab) => void;
   /** Bottom-bar model — drives Video to Video tip highlighting. */
   composerModelId?: string;
   videoUrl: string | null;
@@ -72,7 +68,7 @@ export function VideoPreview({
   aspectRatio?: string;
   className?: string;
 }) {
-  const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${TABS_ROW_H}px - ${bottomBarHeight}px)`;
+  const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${bottomBarHeight}px)`;
   const [inlinePlaybackError, setInlinePlaybackError] = useState<string | null>(null);
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -327,10 +323,6 @@ export function VideoPreview({
       {actionTab === "Character Swap" ? (
         <CharacterSwapModelTip composerModelId={composerModelId} className="w-full shrink-0" />
       ) : null}
-
-      <div className="relative z-10 flex h-12 w-full shrink-0 items-center bg-[#0a0a0f]">
-        <ActionTabsRow active={actionTab} onChange={onActionTabChange} className="h-full min-h-0 w-full flex-1" />
-      </div>
     </div>
   );
 }

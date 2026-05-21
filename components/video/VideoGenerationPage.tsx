@@ -11,7 +11,7 @@ import type { KlingMotionCharacterOrientation } from "@/lib/atlas-kling-motion-c
 import {
   KLING_26_MOTION_COMPOSER_ID,
   KLING_30_PRO_MODEL_ID,
-  REFERENCE_TO_VIDEO_MAX_IMAGES,
+  referenceToVideoMaxImages,
   videoComposerSupportsEndFrame,
   videoComposerSupportsReferenceToVideo,
   characterSwapTabSupportsModel,
@@ -22,7 +22,11 @@ import {
   videoToVideoTabUsesViduStartEnd,
   videoComposerUsesTextOnlyLayout
 } from "@/components/video/bottom-bar-models";
-import { normalizeSeedanceReferenceDurationSeconds } from "@/lib/atlas-seedance-reference-video";
+import {
+  normalizeSeedanceReferenceDurationSeconds,
+  SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS,
+  SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS
+} from "@/lib/atlas-seedance-reference-video";
 import {
   normalizeViduDurationSeconds,
   VIDU_Q3_COMPOSER_ID,
@@ -58,7 +62,17 @@ import {
   isAtlasRealPersonImageError
 } from "@/lib/atlas-video-failure-message";
 import { resolveVideoStudioFromQuery } from "@/lib/studio-catalog-link";
+import {
+  appendSeedanceReferenceTokenToPrompt,
+  removeSeedanceReferenceTokenFromPrompt,
+  type SeedanceReferenceMediaKind
+} from "@/lib/seedance-reference-prompt-tokens";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
+import { seedanceComposerSupportsReferenceMedia } from "@/lib/atlas-seedance-reference-video";
+import {
+  COMPOSER_DOCK_WITH_TABS_HEIGHT,
+  VIDEO_SEEDANCE_R2V_DOCK_HEIGHT
+} from "@/lib/composer-dock-height";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
 import { VideoHistory } from "@/components/video/VideoHistory";
@@ -161,6 +175,19 @@ async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<strin
   return out;
 }
 
+function resizeReferenceImageUrls(
+  prev: (string | null)[],
+  max: number
+): (string | null)[] {
+  for (let i = max; i < prev.length; i++) {
+    const url = prev[i];
+    if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+  }
+  const next = prev.slice(0, max);
+  while (next.length < max) next.push(null);
+  return next;
+}
+
 function logAtlasComposerVideoToSupabase(payload: {
   output_url: string;
   input_url?: string;
@@ -182,7 +209,7 @@ function logAtlasComposerVideoToSupabase(payload: {
 
 export function VideoGenerationPage() {
   const searchParams = useSearchParams();
-  const [bottomBarHeight, setBottomBarHeight] = useState(130);
+  const [bottomBarHeight, setBottomBarHeight] = useState(COMPOSER_DOCK_WITH_TABS_HEIGHT);
 
   const [modeValue, setModeValue] = useState("UGC");
 
@@ -204,18 +231,73 @@ export function VideoGenerationPage() {
     useState<KlingMotionCharacterOrientation>("image");
   const [keepOriginalSound, setKeepOriginalSound] = useState(true);
   const [referenceImageUrls, setReferenceImageUrls] = useState<(string | null)[]>(() =>
-    Array.from({ length: REFERENCE_TO_VIDEO_MAX_IMAGES }, () => null)
+    Array.from({ length: referenceToVideoMaxImages("seedance-2") }, () => null)
+  );
+  const [referenceVideoUrls, setReferenceVideoUrls] = useState<(string | null)[]>(() =>
+    Array.from({ length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS }, () => null)
+  );
+  const [referenceAudioUrls, setReferenceAudioUrls] = useState<(string | null)[]>(() =>
+    Array.from({ length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS }, () => null)
   );
 
-  const setReferenceImageAt = useCallback((index: number, url: string | null) => {
-    setReferenceImageUrls((prev) => {
-      const next = [...prev];
-      const old = next[index];
-      if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
-      next[index] = url;
-      return next;
-    });
-  }, []);
+  const syncSeedanceRefTokenInPrompt = useCallback(
+    (kind: SeedanceReferenceMediaKind, index: number, url: string | null) => {
+      if (
+        actionTab !== "Reference to Video" ||
+        !seedanceComposerSupportsReferenceMedia(composerModelId)
+      ) {
+        return;
+      }
+      setPrompt((p) =>
+        url
+          ? appendSeedanceReferenceTokenToPrompt(p, kind, index)
+          : removeSeedanceReferenceTokenFromPrompt(p, kind, index)
+      );
+    },
+    [actionTab, composerModelId]
+  );
+
+  const setReferenceImageAt = useCallback(
+    (index: number, url: string | null) => {
+      setReferenceImageUrls((prev) => {
+        const next = [...prev];
+        const old = next[index];
+        if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
+        next[index] = url;
+        return next;
+      });
+      syncSeedanceRefTokenInPrompt("image", index, url);
+    },
+    [syncSeedanceRefTokenInPrompt]
+  );
+
+  const setReferenceVideoAt = useCallback(
+    (index: number, url: string | null) => {
+      setReferenceVideoUrls((prev) => {
+        const next = [...prev];
+        const old = next[index];
+        if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
+        next[index] = url;
+        return next;
+      });
+      syncSeedanceRefTokenInPrompt("video", index, url);
+    },
+    [syncSeedanceRefTokenInPrompt]
+  );
+
+  const setReferenceAudioAt = useCallback(
+    (index: number, url: string | null) => {
+      setReferenceAudioUrls((prev) => {
+        const next = [...prev];
+        const old = next[index];
+        if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
+        next[index] = url;
+        return next;
+      });
+      syncSeedanceRefTokenInPrompt("audio", index, url);
+    },
+    [syncSeedanceRefTokenInPrompt]
+  );
 
   const setPromptImageUrlSafe = useCallback((url: string | null) => {
     setPromptImageUrl((prev) => {
@@ -315,6 +397,26 @@ export function VideoGenerationPage() {
       setActionTab("Image to Video");
     }
   }, [actionTab]);
+
+  useEffect(() => {
+    if (
+      actionTab === "Reference to Video" &&
+      seedanceComposerSupportsReferenceMedia(composerModelId)
+    ) {
+      setBottomBarHeight(VIDEO_SEEDANCE_R2V_DOCK_HEIGHT);
+    } else {
+      setBottomBarHeight(COMPOSER_DOCK_WITH_TABS_HEIGHT);
+    }
+  }, [actionTab, composerModelId]);
+
+  useEffect(() => {
+    if (actionTab !== "Reference to Video") return;
+    const max = referenceToVideoMaxImages(composerModelId);
+    setReferenceImageUrls((prev) => {
+      if (prev.length === max) return prev;
+      return resizeReferenceImageUrls(prev, max);
+    });
+  }, [actionTab, composerModelId]);
 
   useEffect(() => {
     if (
@@ -478,17 +580,52 @@ export function VideoGenerationPage() {
               }
               reference_images.push(u);
             }
-            if (reference_images.length < 1) {
+            const reference_videos: string[] = [];
+            const reference_audios: string[] = [];
+            if (videoModel === "seedance-2") {
+              for (let i = 0; i < ctx.referenceVideoUrls.length; i++) {
+                const raw = ctx.referenceVideoUrls[i];
+                if (!raw) continue;
+                const u = await ensureAtlasPublicHttpsMediaUrl(raw);
+                if (!u) {
+                  setGenerateError(`Could not upload reference video ${i + 1}. Try again.`);
+                  return;
+                }
+                reference_videos.push(u);
+              }
+              for (let i = 0; i < ctx.referenceAudioUrls.length; i++) {
+                const raw = ctx.referenceAudioUrls[i];
+                if (!raw) continue;
+                const u = await ensureAtlasPublicHttpsMediaUrl(raw);
+                if (!u) {
+                  setGenerateError(`Could not upload reference audio ${i + 1}. Try again.`);
+                  return;
+                }
+                reference_audios.push(u);
+              }
+              if (reference_images.length < 1 && reference_videos.length < 1) {
+                setGenerateError(
+                  "Add at least one reference image or reference video (Seedance 2.0)."
+                );
+                return;
+              }
+            } else if (reference_images.length < 1) {
               setGenerateError("Add at least one reference image for Reference to Video.");
               return;
             }
-            sourceInputForLog = reference_images[0] ?? null;
+            sourceInputForLog = reference_images[0] ?? reference_videos[0] ?? null;
             const refDuration = normalizeSeedanceReferenceDurationSeconds(duration);
             payload = {
               prompt: promptForAtlas,
               action: "reference",
               videoModel,
               reference_images,
+              ...(videoModel === "seedance-2" && reference_videos.length > 0
+                ? { reference_videos }
+                : {}),
+              ...(videoModel === "seedance-2" && reference_audios.length > 0
+                ? { reference_audios }
+                : {}),
               aspectRatio,
               resolution: resTier,
               duration: refDuration,
@@ -840,7 +977,15 @@ export function VideoGenerationPage() {
           characterOrientation: ctx.characterOrientation,
           keepOriginalSound: ctx.keepOriginalSound,
           referenceImageUrls:
-            ctx.actionTab === "Reference to Video" ? [...ctx.referenceImageUrls] : undefined
+            ctx.actionTab === "Reference to Video" ? [...ctx.referenceImageUrls] : undefined,
+          referenceVideoUrls:
+            ctx.actionTab === "Reference to Video" && videoModel === "seedance-2"
+              ? [...ctx.referenceVideoUrls]
+              : undefined,
+          referenceAudioUrls:
+            ctx.actionTab === "Reference to Video" && videoModel === "seedance-2"
+              ? [...ctx.referenceAudioUrls]
+              : undefined
         };
 
         setHistory((prev) => [
@@ -898,13 +1043,37 @@ export function VideoGenerationPage() {
         setLipsyncAudioUrlSafe(snap.lipsyncAudioUrl);
         setEditSourceVideoUrlSafe(snap.editSourceVideoUrl);
         if (snap.referenceImageUrls?.length) {
-          const padded = Array.from({ length: REFERENCE_TO_VIDEO_MAX_IMAGES }, (_, i) =>
-            snap.referenceImageUrls?.[i] ?? null
-          );
+          const max = referenceToVideoMaxImages(snap.composerModelId ?? composerModelId);
+          const padded = Array.from({ length: max }, (_, i) => snap.referenceImageUrls?.[i] ?? null);
           setReferenceImageUrls(padded);
         } else {
           setReferenceImageUrls(
-            Array.from({ length: REFERENCE_TO_VIDEO_MAX_IMAGES }, () => null)
+            Array.from(
+              { length: referenceToVideoMaxImages(snap.composerModelId ?? composerModelId) },
+              () => null
+            )
+          );
+        }
+        if (snap.referenceVideoUrls?.length) {
+          const padded = Array.from(
+            { length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS },
+            (_, i) => snap.referenceVideoUrls?.[i] ?? null
+          );
+          setReferenceVideoUrls(padded);
+        } else {
+          setReferenceVideoUrls(
+            Array.from({ length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS }, () => null)
+          );
+        }
+        if (snap.referenceAudioUrls?.length) {
+          const padded = Array.from(
+            { length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS },
+            (_, i) => snap.referenceAudioUrls?.[i] ?? null
+          );
+          setReferenceAudioUrls(padded);
+        } else {
+          setReferenceAudioUrls(
+            Array.from({ length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS }, () => null)
           );
         }
       } else if (item.title) {
@@ -955,7 +1124,6 @@ export function VideoGenerationPage() {
           <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:min-h-0">
             <VideoPreview
               actionTab={actionTab}
-              onActionTabChange={handleActionTabChange}
               composerModelId={composerModelId}
               videoUrl={videoUrl}
               videoDownloadUrl={videoDownloadUrl}
@@ -984,6 +1152,7 @@ export function VideoGenerationPage() {
           setPrompt(v);
         }}
         actionTab={actionTab}
+        onActionTabChange={handleActionTabChange}
         promptImageUrl={promptImageUrl}
         onPromptImageChange={setPromptImageUrlSafe}
         promptImage2Url={promptImage2Url}
@@ -1000,6 +1169,10 @@ export function VideoGenerationPage() {
         onKeepOriginalSoundChange={setKeepOriginalSound}
         referenceImageUrls={referenceImageUrls}
         onReferenceImageChange={setReferenceImageAt}
+        referenceVideoUrls={referenceVideoUrls}
+        onReferenceVideoChange={setReferenceVideoAt}
+        referenceAudioUrls={referenceAudioUrls}
+        onReferenceAudioChange={setReferenceAudioAt}
         composerModelId={composerModelId}
         onComposerModelChange={handleComposerModelChange}
         generateAudioOn={generateAudioOn}

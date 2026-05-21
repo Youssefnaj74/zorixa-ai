@@ -4,7 +4,7 @@ import { Check, ChevronUp, Sparkles, Upload, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { ImageActionTab } from "@/components/image/ImageActionTabsRow";
+import { ImageActionTabsRow, type ImageActionTab } from "@/components/image/ImageActionTabsRow";
 import {
   GPT_IMAGE_2_SIZE_GROUPS,
   IMAGE_ASPECTS,
@@ -17,6 +17,7 @@ import {
   getAtlasImageModelLimits,
   imageComposerSupportedOnActionTab
 } from "@/lib/atlas-image-model-ids";
+import { IMAGE_I2I_DOCK_HEIGHT } from "@/lib/composer-dock-height";
 import { cn } from "@/lib/utils";
 
 export type ImageGenerateContext = {
@@ -32,6 +33,7 @@ export type ImageBottomBarProps = {
   prompt: string;
   onPromptChange: (v: string) => void;
   actionTab: ImageActionTab;
+  onActionTabChange: (tab: ImageActionTab) => void;
   referenceUrls: string[];
   onReferenceUrlsChange: (urls: string[]) => void;
   modelId: string;
@@ -117,6 +119,7 @@ export function ImageBottomBar({
   prompt,
   onPromptChange,
   actionTab,
+  onActionTabChange,
   referenceUrls,
   onReferenceUrlsChange,
   modelId,
@@ -151,9 +154,17 @@ export function ImageBottomBar({
   const isGptImage2 = modelId === "gpt-image-2";
   const isSeedream = modelId === "seedream-5";
 
+  const useStableDockHeight = showUploads;
+  const stableDockHeight = IMAGE_I2I_DOCK_HEIGHT;
+
   useEffect(() => {
+    if (!onHeightChange) return;
+    if (useStableDockHeight) {
+      onHeightChange(stableDockHeight);
+      return;
+    }
     const el = bottomBarRef.current;
-    if (!el || !onHeightChange) return;
+    if (!el) return;
     function measure() {
       const node = bottomBarRef.current;
       if (node) onHeightChange?.(node.offsetHeight);
@@ -162,7 +173,7 @@ export function ImageBottomBar({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [onHeightChange]);
+  }, [onHeightChange, stableDockHeight, useStableDockHeight]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -231,13 +242,33 @@ export function ImageBottomBar({
   return (
     <footer
       ref={bottomBarRef}
+      style={useStableDockHeight ? { minHeight: stableDockHeight } : undefined}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 h-auto border-t border-[rgba(131,56,235,0.15)] bg-[#0d0d14]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-[12px]",
-        "px-5 py-3 font-body"
+        "fixed inset-x-0 bottom-0 z-50 flex flex-col border-t border-[rgba(131,56,235,0.15)] bg-[#0d0d14]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-[12px]",
+        "px-5 py-3 font-body",
+        useStableDockHeight && "max-h-[min(40vh,240px)]"
       )}
     >
-      <div className="mx-auto flex max-w-[1920px] flex-col gap-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3">
+      <div
+        className={cn(
+          "mx-auto flex w-full max-w-[1920px] flex-col gap-3",
+          useStableDockHeight && "min-h-0 flex-1"
+        )}
+      >
+        <div className="shrink-0">
+          <ImageActionTabsRow
+            active={actionTab}
+            onChange={onActionTabChange}
+            className="h-11 min-h-[44px] w-full"
+          />
+        </div>
+
+        <div
+          className={cn(
+            "flex min-h-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-3",
+            useStableDockHeight && "flex-1 overflow-y-auto overscroll-y-contain"
+          )}
+        >
           {showUploads ? (
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start">
               <input
@@ -336,7 +367,12 @@ export function ImageBottomBar({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div
+          className={cn(
+            "flex shrink-0 flex-wrap items-center gap-3",
+            useStableDockHeight && "border-t border-white/5 pt-2"
+          )}
+        >
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Model</span>
             <div className="relative">

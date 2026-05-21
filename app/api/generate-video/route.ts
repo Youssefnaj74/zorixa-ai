@@ -50,9 +50,10 @@ import { env } from "@/lib/env";
 import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
 import { formatAtlasVideoFailureForUi } from "@/lib/atlas-video-failure-message";
 import {
+  buildSeedanceReferenceAtlasBody,
   isSeedanceReferenceToVideoModel,
-  normalizeSeedanceReferenceDurationSeconds,
-  uiAspectToAtlasRatio
+  SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS,
+  SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS
 } from "@/lib/atlas-seedance-reference-video";
 import {
   isViduAtlasModelSlug,
@@ -83,6 +84,10 @@ type ClientBody = {
   last_image_url?: string;
   /** Seedance reference-to-video — 1–9 public image URLs. */
   reference_images?: string[];
+  /** Seedance reference-to-video — up to 3 public video URLs. */
+  reference_videos?: string[];
+  /** Seedance reference-to-video — up to 3 public audio URLs. */
+  reference_audios?: string[];
   audio_url?: string;
   video_url?: string;
   /** Kling 2.6 motion control — `image` (match ref image) or `video` (match ref motion clip). */
@@ -396,6 +401,46 @@ async function handleGenerateVideoPost(request: Request) {
   }
   reference_images = reference_images.slice(0, 9);
 
+  const rawReferenceVideos = Array.isArray(body.reference_videos) ? body.reference_videos : [];
+  let reference_videos: string[] = [];
+  for (const raw of rawReferenceVideos) {
+    if (typeof raw !== "string") continue;
+    const t = raw.trim();
+    if (!t) continue;
+    const c = coerceToPublicHttpsUrl(t);
+    if (!c) {
+      return NextResponse.json(
+        {
+          error:
+            "Each reference video must be a public https:// URL (upload local or data URLs first)."
+        },
+        { status: 400 }
+      );
+    }
+    reference_videos.push(c);
+  }
+  reference_videos = reference_videos.slice(0, SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS);
+
+  const rawReferenceAudios = Array.isArray(body.reference_audios) ? body.reference_audios : [];
+  let reference_audios: string[] = [];
+  for (const raw of rawReferenceAudios) {
+    if (typeof raw !== "string") continue;
+    const t = raw.trim();
+    if (!t) continue;
+    const c = coerceToPublicHttpsUrl(t);
+    if (!c) {
+      return NextResponse.json(
+        {
+          error:
+            "Each reference audio must be a public https:// URL (upload local or data URLs first)."
+        },
+        { status: 400 }
+      );
+    }
+    reference_audios.push(c);
+  }
+  reference_audios = reference_audios.slice(0, SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS);
+
   if (action === "reference") {
     if (!isReferenceVideoComposerId(videoModel)) {
       return NextResponse.json(
@@ -414,7 +459,17 @@ async function handleGenerateVideoPost(request: Request) {
         { status: 400 }
       );
     }
-    if (reference_images.length < 1) {
+    if (isSeedanceReferenceToVideoModel(model)) {
+      if (reference_images.length < 1 && reference_videos.length < 1) {
+        return NextResponse.json(
+          {
+            error:
+              "Add at least one reference image or reference video for Seedance Reference to Video."
+          },
+          { status: 400 }
+        );
+      }
+    } else if (reference_images.length < 1) {
       return NextResponse.json(
         { error: "Add at least one reference image for Reference to Video." },
         { status: 400 }
@@ -629,15 +684,16 @@ async function handleGenerateVideoPost(request: Request) {
       resolution
     });
   } else if (action === "reference" && isSeedanceReferenceToVideoModel(model)) {
-    durationSec = normalizeSeedanceReferenceDurationSeconds(durationSec);
-    atlasBody = {
+    atlasBody = buildSeedanceReferenceAtlasBody({
       model,
       prompt,
       reference_images,
-      duration: durationSec,
+      reference_videos: reference_videos.length > 0 ? reference_videos : undefined,
+      reference_audios: reference_audios.length > 0 ? reference_audios : undefined,
+      durationSec,
       resolution,
-      ratio: uiAspectToAtlasRatio(aspectRatio)
-    };
+      aspectRatio
+    });
     if (applyNativeAudio) {
       applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
     }

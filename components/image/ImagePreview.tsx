@@ -3,19 +3,14 @@
 import { useCallback, useState } from "react";
 import { Download, Expand, History, ImageIcon, RotateCcw } from "lucide-react";
 
-import type { ImageActionTab } from "@/components/image/ImageActionTabsRow";
-import { ImageActionTabsRow } from "@/components/image/ImageActionTabsRow";
 import { Button } from "@/components/ui/button";
 import { ExternalImage } from "@/components/ui/ExternalImage";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { cn } from "@/lib/utils";
 
 const NAV_H = 56;
-const TABS_ROW_H = 48;
 
 export function ImagePreview({
-  actionTab,
-  onActionTabChange,
   imageUrl,
   loading,
   errorMessage,
@@ -23,8 +18,6 @@ export function ImagePreview({
   bottomBarHeight = 130,
   className
 }: {
-  actionTab: ImageActionTab;
-  onActionTabChange: (t: ImageActionTab) => void;
   imageUrl: string | null;
   loading?: boolean;
   errorMessage?: string | null;
@@ -32,7 +25,7 @@ export function ImagePreview({
   bottomBarHeight?: number;
   className?: string;
 }) {
-  const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${TABS_ROW_H}px - ${bottomBarHeight}px)`;
+  const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${bottomBarHeight}px)`;
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const openLightbox = useCallback(() => {
     if (imageUrl) setLightboxOpen(true);
@@ -163,9 +156,6 @@ export function ImagePreview({
         </div>
       </div>
 
-      <div className="relative z-10 flex h-12 w-full shrink-0 items-center bg-[#0a0a0f]">
-        <ImageActionTabsRow active={actionTab} onChange={onActionTabChange} className="h-full min-h-0 w-full flex-1" />
-      </div>
       <ImageLightbox
         open={lightboxOpen}
         src={imageUrl}

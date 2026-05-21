@@ -5,7 +5,9 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 
+import { isHappyHorseComposerId } from "@/lib/atlas-happyhorse-video";
 import { isViduQ3ComposerId } from "@/lib/atlas-vidu-video";
+import { referenceToVideoMaxImages } from "@/components/video/bottom-bar-models";
 
 /** Shown under Video Preview on Reference to Video. */
 export function SeedanceReferenceToVideoTip({
@@ -16,6 +18,19 @@ export function SeedanceReferenceToVideoTip({
   className?: string;
 }) {
   const vidu = isViduQ3ComposerId(composerModelId);
+  const happyhorse = isHappyHorseComposerId(composerModelId);
+  const seedance = composerModelId === "seedance-2";
+  const maxRefs = referenceToVideoMaxImages(composerModelId);
+  const modelLabel = happyhorse
+    ? "HappyHorse 1.0 · Atlas Reference-to-Video"
+    : vidu
+      ? "Vidu Q3 · Atlas Reference-to-Video"
+      : "Seedance 2.0 · Atlas Reference-to-Video";
+  const atlasSlug = happyhorse
+    ? "alibaba/happyhorse-1.0/reference-to-video"
+    : vidu
+      ? "vidu/q3/reference-to-video"
+      : "bytedance/seedance-2.0/reference-to-video";
   return (
     <div
       role="note"
@@ -24,39 +39,49 @@ export function SeedanceReferenceToVideoTip({
         className
       )}
     >
-      <p className="flex items-start gap-2 text-xs leading-relaxed text-zorixa-muted">
-        <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
-        <span>
-          <span className="font-semibold text-white/90">
-            {vidu ? "Vidu Q3 · Atlas Reference-to-Video" : "Seedance 2.0 · Atlas Reference-to-Video"}:
-          </span>{" "}
-          upload up to 4 reference images (Ref 1–4), then describe the scene using{" "}
-          <span className="font-medium text-white/85">image 1</span>,{" "}
-          <span className="font-medium text-white/85">image 2</span>, etc. in the prompt.
-        </span>
-      </p>
+      {seedance ? (
+        <p className="flex items-start gap-2 text-xs leading-relaxed text-zorixa-muted">
+          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
+          <span>
+            <span className="font-semibold text-white/90">{modelLabel}</span> — use the{" "}
+            <span className="font-medium text-white/85">reference panel</span> below (images ·
+            videos · audios). Tags like <span className="font-medium text-brand">@image1</span> are
+            added to your prompt automatically.
+          </span>
+        </p>
+      ) : (
+        <p className="flex items-start gap-2 text-xs leading-relaxed text-zorixa-muted">
+          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
+          <span>
+            <span className="font-semibold text-white/90">{modelLabel}:</span> upload up to {maxRefs}{" "}
+            reference images, then describe the scene in the prompt.
+          </span>
+        </p>
+      )}
       <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
-        Atlas:{" "}
-        <span className="font-medium text-white/80">
-          {vidu ? "vidu/q3/reference-to-video" : "bytedance/seedance-2.0/reference-to-video"}
-        </span>
+        Atlas model: <span className="font-medium text-white/80">{atlasSlug}</span>
         {vidu ? (
           <>
             {" "}
-            or <span className="font-medium text-white/80">vidu/q3-mix/reference-to-video</span> via
-            SPEED <span className="font-medium text-white/85">Mix</span>
+            · Mix tier:{" "}
+            <span className="font-medium text-white/80">vidu/q3-mix/reference-to-video</span>
           </>
         ) : null}
-        . Pick <span className="font-medium text-white/85">Vidu Q3</span> or{" "}
-        <span className="font-medium text-white/85">Seedance 2.0</span> in the model menu.
       </p>
-      <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
-        <span className="font-medium text-brand/90">Workflow:</span>{" "}
-        <Link href="/image" className="font-medium text-brand underline-offset-2 hover:underline">
-          Generate reference images
-        </Link>
-        {" → "}upload Ref 1–4 → Generate. Real camera photos are often blocked by ByteDance policy.
-      </p>
+      {!seedance ? (
+        <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
+          <span className="font-medium text-brand/90">Tip:</span>{" "}
+          <Link href="/image" className="font-medium text-brand underline-offset-2 hover:underline">
+            Generate images
+          </Link>{" "}
+          first, then upload refs and Generate.
+        </p>
+      ) : (
+        <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
+          Need at least one <span className="font-medium text-white/80">image or video</span> ref.
+          Real-camera face photos may be blocked by ByteDance policy.
+        </p>
+      )}
     </div>
   );
 }

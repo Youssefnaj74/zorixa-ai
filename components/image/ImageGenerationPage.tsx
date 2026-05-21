@@ -27,6 +27,10 @@ import {
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
 import { resolveImageStudioFromQuery } from "@/lib/studio-catalog-link";
+import {
+  COMPOSER_DOCK_WITH_TABS_HEIGHT,
+  IMAGE_I2I_DOCK_HEIGHT
+} from "@/lib/composer-dock-height";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 
 const NAV_H = 56;
@@ -100,7 +104,7 @@ async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<strin
 
 export function ImageGenerationPage() {
   const searchParams = useSearchParams();
-  const [bottomBarHeight, setBottomBarHeight] = useState(130);
+  const [bottomBarHeight, setBottomBarHeight] = useState(COMPOSER_DOCK_WITH_TABS_HEIGHT);
 
   const [actionTab, setActionTab] = useState<ImageActionTab>("Text to Image");
   const [prompt, setPrompt] = useState("");
@@ -117,6 +121,14 @@ export function ImageGenerationPage() {
   const [history, setHistory] = useState<ImageHistoryEntry[]>([]);
 
   const creditsLine = "-90.00 CR";
+
+  useEffect(() => {
+    if (actionTab === "Image to Image") {
+      setBottomBarHeight(IMAGE_I2I_DOCK_HEIGHT);
+    } else {
+      setBottomBarHeight(COMPOSER_DOCK_WITH_TABS_HEIGHT);
+    }
+  }, [actionTab]);
 
   useEffect(() => {
     const resolved = resolveImageStudioFromQuery(
@@ -324,11 +336,6 @@ export function ImageGenerationPage() {
         <div className="mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 flex-col gap-4 overflow-x-hidden font-body lg:flex-row lg:items-stretch lg:gap-5">
           <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:min-h-0">
             <ImagePreview
-              actionTab={actionTab}
-              onActionTabChange={(tab) => {
-                setActionTab(tab);
-                setGenerateError(null);
-              }}
               imageUrl={imageUrl}
               loading={loading}
               errorMessage={generateError}
@@ -353,6 +360,10 @@ export function ImageGenerationPage() {
           setPrompt(v);
         }}
         actionTab={actionTab}
+        onActionTabChange={(tab) => {
+          setActionTab(tab);
+          setGenerateError(null);
+        }}
         referenceUrls={referenceUrls}
         onReferenceUrlsChange={setReferenceUrlsSafe}
         modelId={modelId}

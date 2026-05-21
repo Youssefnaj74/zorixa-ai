@@ -28,6 +28,8 @@ export type VideoHistorySettingsSnapshot = {
   characterOrientation?: KlingMotionCharacterOrientation;
   keepOriginalSound?: boolean;
   referenceImageUrls?: (string | null)[];
+  referenceVideoUrls?: (string | null)[];
+  referenceAudioUrls?: (string | null)[];
 };
 
 export type VideoHistoryEntry = {
