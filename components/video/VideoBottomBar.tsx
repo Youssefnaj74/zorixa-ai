@@ -99,6 +99,12 @@ export type VideoBottomBarProps = {
   onKeepOriginalSoundChange?: (v: boolean) => void;
   referenceImageUrls?: (string | null)[];
   onReferenceImageChange?: (index: number, url: string | null) => void;
+  /** Seedance 2.0 R2V — up to 3 reference videos. */
+  referenceVideoUrls?: (string | null)[];
+  onReferenceVideoChange?: (index: number, url: string | null) => void;
+  /** Seedance 2.0 R2V — up to 3 reference audios. */
+  referenceAudioUrls?: (string | null)[];
+  onReferenceAudioChange?: (index: number, url: string | null) => void;
   /** Bottom bar model (dropup). */
   composerModelId: string;
   onComposerModelChange: (id: string) => void;
