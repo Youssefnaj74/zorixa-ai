@@ -8,6 +8,14 @@ import {
 } from "@/lib/atlas-audio-to-video";
 import { KLING_26_MOTION_COMPOSER_ID } from "@/lib/atlas-kling-motion-control";
 import {
+  KLING_V3_COMPOSER_ID,
+  kling30ProComposerSupportsEndFrame,
+  klingV3AspectFromUi,
+  klingV3AspectOptionsForUi,
+  klingV3DurationOptionsForUi,
+  normalizeKlingV3DurationSeconds
+} from "@/lib/atlas-kling-v3-video";
+import {
   HAPPYHORSE_1_COMPOSER_ID,
   HAPPYHORSE_REFERENCE_TO_VIDEO_MAX_IMAGES,
   HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES,
@@ -55,7 +63,7 @@ import {
 } from "@/lib/atlas-video-model-ids";
 import { VIDU_Q3_COMPOSER_ID, VIDU_Q3_PRO_COMPOSER_ID } from "@/lib/atlas-vidu-video";
 
-export const KLING_30_PRO_MODEL_ID = "kling-3-pro" as const;
+export const KLING_30_PRO_MODEL_ID = KLING_V3_COMPOSER_ID;
 
 export { KLING_26_MOTION_COMPOSER_ID };
 export { HAPPYHORSE_1_COMPOSER_ID };
@@ -108,7 +116,8 @@ export function videoComposerSupportsEndFrame(composerModelId: string): boolean 
     composerModelId === "seedance-2" ||
     composerModelId === "seedance-1-5" ||
     isVeo31ComposerId(composerModelId) ||
-    isWan27ComposerId(composerModelId)
+    isWan27ComposerId(composerModelId) ||
+    kling30ProComposerSupportsEndFrame(composerModelId)
   );
 }
 
@@ -355,6 +364,20 @@ export function videoComposerUsesHappyHorse(composerModelId: string): boolean {
 export function videoComposerUsesWan27(composerModelId: string): boolean {
   return isWan27ComposerId(composerModelId);
 }
+
+export {
+  isWan26ComposerId,
+  wan26ComposerSupportsShotType,
+  type Wan26ShotType
+} from "@/lib/atlas-wan-26-video";
+export {
+  isKling30ProComposerId,
+  kling30ProComposerSupportsEndFrame,
+  klingV3AspectOptionsForUi,
+  klingV3DurationOptionsForUi,
+  klingV3AspectFromUi,
+  normalizeKlingV3DurationSeconds
+} from "@/lib/atlas-kling-v3-video";
 
 export function videoComposerUses720p1080pOnly(composerModelId: string): boolean {
   return (

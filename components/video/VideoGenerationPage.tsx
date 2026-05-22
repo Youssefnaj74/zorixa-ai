@@ -25,7 +25,11 @@ import {
   videoToVideoTabUsesKlingMotion,
   videoToVideoTabUsesWanCharacterSwap,
   videoToVideoTabUsesViduStartEnd,
-  videoComposerUsesTextOnlyLayout
+  videoComposerUsesTextOnlyLayout,
+  isWan26ComposerId,
+  type Wan26ShotType,
+  klingV3AspectFromUi,
+  normalizeKlingV3DurationSeconds
 } from "@/components/video/bottom-bar-models";
 import {
   normalizeSeedanceReferenceDurationSeconds,
@@ -240,6 +244,7 @@ export function VideoGenerationPage() {
   const [timeSeconds, setTimeSeconds] = useState(10);
   const [aspect, setAspect] = useState("9:16");
   const [resolution, setResolution] = useState("1080p");
+  const [wan26ShotType, setWan26ShotType] = useState<Wan26ShotType>("single");
   const [actionTab, setActionTab] = useState<ActionTab>("Image to Video");
   const [prompt, setPrompt] = useState("");
 
@@ -416,6 +421,8 @@ export function VideoGenerationPage() {
     }
     if (id === KLING_30_PRO_MODEL_ID) {
       setActionTab("Text to Video");
+      setTimeSeconds((t) => normalizeKlingV3DurationSeconds(t));
+      setAspect(klingV3AspectFromUi(aspect));
     }
     if (actionTab === "Reference to Video") {
       if (id === VIDU_Q3_PRO_COMPOSER_ID) {
@@ -550,6 +557,14 @@ export function VideoGenerationPage() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    if (composerModelId !== KLING_30_PRO_MODEL_ID) return;
+    setTimeSeconds((t) => normalizeKlingV3DurationSeconds(t));
+    if (actionTab === "Text to Video" || actionTab === "Image to Video") {
+      setAspect((a) => klingV3AspectFromUi(a));
+    }
+  }, [composerModelId, actionTab]);
+
   const handleActionTabChange = useCallback((tab: ActionTab) => {
     setActionTab(tab);
     setGenerateError(null);
@@ -633,16 +648,38 @@ export function VideoGenerationPage() {
         const atlasResolution = veoT2vI2vSettings?.resolution ?? resTier;
         const atlasDuration = veoT2vI2vSettings?.timeSeconds ?? duration;
 
+        const wan26ShotPayload =
+          isWan26ComposerId(videoModel) &&
+          (ctx.actionTab === "Text to Video" ||
+            ctx.actionTab === "Image to Video" ||
+            ctx.actionTab === "Video to Video")
+            ? { shot_type: ctx.wan26ShotType }
+            : {};
+
+        const atlasAspectForPayload =
+          videoModel === KLING_30_PRO_MODEL_ID &&
+          (ctx.actionTab === "Text to Video" || ctx.actionTab === "Image to Video")
+            ? klingV3AspectFromUi(aspectRatio)
+            : atlasAspect;
+        const atlasDurationForPayload =
+          videoModel === KLING_30_PRO_MODEL_ID &&
+          (ctx.actionTab === "Text to Video" || ctx.actionTab === "Image to Video")
+            ? normalizeKlingV3DurationSeconds(duration)
+            : atlasDuration;
+
         switch (ctx.actionTab) {
           case "Text to Video":
             payload = {
               prompt: promptForAtlas,
               action: "text",
               videoModel,
-              aspectRatio: atlasAspect,
-              resolution: atlasResolution,
-              duration: atlasDuration,
+              aspectRatio: atlasAspectForPayload,
+              ...(videoModel === KLING_30_PRO_MODEL_ID
+                ? {}
+                : { resolution: atlasResolution }),
+              duration: atlasDurationForPayload,
               speed_tier,
+              ...wan26ShotPayload,
               ...(supportsNativeAudio ? { generate_audio: wantGenerateAudio } : {})
             };
             break;
@@ -662,10 +699,12 @@ export function VideoGenerationPage() {
               videoModel,
               image_url,
               ...(last_image_url ? { last_image_url } : {}),
-              aspectRatio: atlasAspect,
-              resolution: atlasResolution,
-              duration: atlasDuration,
+              ...(videoModel === KLING_30_PRO_MODEL_ID
+                ? { aspectRatio: atlasAspectForPayload }
+                : { aspectRatio: atlasAspectForPayload, resolution: atlasResolution }),
+              duration: atlasDurationForPayload,
               speed_tier,
+              ...wan26ShotPayload,
               ...(supportsNativeAudio ? { generate_audio: wantGenerateAudio } : {})
             };
             break;
@@ -862,6 +901,7 @@ export function VideoGenerationPage() {
               resolution: resTier,
               duration,
               speed_tier,
+              ...wan26ShotPayload,
               ...(v2vReferenceImages.length > 0
                 ? { reference_images: v2vReferenceImages }
                 : {})
@@ -1335,6 +1375,8 @@ export function VideoGenerationPage() {
         onAspectChange={setAspect}
         resolution={resolution}
         onResolutionChange={setResolution}
+        wan26ShotType={wan26ShotType}
+        onWan26ShotTypeChange={setWan26ShotType}
         creditsLine={creditsLine}
         loadingGenerate={loading}
         onGenerate={runGeneration}

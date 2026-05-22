@@ -53,6 +53,17 @@ import {
   VEO_31_REFERENCE_TO_VIDEO_MAX_IMAGES
 } from "@/lib/atlas-veo31-video";
 import {
+  buildKlingV3AtlasBody,
+  isKlingV3AtlasModel,
+  klingV3AspectFromUi,
+  normalizeKlingV3DurationSeconds
+} from "@/lib/atlas-kling-v3-video";
+import {
+  applyWan26ShotTypeFields,
+  isWan26AtlasModel,
+  normalizeWan26ShotType
+} from "@/lib/atlas-wan-26-video";
+import {
   buildWanCharacterSwapAtlasBody,
   isWanCharacterSwapAtlasModel,
   videoComposerSupportsWanCharacterSwap
@@ -129,6 +140,8 @@ type ClientBody = {
   /** UI Standard/Fast → Atlas model slug tier (Seedance fast, Kling std). */
   speed_tier?: string;
   speedTier?: string;
+  /** Wan 2.6 — Atlas `shot_type`: `single` | `multi` (multi sets `enable_prompt_expansion`). */
+  shot_type?: string;
 };
 
 const ALLOWED_ASPECT_RATIOS = new Set(["16:9", "9:16", "1:1", "4:3", "3:4"]);
@@ -615,11 +628,16 @@ async function handleGenerateVideoPost(request: Request) {
     }
     last_image_url = c;
   }
-  if (action === "image" && last_image_url && !isSeedanceImageToVideoModel(model)) {
+  if (
+    action === "image" &&
+    last_image_url &&
+    !isSeedanceImageToVideoModel(model) &&
+    !isKlingV3AtlasModel(model)
+  ) {
     return NextResponse.json(
       {
         error:
-          "End frame (last_image) is only supported for Seedance 2.0 and Seedance 1.5 Image to Video."
+          "End frame is only supported for Seedance 2.0/1.5, Wan 2.7, or Kling 3.0 Pro Image to Video."
       },
       { status: 400 }
     );
@@ -666,6 +684,8 @@ async function handleGenerateVideoPost(request: Request) {
 
   if (action === "motion-control" && isKlingMotionControlAtlasModel(model)) {
     durationSec = normalizeKlingMotionDurationSeconds(durationSec, motionOrientation!);
+  } else if (isKlingV3AtlasModel(model)) {
+    durationSec = normalizeKlingV3DurationSeconds(durationSec);
   } else if (isAtlasKlingModelSlug(model)) {
     durationSec = normalizeAtlasKlingDurationSeconds(durationSec);
   } else if (isViduAtlasModelSlug(model) || isViduQ3ProComposerId(videoModel)) {
@@ -878,6 +898,24 @@ async function handleGenerateVideoPost(request: Request) {
       durationSec,
       generateAudio: applyNativeAudio ? generateAudio : undefined
     });
+  } else if (isKlingV3AtlasModel(model)) {
+    if (action === "image" && !image_url) {
+      return NextResponse.json(
+        { error: "Missing image for Kling 3.0 Image to Video (Atlas requires `image` URL)." },
+        { status: 400 }
+      );
+    }
+    atlasBody = buildKlingV3AtlasBody({
+      model,
+      prompt,
+      durationSec,
+      aspectRatio: klingV3AspectFromUi(aspectRatio),
+      imageUrl: action === "image" ? image_url : undefined,
+      endImageUrl: action === "image" ? last_image_url : undefined
+    });
+    if (applyNativeAudio) {
+      applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
+    }
   } else if (action === "image" && isWan27ImageToVideoModel(model)) {
     if (!image_url) {
       return NextResponse.json(
@@ -963,6 +1001,10 @@ async function handleGenerateVideoPost(request: Request) {
     if (applyNativeAudio) {
       applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
     }
+  }
+
+  if (isWan26AtlasModel(model)) {
+    applyWan26ShotTypeFields(atlasBody, normalizeWan26ShotType(body.shot_type));
   }
 
   if (process.env.NODE_ENV === "development") {

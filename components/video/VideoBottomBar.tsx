@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronUp, Film, Mic2, Sparkles, Upload, X } from "lucide-react";
+import { ChevronUp, CircleHelp, Film, Mic2, Sparkles, Upload, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -33,6 +33,11 @@ import {
   videoComposerUsesVeo31,
   veo31ReferenceDurationSeconds,
   videoComposerUsesWan27,
+  isKling30ProComposerId,
+  klingV3AspectOptionsForUi,
+  klingV3DurationOptionsForUi,
+  wan26ComposerSupportsShotType,
+  type Wan26ShotType,
   MODE_DROPUP_OPTIONS,
   MOTION_CONTROL_DURATION_OPTIONS,
   videoComposerSupportsEndFrame,
@@ -89,6 +94,8 @@ export type VideoGenerateContext = {
   generateAudio: boolean;
   /** Standard vs Fast Atlas model tier (Seedance + Kling). */
   speedTier: "standard" | "fast";
+  /** Wan 2.6 — Atlas `shot_type` (single | multi). */
+  wan26ShotType: Wan26ShotType;
 };
 
 export type VideoBottomBarProps = {
@@ -134,6 +141,9 @@ export type VideoBottomBarProps = {
   onAspectChange: (v: string) => void;
   resolution: string;
   onResolutionChange: (v: string) => void;
+  /** Wan 2.6 — Shot Type (Atlas `shot_type`). */
+  wan26ShotType?: Wan26ShotType;
+  onWan26ShotTypeChange?: (v: Wan26ShotType) => void;
   creditsLine: string;
   loadingGenerate: boolean;
   /** Snapshot of prompt + assets at click time (reads textarea ref so text is never stale). */
@@ -210,6 +220,8 @@ export function VideoBottomBar({
   onAspectChange,
   resolution,
   onResolutionChange,
+  wan26ShotType = "single",
+  onWan26ShotTypeChange,
   creditsLine,
   loadingGenerate,
   onGenerate,
@@ -457,19 +469,29 @@ export function VideoBottomBar({
   const wanV2vRefMax = wan27VideoEditMaxImages();
   const showHappyHorseLayout = videoComposerUsesHappyHorse(composerModelId);
   const showWan27Layout = videoComposerUsesWan27(composerModelId);
+  const showKling30Layout = isKling30ProComposerId(composerModelId);
   const showVeo31Layout = videoComposerUsesVeo31(composerModelId);
   const veo31T2vOrI2v =
     showVeo31Layout && (actionTab === "Text to Video" || actionTab === "Image to Video");
+  const kling30T2vOrI2v =
+    showKling30Layout &&
+    (actionTab === "Text to Video" || actionTab === "Image to Video");
+  const hideKlingResolution =
+    showKling30Layout &&
+    (actionTab === "Text to Video" || actionTab === "Image to Video");
   const aspectOptionsForTab = veo31T2vOrI2v
     ? [...veo31AspectOptionsForUi()]
-    : [...ASPECT_STEP_OPTIONS];
+    : kling30T2vOrI2v
+      ? [...klingV3AspectOptionsForUi()]
+      : [...ASPECT_STEP_OPTIONS];
   const show720p1080pOnlyLayout = videoComposerUses720p1080pOnly(composerModelId);
   const showAudioToVideoLayout = videoComposerUsesAudioToVideoBarLayout(composerModelId, actionTab);
   /** Kling motion / Wan character swap — hides mode, aspect, resolution. */
   const hideWanOnlyBarControls = showDualAssetV2vLayout;
   /** Audio to Video — hide mode/aspect/time; keep model + resolution (480p/720p). */
   const hideModeAspectControls = showDualAssetV2vLayout || showAudioToVideoLayout;
-  const showResolutionControl = showAudioToVideoLayout || !showDualAssetV2vLayout;
+  const showResolutionControl =
+    (showAudioToVideoLayout || !showDualAssetV2vLayout) && !hideKlingResolution;
   const resolutionOptions = showAudioToVideoLayout
     ? [...AUDIO_TO_VIDEO_RESOLUTION_OPTIONS]
     : show720p1080pOnlyLayout
@@ -509,11 +531,14 @@ export function VideoBottomBar({
             ? [...HAPPYHORSE_DURATION_OPTIONS]
             : showWan27Layout
               ? [...WAN27_DURATION_OPTIONS]
-              : showVeo31Layout
-                ? veo31DurationOptionsForTab(actionTab)
-                : [...TIME_SECONDS_OPTIONS];
+              : showKling30Layout
+                ? [...klingV3DurationOptionsForUi()]
+                : showVeo31Layout
+                  ? veo31DurationOptionsForTab(actionTab)
+                  : [...TIME_SECONDS_OPTIONS];
   const generateAudioEffective = generateAudioOn && showGenerateAudioControl;
   const showSpeedTierControl = videoComposerSupportsSpeedTier(composerModelId);
+  const showWan26ShotTypeControl = wan26ComposerSupportsShotType(composerModelId, actionTab);
   const speedTier = parseVideoSpeedTierFromUiLabel(durationStandard);
   const showSeedanceI2vTip =
     actionTab === "Image to Video" && composerModelId === "seedance-2";
@@ -545,7 +570,8 @@ export function VideoBottomBar({
       referenceVideoUrls,
       referenceAudioUrls,
       generateAudio: generateAudioEffective,
-      speedTier: showSpeedTierControl ? speedTier : "standard"
+      speedTier: showSpeedTierControl ? speedTier : "standard",
+      wan26ShotType
     };
     console.log("[VideoBottomBar] GENERATE click", {
       promptText,
@@ -582,7 +608,8 @@ export function VideoBottomBar({
     resolution,
     showSpeedTierControl,
     speedTier,
-    timeSeconds
+    timeSeconds,
+    wan26ShotType
   ]);
 
   return (
@@ -1293,6 +1320,38 @@ export function VideoBottomBar({
                   Soundtrack
                 </span>
                 <GenerateAudioToggle on={generateAudioEffective} onChange={onGenerateAudioChange} />
+              </div>
+            </>
+          ) : null}
+
+          {showWan26ShotTypeControl ? (
+            <>
+              <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
+              <div className="flex flex-col gap-1">
+                <span
+                  className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted"
+                  title="Single: one continuous shot. Multi: Atlas splits your prompt into cohesive multi-shot scenes (enables prompt expansion)."
+                >
+                  Shot Type
+                  <CircleHelp className="size-3 text-zorixa-muted/80" aria-hidden />
+                </span>
+                <div className="flex gap-1">
+                  {(["multi", "single"] as const).map((shot) => (
+                    <button
+                      key={shot}
+                      type="button"
+                      onClick={() => onWan26ShotTypeChange?.(shot)}
+                      className={cn(
+                        "rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors",
+                        wan26ShotType === shot
+                          ? "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.15)] text-white"
+                          : "border-white/10 bg-[#1a1a24] text-zorixa-muted hover:text-white"
+                      )}
+                    >
+                      {shot}
+                    </button>
+                  ))}
+                </div>
               </div>
             </>
           ) : null}
