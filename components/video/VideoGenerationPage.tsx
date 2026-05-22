@@ -11,6 +11,8 @@ import type { KlingMotionCharacterOrientation } from "@/lib/atlas-kling-motion-c
 import {
   KLING_26_MOTION_COMPOSER_ID,
   KLING_30_PRO_MODEL_ID,
+  happyHorseVideoEditMaxImages,
+  happyHorseVideoEditSupportsReferenceImages,
   referenceToVideoMaxImages,
   videoComposerSupportsEndFrame,
   videoComposerSupportsReferenceToVideo,
@@ -419,6 +421,15 @@ export function VideoGenerationPage() {
   }, [actionTab, composerModelId]);
 
   useEffect(() => {
+    if (!happyHorseVideoEditSupportsReferenceImages(composerModelId, actionTab)) return;
+    const max = happyHorseVideoEditMaxImages();
+    setReferenceImageUrls((prev) => {
+      if (prev.length === max) return prev;
+      return resizeReferenceImageUrls(prev, max);
+    });
+  }, [actionTab, composerModelId]);
+
+  useEffect(() => {
     if (
       actionTab === "Reference to Video" &&
       composerModelId === VIDU_Q3_PRO_COMPOSER_ID
@@ -721,6 +732,15 @@ export function VideoGenerationPage() {
               return;
             }
             sourceInputForLog = video_url;
+            const v2vReferenceImages: string[] = [];
+            if (isHappyHorseComposerId(videoModel)) {
+              for (let i = 0; i < ctx.referenceImageUrls.length; i++) {
+                const raw = ctx.referenceImageUrls[i];
+                if (!raw) continue;
+                const u = await ensureAtlasPublicHttpsMediaUrl(raw);
+                if (u) v2vReferenceImages.push(u);
+              }
+            }
             payload = {
               prompt: promptForAtlas,
               action: "edit",
@@ -729,7 +749,10 @@ export function VideoGenerationPage() {
               aspectRatio,
               resolution: resTier,
               duration,
-              speed_tier
+              speed_tier,
+              ...(v2vReferenceImages.length > 0
+                ? { reference_images: v2vReferenceImages }
+                : {})
             };
             break;
           }
@@ -977,7 +1000,10 @@ export function VideoGenerationPage() {
           characterOrientation: ctx.characterOrientation,
           keepOriginalSound: ctx.keepOriginalSound,
           referenceImageUrls:
-            ctx.actionTab === "Reference to Video" ? [...ctx.referenceImageUrls] : undefined,
+            ctx.actionTab === "Reference to Video" ||
+            (ctx.actionTab === "Video to Video" && isHappyHorseComposerId(videoModel))
+              ? [...ctx.referenceImageUrls]
+              : undefined,
           referenceVideoUrls:
             ctx.actionTab === "Reference to Video" && videoModel === "seedance-2"
               ? [...ctx.referenceVideoUrls]
@@ -1043,16 +1069,20 @@ export function VideoGenerationPage() {
         setLipsyncAudioUrlSafe(snap.lipsyncAudioUrl);
         setEditSourceVideoUrlSafe(snap.editSourceVideoUrl);
         if (snap.referenceImageUrls?.length) {
-          const max = referenceToVideoMaxImages(snap.composerModelId ?? composerModelId);
+          const modelId = snap.composerModelId ?? composerModelId;
+          const tab = (snap.actionTab as ActionTab) ?? actionTab;
+          const max = happyHorseVideoEditSupportsReferenceImages(modelId, tab)
+            ? happyHorseVideoEditMaxImages()
+            : referenceToVideoMaxImages(modelId);
           const padded = Array.from({ length: max }, (_, i) => snap.referenceImageUrls?.[i] ?? null);
           setReferenceImageUrls(padded);
         } else {
-          setReferenceImageUrls(
-            Array.from(
-              { length: referenceToVideoMaxImages(snap.composerModelId ?? composerModelId) },
-              () => null
-            )
-          );
+          const modelId = snap.composerModelId ?? composerModelId;
+          const tab = (snap.actionTab as ActionTab) ?? actionTab;
+          const max = happyHorseVideoEditSupportsReferenceImages(modelId, tab)
+            ? happyHorseVideoEditMaxImages()
+            : referenceToVideoMaxImages(modelId);
+          setReferenceImageUrls(Array.from({ length: max }, () => null));
         }
         if (snap.referenceVideoUrls?.length) {
           const padded = Array.from(

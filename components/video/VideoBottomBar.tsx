@@ -13,6 +13,8 @@ import {
   ASPECT_STEP_OPTIONS,
   bottomBarModelsForActionTab,
   HAPPYHORSE_DURATION_OPTIONS,
+  happyHorseVideoEditMaxImages,
+  happyHorseVideoEditSupportsReferenceImages,
   referenceToVideoMaxImages,
   seedanceComposerSupportsReferenceMedia,
   WAN27_DURATION_OPTIONS,
@@ -429,6 +431,11 @@ export function VideoBottomBar({
     actionTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(composerModelId);
   const showWanV2vLayout =
     actionTab === "Video to Video" && !showViduStartEndLayout;
+  const showHappyHorseV2vRefs = happyHorseVideoEditSupportsReferenceImages(
+    composerModelId,
+    actionTab
+  );
+  const happyHorseV2vRefMax = happyHorseVideoEditMaxImages();
   const showHappyHorseLayout = videoComposerUsesHappyHorse(composerModelId);
   const showWan27Layout = videoComposerUsesWan27(composerModelId);
   const show720p1080pOnlyLayout = videoComposerUses720p1080pOnly(composerModelId);
@@ -917,7 +924,12 @@ export function VideoBottomBar({
                   </div>
                 </>
               ) : showWanV2vLayout ? (
-                <>
+                <div
+                  className={cn(
+                    "flex shrink-0 gap-3",
+                    showHappyHorseV2vRefs ? "flex-col sm:flex-row sm:items-start" : "flex-col"
+                  )}
+                >
                   <input
                     ref={fileVideoRef}
                     type="file"
@@ -928,7 +940,7 @@ export function VideoBottomBar({
                     onChange={onVideoInput}
                   />
                   <div
-                    className="relative"
+                    className="relative shrink-0"
                     onDragEnter={stopDragDefaults}
                     onDragOver={stopDragDefaults}
                     onDrop={onDropVideo}
@@ -944,7 +956,9 @@ export function VideoBottomBar({
                       aria-label={editSourceVideoUrl ? "Change source video" : "Upload source video"}
                     >
                       <Film className="size-5 opacity-60" />
-                      <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">Source video</span>
+                      <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">
+                        Source video
+                      </span>
                     </button>
                     {editSourceVideoUrl ? (
                       <button
@@ -960,7 +974,15 @@ export function VideoBottomBar({
                       </button>
                     ) : null}
                   </div>
-                </>
+                  {showHappyHorseV2vRefs ? (
+                    <ReferenceImageUploadStrip
+                      referenceImageUrls={referenceImageUrls.slice(0, happyHorseV2vRefMax)}
+                      maxImages={happyHorseV2vRefMax}
+                      onReferenceImageChange={onReferenceImageChange}
+                      className="min-w-0 flex-1"
+                    />
+                  ) : null}
+                </div>
               ) : (
                 <>
                   <input

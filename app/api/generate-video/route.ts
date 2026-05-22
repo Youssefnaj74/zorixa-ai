@@ -14,6 +14,7 @@ import {
 } from "@/lib/atlas-kling-motion-control";
 import {
   buildHappyHorseAtlasBody,
+  HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES,
   isHappyHorseAtlasModel,
   isHappyHorseComposerId,
   isHappyHorseReferenceToVideoModel,
@@ -735,6 +736,7 @@ async function handleGenerateVideoPost(request: Request) {
       referenceImages: reference_images
     });
   } else if (action === "edit" && isHappyHorseVideoEditModel(model)) {
+    const editReferenceImages = reference_images.slice(0, HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES);
     atlasBody = buildHappyHorseAtlasBody({
       model,
       prompt,
@@ -742,7 +744,8 @@ async function handleGenerateVideoPost(request: Request) {
       resolution,
       durationSec,
       videoUrl: video_url,
-      referenceImages: reference_images.length > 0 ? reference_images : undefined
+      referenceImages:
+        editReferenceImages.length > 0 ? editReferenceImages : undefined
     });
   } else if (isHappyHorseAtlasModel(model)) {
     atlasBody = buildHappyHorseAtlasBody({

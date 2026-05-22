@@ -41,7 +41,8 @@ export function VideoToVideoModelTip({
           video-edit).
         </li>
         <li className={cn(happyhorse && "font-medium text-white/90")}>
-          <span className="text-white/80">HappyHorse 1.0</span> — source video + prompt.
+          <span className="text-white/80">HappyHorse 1.0</span> — source video + prompt; up to 5
+          optional reference images (Atlas video-edit).
         </li>
         <li className={cn(vidu && "font-medium text-white/90")}>
           <span className="text-white/80">Vidu Q3-Pro</span> — start + end frame + prompt.
@@ -50,7 +51,14 @@ export function VideoToVideoModelTip({
       {wanEdit || happyhorse ? (
         <p className="mt-2 border-t border-white/10 pt-2 pl-5 text-[11px] leading-relaxed text-brand/95">
           Selected: {happyhorse ? "HappyHorse 1.0" : "Wan 2.6 / 2.7"} — upload{" "}
-          <span className="font-medium text-white/85">Source video</span>, then describe the change.
+          <span className="font-medium text-white/85">Source video</span>
+          {happyhorse ? (
+            <>
+              {" "}
+              and optionally up to <span className="font-medium text-white/85">5 reference images</span>
+            </>
+          ) : null}
+          , then describe the change.
         </p>
       ) : vidu ? (
         <p className="mt-2 border-t border-white/10 pt-2 pl-5 text-[11px] leading-relaxed text-brand/95">

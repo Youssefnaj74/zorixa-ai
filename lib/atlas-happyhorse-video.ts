@@ -1,11 +1,14 @@
 /**
  * Alibaba HappyHorse 1.0 — text / image / reference / video-edit on Atlas Cloud.
- * Reference-to-video accepts up to 9 `reference_images`.
+ * Reference-to-video accepts up to 9 `reference_images`; video-edit up to 5.
  * @see https://www.atlascloud.ai/models/alibaba/happyhorse-1.0/reference-to-video
  */
 
 /** Atlas HappyHorse reference-to-video image slot limit. */
 export const HAPPYHORSE_REFERENCE_TO_VIDEO_MAX_IMAGES = 9;
+
+/** Atlas HappyHorse video-edit (V2V) optional reference image limit. */
+export const HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES = 5;
 
 export const HAPPYHORSE_1_COMPOSER_ID = "happyhorse-1" as const;
 

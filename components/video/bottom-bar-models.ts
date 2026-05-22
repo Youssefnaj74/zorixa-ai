@@ -10,6 +10,7 @@ import { KLING_26_MOTION_COMPOSER_ID } from "@/lib/atlas-kling-motion-control";
 import {
   HAPPYHORSE_1_COMPOSER_ID,
   HAPPYHORSE_REFERENCE_TO_VIDEO_MAX_IMAGES,
+  HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES,
   isHappyHorseComposerId
 } from "@/lib/atlas-happyhorse-video";
 import {
@@ -205,6 +206,7 @@ export const REFERENCE_TO_VIDEO_MAX_IMAGES = 4;
 
 export {
   HAPPYHORSE_REFERENCE_TO_VIDEO_MAX_IMAGES,
+  HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES,
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS,
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_IMAGES,
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS,
@@ -219,6 +221,17 @@ export function referenceToVideoMaxImages(composerModelId: string): number {
     return SEEDANCE_REFERENCE_TO_VIDEO_MAX_IMAGES;
   }
   return REFERENCE_TO_VIDEO_MAX_IMAGES;
+}
+
+export function happyHorseVideoEditSupportsReferenceImages(
+  composerModelId: string,
+  actionTab: string
+): boolean {
+  return actionTab === "Video to Video" && isHappyHorseComposerId(composerModelId);
+}
+
+export function happyHorseVideoEditMaxImages(): number {
+  return HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES;
 }
 
 export const MODE_DROPUP_OPTIONS = [
