@@ -3,7 +3,13 @@
 import { Download, Expand, History, Play, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useState, type VideoHTMLAttributes } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type ReactNode,
+  type VideoHTMLAttributes
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import { downloadVideoFile } from "@/lib/download-video-file";
@@ -19,6 +25,15 @@ import { CharacterSwapModelTip } from "@/components/video/CharacterSwapModelTip"
 import { VideoToVideoModelTip } from "@/components/video/VideoToVideoModelTip";
 
 const NAV_H = 56;
+
+/** Centered note under the preview card (Video to Video, Reference, Character Swap). */
+function PreviewModelTipBelow({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex w-full shrink-0 justify-center px-1 sm:px-2">
+      <div className="w-full max-w-3xl">{children}</div>
+    </div>
+  );
+}
 
 /** Tailwind frame for preview — driven by UI aspect, not file metadata. */
 function uiAspectFrameClass(aspect: string): string {
@@ -116,7 +131,11 @@ export function VideoPreview({
     <div className={cn("flex h-full min-h-0 min-w-0 flex-1 flex-col gap-3 font-body", className)}>
       <div
         className={cn(
-          "zorixa-card-border flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-zorixa-card shadow-glow"
+          "zorixa-card-border flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-zorixa-card shadow-glow",
+          (actionTab === "Video to Video" ||
+            actionTab === "Reference to Video" ||
+            actionTab === "Character Swap") &&
+            "min-h-[min(42vh,320px)]"
         )}
         style={{ maxHeight: cardMaxHeight }}
       >
@@ -315,13 +334,19 @@ export function VideoPreview({
       </div>
 
       {actionTab === "Reference to Video" ? (
-        <SeedanceReferenceToVideoTip composerModelId={composerModelId} className="w-full shrink-0" />
+        <PreviewModelTipBelow>
+          <SeedanceReferenceToVideoTip composerModelId={composerModelId} className="w-full" />
+        </PreviewModelTipBelow>
       ) : null}
       {actionTab === "Video to Video" ? (
-        <VideoToVideoModelTip composerModelId={composerModelId} className="w-full shrink-0" />
+        <PreviewModelTipBelow>
+          <VideoToVideoModelTip composerModelId={composerModelId} className="w-full" />
+        </PreviewModelTipBelow>
       ) : null}
       {actionTab === "Character Swap" ? (
-        <CharacterSwapModelTip composerModelId={composerModelId} className="w-full shrink-0" />
+        <PreviewModelTipBelow>
+          <CharacterSwapModelTip composerModelId={composerModelId} className="w-full" />
+        </PreviewModelTipBelow>
       ) : null}
     </div>
   );
