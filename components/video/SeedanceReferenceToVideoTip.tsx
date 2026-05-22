@@ -7,6 +7,10 @@ import { cn } from "@/lib/utils";
 
 import { isHappyHorseComposerId } from "@/lib/atlas-happyhorse-video";
 import { isViduQ3ComposerId } from "@/lib/atlas-vidu-video";
+import {
+  isVeo31ComposerId,
+  VEO_31_REFERENCE_DURATION_SECONDS
+} from "@/lib/atlas-veo31-video";
 import { referenceToVideoMaxImages } from "@/components/video/bottom-bar-models";
 
 /** Shown under Video Preview on Reference to Video. */
@@ -19,18 +23,23 @@ export function SeedanceReferenceToVideoTip({
 }) {
   const vidu = isViduQ3ComposerId(composerModelId);
   const happyhorse = isHappyHorseComposerId(composerModelId);
+  const veo = isVeo31ComposerId(composerModelId);
   const seedance = composerModelId === "seedance-2";
   const maxRefs = referenceToVideoMaxImages(composerModelId);
-  const modelLabel = happyhorse
-    ? "HappyHorse 1.0 · Atlas Reference-to-Video"
-    : vidu
-      ? "Vidu Q3 · Atlas Reference-to-Video"
-      : "Seedance 2.0 · Atlas Reference-to-Video";
-  const atlasSlug = happyhorse
-    ? "alibaba/happyhorse-1.0/reference-to-video"
-    : vidu
-      ? "vidu/q3/reference-to-video"
-      : "bytedance/seedance-2.0/reference-to-video";
+  const modelLabel = veo
+    ? "Google Veo 3.1 · Atlas Reference-to-Video"
+    : happyhorse
+      ? "HappyHorse 1.0 · Atlas Reference-to-Video"
+      : vidu
+        ? "Vidu Q3 · Atlas Reference-to-Video"
+        : "Seedance 2.0 · Atlas Reference-to-Video";
+  const atlasSlug = veo
+    ? "google/veo3.1/reference-to-video"
+    : happyhorse
+      ? "alibaba/happyhorse-1.0/reference-to-video"
+      : vidu
+        ? "vidu/q3/reference-to-video"
+        : "bytedance/seedance-2.0/reference-to-video";
   return (
     <div
       role="note"
@@ -54,7 +63,9 @@ export function SeedanceReferenceToVideoTip({
           <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
           <span>
             <span className="font-semibold text-white/90">{modelLabel}:</span> upload up to {maxRefs}{" "}
-            reference images, then describe the scene in the prompt.
+            reference images
+            {veo ? `, ${VEO_31_REFERENCE_DURATION_SECONDS}s clip, 720p or 1080p` : ""}, then describe
+            the scene in the prompt.
           </span>
         </p>
       )}

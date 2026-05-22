@@ -208,9 +208,15 @@ export function buildToolsCatalog(): ToolCatalogSection[] {
           id === "seedance-2" ||
           id === "vidu-q3" ||
           id === "happyhorse-1" ||
-          id === "wan-2-7",
+          id === "wan-2-7" ||
+          id === "google-veo-3-1",
         badge: (id) =>
-          id === "vidu-q3" || id === "happyhorse-1" || id === "wan-2-7" ? "NEW" : undefined
+          id === "vidu-q3" ||
+          id === "happyhorse-1" ||
+          id === "wan-2-7" ||
+          id === "google-veo-3-1"
+            ? "NEW"
+            : undefined
       })
     },
     {

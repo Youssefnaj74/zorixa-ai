@@ -5,7 +5,8 @@ const GENERATE_AUDIO_COMPOSER_IDS = new Set([
   "kling-3-pro",
   "vidu-q3",
   "vidu-q3-pro",
-  "wan-2-7"
+  "wan-2-7",
+  "google-veo-3-1"
 ]);
 
 export function videoComposerSupportsGenerateAudio(composerModelId: string): boolean {
@@ -29,12 +30,17 @@ export function isAtlasWan27ModelSlug(atlasModelSlug: string): boolean {
   return /wan-2\.7/i.test(atlasModelSlug);
 }
 
+export function isAtlasVeo31ModelSlug(atlasModelSlug: string): boolean {
+  return /veo3\.1/i.test(atlasModelSlug);
+}
+
 export function atlasModelSupportsGenerateAudio(atlasModelSlug: string): boolean {
   return (
     isAtlasKlingModelSlug(atlasModelSlug) ||
     isAtlasSeedanceModelSlug(atlasModelSlug) ||
     isAtlasViduModelSlug(atlasModelSlug) ||
-    isAtlasWan27ModelSlug(atlasModelSlug)
+    isAtlasWan27ModelSlug(atlasModelSlug) ||
+    isAtlasVeo31ModelSlug(atlasModelSlug)
   );
 }
 
@@ -57,7 +63,8 @@ export function applyAtlasNativeAudioFields(
   if (
     isAtlasSeedanceModelSlug(atlasModelSlug) ||
     isAtlasViduModelSlug(atlasModelSlug) ||
-    isAtlasWan27ModelSlug(atlasModelSlug)
+    isAtlasWan27ModelSlug(atlasModelSlug) ||
+    isAtlasVeo31ModelSlug(atlasModelSlug)
   ) {
     atlasBody.generate_audio = enabled;
   }

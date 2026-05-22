@@ -53,6 +53,11 @@ import {
   normalizeHappyHorseDurationSeconds
 } from "@/lib/atlas-happyhorse-video";
 import { isWan27ComposerId, normalizeWan27DurationSeconds } from "@/lib/atlas-wan-27-video";
+import {
+  isVeo31ComposerId,
+  normalizeVeo31ReferenceDurationSeconds,
+  VEO_31_REFERENCE_DURATION_SECONDS
+} from "@/lib/atlas-veo31-video";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import {
   extractAtlasVideoOutputUrl,
@@ -378,6 +383,12 @@ export function VideoGenerationPage() {
         setAspect("16:9");
       }
     }
+    if (isVeo31ComposerId(id)) {
+      if (actionTab === "Reference to Video") {
+        setTimeSeconds(VEO_31_REFERENCE_DURATION_SECONDS);
+      }
+      if (resolution === "480p") setResolution("720p");
+    }
     if (id === KLING_30_PRO_MODEL_ID) {
       setActionTab("Text to Video");
     }
@@ -418,6 +429,9 @@ export function VideoGenerationPage() {
       if (prev.length === max) return prev;
       return resizeReferenceImageUrls(prev, max);
     });
+    if (isVeo31ComposerId(composerModelId)) {
+      setTimeSeconds(VEO_31_REFERENCE_DURATION_SECONDS);
+    }
   }, [actionTab, composerModelId]);
 
   useEffect(() => {
@@ -576,7 +590,7 @@ export function VideoGenerationPage() {
           case "Reference to Video": {
             if (!videoComposerSupportsReferenceToVideo(videoModel)) {
               setGenerateError(
-                "Reference to Video requires Seedance 2.0, Vidu Q3, HappyHorse 1.0, or Wan 2.7."
+                "Reference to Video requires Seedance 2.0, Vidu Q3, HappyHorse 1.0, Wan 2.7, or Veo 3.1."
               );
               return;
             }
@@ -625,7 +639,9 @@ export function VideoGenerationPage() {
               return;
             }
             sourceInputForLog = reference_images[0] ?? reference_videos[0] ?? null;
-            const refDuration = normalizeSeedanceReferenceDurationSeconds(duration);
+            const refDuration = isVeo31ComposerId(videoModel)
+              ? normalizeVeo31ReferenceDurationSeconds(duration)
+              : normalizeSeedanceReferenceDurationSeconds(duration);
             payload = {
               prompt: promptForAtlas,
               action: "reference",

@@ -30,6 +30,13 @@ import {
   normalizeWan27DurationSeconds
 } from "@/lib/atlas-wan-27-video";
 import {
+  buildVeo31ReferenceAtlasBody,
+  isVeo31ComposerId,
+  isVeo31ReferenceToVideoModel,
+  normalizeVeo31ReferenceDurationSeconds,
+  VEO_31_REFERENCE_TO_VIDEO_MAX_IMAGES
+} from "@/lib/atlas-veo31-video";
+import {
   buildWanCharacterSwapAtlasBody,
   isWanCharacterSwapAtlasModel,
   videoComposerSupportsWanCharacterSwap
@@ -143,7 +150,8 @@ const REFERENCE_VIDEO_COMPOSER_IDS = new Set([
   "seedance-2",
   "vidu-q3",
   "happyhorse-1",
-  "wan-2-7"
+  "wan-2-7",
+  "google-veo-3-1"
 ]);
 
 function isReferenceVideoComposerId(composerId: string): boolean {
@@ -445,7 +453,10 @@ async function handleGenerateVideoPost(request: Request) {
   if (action === "reference") {
     if (!isReferenceVideoComposerId(videoModel)) {
       return NextResponse.json(
-        { error: "Reference to Video requires Seedance 2.0 or Vidu Q3 in the model picker." },
+        {
+          error:
+            "Reference to Video requires Seedance 2.0, Vidu Q3, HappyHorse 1.0, Wan 2.7, or Veo 3.1."
+        },
         { status: 400 }
       );
     }
@@ -453,7 +464,8 @@ async function handleGenerateVideoPost(request: Request) {
       !isSeedanceReferenceToVideoModel(model) &&
       !isViduReferenceToVideoModel(model) &&
       !isHappyHorseReferenceToVideoModel(model) &&
-      !isWan27ReferenceToVideoModel(model)
+      !isWan27ReferenceToVideoModel(model) &&
+      !isVeo31ReferenceToVideoModel(model)
     ) {
       return NextResponse.json(
         { error: "Reference to Video model slug is not configured for this tier." },
@@ -633,6 +645,8 @@ async function handleGenerateVideoPost(request: Request) {
     durationSec = normalizeHappyHorseDurationSeconds(durationSec);
   } else if (isWan27AtlasModel(model) || isWan27ComposerId(videoModel)) {
     durationSec = normalizeWan27DurationSeconds(durationSec);
+  } else if (action === "reference" && isVeo31ReferenceToVideoModel(model)) {
+    durationSec = normalizeVeo31ReferenceDurationSeconds(durationSec);
   }
 
   const seedanceDimensions = atlasSeedanceModelUsesDimensions(model);
@@ -764,6 +778,15 @@ async function handleGenerateVideoPost(request: Request) {
       resolution,
       durationSec,
       referenceImages: reference_images
+    });
+  } else if (action === "reference" && isVeo31ReferenceToVideoModel(model)) {
+    const veoImages = reference_images.slice(0, VEO_31_REFERENCE_TO_VIDEO_MAX_IMAGES);
+    atlasBody = buildVeo31ReferenceAtlasBody({
+      model,
+      prompt,
+      images: veoImages,
+      resolution,
+      generateAudio: applyNativeAudio ? generateAudio : undefined
     });
   } else if (action === "edit" && isWan27VideoEditModel(model)) {
     atlasBody = buildWan27AtlasBody({

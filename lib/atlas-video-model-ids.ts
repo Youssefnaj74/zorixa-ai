@@ -103,11 +103,11 @@ export const ATLAS_VIDEO_MODEL_MAP: Record<string, AtlasModelRow> = {
   "google-veo-3-1": {
     text: "google/veo3.1/text-to-video",
     image: "google/veo3.1/image-to-video",
-    reference: "google/veo3.1/text-to-video",
+    reference: "google/veo3.1/reference-to-video",
     lipsync: "google/veo3.1/text-to-video",
     edit: "google/veo3.1/text-to-video",
     "motion-control": "google/veo3.1/text-to-video",
-    "start-end": "google/veo3.1/text-to-video"
+    "start-end": "google/veo3.1/image-to-video"
   },
   "vidu-q3": {
     text: "vidu/q3/reference-to-video",
@@ -241,6 +241,10 @@ export function videoComposerSupportsHappyHorseReference(composerModelId: string
 
 export function videoComposerSupportsWan27Reference(composerModelId: string): boolean {
   return composerModelId === "wan-2-7";
+}
+
+export function videoComposerSupportsVeo31Reference(composerModelId: string): boolean {
+  return composerModelId === "google-veo-3-1";
 }
 
 export function videoComposerSupportsWan27VideoEdit(composerModelId: string): boolean {

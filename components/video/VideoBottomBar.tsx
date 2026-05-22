@@ -21,6 +21,8 @@ import {
   videoComposerUsesAudioToVideoBarLayout,
   videoComposerUses720p1080pOnly,
   videoComposerUsesHappyHorse,
+  videoComposerUsesVeo31,
+  veo31ReferenceDurationSeconds,
   videoComposerUsesWan27,
   MODE_DROPUP_OPTIONS,
   MOTION_CONTROL_DURATION_OPTIONS,
@@ -438,6 +440,7 @@ export function VideoBottomBar({
   const happyHorseV2vRefMax = happyHorseVideoEditMaxImages();
   const showHappyHorseLayout = videoComposerUsesHappyHorse(composerModelId);
   const showWan27Layout = videoComposerUsesWan27(composerModelId);
+  const showVeo31Layout = videoComposerUsesVeo31(composerModelId);
   const show720p1080pOnlyLayout = videoComposerUses720p1080pOnly(composerModelId);
   const showAudioToVideoLayout = videoComposerUsesAudioToVideoBarLayout(composerModelId, actionTab);
   /** Kling motion / Wan character swap — hides mode, aspect, resolution. */
@@ -465,7 +468,9 @@ export function VideoBottomBar({
   const timeOptionsForTab = showReferenceLayout
     ? isViduQ3ComposerId(composerModelId)
       ? Array.from({ length: 16 }, (_, i) => i + 1)
-      : TIME_SECONDS_OPTIONS.filter((t) => t >= 4 && t <= 15)
+      : showVeo31Layout
+        ? [veo31ReferenceDurationSeconds()]
+        : TIME_SECONDS_OPTIONS.filter((t) => t >= 4 && t <= 15)
     : showViduStartEndLayout ||
         isViduQ3ProComposerId(composerModelId) ||
         (showReferenceLayout && isViduQ3ComposerId(composerModelId))

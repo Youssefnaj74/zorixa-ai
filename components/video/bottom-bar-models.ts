@@ -21,12 +21,19 @@ import {
 } from "@/lib/atlas-seedance-reference-video";
 import { WAN_27_COMPOSER_ID, isWan27ComposerId } from "@/lib/atlas-wan-27-video";
 import {
+  VEO_31_COMPOSER_ID,
+  VEO_31_REFERENCE_DURATION_SECONDS,
+  VEO_31_REFERENCE_TO_VIDEO_MAX_IMAGES,
+  isVeo31ComposerId
+} from "@/lib/atlas-veo31-video";
+import {
   WAN_22_CHARACTER_SWAP_COMPOSER_ID,
   videoComposerSupportsWanCharacterSwap
 } from "@/lib/atlas-wan-character-swap";
 import {
   videoComposerSupportsHappyHorseReference,
   videoComposerSupportsHappyHorseVideoEdit,
+  videoComposerSupportsVeo31Reference,
   videoComposerSupportsMotionControl,
   videoComposerSupportsViduStartEnd,
   videoComposerSupportsWan27Reference,
@@ -92,7 +99,8 @@ export function videoComposerSupportsReferenceToVideo(composerModelId: string): 
     composerModelId === "seedance-2" ||
     composerModelId === VIDU_Q3_COMPOSER_ID ||
     videoComposerSupportsHappyHorseReference(composerModelId) ||
-    videoComposerSupportsWan27Reference(composerModelId)
+    videoComposerSupportsWan27Reference(composerModelId) ||
+    videoComposerSupportsVeo31Reference(composerModelId)
   );
 }
 
@@ -207,6 +215,8 @@ export const REFERENCE_TO_VIDEO_MAX_IMAGES = 4;
 export {
   HAPPYHORSE_REFERENCE_TO_VIDEO_MAX_IMAGES,
   HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES,
+  VEO_31_REFERENCE_DURATION_SECONDS,
+  VEO_31_REFERENCE_TO_VIDEO_MAX_IMAGES,
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS,
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_IMAGES,
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS,
@@ -214,6 +224,9 @@ export {
 };
 
 export function referenceToVideoMaxImages(composerModelId: string): number {
+  if (isVeo31ComposerId(composerModelId)) {
+    return VEO_31_REFERENCE_TO_VIDEO_MAX_IMAGES;
+  }
   if (isHappyHorseComposerId(composerModelId)) {
     return HAPPYHORSE_REFERENCE_TO_VIDEO_MAX_IMAGES;
   }
@@ -221,6 +234,14 @@ export function referenceToVideoMaxImages(composerModelId: string): number {
     return SEEDANCE_REFERENCE_TO_VIDEO_MAX_IMAGES;
   }
   return REFERENCE_TO_VIDEO_MAX_IMAGES;
+}
+
+export function videoComposerUsesVeo31(composerModelId: string): boolean {
+  return isVeo31ComposerId(composerModelId);
+}
+
+export function veo31ReferenceDurationSeconds(): number {
+  return VEO_31_REFERENCE_DURATION_SECONDS;
 }
 
 export function happyHorseVideoEditSupportsReferenceImages(
@@ -263,7 +284,11 @@ export function videoComposerUsesWan27(composerModelId: string): boolean {
 }
 
 export function videoComposerUses720p1080pOnly(composerModelId: string): boolean {
-  return videoComposerUsesHappyHorse(composerModelId) || videoComposerUsesWan27(composerModelId);
+  return (
+    videoComposerUsesHappyHorse(composerModelId) ||
+    videoComposerUsesWan27(composerModelId) ||
+    videoComposerUsesVeo31(composerModelId)
+  );
 }
 
 export const RESOLUTION_STEP_OPTIONS = [
