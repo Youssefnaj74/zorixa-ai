@@ -979,7 +979,11 @@ export function VideoBottomBar({
                       referenceImageUrls={referenceImageUrls.slice(0, happyHorseV2vRefMax)}
                       maxImages={happyHorseV2vRefMax}
                       onReferenceImageChange={onReferenceImageChange}
-                      className="min-w-0 flex-1"
+                      compact
+                      addSlotLabel="image"
+                      countInSlot
+                      matchSourceVideoSlot
+                      className="min-w-0 shrink-0"
                     />
                   ) : null}
                 </div>

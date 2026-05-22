@@ -14,6 +14,12 @@ type ReferenceImageUploadStripProps = {
   tokenKind?: "image";
   /** Hide outer title when wrapped in SeedanceReferenceUploadPanel. */
   compact?: boolean;
+  /** Label inside the add slot (e.g. HappyHorse V2V "image"). */
+  addSlotLabel?: string;
+  /** Show filled/max count inside the add slot footer instead of below. */
+  countInSlot?: boolean;
+  /** Match Video-to-Video source video slot size (88×150). */
+  matchSourceVideoSlot?: boolean;
   className?: string;
 };
 
@@ -23,6 +29,9 @@ export function ReferenceImageUploadStrip({
   onReferenceImageChange,
   tokenKind,
   compact = false,
+  addSlotLabel,
+  countInSlot = false,
+  matchSourceVideoSlot = false,
   className
 }: ReferenceImageUploadStripProps) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -66,9 +75,16 @@ export function ReferenceImageUploadStrip({
     [applyFiles, stopDrag]
   );
 
+  const thumbSize = matchSourceVideoSlot
+    ? "size-[88px] min-h-[88px] min-w-[150px] max-w-[150px]"
+    : "size-[72px] sm:size-[80px]";
+  const addSlotSize = matchSourceVideoSlot
+    ? "h-[88px] w-[150px]"
+    : "size-[72px] sm:size-[80px]";
+
   return (
     <div className={cn("flex shrink-0 flex-col gap-2", !compact && "sm:w-auto sm:min-w-[200px]", className)}>
-      {!compact ? (
+      {!compact && !addSlotLabel ? (
         <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
           References
         </span>
@@ -92,7 +108,12 @@ export function ReferenceImageUploadStrip({
         {referenceImageUrls.map((url, index) =>
           url ? (
             <div key={`ref-${index}`} className="relative">
-              <div className="relative flex size-[72px] items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40 sm:size-[80px]">
+              <div
+                className={cn(
+                  "relative flex items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40",
+                  thumbSize
+                )}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt="" className="absolute inset-0 size-full object-cover" />
                 {tokenKind ? (
@@ -120,22 +141,31 @@ export function ReferenceImageUploadStrip({
           ) : null
         )}
         {filledCount < maxImages ? (
-          <div className="flex flex-col items-center gap-1">
+          <div className={cn("flex flex-col items-center", !countInSlot && "gap-1")}>
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
               className={cn(
-                "grid size-[72px] place-items-center rounded-xl border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors sm:size-[80px]",
-                "hover:border-white/30 hover:bg-black/55"
+                "flex flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                addSlotSize,
+                "hover:border-white/30 hover:bg-black/55",
+                countInSlot && addSlotLabel && "justify-between py-3"
               )}
               aria-label="Add reference image"
             >
-              <Upload className="size-5 opacity-70" />
-              {compact ? (
+              <Upload className="size-5 shrink-0 opacity-70" />
+              {addSlotLabel ? (
+                <span className="text-xs font-medium text-zorixa-muted">{addSlotLabel}</span>
+              ) : compact ? (
                 <span className="mt-1 text-[9px] font-medium text-zorixa-muted">Add</span>
               ) : null}
+              {countInSlot ? (
+                <span className="text-[11px] tabular-nums text-zorixa-muted">
+                  {filledCount}/{maxImages}
+                </span>
+              ) : null}
             </button>
-            {!compact ? (
+            {!compact && !countInSlot ? (
               <span className="text-[11px] tabular-nums text-zorixa-muted">
                 {filledCount}/{maxImages}
               </span>
