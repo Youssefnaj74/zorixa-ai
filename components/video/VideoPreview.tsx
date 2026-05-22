@@ -120,6 +120,20 @@ export function VideoPreview({
       actionTab === "Reference to Video" ||
       actionTab === "Character Swap");
 
+  const previewPlaceholderHero = (
+    <div className="flex shrink-0 flex-col items-center justify-center gap-4">
+      <motion.button
+        type="button"
+        whileHover={{ scale: 1.06 }}
+        className="grid size-16 shrink-0 place-items-center rounded-full bg-[rgba(131,56,235,0.8)] text-white shadow-[0_0_32px_rgba(131,56,235,0.45)] ring-2 ring-white/20"
+        aria-label="Play preview"
+      >
+        <Play className="ml-1 size-7 fill-white" />
+      </motion.button>
+      <p className="text-sm text-zorixa-muted">Video preview</p>
+    </div>
+  );
+
   return (
     <div className={cn("flex h-full min-h-0 min-w-0 flex-1 flex-col gap-3 font-body", className)}>
       <div
@@ -173,9 +187,10 @@ export function VideoPreview({
           ) : null}
 
           <div className="relative flex min-h-0 flex-1 flex-col">
-            <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center p-4 sm:p-6">
+            <div className="scrollbar-hide flex h-full min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto p-4 sm:p-6">
               {showInPreviewModelTip ? (
-                <div className="flex w-full max-w-2xl flex-col items-center justify-center">
+                <div className="flex w-full max-w-2xl flex-col items-center justify-center gap-5 py-2">
+                  {previewPlaceholderHero}
                   {actionTab === "Video to Video" ? (
                     <VideoToVideoModelTip composerModelId={composerModelId} className="w-full" />
                   ) : null}
@@ -285,17 +300,7 @@ export function VideoPreview({
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center gap-4">
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.06 }}
-                    className="grid size-16 shrink-0 place-items-center rounded-full bg-[rgba(131,56,235,0.8)] text-white shadow-[0_0_32px_rgba(131,56,235,0.45)] ring-2 ring-white/20"
-                    aria-label="Play preview"
-                  >
-                    <Play className="ml-1 size-7 fill-white" />
-                  </motion.button>
-                  <p className="text-sm text-zorixa-muted">Video preview</p>
-                </div>
+                previewPlaceholderHero
               )}
             </div>
 
