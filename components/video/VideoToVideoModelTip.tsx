@@ -6,6 +6,7 @@ import {
   videoToVideoTabUsesViduStartEnd,
   videoToVideoTabUsesWanV2v
 } from "@/components/video/bottom-bar-models";
+import { isWan27ComposerId } from "@/lib/atlas-wan-27-video";
 import { cn } from "@/lib/utils";
 
 export function VideoToVideoModelTip({
@@ -16,6 +17,7 @@ export function VideoToVideoModelTip({
   className?: string;
 }) {
   const wanEdit = videoToVideoTabUsesWanV2v(composerModelId);
+  const wan27 = isWan27ComposerId(composerModelId);
   const happyhorse = composerModelId === "happyhorse-1";
   const vidu = videoToVideoTabUsesViduStartEnd(composerModelId);
 
@@ -36,9 +38,12 @@ export function VideoToVideoModelTip({
         </span>
       </p>
       <ul className="mt-2 space-y-1.5 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
-        <li className={cn(wanEdit && "font-medium text-white/90")}>
-          <span className="text-white/80">Wan 2.6 / 2.7</span> — source video + prompt (Atlas
-          video-edit).
+        <li className={cn(wanEdit && !wan27 && "font-medium text-white/90")}>
+          <span className="text-white/80">Wan 2.6</span> — source video + prompt (Atlas video-edit).
+        </li>
+        <li className={cn(wan27 && "font-medium text-white/90")}>
+          <span className="text-white/80">Wan 2.7</span> — source video + prompt; up to 5 optional
+          reference images (Atlas video-edit).
         </li>
         <li className={cn(happyhorse && "font-medium text-white/90")}>
           <span className="text-white/80">HappyHorse 1.0</span> — source video + prompt; up to 5
@@ -48,11 +53,12 @@ export function VideoToVideoModelTip({
           <span className="text-white/80">Vidu Q3-Pro</span> — start + end frame + prompt.
         </li>
       </ul>
-      {wanEdit || happyhorse ? (
+      {wan27 || happyhorse || (wanEdit && !wan27) ? (
         <p className="mt-2 border-t border-white/10 pt-2 pl-5 text-[11px] leading-relaxed text-brand/95">
-          Selected: {happyhorse ? "HappyHorse 1.0" : "Wan 2.6 / 2.7"} — upload{" "}
+          Selected:{" "}
+          {happyhorse ? "HappyHorse 1.0" : wan27 ? "Wan 2.7" : "Wan 2.6"} — upload{" "}
           <span className="font-medium text-white/85">Source video</span>
-          {happyhorse ? (
+          {happyhorse || wan27 ? (
             <>
               {" "}
               and optionally up to <span className="font-medium text-white/85">5 reference images</span>

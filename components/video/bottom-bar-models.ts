@@ -19,7 +19,16 @@ import {
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS,
   seedanceComposerSupportsReferenceMedia
 } from "@/lib/atlas-seedance-reference-video";
-import { WAN_27_COMPOSER_ID, isWan27ComposerId } from "@/lib/atlas-wan-27-video";
+import {
+  WAN_27_COMPOSER_ID,
+  WAN_27_REFERENCE_DURATION_OPTIONS,
+  WAN_27_REFERENCE_MAX_IMAGES,
+  WAN_27_REFERENCE_MAX_VIDEOS,
+  WAN_27_REFERENCE_MAX_VOICE_AUDIOS,
+  WAN_27_VIDEO_EDIT_MAX_IMAGES,
+  isWan27ComposerId,
+  wan27ComposerSupportsReferenceMedia
+} from "@/lib/atlas-wan-27-video";
 import {
   VEO_31_COMPOSER_ID,
   VEO_31_ASPECT_OPTIONS,
@@ -98,7 +107,8 @@ export function videoComposerSupportsEndFrame(composerModelId: string): boolean 
   return (
     composerModelId === "seedance-2" ||
     composerModelId === "seedance-1-5" ||
-    isVeo31ComposerId(composerModelId)
+    isVeo31ComposerId(composerModelId) ||
+    isWan27ComposerId(composerModelId)
   );
 }
 
@@ -230,7 +240,12 @@ export {
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS,
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_IMAGES,
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS,
-  seedanceComposerSupportsReferenceMedia
+  seedanceComposerSupportsReferenceMedia,
+  WAN_27_REFERENCE_DURATION_OPTIONS,
+  WAN_27_REFERENCE_MAX_IMAGES,
+  WAN_27_REFERENCE_MAX_VIDEOS,
+  WAN_27_REFERENCE_MAX_VOICE_AUDIOS,
+  wan27ComposerSupportsReferenceMedia
 };
 
 export function referenceToVideoMaxImages(composerModelId: string): number {
@@ -242,6 +257,9 @@ export function referenceToVideoMaxImages(composerModelId: string): number {
   }
   if (composerModelId === "seedance-2") {
     return SEEDANCE_REFERENCE_TO_VIDEO_MAX_IMAGES;
+  }
+  if (isWan27ComposerId(composerModelId)) {
+    return WAN_27_REFERENCE_MAX_IMAGES;
   }
   return REFERENCE_TO_VIDEO_MAX_IMAGES;
 }
@@ -290,6 +308,24 @@ export function happyHorseVideoEditSupportsReferenceImages(
 
 export function happyHorseVideoEditMaxImages(): number {
   return HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES;
+}
+
+export function wan27VideoEditSupportsReferenceImages(
+  composerModelId: string,
+  actionTab: string
+): boolean {
+  return actionTab === "Video to Video" && isWan27ComposerId(composerModelId);
+}
+
+export function wan27VideoEditMaxImages(): number {
+  return WAN_27_VIDEO_EDIT_MAX_IMAGES;
+}
+
+export function wan27ReferenceDurationOptionsForTab(actionTab: string): number[] {
+  if (actionTab === "Reference to Video") {
+    return [...WAN_27_REFERENCE_DURATION_OPTIONS];
+  }
+  return [...WAN27_DURATION_OPTIONS];
 }
 
 export const MODE_DROPUP_OPTIONS = [

@@ -5,7 +5,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
-import { VIDEO_SEEDANCE_R2V_DOCK_HEIGHT } from "@/lib/composer-dock-height";
+import {
+  VIDEO_SEEDANCE_R2V_DOCK_HEIGHT,
+  VIDEO_WAN_R2V_DOCK_HEIGHT
+} from "@/lib/composer-dock-height";
 import { cn } from "@/lib/utils";
 
 import type { KlingMotionCharacterOrientation } from "@/lib/atlas-kling-motion-control";
@@ -17,6 +20,10 @@ import {
   happyHorseVideoEditSupportsReferenceImages,
   referenceToVideoMaxImages,
   seedanceComposerSupportsReferenceMedia,
+  wan27ComposerSupportsReferenceMedia,
+  wan27ReferenceDurationOptionsForTab,
+  wan27VideoEditMaxImages,
+  wan27VideoEditSupportsReferenceImages,
   WAN27_DURATION_OPTIONS,
   videoComposerUsesAudioToVideoBarLayout,
   videoComposerUses720p1080pOnly,
@@ -52,6 +59,7 @@ import { isViduQ3ComposerId, isViduQ3ProComposerId } from "@/lib/atlas-vidu-vide
 import { ActionTabsRow, type ActionTab } from "@/components/video/ActionTabsRow";
 import { ReferenceImageUploadStrip } from "@/components/video/ReferenceImageUploadStrip";
 import { SeedanceReferenceUploadPanel } from "@/components/video/SeedanceReferenceUploadPanel";
+import { WanReferenceUploadPanel } from "@/components/video/WanReferenceUploadPanel";
 import { SeedanceI2vReferenceTip } from "@/components/video/SeedanceI2vReferenceTip";
 
 export type VideoGenerateContext = {
@@ -402,8 +410,13 @@ export function VideoBottomBar({
   const referenceMaxImages = referenceToVideoMaxImages(composerModelId);
   const showSeedanceReferenceMedia =
     showReferenceLayout && seedanceComposerSupportsReferenceMedia(composerModelId);
-  const useStableDockHeight = showSeedanceReferenceMedia;
-  const stableDockHeight = VIDEO_SEEDANCE_R2V_DOCK_HEIGHT;
+  const showWanReferenceMedia =
+    showReferenceLayout && wan27ComposerSupportsReferenceMedia(composerModelId);
+  const showReferenceMediaPanel = showSeedanceReferenceMedia || showWanReferenceMedia;
+  const useStableDockHeight = showReferenceMediaPanel;
+  const stableDockHeight = showWanReferenceMedia
+    ? VIDEO_WAN_R2V_DOCK_HEIGHT
+    : VIDEO_SEEDANCE_R2V_DOCK_HEIGHT;
 
   useEffect(() => {
     if (!onHeightChange) return;
@@ -439,7 +452,9 @@ export function VideoBottomBar({
     composerModelId,
     actionTab
   );
+  const showWanV2vRefs = wan27VideoEditSupportsReferenceImages(composerModelId, actionTab);
   const happyHorseV2vRefMax = happyHorseVideoEditMaxImages();
+  const wanV2vRefMax = wan27VideoEditMaxImages();
   const showHappyHorseLayout = videoComposerUsesHappyHorse(composerModelId);
   const showWan27Layout = videoComposerUsesWan27(composerModelId);
   const showVeo31Layout = videoComposerUsesVeo31(composerModelId);
@@ -477,7 +492,9 @@ export function VideoBottomBar({
       ? Array.from({ length: 16 }, (_, i) => i + 1)
       : showVeo31Layout
         ? veo31DurationOptionsForTab(actionTab)
-        : TIME_SECONDS_OPTIONS.filter((t) => t >= 4 && t <= 15)
+        : showWan27Layout
+          ? [...wan27ReferenceDurationOptionsForTab(actionTab)]
+          : TIME_SECONDS_OPTIONS.filter((t) => t >= 4 && t <= 15)
     : showViduStartEndLayout ||
         isViduQ3ProComposerId(composerModelId) ||
         (showReferenceLayout && isViduQ3ComposerId(composerModelId))
@@ -592,7 +609,7 @@ export function VideoBottomBar({
           className={cn(
             "flex min-h-0 gap-3",
             useStableDockHeight && "items-stretch",
-            showSeedanceReferenceMedia
+            showReferenceMediaPanel
               ? "flex-row items-stretch"
               : "flex-col sm:flex-row sm:items-start"
           )}
@@ -608,6 +625,16 @@ export function VideoBottomBar({
                 onReferenceImageChange={onReferenceImageChange}
                 onReferenceVideoChange={onReferenceVideoChange}
                 onReferenceAudioChange={onReferenceAudioChange}
+              />
+            ) : showWanReferenceMedia ? (
+              <WanReferenceUploadPanel
+                className="max-w-[min(100%,58%)] shrink-0"
+                referenceImageUrls={referenceImageUrls}
+                referenceVideoUrls={referenceVideoUrls}
+                referenceVoiceUrls={referenceAudioUrls}
+                onReferenceImageChange={onReferenceImageChange}
+                onReferenceVideoChange={onReferenceVideoChange}
+                onReferenceVoiceChange={onReferenceAudioChange}
               />
             ) : (
               <ReferenceImageUploadStrip
@@ -941,7 +968,9 @@ export function VideoBottomBar({
                 <div
                   className={cn(
                     "flex shrink-0 gap-3",
-                    showHappyHorseV2vRefs ? "flex-col sm:flex-row sm:items-start" : "flex-col"
+                    showHappyHorseV2vRefs || showWanV2vRefs
+                      ? "flex-col sm:flex-row sm:items-start"
+                      : "flex-col"
                   )}
                 >
                   <input
@@ -988,10 +1017,13 @@ export function VideoBottomBar({
                       </button>
                     ) : null}
                   </div>
-                  {showHappyHorseV2vRefs ? (
+                  {showHappyHorseV2vRefs || showWanV2vRefs ? (
                     <ReferenceImageUploadStrip
-                      referenceImageUrls={referenceImageUrls.slice(0, happyHorseV2vRefMax)}
-                      maxImages={happyHorseV2vRefMax}
+                      referenceImageUrls={referenceImageUrls.slice(
+                        0,
+                        showWanV2vRefs ? wanV2vRefMax : happyHorseV2vRefMax
+                      )}
+                      maxImages={showWanV2vRefs ? wanV2vRefMax : happyHorseV2vRefMax}
                       onReferenceImageChange={onReferenceImageChange}
                       compact
                       addSlotLabel="image"
@@ -1133,11 +1165,11 @@ export function VideoBottomBar({
               suppressHydrationWarning
               value={prompt}
               onChange={(e) => onPromptChange(e.target.value)}
-              rows={showSeedanceReferenceMedia ? 4 : showTextOnlyPromptLayout ? 3 : 2}
+              rows={showReferenceMediaPanel ? 4 : showTextOnlyPromptLayout ? 3 : 2}
               placeholder={
                 showAudioToVideoLayout
                   ? "Optional: expression, posture, scene style…"
-                  : showReferenceLayout && showSeedanceReferenceMedia
+                  : showReferenceLayout && showReferenceMediaPanel
                     ? "Use @image1 @video1 @audio1 in your scene — e.g. In @image1 the hero from @image2 walks through @video1 with mood from @audio1…"
                     : showReferenceLayout
                       ? "Describe the scene — e.g. image 1 is the character, image 2 is the background…"
@@ -1154,7 +1186,7 @@ export function VideoBottomBar({
               className={cn(
                 "w-full rounded-lg bg-[#0a0a0a] px-3 py-2.5 text-sm leading-relaxed text-white outline-none transition-shadow placeholder:text-zorixa-muted",
                 "focus-visible:ring-2 focus-visible:ring-brand",
-                showSeedanceReferenceMedia ? "min-h-[120px] resize-none" : "resize-y"
+                showReferenceMediaPanel ? "min-h-[120px] resize-none" : "resize-y"
               )}
             />
           </div>
@@ -1256,9 +1288,9 @@ export function VideoBottomBar({
               <div className="flex items-center gap-2">
                 <span
                   className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted"
-                  title="Native soundtrack (Atlas): Seedance/Vidu use generate_audio; Kling v3 uses sound"
+                  title="Built-in soundtrack on output (Atlas generate_audio). Wan 2.7 defaults On like Atlas playground."
                 >
-                  Audio
+                  Soundtrack
                 </span>
                 <GenerateAudioToggle on={generateAudioEffective} onChange={onGenerateAudioChange} />
               </div>

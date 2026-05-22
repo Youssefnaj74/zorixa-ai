@@ -22,12 +22,22 @@ import {
   normalizeHappyHorseDurationSeconds
 } from "@/lib/atlas-happyhorse-video";
 import {
-  buildWan27AtlasBody,
+  buildWan27ImageAtlasBody,
+  buildWan27ReferenceAtlasBody,
+  buildWan27TextAtlasBody,
+  buildWan27VideoEditAtlasBody,
   isWan27AtlasModel,
   isWan27ComposerId,
+  isWan27ImageToVideoModel,
   isWan27ReferenceToVideoModel,
+  isWan27TextToVideoModel,
   isWan27VideoEditModel,
-  normalizeWan27DurationSeconds
+  normalizeWan27DurationSeconds,
+  normalizeWan27ReferenceDurationSeconds,
+  resolveWan27GenerateAudioFlag,
+  WAN_27_REFERENCE_MAX_VIDEOS,
+  WAN_27_REFERENCE_MAX_VOICE_AUDIOS,
+  WAN_27_VIDEO_EDIT_MAX_IMAGES
 } from "@/lib/atlas-wan-27-video";
 import {
   buildVeo31ReferenceAtlasBody,
@@ -434,7 +444,10 @@ async function handleGenerateVideoPost(request: Request) {
     }
     reference_videos.push(c);
   }
-  reference_videos = reference_videos.slice(0, SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS);
+  reference_videos = reference_videos.slice(
+    0,
+    Math.max(SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS, WAN_27_REFERENCE_MAX_VIDEOS)
+  );
 
   const rawReferenceAudios = Array.isArray(body.reference_audios) ? body.reference_audios : [];
   let reference_audios: string[] = [];
@@ -484,6 +497,16 @@ async function handleGenerateVideoPost(request: Request) {
           {
             error:
               "Add at least one reference image or reference video for Seedance Reference to Video."
+          },
+          { status: 400 }
+        );
+      }
+    } else if (isWan27ReferenceToVideoModel(model)) {
+      if (reference_images.length < 1 && reference_videos.length < 1) {
+        return NextResponse.json(
+          {
+            error:
+              "Add at least one reference image or reference video for Wan 2.7 Reference to Video."
           },
           { status: 400 }
         );
@@ -649,6 +672,8 @@ async function handleGenerateVideoPost(request: Request) {
     durationSec = normalizeViduDurationSeconds(durationSec);
   } else if (isHappyHorseAtlasModel(model) || isHappyHorseComposerId(videoModel)) {
     durationSec = normalizeHappyHorseDurationSeconds(durationSec);
+  } else if (action === "reference" && isWan27ReferenceToVideoModel(model)) {
+    durationSec = normalizeWan27ReferenceDurationSeconds(durationSec);
   } else if (isWan27AtlasModel(model) || isWan27ComposerId(videoModel)) {
     durationSec = normalizeWan27DurationSeconds(durationSec);
   } else if (action === "reference" && isVeo31ReferenceToVideoModel(model)) {
@@ -663,7 +688,17 @@ async function handleGenerateVideoPost(request: Request) {
   }
 
   const seedanceDimensions = atlasSeedanceModelUsesDimensions(model);
-  const generateAudio =
+  const applyNativeAudio =
+    atlasModelSupportsGenerateAudio(model) &&
+    (action === "text" ||
+      action === "image" ||
+      action === "reference" ||
+      action === "start-end");
+
+  const wanNativeAudio =
+    applyNativeAudio && (isWan27AtlasModel(model) || isWan27ComposerId(videoModel));
+
+  let generateAudio =
     body.generate_audio === true &&
     atlasModelSupportsGenerateAudio(model) &&
     (action === "text" ||
@@ -671,12 +706,9 @@ async function handleGenerateVideoPost(request: Request) {
       action === "reference" ||
       action === "start-end");
 
-  const applyNativeAudio =
-    atlasModelSupportsGenerateAudio(model) &&
-    (action === "text" ||
-      action === "image" ||
-      action === "reference" ||
-      action === "start-end");
+  if (wanNativeAudio) {
+    generateAudio = resolveWan27GenerateAudioFlag(body.generate_audio);
+  }
 
   const seedanceI2v = isSeedanceImageToVideoModel(model);
   const seedanceRouteAction = action === "image" ? "image" : "text";
@@ -784,13 +816,18 @@ async function handleGenerateVideoPost(request: Request) {
       imageUrl: action === "image" ? image_url : undefined
     });
   } else if (action === "reference" && isWan27ReferenceToVideoModel(model)) {
-    atlasBody = buildWan27AtlasBody({
+    const wanVideos = reference_videos.slice(0, WAN_27_REFERENCE_MAX_VIDEOS);
+    const wanVoice = reference_audios.slice(0, WAN_27_REFERENCE_MAX_VOICE_AUDIOS)[0];
+    atlasBody = buildWan27ReferenceAtlasBody({
       model,
       prompt,
       aspectRatio,
       resolution,
       durationSec,
-      referenceImages: reference_images
+      images: reference_images,
+      videos: wanVideos,
+      voiceAudioUrl: wanVoice,
+      generateAudio: applyNativeAudio ? generateAudio : undefined
     });
   } else if (action === "reference" && isVeo31ReferenceToVideoModel(model)) {
     const veoImages = reference_images.slice(0, VEO_31_REFERENCE_TO_VIDEO_MAX_IMAGES);
@@ -822,23 +859,42 @@ async function handleGenerateVideoPost(request: Request) {
       generateAudio: applyNativeAudio ? generateAudio : undefined
     });
   } else if (action === "edit" && isWan27VideoEditModel(model)) {
-    atlasBody = buildWan27AtlasBody({
+    const wanEditRefs = reference_images.slice(0, WAN_27_VIDEO_EDIT_MAX_IMAGES);
+    atlasBody = buildWan27VideoEditAtlasBody({
       model,
       prompt,
       aspectRatio,
       resolution,
       durationSec,
       videoUrl: video_url,
-      referenceImages: reference_images.length > 0 ? reference_images : undefined
+      referenceImages: wanEditRefs.length > 0 ? wanEditRefs : undefined
     });
-  } else if (isWan27AtlasModel(model)) {
-    atlasBody = buildWan27AtlasBody({
+  } else if (action === "text" && isWan27TextToVideoModel(model)) {
+    atlasBody = buildWan27TextAtlasBody({
       model,
       prompt,
       aspectRatio,
       resolution,
       durationSec,
-      imageUrl: action === "image" ? image_url : undefined
+      generateAudio: applyNativeAudio ? generateAudio : undefined
+    });
+  } else if (action === "image" && isWan27ImageToVideoModel(model)) {
+    if (!image_url) {
+      return NextResponse.json(
+        { error: "Missing image for Wan 2.7 Image to Video (Atlas requires `image` URL)." },
+        { status: 400 }
+      );
+    }
+    atlasBody = buildWan27ImageAtlasBody({
+      model,
+      prompt,
+      aspectRatio,
+      resolution,
+      durationSec,
+      imageUrl: image_url,
+      lastImageUrl: last_image_url,
+      drivingAudioUrl: audio_url,
+      generateAudio: applyNativeAudio ? generateAudio : undefined
     });
   } else if (seedanceDimensions && seedanceRequestDims) {
     prompt = augmentSeedancePromptForAspect(prompt, aspectRatio);

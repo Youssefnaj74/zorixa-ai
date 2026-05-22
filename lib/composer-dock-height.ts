@@ -12,6 +12,9 @@ export const VIDEO_SEEDANCE_R2V_BODY_HEIGHT = 268;
 export const VIDEO_SEEDANCE_R2V_DOCK_HEIGHT =
   VIDEO_SEEDANCE_R2V_BODY_HEIGHT + STUDIO_ACTION_TABS_HEIGHT;
 
+/** Video · Wan 2.7 Reference to Video — same layout as Seedance R2V panel. */
+export const VIDEO_WAN_R2V_DOCK_HEIGHT = VIDEO_SEEDANCE_R2V_DOCK_HEIGHT;
+
 /** Image · Image to Image body. */
 export const IMAGE_I2I_BODY_HEIGHT = 200;
 

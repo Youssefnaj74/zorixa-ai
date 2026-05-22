@@ -15,6 +15,8 @@ import {
   happyHorseVideoEditSupportsReferenceImages,
   normalizeVeo31ComposerSettings,
   referenceToVideoMaxImages,
+  wan27VideoEditMaxImages,
+  wan27VideoEditSupportsReferenceImages,
   videoComposerSupportsEndFrame,
   videoComposerSupportsReferenceToVideo,
   characterSwapTabSupportsModel,
@@ -53,7 +55,11 @@ import {
   isHappyHorseComposerId,
   normalizeHappyHorseDurationSeconds
 } from "@/lib/atlas-happyhorse-video";
-import { isWan27ComposerId, normalizeWan27DurationSeconds } from "@/lib/atlas-wan-27-video";
+import {
+  isWan27ComposerId,
+  normalizeWan27DurationSeconds,
+  normalizeWan27ReferenceDurationSeconds
+} from "@/lib/atlas-wan-27-video";
 import {
   isVeo31ComposerId,
   normalizeVeo31DurationSeconds,
@@ -79,8 +85,14 @@ import {
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { seedanceComposerSupportsReferenceMedia } from "@/lib/atlas-seedance-reference-video";
 import {
+  wan27ComposerSupportsReferenceMedia,
+  WAN_27_REFERENCE_MAX_VIDEOS,
+  WAN_27_REFERENCE_MAX_VOICE_AUDIOS
+} from "@/lib/atlas-wan-27-video";
+import {
   COMPOSER_DOCK_WITH_TABS_HEIGHT,
-  VIDEO_SEEDANCE_R2V_DOCK_HEIGHT
+  VIDEO_SEEDANCE_R2V_DOCK_HEIGHT,
+  VIDEO_WAN_R2V_DOCK_HEIGHT
 } from "@/lib/composer-dock-height";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
@@ -362,6 +374,8 @@ export function VideoGenerationPage() {
     setGenerateError(null);
     if (!videoComposerSupportsGenerateAudio(id)) {
       setGenerateAudioOn(false);
+    } else if (isWan27ComposerId(id)) {
+      setGenerateAudioOn(true);
     }
     if (!videoComposerSupportsSpeedTier(id)) {
       setDurationStandard("Standard");
@@ -378,7 +392,11 @@ export function VideoGenerationPage() {
       }
     }
     if (isWan27ComposerId(id)) {
-      setTimeSeconds((t) => normalizeWan27DurationSeconds(t));
+      setTimeSeconds((t) =>
+        actionTab === "Reference to Video"
+          ? normalizeWan27ReferenceDurationSeconds(t)
+          : normalizeWan27DurationSeconds(t)
+      );
       if (resolution === "480p") setResolution("720p");
       const wanAspects = ["16:9", "9:16", "1:1", "4:3", "3:4"] as const;
       if (!wanAspects.includes(aspect as (typeof wanAspects)[number])) {
@@ -419,11 +437,10 @@ export function VideoGenerationPage() {
   }, [actionTab]);
 
   useEffect(() => {
-    if (
-      actionTab === "Reference to Video" &&
-      seedanceComposerSupportsReferenceMedia(composerModelId)
-    ) {
+    if (actionTab === "Reference to Video" && seedanceComposerSupportsReferenceMedia(composerModelId)) {
       setBottomBarHeight(VIDEO_SEEDANCE_R2V_DOCK_HEIGHT);
+    } else if (actionTab === "Reference to Video" && wan27ComposerSupportsReferenceMedia(composerModelId)) {
+      setBottomBarHeight(VIDEO_WAN_R2V_DOCK_HEIGHT);
     } else {
       setBottomBarHeight(COMPOSER_DOCK_WITH_TABS_HEIGHT);
     }
@@ -463,6 +480,35 @@ export function VideoGenerationPage() {
       if (prev.length === max) return prev;
       return resizeReferenceImageUrls(prev, max);
     });
+  }, [actionTab, composerModelId]);
+
+  useEffect(() => {
+    if (!wan27VideoEditSupportsReferenceImages(composerModelId, actionTab)) return;
+    const max = wan27VideoEditMaxImages();
+    setReferenceImageUrls((prev) => {
+      if (prev.length === max) return prev;
+      return resizeReferenceImageUrls(prev, max);
+    });
+  }, [actionTab, composerModelId]);
+
+  useEffect(() => {
+    if (actionTab !== "Reference to Video" || !wan27ComposerSupportsReferenceMedia(composerModelId)) {
+      return;
+    }
+    const maxImg = referenceToVideoMaxImages(composerModelId);
+    setReferenceImageUrls((prev) => {
+      if (prev.length === maxImg) return prev;
+      return resizeReferenceImageUrls(prev, maxImg);
+    });
+    setReferenceVideoUrls((prev) => {
+      if (prev.length === WAN_27_REFERENCE_MAX_VIDEOS) return prev;
+      return resizeReferenceImageUrls(prev, WAN_27_REFERENCE_MAX_VIDEOS);
+    });
+    setReferenceAudioUrls((prev) => {
+      if (prev.length === WAN_27_REFERENCE_MAX_VOICE_AUDIOS) return prev;
+      return resizeReferenceImageUrls(prev, WAN_27_REFERENCE_MAX_VOICE_AUDIOS);
+    });
+    setTimeSeconds((t) => normalizeWan27ReferenceDurationSeconds(t));
   }, [actionTab, composerModelId]);
 
   useEffect(() => {
@@ -562,13 +608,14 @@ export function VideoGenerationPage() {
         const videoModel = composerModelId;
         const duration = ctx.durationSeconds;
 
-        const wantGenerateAudio =
-          ctx.generateAudio &&
+        const supportsNativeAudio =
           videoComposerSupportsGenerateAudio(videoModel) &&
           (ctx.actionTab === "Text to Video" ||
             ctx.actionTab === "Image to Video" ||
             ctx.actionTab === "Reference to Video" ||
             (ctx.actionTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(videoModel)));
+
+        const wantGenerateAudio = supportsNativeAudio && ctx.generateAudio;
 
         const speed_tier = ctx.speedTier;
 
@@ -596,7 +643,7 @@ export function VideoGenerationPage() {
               resolution: atlasResolution,
               duration: atlasDuration,
               speed_tier,
-              ...(wantGenerateAudio ? { generate_audio: true } : {})
+              ...(supportsNativeAudio ? { generate_audio: wantGenerateAudio } : {})
             };
             break;
           case "Image to Video": {
@@ -619,7 +666,7 @@ export function VideoGenerationPage() {
               resolution: atlasResolution,
               duration: atlasDuration,
               speed_tier,
-              ...(wantGenerateAudio ? { generate_audio: true } : {})
+              ...(supportsNativeAudio ? { generate_audio: wantGenerateAudio } : {})
             };
             break;
           }
@@ -643,7 +690,7 @@ export function VideoGenerationPage() {
             }
             const reference_videos: string[] = [];
             const reference_audios: string[] = [];
-            if (videoModel === "seedance-2") {
+            if (videoModel === "seedance-2" || isWan27ComposerId(videoModel)) {
               for (let i = 0; i < ctx.referenceVideoUrls.length; i++) {
                 const raw = ctx.referenceVideoUrls[i];
                 if (!raw) continue;
@@ -659,14 +706,20 @@ export function VideoGenerationPage() {
                 if (!raw) continue;
                 const u = await ensureAtlasPublicHttpsMediaUrl(raw);
                 if (!u) {
-                  setGenerateError(`Could not upload reference audio ${i + 1}. Try again.`);
+                  setGenerateError(
+                    isWan27ComposerId(videoModel)
+                      ? `Could not upload voice reference. Try again.`
+                      : `Could not upload reference audio ${i + 1}. Try again.`
+                  );
                   return;
                 }
                 reference_audios.push(u);
               }
               if (reference_images.length < 1 && reference_videos.length < 1) {
                 setGenerateError(
-                  "Add at least one reference image or reference video (Seedance 2.0)."
+                  isWan27ComposerId(videoModel)
+                    ? "Add at least one reference image or video (Wan 2.7)."
+                    : "Add at least one reference image or reference video (Seedance 2.0)."
                 );
                 return;
               }
@@ -677,23 +730,27 @@ export function VideoGenerationPage() {
             sourceInputForLog = reference_images[0] ?? reference_videos[0] ?? null;
             const refDuration = isVeo31ComposerId(videoModel)
               ? normalizeVeo31ReferenceDurationSeconds(duration)
-              : normalizeSeedanceReferenceDurationSeconds(duration);
+              : isWan27ComposerId(videoModel)
+                ? normalizeWan27ReferenceDurationSeconds(duration)
+                : normalizeSeedanceReferenceDurationSeconds(duration);
             payload = {
               prompt: promptForAtlas,
               action: "reference",
               videoModel,
               reference_images,
-              ...(videoModel === "seedance-2" && reference_videos.length > 0
+              ...((videoModel === "seedance-2" || isWan27ComposerId(videoModel)) &&
+              reference_videos.length > 0
                 ? { reference_videos }
                 : {}),
-              ...(videoModel === "seedance-2" && reference_audios.length > 0
+              ...((videoModel === "seedance-2" || isWan27ComposerId(videoModel)) &&
+              reference_audios.length > 0
                 ? { reference_audios }
                 : {}),
               aspectRatio,
               resolution: resTier,
               duration: refDuration,
               speed_tier,
-              ...(wantGenerateAudio ? { generate_audio: true } : {})
+              ...(supportsNativeAudio ? { generate_audio: wantGenerateAudio } : {})
             };
             break;
           }
@@ -768,7 +825,7 @@ export function VideoGenerationPage() {
                 resolution: resTier,
                 duration,
                 speed_tier,
-                ...(wantGenerateAudio ? { generate_audio: true } : {})
+                ...(supportsNativeAudio ? { generate_audio: wantGenerateAudio } : {})
               };
               break;
             }
@@ -785,7 +842,10 @@ export function VideoGenerationPage() {
             }
             sourceInputForLog = video_url;
             const v2vReferenceImages: string[] = [];
-            if (isHappyHorseComposerId(videoModel)) {
+            if (
+              isHappyHorseComposerId(videoModel) ||
+              isWan27ComposerId(videoModel)
+            ) {
               for (let i = 0; i < ctx.referenceImageUrls.length; i++) {
                 const raw = ctx.referenceImageUrls[i];
                 if (!raw) continue;
@@ -1123,40 +1183,46 @@ export function VideoGenerationPage() {
         if (snap.referenceImageUrls?.length) {
           const modelId = snap.composerModelId ?? composerModelId;
           const tab = (snap.actionTab as ActionTab) ?? actionTab;
-          const max = happyHorseVideoEditSupportsReferenceImages(modelId, tab)
-            ? happyHorseVideoEditMaxImages()
-            : referenceToVideoMaxImages(modelId);
+          const max = wan27VideoEditSupportsReferenceImages(modelId, tab)
+            ? wan27VideoEditMaxImages()
+            : happyHorseVideoEditSupportsReferenceImages(modelId, tab)
+              ? happyHorseVideoEditMaxImages()
+              : referenceToVideoMaxImages(modelId);
           const padded = Array.from({ length: max }, (_, i) => snap.referenceImageUrls?.[i] ?? null);
           setReferenceImageUrls(padded);
         } else {
           const modelId = snap.composerModelId ?? composerModelId;
           const tab = (snap.actionTab as ActionTab) ?? actionTab;
-          const max = happyHorseVideoEditSupportsReferenceImages(modelId, tab)
-            ? happyHorseVideoEditMaxImages()
-            : referenceToVideoMaxImages(modelId);
+          const max = wan27VideoEditSupportsReferenceImages(modelId, tab)
+            ? wan27VideoEditMaxImages()
+            : happyHorseVideoEditSupportsReferenceImages(modelId, tab)
+              ? happyHorseVideoEditMaxImages()
+              : referenceToVideoMaxImages(modelId);
           setReferenceImageUrls(Array.from({ length: max }, () => null));
         }
+        const videoSlotMax = isWan27ComposerId(snap.composerModelId)
+          ? WAN_27_REFERENCE_MAX_VIDEOS
+          : SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS;
         if (snap.referenceVideoUrls?.length) {
           const padded = Array.from(
-            { length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS },
+            { length: videoSlotMax },
             (_, i) => snap.referenceVideoUrls?.[i] ?? null
           );
           setReferenceVideoUrls(padded);
         } else {
-          setReferenceVideoUrls(
-            Array.from({ length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS }, () => null)
-          );
+          setReferenceVideoUrls(Array.from({ length: videoSlotMax }, () => null));
         }
+        const audioSlotMax = isWan27ComposerId(snap.composerModelId)
+          ? WAN_27_REFERENCE_MAX_VOICE_AUDIOS
+          : SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS;
         if (snap.referenceAudioUrls?.length) {
           const padded = Array.from(
-            { length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS },
+            { length: audioSlotMax },
             (_, i) => snap.referenceAudioUrls?.[i] ?? null
           );
           setReferenceAudioUrls(padded);
         } else {
-          setReferenceAudioUrls(
-            Array.from({ length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS }, () => null)
-          );
+          setReferenceAudioUrls(Array.from({ length: audioSlotMax }, () => null));
         }
       } else if (item.title) {
         setPrompt((p) => `${p.split("\n")[0]}\n(Restored: ${item.title})`);
