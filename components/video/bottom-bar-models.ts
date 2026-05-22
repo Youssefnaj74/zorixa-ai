@@ -22,9 +22,13 @@ import {
 import { WAN_27_COMPOSER_ID, isWan27ComposerId } from "@/lib/atlas-wan-27-video";
 import {
   VEO_31_COMPOSER_ID,
+  VEO_31_ASPECT_OPTIONS,
+  VEO_31_DURATION_OPTIONS,
   VEO_31_REFERENCE_DURATION_SECONDS,
   VEO_31_REFERENCE_TO_VIDEO_MAX_IMAGES,
-  isVeo31ComposerId
+  isVeo31ComposerId,
+  normalizeVeo31DurationSeconds,
+  veo31AspectFromUi
 } from "@/lib/atlas-veo31-video";
 import {
   WAN_22_CHARACTER_SWAP_COMPOSER_ID,
@@ -91,7 +95,11 @@ export function videoComposerUsesTextOnlyLayout(
 }
 
 export function videoComposerSupportsEndFrame(composerModelId: string): boolean {
-  return composerModelId === "seedance-2" || composerModelId === "seedance-1-5";
+  return (
+    composerModelId === "seedance-2" ||
+    composerModelId === "seedance-1-5" ||
+    isVeo31ComposerId(composerModelId)
+  );
 }
 
 export function videoComposerSupportsReferenceToVideo(composerModelId: string): boolean {
@@ -215,6 +223,8 @@ export const REFERENCE_TO_VIDEO_MAX_IMAGES = 4;
 export {
   HAPPYHORSE_REFERENCE_TO_VIDEO_MAX_IMAGES,
   HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES,
+  VEO_31_ASPECT_OPTIONS,
+  VEO_31_DURATION_OPTIONS,
   VEO_31_REFERENCE_DURATION_SECONDS,
   VEO_31_REFERENCE_TO_VIDEO_MAX_IMAGES,
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS,
@@ -242,6 +252,33 @@ export function videoComposerUsesVeo31(composerModelId: string): boolean {
 
 export function veo31ReferenceDurationSeconds(): number {
   return VEO_31_REFERENCE_DURATION_SECONDS;
+}
+
+export function veo31DurationOptionsForTab(actionTab: string): number[] {
+  if (actionTab === "Reference to Video") {
+    return [VEO_31_REFERENCE_DURATION_SECONDS];
+  }
+  return [...VEO_31_DURATION_OPTIONS];
+}
+
+export function veo31AspectOptionsForUi(): readonly string[] {
+  return VEO_31_ASPECT_OPTIONS;
+}
+
+export function normalizeVeo31ComposerSettings(input: {
+  timeSeconds: number;
+  aspect: string;
+  resolution: string;
+  actionTab: string;
+}): { timeSeconds: number; aspect: string; resolution: string } {
+  let resolution = input.resolution;
+  if (resolution === "480p") resolution = "720p";
+  const aspect = veo31AspectFromUi(input.aspect);
+  const timeSeconds =
+    input.actionTab === "Reference to Video"
+      ? VEO_31_REFERENCE_DURATION_SECONDS
+      : normalizeVeo31DurationSeconds(input.timeSeconds, resolution);
+  return { timeSeconds, aspect, resolution };
 }
 
 export function happyHorseVideoEditSupportsReferenceImages(

@@ -31,9 +31,15 @@ import {
 } from "@/lib/atlas-wan-27-video";
 import {
   buildVeo31ReferenceAtlasBody,
+  buildVeo31TextImageAtlasBody,
+  isVeo31AtlasModel,
   isVeo31ComposerId,
+  isVeo31ImageToVideoModel,
   isVeo31ReferenceToVideoModel,
+  isVeo31TextToVideoModel,
+  normalizeVeo31DurationSeconds,
   normalizeVeo31ReferenceDurationSeconds,
+  veo31AspectFromUi,
   VEO_31_REFERENCE_TO_VIDEO_MAX_IMAGES
 } from "@/lib/atlas-veo31-video";
 import {
@@ -622,8 +628,8 @@ async function handleGenerateVideoPost(request: Request) {
     video_url = c;
   }
 
-  const aspectRatio = normalizeAspectRatio(body.aspectRatio);
-  const resolution = normalizeResolution(body.resolution);
+  let aspectRatio = normalizeAspectRatio(body.aspectRatio);
+  let resolution = normalizeResolution(body.resolution);
   let durationSec = normalizeDurationSeconds(body.duration);
 
   const fps = 24;
@@ -647,6 +653,13 @@ async function handleGenerateVideoPost(request: Request) {
     durationSec = normalizeWan27DurationSeconds(durationSec);
   } else if (action === "reference" && isVeo31ReferenceToVideoModel(model)) {
     durationSec = normalizeVeo31ReferenceDurationSeconds(durationSec);
+  } else if (
+    (isVeo31AtlasModel(model) || isVeo31ComposerId(videoModel)) &&
+    action !== "reference"
+  ) {
+    durationSec = normalizeVeo31DurationSeconds(durationSec, resolution);
+    aspectRatio = veo31AspectFromUi(aspectRatio);
+    resolution = resolution.trim().toLowerCase() === "1080p" ? "1080p" : "720p";
   }
 
   const seedanceDimensions = atlasSeedanceModelUsesDimensions(model);
@@ -786,6 +799,26 @@ async function handleGenerateVideoPost(request: Request) {
       prompt,
       images: veoImages,
       resolution,
+      generateAudio: applyNativeAudio ? generateAudio : undefined
+    });
+  } else if (
+    (action === "text" && isVeo31TextToVideoModel(model)) ||
+    (action === "image" && isVeo31ImageToVideoModel(model))
+  ) {
+    if (action === "image" && !image_url) {
+      return NextResponse.json(
+        { error: "Missing image for Veo 3.1 Image to Video (Atlas requires `image` URL)." },
+        { status: 400 }
+      );
+    }
+    atlasBody = buildVeo31TextImageAtlasBody({
+      model,
+      prompt,
+      aspectRatio,
+      resolution,
+      durationSec,
+      imageUrl: action === "image" ? image_url : undefined,
+      lastImageUrl: action === "image" ? last_image_url : undefined,
       generateAudio: applyNativeAudio ? generateAudio : undefined
     });
   } else if (action === "edit" && isWan27VideoEditModel(model)) {

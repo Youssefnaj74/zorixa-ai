@@ -13,6 +13,7 @@ import {
   KLING_30_PRO_MODEL_ID,
   happyHorseVideoEditMaxImages,
   happyHorseVideoEditSupportsReferenceImages,
+  normalizeVeo31ComposerSettings,
   referenceToVideoMaxImages,
   videoComposerSupportsEndFrame,
   videoComposerSupportsReferenceToVideo,
@@ -55,7 +56,9 @@ import {
 import { isWan27ComposerId, normalizeWan27DurationSeconds } from "@/lib/atlas-wan-27-video";
 import {
   isVeo31ComposerId,
+  normalizeVeo31DurationSeconds,
   normalizeVeo31ReferenceDurationSeconds,
+  veo31AspectFromUi,
   VEO_31_REFERENCE_DURATION_SECONDS
 } from "@/lib/atlas-veo31-video";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
@@ -384,10 +387,15 @@ export function VideoGenerationPage() {
       }
     }
     if (isVeo31ComposerId(id)) {
-      if (actionTab === "Reference to Video") {
-        setTimeSeconds(VEO_31_REFERENCE_DURATION_SECONDS);
-      }
-      if (resolution === "480p") setResolution("720p");
+      const veo = normalizeVeo31ComposerSettings({
+        timeSeconds,
+        aspect,
+        resolution,
+        actionTab
+      });
+      setTimeSeconds(veo.timeSeconds);
+      setAspect(veo.aspect);
+      setResolution(veo.resolution);
     }
     if (id === KLING_30_PRO_MODEL_ID) {
       setActionTab("Text to Video");
@@ -430,9 +438,24 @@ export function VideoGenerationPage() {
       return resizeReferenceImageUrls(prev, max);
     });
     if (isVeo31ComposerId(composerModelId)) {
-      setTimeSeconds(VEO_31_REFERENCE_DURATION_SECONDS);
+      const veo = normalizeVeo31ComposerSettings({
+        timeSeconds,
+        aspect,
+        resolution,
+        actionTab
+      });
+      setTimeSeconds(veo.timeSeconds);
+      setAspect(veo.aspect);
+      setResolution(veo.resolution);
     }
-  }, [actionTab, composerModelId]);
+  }, [actionTab, aspect, composerModelId, resolution, timeSeconds]);
+
+  useEffect(() => {
+    if (!isVeo31ComposerId(composerModelId)) return;
+    if (actionTab === "Reference to Video") return;
+    const next = normalizeVeo31DurationSeconds(timeSeconds, resolution);
+    if (timeSeconds !== next) setTimeSeconds(next);
+  }, [actionTab, composerModelId, resolution, timeSeconds]);
 
   useEffect(() => {
     if (!happyHorseVideoEditSupportsReferenceImages(composerModelId, actionTab)) return;
@@ -550,15 +573,29 @@ export function VideoGenerationPage() {
 
         const speed_tier = ctx.speedTier;
 
+        const veoT2vI2vSettings =
+          isVeo31ComposerId(videoModel) &&
+          (ctx.actionTab === "Text to Video" || ctx.actionTab === "Image to Video")
+            ? normalizeVeo31ComposerSettings({
+                timeSeconds: duration,
+                aspect: aspectRatio,
+                resolution: resTier,
+                actionTab: ctx.actionTab
+              })
+            : null;
+        const atlasAspect = veoT2vI2vSettings?.aspect ?? aspectRatio;
+        const atlasResolution = veoT2vI2vSettings?.resolution ?? resTier;
+        const atlasDuration = veoT2vI2vSettings?.timeSeconds ?? duration;
+
         switch (ctx.actionTab) {
           case "Text to Video":
             payload = {
               prompt: promptForAtlas,
               action: "text",
               videoModel,
-              aspectRatio,
-              resolution: resTier,
-              duration,
+              aspectRatio: atlasAspect,
+              resolution: atlasResolution,
+              duration: atlasDuration,
               speed_tier,
               ...(wantGenerateAudio ? { generate_audio: true } : {})
             };
@@ -579,9 +616,9 @@ export function VideoGenerationPage() {
               videoModel,
               image_url,
               ...(last_image_url ? { last_image_url } : {}),
-              aspectRatio,
-              resolution: resTier,
-              duration,
+              aspectRatio: atlasAspect,
+              resolution: atlasResolution,
+              duration: atlasDuration,
               speed_tier,
               ...(wantGenerateAudio ? { generate_audio: true } : {})
             };

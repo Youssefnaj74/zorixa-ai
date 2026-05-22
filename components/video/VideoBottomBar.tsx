@@ -21,6 +21,8 @@ import {
   videoComposerUsesAudioToVideoBarLayout,
   videoComposerUses720p1080pOnly,
   videoComposerUsesHappyHorse,
+  veo31AspectOptionsForUi,
+  veo31DurationOptionsForTab,
   videoComposerUsesVeo31,
   veo31ReferenceDurationSeconds,
   videoComposerUsesWan27,
@@ -441,6 +443,11 @@ export function VideoBottomBar({
   const showHappyHorseLayout = videoComposerUsesHappyHorse(composerModelId);
   const showWan27Layout = videoComposerUsesWan27(composerModelId);
   const showVeo31Layout = videoComposerUsesVeo31(composerModelId);
+  const veo31T2vOrI2v =
+    showVeo31Layout && (actionTab === "Text to Video" || actionTab === "Image to Video");
+  const aspectOptionsForTab = veo31T2vOrI2v
+    ? [...veo31AspectOptionsForUi()]
+    : [...ASPECT_STEP_OPTIONS];
   const show720p1080pOnlyLayout = videoComposerUses720p1080pOnly(composerModelId);
   const showAudioToVideoLayout = videoComposerUsesAudioToVideoBarLayout(composerModelId, actionTab);
   /** Kling motion / Wan character swap — hides mode, aspect, resolution. */
@@ -469,7 +476,7 @@ export function VideoBottomBar({
     ? isViduQ3ComposerId(composerModelId)
       ? Array.from({ length: 16 }, (_, i) => i + 1)
       : showVeo31Layout
-        ? [veo31ReferenceDurationSeconds()]
+        ? veo31DurationOptionsForTab(actionTab)
         : TIME_SECONDS_OPTIONS.filter((t) => t >= 4 && t <= 15)
     : showViduStartEndLayout ||
         isViduQ3ProComposerId(composerModelId) ||
@@ -485,7 +492,9 @@ export function VideoBottomBar({
             ? [...HAPPYHORSE_DURATION_OPTIONS]
             : showWan27Layout
               ? [...WAN27_DURATION_OPTIONS]
-              : [...TIME_SECONDS_OPTIONS];
+              : showVeo31Layout
+                ? veo31DurationOptionsForTab(actionTab)
+                : [...TIME_SECONDS_OPTIONS];
   const generateAudioEffective = generateAudioOn && showGenerateAudioControl;
   const showSpeedTierControl = videoComposerSupportsSpeedTier(composerModelId);
   const speedTier = parseVideoSpeedTierFromUiLabel(durationStandard);
@@ -1470,7 +1479,7 @@ export function VideoBottomBar({
                     style={{ transformOrigin: "bottom left" }}
                     className={cn(dropupPanelClass, "left-0 min-w-[100px] py-1")}
                   >
-                    {ASPECT_STEP_OPTIONS.map((a) => (
+                    {aspectOptionsForTab.map((a) => (
                       <button
                         key={a}
                         type="button"
