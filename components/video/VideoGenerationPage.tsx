@@ -56,6 +56,7 @@ import {
 import { isWan27ComposerId, normalizeWan27DurationSeconds } from "@/lib/atlas-wan-27-video";
 import {
   isVeo31ComposerId,
+  normalizeVeo31DurationSeconds,
   normalizeVeo31ReferenceDurationSeconds,
   VEO_31_REFERENCE_DURATION_SECONDS
 } from "@/lib/atlas-veo31-video";
