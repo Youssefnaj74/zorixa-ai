@@ -122,19 +122,25 @@ export async function logAtlasVideoGenerationIfNew(args: {
     status: "completed" as const
   };
 
-  let row: Record<string, unknown> = composer_model_id
-    ? { ...baseRow, composer_model_id }
-    : { ...baseRow };
-  if (prompt) row = { ...row, prompt };
+  const buildInsertRow = (opts: { model?: boolean; promptField?: boolean }): Record<string, unknown> => {
+    const row: Record<string, unknown> = { ...baseRow };
+    if (opts.model && composer_model_id) row.composer_model_id = composer_model_id;
+    if (opts.promptField && prompt) row.prompt = prompt;
+    return row;
+  };
 
-  let { error } = await supabaseAdmin.from("generations").insert(row);
+  let { error } = await supabaseAdmin.from("generations").insert(
+    buildInsertRow({ model: true, promptField: true })
+  );
 
   if (error && composer_model_id && isMissingComposerModelColumn(error)) {
-    ({ error } = await supabaseAdmin.from("generations").insert(prompt ? { ...baseRow, prompt } : baseRow));
+    ({ error } = await supabaseAdmin.from("generations").insert(
+      buildInsertRow({ model: false, promptField: true })
+    ));
   }
   if (error && prompt && isMissingPromptColumn(error)) {
     ({ error } = await supabaseAdmin.from("generations").insert(
-      composer_model_id ? { ...baseRow, composer_model_id } : baseRow
+      buildInsertRow({ model: true, promptField: false })
     ));
   }
 
