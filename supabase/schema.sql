@@ -31,6 +31,7 @@ create table if not exists public.generations (
   provider text not null default 'replicate',
   provider_prediction_id text,
   composer_model_id text,
+  prompt text,
   credits_spent integer not null,
   status text not null default 'pending' check (status in ('pending', 'completed', 'failed')),
   created_at timestamptz not null default now()

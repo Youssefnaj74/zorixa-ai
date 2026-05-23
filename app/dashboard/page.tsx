@@ -52,7 +52,7 @@ export default async function DashboardPage() {
 
   const primaryGenerations = await supabase
     .from("generations")
-    .select(`${generationColumnsBase}, composer_model_id`)
+    .select(`${generationColumnsBase}, composer_model_id, prompt`)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(12);
@@ -68,7 +68,8 @@ export default async function DashboardPage() {
       .limit(12);
     generations = (fallbackGenerations.data ?? []).map((row) => ({
       ...row,
-      composer_model_id: null
+      composer_model_id: null,
+      prompt: null
     }));
   }
 

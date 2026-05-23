@@ -15,18 +15,35 @@ function isMissingComposerModelColumn(error: { message?: string; code?: string }
   );
 }
 
+function isMissingPromptColumn(error: { message?: string; code?: string } | null): boolean {
+  if (!error) return false;
+  const msg = (error.message ?? "").toLowerCase();
+  return error.code === "42703" || error.code === "PGRST204" || msg.includes("prompt");
+}
+
+function normalizeStoredPrompt(raw: string | null | undefined): string | null {
+  const v = typeof raw === "string" ? raw.trim() : "";
+  return v.length > 0 ? v.slice(0, 4000) : null;
+}
+
 async function patchGenerationModelMeta(
   generationId: number,
-  composerModelId: string
+  composerModelId: string,
+  prompt?: string | null
 ): Promise<void> {
   const provider = atlasProviderForModel(composerModelId);
-  const { error } = await supabaseAdmin
-    .from("generations")
-    .update({ provider, composer_model_id: composerModelId })
-    .eq("id", generationId);
+  const promptNorm = normalizeStoredPrompt(prompt);
+  const withPrompt = promptNorm ? { provider, composer_model_id: composerModelId, prompt: promptNorm } : { provider, composer_model_id: composerModelId };
+  const { error } = await supabaseAdmin.from("generations").update(withPrompt).eq("id", generationId);
   if (error && isMissingComposerModelColumn(error)) {
     await supabaseAdmin.from("generations").update({ provider }).eq("id", generationId);
   }
+}
+
+async function patchGenerationPrompt(generationId: number, prompt: string): Promise<void> {
+  const promptNorm = normalizeStoredPrompt(prompt);
+  if (!promptNorm) return;
+  await supabaseAdmin.from("generations").update({ prompt: promptNorm }).eq("id", generationId);
 }
 
 /**
@@ -39,6 +56,7 @@ export async function logAtlasVideoGenerationIfNew(args: {
   inputUrl?: string | null;
   predictionId?: string | null;
   composerModelId?: string | null;
+  prompt?: string | null;
 }): Promise<boolean> {
   const output_url = coerceToPublicHttpsUrl(args.outputUrl.trim());
   if (!output_url) return false;
@@ -53,6 +71,8 @@ export async function logAtlasVideoGenerationIfNew(args: {
       ? args.composerModelId.trim()
       : null;
 
+  const prompt = normalizeStoredPrompt(args.prompt);
+
   if (prediction_id) {
     const { data: existing } = await supabaseAdmin
       .from("generations")
@@ -63,7 +83,9 @@ export async function logAtlasVideoGenerationIfNew(args: {
       .maybeSingle();
     if (existing) {
       if (composer_model_id) {
-        await patchGenerationModelMeta(existing.id, composer_model_id);
+        await patchGenerationModelMeta(existing.id, composer_model_id, prompt);
+      } else if (prompt) {
+        await patchGenerationPrompt(existing.id, prompt);
       }
       return true;
     }
@@ -78,7 +100,9 @@ export async function logAtlasVideoGenerationIfNew(args: {
     .maybeSingle();
   if (existingByOutput) {
     if (composer_model_id) {
-      await patchGenerationModelMeta(existingByOutput.id, composer_model_id);
+      await patchGenerationModelMeta(existingByOutput.id, composer_model_id, prompt);
+    } else if (prompt) {
+      await patchGenerationPrompt(existingByOutput.id, prompt);
     }
     return true;
   }
@@ -98,14 +122,20 @@ export async function logAtlasVideoGenerationIfNew(args: {
     status: "completed" as const
   };
 
-  const withModel = composer_model_id
+  let row: Record<string, unknown> = composer_model_id
     ? { ...baseRow, composer_model_id }
-    : baseRow;
+    : { ...baseRow };
+  if (prompt) row = { ...row, prompt };
 
-  let { error } = await supabaseAdmin.from("generations").insert(withModel);
+  let { error } = await supabaseAdmin.from("generations").insert(row);
 
   if (error && composer_model_id && isMissingComposerModelColumn(error)) {
-    ({ error } = await supabaseAdmin.from("generations").insert(baseRow));
+    ({ error } = await supabaseAdmin.from("generations").insert(prompt ? { ...baseRow, prompt } : baseRow));
+  }
+  if (error && prompt && isMissingPromptColumn(error)) {
+    ({ error } = await supabaseAdmin.from("generations").insert(
+      composer_model_id ? { ...baseRow, composer_model_id } : baseRow
+    ));
   }
 
   if (error && process.env.NODE_ENV === "development") {

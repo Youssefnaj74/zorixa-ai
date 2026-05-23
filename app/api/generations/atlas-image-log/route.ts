@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     input_url?: string;
     prediction_id?: string | null;
     image_model?: string | null;
+    prompt?: string | null;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -48,12 +49,16 @@ export async function POST(request: Request) {
       ? body.image_model.trim()
       : null;
 
+  const prompt =
+    typeof body.prompt === "string" && body.prompt.trim().length > 0 ? body.prompt.trim() : null;
+
   const ok = await logAtlasImageGenerationIfNew({
     userId: actor.userId,
     outputUrl: outputRaw,
     inputUrl: inputRaw || null,
     predictionId: prediction_id,
-    composerModelId: image_model
+    composerModelId: image_model,
+    prompt
   });
 
   if (!ok) {

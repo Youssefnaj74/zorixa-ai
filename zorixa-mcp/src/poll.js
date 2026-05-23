@@ -21,9 +21,10 @@ function terminalFailed(status) {
  * Poll image prediction until URL or failure.
  * @param {import("./config.js").ZorixaMcpConfig} config
  */
-export async function pollImagePrediction(config, { predictionId, imageModel }) {
+export async function pollImagePrediction(config, { predictionId, imageModel, prompt }) {
   const deadline = Date.now() + MAX_WAIT_MS;
   const qs = new URLSearchParams({ predictionId, imageModel });
+  if (prompt) qs.set("prompt", prompt);
 
   while (Date.now() < deadline) {
     const data = await zorixaFetch(config, `/api/generate-image?${qs}`);
@@ -35,7 +36,8 @@ export async function pollImagePrediction(config, { predictionId, imageModel }) 
         body: JSON.stringify({
           output_url: data.image_url,
           prediction_id: predictionId,
-          image_model: imageModel
+          image_model: imageModel,
+          prompt: prompt ?? undefined
         })
       });
       return { image_url: data.image_url, prediction_id: predictionId, status };
@@ -57,7 +59,7 @@ export async function pollImagePrediction(config, { predictionId, imageModel }) 
  */
 export async function pollVideoPrediction(
   config,
-  { predictionId, videoModel, action, inputUrl }
+  { predictionId, videoModel, action, inputUrl, prompt }
 ) {
   const deadline = Date.now() + MAX_WAIT_MS;
   const qs = new URLSearchParams({ predictionId });
@@ -74,7 +76,8 @@ export async function pollVideoPrediction(
           output_url: data.video_url,
           prediction_id: predictionId,
           video_model: videoModel,
-          input_url: inputUrl ?? undefined
+          input_url: inputUrl ?? undefined,
+          prompt: prompt ?? undefined
         })
       });
       return { video_url: data.video_url, prediction_id: predictionId, status };

@@ -95,6 +95,7 @@ export async function GET(request: Request) {
   const imageModelParam = searchParams.get("imageModel")?.trim() ?? "";
   const composerModelId =
     imageModelParam && isAtlasImageComposerId(imageModelParam) ? imageModelParam : null;
+  const pollPrompt = searchParams.get("prompt")?.trim() || null;
   if (!predictionId) {
     return NextResponse.json(
       { error: "Missing predictionId or prediction_id query parameter" },
@@ -128,6 +129,7 @@ export async function GET(request: Request) {
         outputUrl: imageUrl,
         predictionId,
         composerModelId,
+        prompt: pollPrompt,
         requireTerminalStatus: status
       });
     }
@@ -254,7 +256,7 @@ async function handleGenerateImagePost(request: Request) {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json; charset=utf-8"
     },
     body: JSON.stringify(atlasBody)
   });
@@ -289,6 +291,7 @@ async function handleGenerateImagePost(request: Request) {
           inputUrl: imageUrls[0] ?? null,
           predictionId: predictionId ?? null,
           composerModelId: imageModel,
+          prompt,
           requireTerminalStatus: initialStatus
         });
       }

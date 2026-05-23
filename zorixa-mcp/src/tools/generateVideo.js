@@ -49,7 +49,8 @@ export async function generateVideo(config, args) {
         output_url: syncUrl,
         prediction_id: create.prediction_id ?? create.predictionId ?? null,
         video_model: args.video_model,
-        input_url: args.image_url ?? args.video_url ?? null
+        input_url: args.image_url ?? args.video_url ?? null,
+        prompt: args.prompt
       })
     });
     return {
@@ -68,7 +69,8 @@ export async function generateVideo(config, args) {
     predictionId,
     videoModel: args.video_model,
     action: args.action,
-    inputUrl: args.image_url ?? args.video_url ?? null
+    inputUrl: args.image_url ?? args.video_url ?? null,
+    prompt: args.prompt
   });
 
   return {

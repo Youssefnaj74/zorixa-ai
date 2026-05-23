@@ -30,6 +30,7 @@ type GenerationRow = {
   created_at: string;
   provider?: string | null;
   composer_model_id?: string | null;
+  prompt?: string | null;
 };
 
 type GenerationTile = {
@@ -66,6 +67,12 @@ function dedupeGenerationsByOutput(items: GenerationRow[]): GenerationRow[] {
   return out;
 }
 
+function historyTitle(g: GenerationRow, modelLabel: string): string {
+  const prompt = g.prompt?.trim();
+  if (prompt) return prompt.length > 48 ? `${prompt.slice(0, 48)}…` : prompt;
+  return g.status === "completed" ? modelLabel : `${modelLabel} (${g.status})`;
+}
+
 function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
   return dedupeGenerationsByOutput(items).map((g) => {
     const modelLabel = composerModelDisplayLabel(
@@ -73,6 +80,7 @@ function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
       g.feature_type,
       g.provider
     );
+    const title = historyTitle(g, modelLabel);
     if (g.feature_type === "video") {
       const out = g.output_url;
       const inn = g.input_url;
@@ -81,8 +89,6 @@ function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
       let src: string | undefined;
       if (out && !isLikelyVideoFile(out)) src = out;
       else if (inn && !isLikelyVideoFile(inn) && !inn.includes("placehold.co")) src = inn;
-      const title =
-        g.status === "completed" ? modelLabel : `${modelLabel} (${g.status})`;
       return {
         id: String(g.id),
         title,
@@ -94,8 +100,6 @@ function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
     }
     const out = g.output_url;
     const inn = g.input_url;
-    const title =
-      g.status === "completed" ? modelLabel : `${modelLabel} (${g.status})`;
     const src = out ?? (inn && !inn.includes("placehold.co") ? inn : undefined);
     return {
       id: String(g.id),

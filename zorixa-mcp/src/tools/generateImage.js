@@ -39,7 +39,8 @@ export async function generateImage(config, args) {
       body: JSON.stringify({
         output_url: create.image_url,
         prediction_id: create.prediction_id ?? null,
-        image_model: args.image_model
+        image_model: args.image_model,
+        prompt: args.prompt
       })
     });
     return {
@@ -56,7 +57,8 @@ export async function generateImage(config, args) {
 
   const result = await pollImagePrediction(config, {
     predictionId,
-    imageModel: args.image_model
+    imageModel: args.image_model,
+    prompt: args.prompt
   });
 
   return {

@@ -20,17 +20,42 @@ function isMissingComposerModelColumn(error: { message?: string; code?: string }
   );
 }
 
+function isMissingPromptColumn(error: { message?: string; code?: string } | null): boolean {
+  if (!error) return false;
+  const msg = (error.message ?? "").toLowerCase();
+  return error.code === "42703" || error.code === "PGRST204" || msg.includes("prompt");
+}
+
+function normalizeStoredPrompt(raw: string | null | undefined): string | null {
+  const v = typeof raw === "string" ? raw.trim() : "";
+  return v.length > 0 ? v.slice(0, 4000) : null;
+}
+
 async function patchGenerationModelMeta(
   generationId: number,
-  composerModelId: string
+  composerModelId: string,
+  prompt?: string | null
 ): Promise<void> {
   const provider = atlasProviderForModel(composerModelId);
-  const { error } = await supabaseAdmin
-    .from("generations")
-    .update({ provider, composer_model_id: composerModelId })
-    .eq("id", generationId);
+  const promptNorm = normalizeStoredPrompt(prompt);
+  const withPrompt = promptNorm ? { provider, composer_model_id: composerModelId, prompt: promptNorm } : { provider, composer_model_id: composerModelId };
+  const { error } = await supabaseAdmin.from("generations").update(withPrompt).eq("id", generationId);
   if (error && isMissingComposerModelColumn(error)) {
     await supabaseAdmin.from("generations").update({ provider }).eq("id", generationId);
+  } else if (error && isMissingPromptColumn(error) && promptNorm) {
+    await supabaseAdmin
+      .from("generations")
+      .update({ provider, composer_model_id: composerModelId })
+      .eq("id", generationId);
+  }
+}
+
+async function patchGenerationPrompt(generationId: number, prompt: string): Promise<void> {
+  const promptNorm = normalizeStoredPrompt(prompt);
+  if (!promptNorm) return;
+  const { error } = await supabaseAdmin.from("generations").update({ prompt: promptNorm }).eq("id", generationId);
+  if (error && !isMissingPromptColumn(error) && process.env.NODE_ENV === "development") {
+    console.error("[atlas-image-generation-log] prompt patch failed", error.message);
   }
 }
 
@@ -47,6 +72,8 @@ export async function logAtlasImageGenerationIfNew(args: {
   composerModelId?: string | null;
   /** When set, only write if Atlas status is terminal success. Omit when output URL is already verified. */
   requireTerminalStatus?: string;
+  /** User prompt — stored for Zorixa dashboard (Atlas Cloud may not display Arabic). */
+  prompt?: string | null;
 }): Promise<boolean> {
   if (
     args.requireTerminalStatus !== undefined &&
@@ -68,6 +95,8 @@ export async function logAtlasImageGenerationIfNew(args: {
       ? args.composerModelId.trim()
       : null;
 
+  const prompt = normalizeStoredPrompt(args.prompt);
+
   if (prediction_id) {
     const { data: existing } = await supabaseAdmin
       .from("generations")
@@ -78,7 +107,9 @@ export async function logAtlasImageGenerationIfNew(args: {
       .maybeSingle();
     if (existing) {
       if (composer_model_id) {
-        await patchGenerationModelMeta(existing.id, composer_model_id);
+        await patchGenerationModelMeta(existing.id, composer_model_id, prompt);
+      } else if (prompt) {
+        await patchGenerationPrompt(existing.id, prompt);
       }
       return true;
     }
@@ -93,7 +124,9 @@ export async function logAtlasImageGenerationIfNew(args: {
     .maybeSingle();
   if (existingByOutput) {
     if (composer_model_id) {
-      await patchGenerationModelMeta(existingByOutput.id, composer_model_id);
+      await patchGenerationModelMeta(existingByOutput.id, composer_model_id, prompt);
+    } else if (prompt) {
+      await patchGenerationPrompt(existingByOutput.id, prompt);
     }
     return true;
   }
@@ -113,14 +146,21 @@ export async function logAtlasImageGenerationIfNew(args: {
     status: "completed" as const
   };
 
-  const withModel = composer_model_id
+  let row: Record<string, unknown> = composer_model_id
     ? { ...baseRow, composer_model_id }
-    : baseRow;
+    : { ...baseRow };
+  if (prompt) row = { ...row, prompt };
 
-  let { error } = await supabaseAdmin.from("generations").insert(withModel);
+  let { error } = await supabaseAdmin.from("generations").insert(row);
 
   if (error && composer_model_id && isMissingComposerModelColumn(error)) {
-    ({ error } = await supabaseAdmin.from("generations").insert(baseRow));
+    const withoutModel = prompt ? { ...baseRow, prompt } : baseRow;
+    ({ error } = await supabaseAdmin.from("generations").insert(withoutModel));
+  }
+  if (error && prompt && isMissingPromptColumn(error)) {
+    ({ error } = await supabaseAdmin.from("generations").insert(
+      composer_model_id ? { ...baseRow, composer_model_id } : baseRow
+    ));
   }
 
   if (error && process.env.NODE_ENV === "development") {

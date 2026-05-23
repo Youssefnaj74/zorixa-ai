@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     input_url?: string;
     prediction_id?: string | null;
     video_model?: string | null;
+    prompt?: string | null;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -50,12 +51,16 @@ export async function POST(request: Request) {
       ? body.video_model.trim()
       : null;
 
+  const prompt =
+    typeof body.prompt === "string" && body.prompt.trim().length > 0 ? body.prompt.trim() : null;
+
   const ok = await logAtlasVideoGenerationIfNew({
     userId: actor.userId,
     outputUrl: output_url,
     inputUrl: inputRaw || null,
     predictionId: prediction_id,
-    composerModelId: video_model
+    composerModelId: video_model,
+    prompt
   });
 
   if (!ok) {
