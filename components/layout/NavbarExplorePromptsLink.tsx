@@ -5,20 +5,19 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
-/** Nav item — opens full Tools gallery at /tools. */
-export function NavbarToolsLink() {
+export function NavbarExplorePromptsLink() {
   const pathname = usePathname();
-  const active = pathname === "/tools" || pathname.startsWith("/tools/");
+  const active = pathname === "/explore-prompts" || pathname.startsWith("/explore-prompts/");
 
   return (
     <Link
-      href="/tools"
+      href="/explore-prompts"
       className={cn(
         "relative flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
         active ? "bg-white/10 text-white" : "text-white/50 hover:text-white"
       )}
     >
-      <span>Tools</span>
+      Explore prompts
     </Link>
   );
 }

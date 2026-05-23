@@ -5,6 +5,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Settings, CreditCard, BarChart2, Key, HelpCircle, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { NavbarExplorePromptsLink } from "@/components/layout/NavbarExplorePromptsLink";
 import { NavbarToolsLink } from "@/components/layout/NavbarToolsLink";
 import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -80,7 +81,12 @@ export function DashboardNavbar({
                   </span>
                 )}
               </Link>
-              {link.label === "Video" ? <NavbarToolsLink /> : null}
+              {link.label === "Video" ? (
+                <>
+                  <NavbarToolsLink />
+                  <NavbarExplorePromptsLink />
+                </>
+              ) : null}
             </Fragment>
           ))}
         </nav>
@@ -179,8 +185,9 @@ export function DashboardNavbar({
               )}
             </Link>
             {link.label === "Video" ? (
-              <span className="shrink-0">
+              <span className="flex shrink-0 items-center gap-1">
                 <NavbarToolsLink />
+                <NavbarExplorePromptsLink />
               </span>
             ) : null}
           </Fragment>
@@ -208,8 +215,9 @@ export function DashboardNavbarMobileLinks({ className }: { className?: string }
             {link.label}
           </Link>
           {link.label === "Video" ? (
-            <span className="shrink-0">
+            <span className="flex shrink-0 items-center gap-1">
               <NavbarToolsLink />
+              <NavbarExplorePromptsLink />
             </span>
           ) : null}
         </Fragment>

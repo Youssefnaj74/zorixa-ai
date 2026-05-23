@@ -135,10 +135,21 @@ export function ImageGenerationPage() {
       searchParams.get("tab"),
       searchParams.get("model")
     );
-    if (!resolved) return;
-    setActionTab(resolved.tab);
-    setModelId(resolved.model);
-    setGenerateError(null);
+    if (resolved) {
+      setActionTab(resolved.tab);
+      setModelId(resolved.model);
+      setGenerateError(null);
+    }
+
+    const promptFromQuery = searchParams.get("prompt")?.trim();
+    if (promptFromQuery) {
+      setPrompt(promptFromQuery);
+    }
+
+    const aspectFromQuery = searchParams.get("aspect")?.trim();
+    if (aspectFromQuery && IMAGE_ASPECTS.includes(aspectFromQuery as (typeof IMAGE_ASPECTS)[number])) {
+      setAspect(aspectFromQuery);
+    }
   }, [searchParams]);
 
   useEffect(() => {
