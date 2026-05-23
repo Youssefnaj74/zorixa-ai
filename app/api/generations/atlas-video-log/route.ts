@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { logAtlasVideoGenerationIfNew } from "@/lib/atlas-video-generation-log";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { rateLimit } from "@/lib/rate-limit";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 
 /**
  * Records a completed Atlas video from the public video composer (no extra credit charge).
@@ -14,11 +14,8 @@ export async function POST(request: Request) {
   const rl = rateLimit({ key: `atlas-video-log:${ip}`, limit: 40, windowMs: 60_000 });
   if (!rl.ok) return NextResponse.json({ error: "Rate limit" }, { status: 429 });
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await resolveZorixaActor(request);
+  if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let body: {
     output_url?: string;
@@ -54,7 +51,7 @@ export async function POST(request: Request) {
       : null;
 
   const ok = await logAtlasVideoGenerationIfNew({
-    userId: user.id,
+    userId: actor.userId,
     outputUrl: output_url,
     inputUrl: inputRaw || null,
     predictionId: prediction_id,

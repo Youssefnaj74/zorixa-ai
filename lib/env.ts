@@ -36,6 +36,8 @@ export const env = {
   appUrl: getPublicSiteUrl(),
   /** Trimmed `ATLASCLOUD_API_KEY` (empty string if unset). Prefer `requireAtlasCloudApiKey()` when the key is required. */
   atlasCloudApiKey: envTrim("ATLASCLOUD_API_KEY"),
+  /** Shared secret for Cursor MCP → Zorixa API (see zorixa-mcp/). */
+  zorixaMcpApiKey: envTrim("ZORIXA_MCP_API_KEY"),
   supabase: {
     url: envTrim("NEXT_PUBLIC_SUPABASE_URL"),
     anonKey: envTrim("NEXT_PUBLIC_SUPABASE_ANON_KEY"),

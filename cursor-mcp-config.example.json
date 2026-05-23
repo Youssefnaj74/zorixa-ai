@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "zorixa": {
+      "command": "node",
+      "args": ["F:/zorixa-ai/zorixa-mcp/src/index.js"],
+      "env": {
+        "ZORIXA_MCP_API_KEY": "your-shared-secret",
+        "ZORIXA_USER_ID": "your-supabase-user-uuid",
+        "ZORIXA_API_BASE_URL": "https://www.zorixaai.com"
+      }
+    }
+  }
+}

@@ -11,7 +11,6 @@ import {
   BarChart3,
   Coins,
   Image as ImageIcon,
-  Sparkles,
 } from "lucide-react";
 import { DashboardNavbar } from "@/components/layout/Navbar";
 import { StatsCard } from "./StatsCard";
@@ -19,6 +18,7 @@ import { GenerationGrid } from "./GenerationGrid";
 import { composerModelDisplayLabel } from "@/lib/composer-model-label";
 import { QuickActions } from "./QuickActions";
 import { UpgradeBanner } from "./upgrade-banner";
+import { ViralToolsBento } from "./viral-tools-bento";
 import { WelcomeBanner } from "./welcome-banner";
 
 type GenerationRow = {
@@ -106,9 +106,6 @@ function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
     };
   });
 }
-
-const toolCard =
-  "relative overflow-hidden rounded-2xl border border-[#1e1e30] bg-[#0f0f1e] p-5 transition-all duration-300 hover:border-[#00e5ff]/40 hover:bg-[#111122] group block";
 
 export function DashboardHome({
   credits,
@@ -213,60 +210,7 @@ export function DashboardHome({
           <StatsCard title="Video runs" value={videoRuns} hint="UGC & motion" icon={Clapperboard} progress={splitTotal ? Math.round((videoRuns / splitTotal) * 100) : 0} />
         </section>
 
-        {/* Image Enhancement */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-bold text-white">Image enhancement</h2>
-          <p className="text-sm text-white/40">Upscale, clean up, and prepare stills for campaigns and product pages.</p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.05 }}>
-              <Link href="/dashboard/enhance" className={toolCard}>
-                <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }}>
-                  <span className="grid size-12 place-items-center rounded-xl border border-[#00e5ff]/20 bg-[#00e5ff]/10 text-[#00e5ff]">
-                    <Sparkles className="size-6" />
-                  </span>
-                  <div className="mt-4">
-                    <h3 className="text-base font-bold text-white">Studio enhance</h3>
-                    <p className="mt-1 text-sm text-white/40">Before/after workspace with model presets.</p>
-                  </div>
-                </motion.div>
-              </Link>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
-              <Link href="/image" className={toolCard}>
-                <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }}>
-                  <span className="grid size-12 place-items-center rounded-xl border border-[#00e5ff]/20 bg-[#00e5ff]/10 text-[#00e5ff]">
-                    <ImageIcon className="size-6" />
-                  </span>
-                  <div className="mt-4">
-                    <h3 className="text-base font-bold text-white">Image create</h3>
-                    <p className="mt-1 text-sm text-white/40">Open the full image studio and library.</p>
-                  </div>
-                </motion.div>
-              </Link>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* UGC Video */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-bold text-white">UGC video generation</h2>
-          <p className="text-sm text-white/40">Short-form and UGC-style clips for social and ads.</p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              <Link href="/video" className={toolCard}>
-                <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }}>
-                  <span className="grid size-12 place-items-center rounded-xl border border-[#00e5ff]/20 bg-[#00e5ff]/10 text-[#00e5ff]">
-                    <Clapperboard className="size-6" />
-                  </span>
-                  <div className="mt-4">
-                    <h3 className="text-base font-bold text-white">Video studio</h3>
-                    <p className="mt-1 text-sm text-white/40">Models, motion, and export for UGC workflows.</p>
-                  </div>
-                </motion.div>
-              </Link>
-            </motion.div>
-          </div>
-        </section>
+        <ViralToolsBento />
 
         {/* Quick Actions */}
         <section className="space-y-4">

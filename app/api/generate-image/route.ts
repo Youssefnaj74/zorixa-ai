@@ -13,7 +13,7 @@ import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { env } from "@/lib/env";
 import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
 const CLIENT_POLL_HINT_MS = 3000;
@@ -121,13 +121,10 @@ export async function GET(request: Request) {
   const statusNorm = String(status).toLowerCase();
 
   if (typeof imageUrl === "string" && imageUrl.trim().length > 0) {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
-    if (user) {
+    const actor = await resolveZorixaActor(request);
+    if (actor) {
       void logAtlasImageGenerationIfNew({
-        userId: user.id,
+        userId: actor.userId,
         outputUrl: imageUrl,
         predictionId,
         composerModelId,
@@ -284,13 +281,10 @@ async function handleGenerateImagePost(request: Request) {
   if (initialStatus === "completed" || initialStatus === "succeeded") {
     const imageUrl = extractAtlasVideoOutputUrl(createJson.data);
     if (imageUrl) {
-      const supabase = await createSupabaseServerClient();
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
-      if (user) {
+      const actor = await resolveZorixaActor(request);
+      if (actor) {
         void logAtlasImageGenerationIfNew({
-          userId: user.id,
+          userId: actor.userId,
           outputUrl: imageUrl,
           inputUrl: imageUrls[0] ?? null,
           predictionId: predictionId ?? null,
