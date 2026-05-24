@@ -32,10 +32,10 @@ export const ATLAS_IMAGE_MODEL_MAP: Record<string, AtlasImageModelRow> = {
     maxImages: 14,
     defaultBatch: 1
   },
-  /** In-house slot (replaces legacy Enhancor) — Atlas Qwen Image stack. */
+  /** Zorixa Image — Alibaba Qwen Image 2.0 Pro on Atlas Cloud. */
   zorixa: {
-    text: "atlascloud/qwen-image/text-to-image",
-    edit: "atlascloud/qwen-image/edit",
+    text: "qwen/qwen-image-2.0-pro/text-to-image",
+    edit: "qwen/qwen-image-2.0-pro/edit",
     maxImages: 4,
     defaultBatch: 1
   },

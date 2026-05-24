@@ -23,6 +23,11 @@ function isQwenImageAtlasModel(model: string): boolean {
   return model.includes("qwen-image");
 }
 
+/** Qwen Image 2.0 / 2.0 Pro — width/height pixels (not legacy `768*1024` size string). */
+function isQwenImage20AtlasModel(model: string): boolean {
+  return /qwen\/qwen-image-2\.0/i.test(model);
+}
+
 function isGptImage2AtlasModel(model: string): boolean {
   return model.includes("gpt-image-2");
 }
@@ -181,7 +186,16 @@ export function buildAtlasImageBody(input: BuildAtlasImageBodyInput): Record<str
 
   if (isQwenImageAtlasModel(model)) {
     const body: Record<string, unknown> = { model, prompt };
-    body.size = qwenSizeFromAspectAndResolution(aspectRatio, resolution || "1K");
+    if (isQwenImage20AtlasModel(model)) {
+      const sizePair = qwenSizeFromAspectAndResolution(aspectRatio, resolution || "1K");
+      const [widthRaw, heightRaw] = sizePair.split("*");
+      const width = Number(widthRaw);
+      const height = Number(heightRaw);
+      body.width = Number.isFinite(width) ? width : 1024;
+      body.height = Number.isFinite(height) ? height : 1024;
+    } else {
+      body.size = qwenSizeFromAspectAndResolution(aspectRatio, resolution || "1K");
+    }
     if (isEdit && imageUrls[0]) {
       body.image = imageUrls[0];
     }

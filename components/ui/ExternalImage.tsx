@@ -9,6 +9,7 @@ type ExternalImageProps = {
   height?: number;
   className?: string;
   onLoad?: React.ReactEventHandler<HTMLImageElement>;
+  onError?: React.ReactEventHandler<HTMLImageElement>;
 };
 
 /**
@@ -21,7 +22,8 @@ export function ExternalImage({
   width,
   height,
   className,
-  onLoad
+  onLoad,
+  onError
 }: ExternalImageProps) {
   return (
     <img
@@ -34,6 +36,7 @@ export function ExternalImage({
       decoding="async"
       referrerPolicy="no-referrer"
       onLoad={onLoad}
+      onError={onError}
     />
   );
 }

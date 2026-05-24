@@ -5,6 +5,8 @@
   "scripts": {
     "verify:supabase": "node scripts/supabase-verify.mjs",
     "verify:atlas": "node scripts/verify-atlas.mjs",
+    "generate:explore-previews": "node scripts/generate-explore-previews.mjs",
+    "import:explore-prompts": "node scripts/import-explore-prompts.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

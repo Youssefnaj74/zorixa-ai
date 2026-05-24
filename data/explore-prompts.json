@@ -1,0 +1,1090 @@
+[
+  {
+    "id": "gpt-image-2-golden-hour-rooftop",
+    "modelId": "gpt-image-2",
+    "title": "Golden hour rooftop",
+    "prompt": "Cinematic 3:4 portrait of a young woman on a city rooftop at golden hour, wind in loose chestnut hair, soft linen blouse, warm amber sunlight rim-lighting her profile, blurred skyline bokeh, natural skin texture, editorial fashion mood, shot on 85mm lens, shallow depth of field.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-golden-hour-rooftop.png"
+  },
+  {
+    "id": "gpt-image-2-coffee-shop-candid",
+    "modelId": "gpt-image-2",
+    "title": "Coffee shop candid",
+    "prompt": "Candid smartphone-style selfie of a man in a cozy coffee shop, morning window light, ceramic cup in hand, relaxed half-smile, wool sweater, warm tones, slight lens distortion, authentic social-media aesthetic, background patrons softly blurred.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-coffee-shop-candid.png"
+  },
+  {
+    "id": "gpt-image-2-misty-forest-portrait",
+    "modelId": "gpt-image-2",
+    "title": "Misty forest portrait",
+    "prompt": "Ultra-realistic 3:4 portrait of a tattooed young man in a misty autumn forest, textured crop haircut, detailed black and grey ink on chest and arms, overcast diffused light, muted green and brown palette, cinematic color grade, fine rain droplets on skin.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-misty-forest-portrait.png"
+  },
+  {
+    "id": "gpt-image-2-studio-beauty-close-up",
+    "modelId": "gpt-image-2",
+    "title": "Studio beauty close-up",
+    "prompt": "High-end beauty close-up, woman with deep brown skin and glossy lips, minimal dewy makeup, single soft key light on charcoal backdrop, crisp catchlights in eyes, macro detail on skin pores and freckles, Vogue-style editorial, 3:4 vertical frame.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-studio-beauty-close-up.png"
+  },
+  {
+    "id": "gpt-image-2-neon-rainy-street",
+    "modelId": "gpt-image-2",
+    "title": "Neon rainy street",
+    "prompt": "Night street portrait in light rain, subject under cyan and magenta neon signs, reflective wet pavement, leather jacket, moody cyberpunk atmosphere, cinematic contrast, 3:4 composition, subtle film grain, face sharply lit by sign glow.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-neon-rainy-street.png"
+  },
+  {
+    "id": "gpt-image-2-turquoise-sea-portrait",
+    "modelId": "gpt-image-2",
+    "title": "Turquoise sea portrait",
+    "prompt": "A woman with sun-kissed, wet skin glistening under natural daylight, her dark hair slicked back and clinging to her temples, water droplets tracing her collarbones and shoulders. Her face is sharply defined — high cheekbones, full lips parted slightly, piercing green eyes locking directly with the viewer, brows softly arched, no visible makeup except for a natural sheen on her eyelids and lips. Her left hand rests gently against her temple, fingers splayed, a thin silver ring visible on her ring finger, nails manicured and clean. She wears a black bikini top, straps barely visible beneath the waterline, the fabric subtly textured and clinging to her torso. The background is a vibrant turquoise sea, rippling with gentle surface waves, sunlight refracting through the water and casting shifting patterns across her skin and the surrounding liquid. The lighting is bright and direct, slightly overexposed at the water's surface, creating a high-contrast, sun-drenched glow that enhances the wetness of her skin and hair. Shot from a slightly elevated angle, medium close-up, shallow depth of field blurring the water behind her while keeping her face and upper body in crisp, hyper-detailed focus. The composition centers her face, with her hand framing the left side, evoking calm intimacy and natural luxury. No other figures or objects — only skin, water, and light. Vertical 3:4 frame.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-turquoise-sea-portrait.png"
+  },
+  {
+    "id": "gpt-image-2-ocean-glance-b-w",
+    "modelId": "gpt-image-2",
+    "title": "Ocean glance B&W",
+    "prompt": "A woman standing in shallow ocean waves, viewed from behind at a three-quarter angle as she glances over her shoulder toward the camera, wearing large white cat-eye sunglasses that contrast sharply against her sun-kissed skin, wet hair clinging lightly to her neck and shoulders, arms crossed loosely over her chest, legs slightly parted with feet submerged in foamy surf, hips tilted subtly, skin rendered with fine texture and natural highlights from diffused daylight, ocean stretching behind in soft-focus layers of white foam and gray water under an overcast sky, soft even lighting with minimal shadows, high-key monochromatic aesthetic, shallow depth of field, medium telephoto lens at eye level, photorealistic skin pores and water droplets, crisp black-and-white tonality with rich midtones. Vertical 3:4 composition.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-ocean-glance-b-w.png"
+  },
+  {
+    "id": "gpt-image-2-post-workout-intensity",
+    "modelId": "gpt-image-2",
+    "title": "Post-workout intensity",
+    "prompt": "Close-up portrait of a man with damp, tousled dark hair clinging to his forehead, skin glistening with sweat under warm directional indoor lighting that casts soft shadows across his defined cheekbones and nose; intense gaze meets the camera directly, eyes sharp and alert, small fresh cut above his left eyebrow trickling a thin line of blood; thick textured beard frames his jaw, slightly damp at the edges; dark slightly wrinkled crew-neck t-shirt with subtle creases on the shoulder; background softly blurred with clothing rack and red fire alarm on off-white walls, shallow depth of field, tight eye-level framing with slight upward angle, cinematic realism, hyper-detailed droplets and hair strands, raw unfiltered moment after physical exertion. Vertical 3:4.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-post-workout-intensity.png"
+  },
+  {
+    "id": "gpt-image-2-golden-hour-blinds",
+    "modelId": "gpt-image-2",
+    "title": "Golden hour blinds",
+    "prompt": "Sparsely furnished room bathed in warm golden-hour light. Horizontal window blinds cast strong graphic shadow lines across the wall and subject's face. Subject in a simple high-necked white tank top clinging softly, skin texture and freckles visible, glossed lips, hair pulled back from face. Golden light streams through blinds — one eye brightly lit, rest of face partially in shadow, emphasizing skin depth and texture. Close-up selfie slightly off-center at a slight angle, iPhone front-camera feel, close framing on skin texture and light-shadow graphics. Quiet introspection, contemplative mood, direct light on one eye. Warm muted palette of golden hues and soft whites, realistic pores and freckles, minimalist Jil Sander aesthetic, slow-burn indie film still. Vertical 3:4.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-golden-hour-blinds.png"
+  },
+  {
+    "id": "gpt-image-2-rainforest-taxi-surreal",
+    "modelId": "gpt-image-2",
+    "title": "Rainforest taxi surreal",
+    "prompt": "Lush tropical rainforest in heavy monsoon rain, dense wet foliage with dripping vines and giant green leaves, a single gleaming yellow New York taxi suspended upside down between two enormous kapok tree trunks by massive spiderwebs, faint city stickers still on the doors, water cascading off its undercarriage, bright green tree frogs clinging to the doors. Foggy background with layered foliage, muted lighting, slight lens flare, amateur candid style. Vertical 3:4 frame.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-rainforest-taxi-surreal.png"
+  },
+  {
+    "id": "seedream-5-gym-bench-pov",
+    "modelId": "seedream-5",
+    "title": "Gym bench POV",
+    "prompt": "POV sitting on a bench at the gym, looking down at your legs. You are holding a dumbbell in one hand, resting your arms on your thighs between sets. Sweat on your forearms, black T-shirt slightly damp, dark workout shorts and sneakers visible. Gym floor with scattered weights and equipment in the blurry background. Ambient gym noise and overhead lights. Vertical 3:4 frame, photorealistic.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-gym-bench-pov.jpg"
+  },
+  {
+    "id": "seedream-5-dreamlike-queen",
+    "modelId": "seedream-5",
+    "title": "Dreamlike queen",
+    "prompt": "Surreal artistic portrait, dreamlike quality, regal queen figure, ethereal atmosphere, soft glowing light, painterly surrealism, rich color depth, cinematic fantasy mood. Vertical 3:4 composition.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-dreamlike-queen.jpg"
+  },
+  {
+    "id": "seedream-5-futuristic-combat-leap",
+    "modelId": "seedream-5",
+    "title": "Futuristic combat leap",
+    "prompt": "A futuristic soldier in advanced combat gear leaps over rubble, glowing green eyes and a red scarf flowing behind. In the foreground, a goat and chicken scatter in panic. Midground: enemy soldiers fire futuristic weapons, a burning armored vehicle smolders beside them, and a hovering drone scans the area. Background: graffiti-covered urban buildings with palm trees silhouetted against a radiant energy arc stretching across the sky. Teal and orange contrast color grading, with warm highlights and cool blue energy accents. Hyper-detailed digital art with cinematic lighting in the style of Greg Rutkowski and Masamune Shirow. Vertical 3:4.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-futuristic-combat-leap.jpg"
+  },
+  {
+    "id": "seedream-5-podcast-studio-neon",
+    "modelId": "seedream-5",
+    "title": "Podcast studio neon",
+    "prompt": "Photorealistic close-up portrait, stunning 18-year-old woman with fiery red voluminous curls, ocean-blue eyes, wearing a tight white crop top. Speaking intimately into a Rode PodMic podcast microphone with metal mesh visible. Camera front-facing at eye level, microphone slightly below chin. Behind her clearly visible: glowing red neon sign THE END IS NEAR 2030, vibrant blue LED sign WE ARE THE FUTURE, monitor with AGENDA 2030 sticker on bottom bezel. Dark podcast studio with intense red and blue LED strips, smoke haze. Shot on ARRI Alexa 85mm f/1.2, cinematic lighting, all signs legible. Vertical 3:4 frame.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-podcast-studio-neon.jpg"
+  },
+  {
+    "id": "seedream-5-teal-neon-alley",
+    "modelId": "seedream-5",
+    "title": "Teal neon alley",
+    "prompt": "Electric teal signage bleeds rain-slick brick, painting prismatic rivers across glass-bead encrusted shoulder pads. Black latex turtleneck clings under shifting magenta puddle reflections; a razor-edged bob parted severe casts mirror-sharp shadow on crimson lips. Water droplets pepper the lens, scattering LED shards over matte skin and subtle cheekbone studs. Her stare slices past the spectral alley glow — night-pulse tension, futuristic grit. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-teal-neon-alley.jpg"
+  },
+  {
+    "id": "seedream-5-transit-led-bomber",
+    "modelId": "seedream-5",
+    "title": "Transit LED bomber",
+    "prompt": "Pulsing LED strips ripple magenta across her pearlized bomber hood, fabric shifting from lilac to steel with each passing tunnel light. A matte graphite chin-strap helmet headset rests at her collarbone, micro scratches refracting stray sparks. Rolling shutter wobble leaves faint phantom lines across mirrored doors, and oily fingerprint haze softens graffiti tags into watercolor drips. Her gaze fixes on dark glass, watching city lights strobe behind her reflection — transit liminality distilled in hyper-modern spectrum. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-transit-led-bomber.jpg"
+  },
+  {
+    "id": "seedream-5-strobe-fashion-editorial",
+    "modelId": "seedream-5",
+    "title": "Strobe fashion editorial",
+    "prompt": "A single strobe flares fuchsia across dewy cheekbones, casting holographic highlights along cherry-vinyl puffer shoulders. Gel-slick baby hairs sparkle with micro-glitter; magnolia-tinted gloss pools at parted lips. The backdrop paper blurs into radial gradient while shallow depth isolates every pore. Her stare pierces beyond camera glass, unwavering — electric bloom, fashion-week heartbeat. Vertical 3:4 editorial frame.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-strobe-fashion-editorial.jpg"
+  },
+  {
+    "id": "seedream-5-reboot-system-ctrl",
+    "modelId": "seedream-5",
+    "title": "Reboot system CTRL",
+    "prompt": "Hyper-stylized editorial shot in a digital lab or museum space. Model centered, standing on a pile of disconnected keyboards. Matte latex dress with belt loops spelling CTRL, ALT, and DEL. Boots with metal zippers and exposed wire accents. Hair gelled into symmetrical antenna shapes. Sterile white background with blinking server lights. She stares forward, arms slightly robotic. Minimal color grading — cold and sharp. Mood: To reboot the system, hold for ten seconds. Vertical 3:4.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-reboot-system-ctrl.jpg"
+  },
+  {
+    "id": "seedream-5-still-center-motion-blur",
+    "modelId": "seedream-5",
+    "title": "Still center motion blur",
+    "prompt": "The model sits perfectly still in a chair placed in the center of a street while hundreds of runners, dancers, and props speed around her in high motion blur. Her face does not twitch. Sleek black velvet suit, no movement in fabric. Hair shellacked into clean sculpture. Red lips, pale skin. Locked-off wide shot with world swirling around her; super close-up on eyes with pupils flickering subtly; motion control rig spins slowly while background flies at high speed. Silence versus overload. Fashion is control in a world that spirals. Vertical 3:4 cinematic frame.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-still-center-motion-blur.jpg"
+  },
+  {
+    "id": "seedream-5-cracked-mirror-confrontation",
+    "modelId": "seedream-5",
+    "title": "Cracked mirror confrontation",
+    "prompt": "A woman stands in front of a cracked mirror, her reflection slightly misaligned. Pale morning light filters through a fogged window. Eyes red, lips trembling. Emotion: shame, guilt, self-confrontation. Intimate photorealistic portrait, muted tones, shallow depth of field. Vertical 3:4 composition.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-cracked-mirror-confrontation.jpg"
+  },
+  {
+    "id": "nano-banana-pro-parking-garage-cyber-chic",
+    "modelId": "nano-banana-pro",
+    "title": "Parking garage cyber chic",
+    "prompt": "White woman mid to late 20s, sharp features, commanding pose, straight blonde hair slicked into precise side-part bob behind ears. Dramatic low angle close-up enhancing jawline and lips. Massive silver mirrored bug-eye wraparound sunglasses reflecting brutalist parking garage concrete. Industrial chain earrings, structured black gunmetal jacket. White vape at glossy lips, nonchalant pose. Brutalist parking garage, cold concrete overhead, dystopian mood. Wide-angle mobile lens intimacy with slight distortion, natural overhead light. Unbothered ice-cold cyber-bimbo Y2K corporate chic editorial. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-parking-garage-cyber-chic.jpg"
+  },
+  {
+    "id": "nano-banana-pro-studio-wraparound-shades",
+    "modelId": "nano-banana-pro",
+    "title": "Studio wraparound shades",
+    "prompt": "Black male model mid-20s, rich dark brown skin, high cheekbones, neutral stoic expression, quiet intensity. Minimal black high-collar matte top. Futuristic thick-framed metallic gray wraparound sunglasses as focal point. Very wide fisheye lens from above, distortion on forehead and shades, crisp studio lighting from above and sides, glossy skin texture, soft white to light grey gradient background. Head fills frame, dimensional almost 3D render. Futuristic realism, bold anonymity, sci-fi fashion editorial 2088. Vertical 3:4.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-studio-wraparound-shades.jpg"
+  },
+  {
+    "id": "nano-banana-pro-snarl-grill-editorial",
+    "modelId": "nano-banana-pro",
+    "title": "Snarl grill editorial",
+    "prompt": "Close-up low-angle studio portrait young white woman fierce snarling expression, head tilted forward, mouth open wide, eyes squinted rage, chaotic feral confidence. Heavy winged eyeliner, dermal studs under eyes, nose ring, large silver hoops, full metal grill on upper teeth. Arched brows, sculpted cheekbones, hair pulled back messy strands. Sparkly rhinestone bikini top straps at neckline, tight crop. Direct diffused lighting, cool blue-grey gradient background. Vertical 3:4 editorial.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-snarl-grill-editorial.jpg"
+  },
+  {
+    "id": "nano-banana-pro-devil-horns-suit-scream",
+    "modelId": "nano-banana-pro",
+    "title": "Devil horns suit scream",
+    "prompt": "Close-up wide-angle portrait Black man mid-yell, late 20s, warm brown skin with intense red-orange devilish hue, natural afro, goatee, eyes squinted shut, big open-mouthed scream, soft beige devil horns on head. Black suit, white shirt, black polka-dot tie. Extreme 0.5x ultra-wide from below, exaggerated face and hands, bright midday natural light, urban NYC background brick buildings metal gate parking sign power lines. Editorial meets meme, costume concept, loud disruptive clarity. Vertical 3:4.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-devil-horns-suit-scream.jpg"
+  },
+  {
+    "id": "nano-banana-pro-novela-pink-satin",
+    "modelId": "nano-banana-pro",
+    "title": "Novela pink satin",
+    "prompt": "25-year-old Latina woman long brown acrylic nails painted with hearts flames rhinestones, silk headscarf, chunky gold hoops, red lips, hands to cheeks gasping, face beat to perfection. Shot 0.5x from below, soft pink satin background. Novela villain Lisa Frank universe vibe. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-novela-pink-satin.png"
+  },
+  {
+    "id": "nano-banana-pro-grocery-aisle-villain",
+    "modelId": "nano-banana-pro",
+    "title": "Grocery aisle villain",
+    "prompt": "24-year-old East Asian woman with pale skin, sharp winged eyeliner, and short blunt bob. Red knit devil horn beanie, tiny sunglasses, fitted crop top reading Lover or Liar, grey pleated mini skirt, oversized button-down half falling off, red Mary Janes with white socks. 0.5x selfie holding a shopping basket in a brightly lit Asian grocery store aisle. Expression smug. Anime villain at Whole Foods vibe. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-grocery-aisle-villain.jpg"
+  },
+  {
+    "id": "nano-banana-pro-subway-gum-bubble",
+    "modelId": "nano-banana-pro",
+    "title": "Subway gum bubble",
+    "prompt": "26-year-old white man with soft jawline, messy platinum hair, red windbreaker. Crouched on a subway platform, phone held almost at shoe level in 0.5x, blowing a bubble with gum, one sneaker dominating the frame. Posters peeling off tiled wall background. Skater streetwear Tumblr crush from 2015 but grown up vibe. Vertical 3:4.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-subway-gum-bubble.png"
+  },
+  {
+    "id": "nano-banana-pro-platform-lip-gloss-diva",
+    "modelId": "nano-banana-pro",
+    "title": "Platform lip gloss diva",
+    "prompt": "25-year-old Black woman with shaved head and glowing skin, crouched slightly on a subway platform, one arm holding phone in selfie mode, other applying lip gloss. Black leather jacket, small oval shades, chunky rings. 0.5x from below, motion blur from passing train. Full diva expression. Unapologetic beauty in motion. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-platform-lip-gloss-diva.png"
+  },
+  {
+    "id": "nano-banana-pro-blinds-espionage-editorial",
+    "modelId": "nano-banana-pro",
+    "title": "Blinds espionage editorial",
+    "prompt": "23-year-old white woman with porcelain skin, slicked-back bun, deep pink lipstick. Peers through tilted white blinds with one hand holding them open dramatically. Polka-dot rimmed sunglasses, abstract gold earrings. Soft daylight behind her. Lips parted, piercing gaze. Editorial espionage meets 90s eyewear campaign. Vertical 3:4.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-blinds-espionage-editorial.jpg"
+  },
+  {
+    "id": "nano-banana-pro-balcony-denim-sculpture",
+    "modelId": "nano-banana-pro",
+    "title": "Balcony denim sculpture",
+    "prompt": "26-year-old Black man with sculpted features and short twisted locs, lying on a concrete balcony floor in full designer denim, legs raised resting on metal railing. Phone above head in 0.5x catching body stretch and pink evening sky. Heavy boots, silver chain, no shirt. Relaxed expression, eyes closed. Accidental fashion spread, body as sculpture. Vertical 3:4.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-balcony-denim-sculpture.jpg"
+  },
+  {
+    "id": "nano-banana-pro-gas-station-night-diva",
+    "modelId": "nano-banana-pro",
+    "title": "Gas station night diva",
+    "prompt": "29-year-old Black trans woman with deep brown skin, glossy braids, glowing highlighter on cheekbones. White halter mini dress under puffer jacket, strappy heels, gold hoops. Standing at gas station under harsh overhead lights, phone in one hand slushie in other, 0.5x flash selfie. Calm stare owning the space. High fashion in low places, nighttime divinity. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-gas-station-night-diva.jpg"
+  },
+  {
+    "id": "nano-banana-2-gas-station-neon-durag",
+    "modelId": "nano-banana-2",
+    "title": "Gas station neon durag",
+    "prompt": "POV 0.5x selfie at night in front of a lit-up gas station, 28-year-old Black man with satin durag and oversized sunglasses, leather pants and see-through top. Holding a 7-Eleven bag and disposable camera in one hand, iPhone in the other. Leaning slightly forward. Red neon light reflections on face. Chaos and elegance collide. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-gas-station-neon-durag.jpg"
+  },
+  {
+    "id": "nano-banana-2-gas-station-bathroom-mirror",
+    "modelId": "nano-banana-2",
+    "title": "Gas station bathroom mirror",
+    "prompt": "POV 0.5x mirror selfie of 24-year-old South Asian woman inside a gas station bathroom, one heel on sink, other foot on toilet seat. All-denim look corset mini skirt arm warmers, glossed lips, bored expression. Hair in claw clip. Dirty mirror, fluorescent ceiling lights. Early 2000s Bratz doll unbothered queen DIY campaign shoot. Vertical 3:4.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-gas-station-bathroom-mirror.jpg"
+  },
+  {
+    "id": "nano-banana-2-cracked-windshield-car-pov",
+    "modelId": "nano-banana-2",
+    "title": "Cracked windshield car POV",
+    "prompt": "POV 0.5x selfie from inside a beat-up car, 23-year-old Latino man reclined in passenger seat, leather gloves, shirt unbuttoned. One boot on dashboard. Phone close to chest, chin lifted. Flash on, cracked windshield. Backseat chaos behind him. Broke but iconic, Balenciaga paid for this mood. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-cracked-windshield-car-pov.jpg"
+  },
+  {
+    "id": "nano-banana-2-upside-down-couch-flash",
+    "modelId": "nano-banana-2",
+    "title": "Upside down couch flash",
+    "prompt": "POV 0.5x selfie of 25-year-old Black woman lying upside down on floor, head hanging off velvet couch edge, shooting with flash. Metallic corset top, stacked jewelry, braided hair fanned across floor. Fierce expression. Moody apartment with disco ball shadows. Vogue shoot on iPhone 7 vibe. Vertical 3:4.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-upside-down-couch-flash.jpg"
+  },
+  {
+    "id": "nano-banana-2-garden-buzzcut-portrait",
+    "modelId": "nano-banana-2",
+    "title": "Garden buzzcut portrait",
+    "prompt": "POV selfie of 21-year-old white non-binary person with platinum buzzcut, thin silver-framed glasses, porcelain skin. Loose beige button-up shirt, seated in blooming garden. Half-smiling, holding phone sideways. Overgrown flowers, dappled sunlight. Gentle safe peaceful queerness mood. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-garden-buzzcut-portrait.jpg"
+  },
+  {
+    "id": "nano-banana-2-mist-pine-forest-beanie",
+    "modelId": "nano-banana-2",
+    "title": "Mist pine forest beanie",
+    "prompt": "POV selfie of a 24-year-old white man with light stubble, wavy brown hair under a beanie, standing alone in a mist-covered pine forest. Navy fleece jacket. Soft ambient light, cold breath visible. Neutral almost melancholic expression. Introspective, alone but not lonely, cinematic mood. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-mist-pine-forest-beanie.png"
+  },
+  {
+    "id": "nano-banana-2-rooftop-laugh-golden-hour",
+    "modelId": "nano-banana-2",
+    "title": "Rooftop laugh golden hour",
+    "prompt": "POV selfie of a 25-year-old Black man laughing with eyes closed, bright sun hitting his face directly. Rooftop late afternoon, oversized yellow shirt. Lens flare bleeds across image, overexposed in places, skin glowing with warmth. Carefree, present, alive — perfect moment caught mid-laugh. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-rooftop-laugh-golden-hour.png"
+  },
+  {
+    "id": "nano-banana-2-rainy-balcony-a24",
+    "modelId": "nano-banana-2",
+    "title": "Rainy balcony A24",
+    "prompt": "POV selfie of a 23-year-old Asian man in a soaked grey hoodie, standing on a balcony with rain gently falling. Hair sticking slightly to forehead, relaxed but thoughtful expression. Soft focus raindrops in foreground, foggy skyline in distance. Raw, cold, cinematic like an A24 film poster. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-rainy-balcony-a24.jpg"
+  },
+  {
+    "id": "nano-banana-2-bed-blinds-mid-blink",
+    "modelId": "nano-banana-2",
+    "title": "Bed blinds mid-blink",
+    "prompt": "POV bed selfie of a 25-year-old East Asian man with pale skin and short straight black hair, lying on his back on crisp white sheets, basic black T-shirt. Camera above catching him mid-blink with blank expression. Overexposed background, blind shadows creating diagonal lines across face. Unfiltered raw beauty, boy-next-door cinematic detachment, candid scroll-stopping energy. Vertical 3:4.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-bed-blinds-mid-blink.png"
+  },
+  {
+    "id": "nano-banana-2-morning-bed-freckles",
+    "modelId": "nano-banana-2",
+    "title": "Morning bed freckles",
+    "prompt": "POV selfie of a 21-year-old white woman with light blue eyes and freckled complexion, messy bun hair. Lying on her side in bed, half-covered in light grey hoodie, fingers gently tugging at sleeve. White bedsheets, overexposed morning light from large window behind. Natural beauty, undone lashes, relaxed soft smirk. Cozy Pinterest realism, iPhone selfie slight lens distortion. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-morning-bed-freckles.png"
+  },
+  {
+    "id": "grok-imagine-ivy-bed-instagirl-selfie",
+    "modelId": "grok-imagine",
+    "title": "Ivy bed Instagirl selfie",
+    "prompt": "POV selfie of a 22-year-old white woman with fair skin, freckles, blonde hair in messy top bun. Lying casually on white bed, black spaghetti strap top, soft smile. Natural daylight from nearby window, soft highlights. White wrought iron bed frame with green ivy, minimal aesthetic. Cozy candid Instagirl energy. Sharp facial features, natural lashes, no-makeup makeup look. iPhone front camera, slight arm stretch visible, slight lens distortion. Pinterest bedroom selfie. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-ivy-bed-instagirl-selfie.jpg"
+  },
+  {
+    "id": "grok-imagine-skateboard-0-5x-crouch",
+    "modelId": "grok-imagine",
+    "title": "Skateboard 0.5x crouch",
+    "prompt": "POV 0.5x selfie of 25-year-old Hispanic man crouched on skateboard, looking up. Hands gigantic and warped, sneakers popping toward camera. Golden-hour lighting, cracked asphalt background. Amateur low-fi street-style Pinterest vibes. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-skateboard-0-5x-crouch.jpg"
+  },
+  {
+    "id": "grok-imagine-elevator-mirror-puffer",
+    "modelId": "grok-imagine",
+    "title": "Elevator mirror puffer",
+    "prompt": "POV 0.5x elevator mirror selfie, 24-year-old Black man in oversized puffer jacket and beanie, standing far back holding phone low near knees. Wide lens makes elevator ceiling loom distorted, lines converging toward lens. Flash flares on metal walls. Lo-fi candid luxury energy. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-elevator-mirror-puffer.jpg"
+  },
+  {
+    "id": "grok-imagine-floor-up-loft-editorial",
+    "modelId": "grok-imagine",
+    "title": "Floor-up loft editorial",
+    "prompt": "POV 0.5x angle from floor looking up, 25-year-old South Asian man with buzzcut and angular jawline, deconstructed Rick Owens-style coat and sneakers. Face slightly stretched from angle. Exposed ceiling, fluorescent lighting, raw unfinished loft background. Accidental but editorial feel. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-floor-up-loft-editorial.jpg"
+  },
+  {
+    "id": "grok-imagine-stairwell-mirror-fish-eye",
+    "modelId": "grok-imagine",
+    "title": "Stairwell mirror fish-eye",
+    "prompt": "POV 0.5x mirror selfie in grimy stairwell, 23-year-old white woman with bleach-blonde bob and baggy leather jacket. Phone low at waist height, warped fish-eye effect making legs impossibly long. Harsh yellow light, visible ceiling pipes, accidental model-off-duty vibe. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-stairwell-mirror-fish-eye.jpg"
+  },
+  {
+    "id": "grok-imagine-laundromat-washer-mirror",
+    "modelId": "grok-imagine",
+    "title": "Laundromat washer mirror",
+    "prompt": "POV mirror selfie in laundromat, 23-year-old white man with angular features, buzzcut, silver nose ring. Fitted ribbed tank top, wide-leg slacks rolled up, socks no shoes. Sitting on top of washer, phone slightly covering face. Washed-out colors, fluorescent background. Slight fisheye from cheap camera lens. Ironically mundane meets high-fashion Tumblr mood. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-laundromat-washer-mirror.jpg"
+  },
+  {
+    "id": "grok-imagine-cracked-kitchen-mirror-leather",
+    "modelId": "grok-imagine",
+    "title": "Cracked kitchen mirror leather",
+    "prompt": "POV mirror selfie of 22-year-old Middle Eastern woman with olive skin, short curly bob, vintage leather jacket with nothing underneath. Cracked mirror leaning against kitchen wall, dishes in background, harsh morning light from nearby window. Cheap point-and-shoot flash bounce. Accidental but styled — raw, gritty, effortlessly sexy. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-cracked-kitchen-mirror-leather.jpg"
+  },
+  {
+    "id": "grok-imagine-foggy-car-window-laugh",
+    "modelId": "grok-imagine",
+    "title": "Foggy car window laugh",
+    "prompt": "POV through slightly foggy car window, 26-year-old Black woman in passenger seat glowing with laughter. Natural curls, gold hoop earrings, denim jacket, holding coffee. Soft afternoon light on cheekbones. Warm skin tone, soft bokeh autumn trees background. Candid spontaneous joy, Pinterest roadtrip feel. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-foggy-car-window-laugh.jpg"
+  },
+  {
+    "id": "grok-imagine-polaroid-bedroom-robe-mirror",
+    "modelId": "grok-imagine",
+    "title": "Polaroid bedroom robe mirror",
+    "prompt": "POV mirror selfie of 24-year-old East Asian woman with mid-length black hair in messy bun, pale pink robe, sunlit bedroom filled with polaroid photos and hanging vines. Covers part of face with phone, soft brown eyes and clear skin visible. Slightly blurred background, pastel aesthetic, soft natural morning light, Pinterest girl energy. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-polaroid-bedroom-robe-mirror.jpg"
+  },
+  {
+    "id": "grok-imagine-golden-hour-blinds-daydream",
+    "modelId": "grok-imagine",
+    "title": "Golden hour blinds daydream",
+    "prompt": "POV selfie from above, soft golden hour light through window blinds casting striped shadows across face of 22-year-old white woman with strawberry blonde hair and freckles. Lying on white linen sheets, oversized oatmeal hoodie. Soft daydreaming expression. Minimal makeup, glossy lips. Cinematic tones, lens flare, shallow depth of field, film grain aesthetic. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-golden-hour-blinds-daydream.jpg"
+  },
+  {
+    "id": "grok-imagine-styrofoam-throne-parking-lot",
+    "modelId": "grok-imagine",
+    "title": "Styrofoam throne parking lot",
+    "prompt": "Defiant young man cross-legged atop makeshift throne of crumpled styrofoam packaging and discarded appliance boxes in empty parking lot corner. Throne towers awkwardly at strange angles. One hand on knee, other gripping bent plastic fork like scepter. Low close iPhone flash angled up, accidental friend-captured composition. Deadpan expression, half-lidded eyes, overgrown bangs, lips parted. Worn sweatpants bunched high, scuffed white crew socks, one shoe missing, other a duct-taped sandal. Layered shirt thermal sleeves under torn vintage anime tee with dirt and duct tape repairs. Harsh flash shadows on collarbone, broken earbuds chain dangling from ear. Throne glows white with flash glare, takeout boxes, Red Bull cans, soda puddle reflecting orange parking lights, abandoned office chair wheel near foot. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-styrofoam-throne-parking-lot.jpg"
+  },
+  {
+    "id": "grok-imagine-corporate-glass-cube-editorial",
+    "modelId": "grok-imagine",
+    "title": "Corporate glass cube editorial",
+    "prompt": "135mm lens through tinted glass on rainy day, professional editorial shot of model pacing barefoot inside corporate glass cube. Exterior reflections layer powerlines, rain streaks, urban decay. Inside fluorescent office lights create sickly green hue. Model in slouched grey wool blazer over high-cut lingerie, red folder, wired phone. Trapped in capitalist diorama. Low aperture f/2.0 strong background separation, cinematic bokeh, voyeuristic intensity. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-corporate-glass-cube-editorial.jpg"
+  },
+  {
+    "id": "grok-imagine-skylight-braids-art-editorial",
+    "modelId": "grok-imagine",
+    "title": "Skylight braids art editorial",
+    "prompt": "Broad skylight grids cast cool rectangles over sculptural braids, parting to reveal pearl-dusted temples. Bone-white sculptural blazer shoulders into view, shadow lines accentuating sharp lapel geometry. Sensor dust frecks negative space, muting distant canvases into gray haze. Steady unreadable gaze past lens, hands folded just beneath frame — concrete calm, art-space editorial pause. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/grok-imagine-skylight-braids-art-editorial.jpg"
+  },
+  {
+    "id": "zorixa-subway-window-golden-hour",
+    "modelId": "zorixa",
+    "title": "Subway window golden hour",
+    "prompt": "Hyper-realistic POV selfie of a 26-year-old East Asian woman on a subway train at golden hour, warm sunlight streaking through dusty windows across her face. Natural makeup, glossy lips, hair tucked behind one ear, oversized cream coat. Soft motion blur outside, sharp skin texture and catchlights. Candid iPhone front camera, slight lens distortion. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-subway-window-golden-hour.png"
+  },
+  {
+    "id": "zorixa-salon-mirror-touch-up",
+    "modelId": "zorixa",
+    "title": "Salon mirror touch-up",
+    "prompt": "POV mirror selfie in a busy hair salon, 24-year-old Black woman mid-touch-up, stylist hands framing hair out of focus. Gold hoop earrings, white tank top, dewy skin under ring light and daylight mix. Smudged mirror edges, product bottles on counter. Authentic influencer backstage energy, photorealistic pores and flyaways. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-salon-mirror-touch-up.png"
+  },
+  {
+    "id": "zorixa-late-night-diner-booth",
+    "modelId": "zorixa",
+    "title": "Late night diner booth",
+    "prompt": "POV selfie across a vinyl diner booth at 2am, 23-year-old Latino man with tired eyes and half-smile, neon OPEN sign reflecting on wet window behind him. Wearing a vintage varsity jacket, one hand holding chrome diner mug. Harsh overhead fluorescent mixed with pink neon glow on skin. Grainy phone flash aesthetic, cinematic realism. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-late-night-diner-booth.png"
+  },
+  {
+    "id": "zorixa-balcony-plant-morning",
+    "modelId": "zorixa",
+    "title": "Balcony plant morning",
+    "prompt": "POV selfie on a small urban balcony overflowing with plants, 25-year-old South Asian woman in oversized linen shirt, no makeup, messy morning hair in claw clip. Soft overcast daylight, condensation on glass railing, city rooftops blurred behind. Calm intimate lifestyle realism, natural skin texture, gentle smile. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-balcony-plant-morning.png"
+  },
+  {
+    "id": "zorixa-parking-lot-flash-portrait",
+    "modelId": "zorixa",
+    "title": "Parking lot flash portrait",
+    "prompt": "POV 0.5x flash selfie in an empty parking lot at blue hour, 22-year-old white woman with sharp cheekbones and wet-look hair, black leather jacket over white — white ribbed tank. Harsh phone flash on face, deep shadows behind, distant sodium lights bokeh. Raw Y2K digicam realism, unfiltered skin, bold direct gaze. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-parking-lot-flash-portrait.png"
+  },
+  {
+    "id": "zorixa-blue-sky-sun-repose",
+    "modelId": "zorixa",
+    "title": "Blue sky sun repose",
+    "prompt": "an1ta, a close-up low-angle portrait of a young woman with eyes gently closed, head tilted back in serene repose against a clear vibrant blue sky. Face bathed in bright natural sunlight highlighting dewy skin, soft pink blush, glossy slightly parted lips with golden highlights. Long wavy blonde hair fans out dynamically, strands catching wind and sunlight with fine flyaway texture. Subtle freckles on nose and cheekbones, eyelashes resting softly. Hint of soft pink fabric at shoulder. Direct high-contrast lighting, sharp highlights on forehead nose and chin, soft shadows on jawline and neck. Shallow depth of field blurs sky behind, tight framing from below. Dreamlike sun-drenched natural mood, quiet bliss under open sky. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-blue-sky-sun-repose.png"
+  },
+  {
+    "id": "zorixa-coastal-terrace-stillness",
+    "modelId": "zorixa",
+    "title": "Coastal terrace stillness",
+    "prompt": "an1ta, a nude woman seated on sun-warmed concrete, legs drawn close, arms wrapped around knees, head resting on forearms, gazing directly at viewer with soft contemplative eyes and subtly parted lips. Skin glows with natural warmth, smooth and sun-kissed, bright midday light sculpting torso shoulders and thighs. Dark straight hair past shoulders framing face. One foot forward in sleek nude pointed-toe block heel contrasting bare skin. Minimalist coastal terrace background — white balustrade, ornate black metal railing, white finial, saturated cerulean sky. Hard direct lighting, sharp clean shadows beneath limbs. Low intimate eye-level camera, slightly wide full figure, shallow depth of field blurring railing. Centered asymmetrical composition, serene vulnerability and sun-drenched stillness. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-coastal-terrace-stillness.png"
+  },
+  {
+    "id": "zorixa-water-bottle-profile-macro",
+    "modelId": "zorixa",
+    "title": "Water bottle profile macro",
+    "prompt": "an1ta, sun-drenched close-up of a woman's face in profile, eyes gently closed, lips parted drinking from clear plastic water bottle tilted to mouth, droplets cascading down chin and neck. Skin glistening with moisture and scattered freckles in golden light, dark hair clinging to temple. Fingers with gold band, silver signet, beaded rings gripping bottle. Shallow depth of field, grainy neutral background bokeh. Warm directional sunlight upper left, sharp highlights on cheekbone and nose. Cinematic macro framing, tactile wet skin glossy lips translucent plastic, subtle lens flare. Raw sunbaked moment of quiet thirst. Vertical in 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-water-bottle-profile-macro.png"
+  },
+  {
+    "id": "zorixa-beach-sand-face-close-up",
+    "modelId": "zorixa",
+    "title": "Beach sand face close-up",
+    "prompt": "an1ta, a woman lying prone on fine sun-warmed beach sand, face turned toward camera, one cheek pressed into grain, wet dark hair fanned out clinging to skin glistening with seawater and fine sand. Vivid green slightly hooded eyes gaze directly, long damp lashes, dewy skin, lips parted pink and glossy. Bare shoulder and upper arm sun-kissed against sand, subtle back curve beneath wet hair. Soft blurred turquoise water and distant green coastline. Warm diffused daylight, soft shadows under jaw and collarbone. Low-angle intimate close-up, hyperrealistic skin detail, natural color grading, quiet sensual stillness. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-beach-sand-face-close-up.png"
+  },
+  {
+    "id": "zorixa-floating-golden-hour-water",
+    "modelId": "zorixa",
+    "title": "Floating golden hour water",
+    "prompt": "an1ta, a woman floating serenely in calm rippling water, head tilted back, eyes closed, lips slightly parted, skin glistening with droplets in warm golden-hour glow. Dark wet hair fans behind her, clinging to neck and shoulders. Delicate thin hoop earrings catch light. Shoulders and collarbones emerge sun-kissed with natural texture and waterline shadows. Water shimmers muted teal and amber, organic ripple patterns. Soft-focus water background. Natural diffused light from above and behind, gentle highlights on jawline and décollétage. Water-level tight medium close-up, shallow depth of field, cinematic realism, stillness vulnerability effortless grace. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-floating-golden-hour-water.png"
+  },
+  {
+    "id": "gpt-image-2-blue-sky-sun-repose",
+    "modelId": "gpt-image-2",
+    "title": "Blue sky sun repose",
+    "prompt": "an1ta, a close-up low-angle portrait of a young woman with eyes gently closed, head tilted back in serene repose against a clear vibrant blue sky. Face bathed in bright natural sunlight highlighting dewy skin, soft pink blush, glossy slightly parted lips with golden highlights. Long wavy blonde hair fans out dynamically, strands catching wind and sunlight with fine flyaway texture. Subtle freckles on nose and cheekbones, eyelashes resting softly. Hint of soft pink fabric at shoulder. Direct high-contrast lighting, sharp highlights on forehead nose and chin, soft shadows on jawline and neck. Shallow depth of field blurs sky behind, tight framing from below. Dreamlike sun-drenched natural mood, quiet bliss under open sky. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-blue-sky-sun-repose.png"
+  },
+  {
+    "id": "gpt-image-2-coastal-terrace-stillness",
+    "modelId": "gpt-image-2",
+    "title": "Coastal terrace stillness",
+    "prompt": "an1ta, a nude woman seated on sun-warmed concrete, legs drawn close, arms wrapped around knees, head resting on forearms, gazing directly at viewer with soft contemplative eyes and subtly parted lips. Skin glows with natural warmth, smooth and sun-kissed, bright midday light sculpting torso shoulders and thighs. Dark straight hair past shoulders framing face. One foot forward in sleek nude pointed-toe block heel contrasting bare skin. Minimalist coastal terrace background — white balustrade, ornate black metal railing, white finial, saturated cerulean sky. Hard direct lighting, sharp clean shadows beneath limbs. Low intimate eye-level camera, slightly wide full figure, shallow depth of field blurring railing. Centered asymmetrical composition, serene vulnerability and sun-drenched stillness. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-coastal-terrace-stillness.png"
+  },
+  {
+    "id": "gpt-image-2-water-bottle-profile-macro",
+    "modelId": "gpt-image-2",
+    "title": "Water bottle profile macro",
+    "prompt": "an1ta, sun-drenched close-up of a woman's face in profile, eyes gently closed, lips parted drinking from clear plastic water bottle tilted to mouth, droplets cascading down chin and neck. Skin glistening with moisture and scattered freckles in golden light, dark hair clinging to temple. Fingers with gold band, silver signet, beaded rings gripping bottle. Shallow depth of field, grainy neutral background bokeh. Warm directional sunlight upper left, sharp highlights on cheekbone and nose. Cinematic macro framing, tactile wet skin glossy lips translucent plastic, subtle lens flare. Raw sunbaked moment of quiet thirst. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-water-bottle-profile-macro.png"
+  },
+  {
+    "id": "gpt-image-2-beach-sand-face-close-up",
+    "modelId": "gpt-image-2",
+    "title": "Beach sand face close-up",
+    "prompt": "an1ta, a woman lying prone on fine sun-warmed beach sand, face turned toward camera, one cheek pressed into grain, wet dark hair fanned out clinging to skin glistening with seawater and fine sand. Vivid green slightly hooded eyes gaze directly, long damp lashes, dewy skin, lips parted pink and glossy. Bare shoulder and upper arm sun-kissed against sand, subtle back curve beneath wet hair. Soft blurred turquoise water and distant green coastline. Warm diffused daylight, soft shadows under jaw and collarbone. Low-angle intimate close-up, hyperrealistic skin detail, natural color grading, quiet sensual stillness. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-beach-sand-face-close-up.png"
+  },
+  {
+    "id": "gpt-image-2-floating-golden-hour-water",
+    "modelId": "gpt-image-2",
+    "title": "Floating golden hour water",
+    "prompt": "an1ta, a woman floating serenely in calm rippling water, head tilted back, eyes closed, lips slightly parted, skin glistening with droplets in warm golden-hour glow. Dark wet hair fans behind her, clinging to neck and shoulders. Delicate thin hoop earrings catch light. Shoulders and collarbones emerge sun-kissed with natural texture and waterline shadows. Water shimmers muted teal and amber, organic ripple patterns. Soft-focus water background. Natural diffused light from above and behind, gentle highlights on jawline and décollétage. Water-level tight medium close-up, shallow depth of field, cinematic realism, stillness vulnerability effortless grace. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-floating-golden-hour-water.png"
+  },
+  {
+    "id": "flux-dev-milan-npc-crosswalk",
+    "modelId": "flux-dev",
+    "title": "Milan NPC crosswalk",
+    "prompt": "Shot in a bustling Milan crosswalk, model standing statue-still as dozens of pedestrians blur around her. Camel oversized trench coat, pressed gray trousers, black loafers with pristine white socks, arms stiffly at sides. Floating yellow exclamation mark or spinning loading circle over her head — classic NPC iconography. Unreadable face, lips slightly parted, eyes unfocused like mid-software update. Street signs, chaotic traffic, scooters in motion frame her as the only still element. Surrealism meets streetwear, frenetic background contrast. Caption energy: Did I just walk into a side quest? Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-dev-milan-npc-crosswalk.jpg"
+  },
+  {
+    "id": "flux-dev-golden-backlit-raw-portrait",
+    "modelId": "flux-dev",
+    "title": "Golden backlit raw portrait",
+    "prompt": "Extreme portrait close-up, hair messy, nostrils flared, mouth slightly open. Eyes filled with something between anger and exhaustion. Backlit with warm golden tones. Skin texture fully visible, unretouched cinematic realism. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-dev-golden-backlit-raw-portrait.jpg"
+  },
+  {
+    "id": "flux-dev-zebra-crossing-activism-runway",
+    "modelId": "flux-dev",
+    "title": "Zebra crossing activism runway",
+    "prompt": "Full-body street shot mid-step across zebra crossing. Model in oversized tan linen suit two sizes too big, striped blue tee, chunky white sneakers with visible wear. Holding homemade cardboard sign reading Life is a fashion show. Dead serious expression like marching for a cause. One AirPod dangling, other missing. Behind: SUV honking, confused bystander with coffee, tourist taking photo. Slightly below waist level to exaggerate movement and rebellion, background motion blurred. Activism but make it runway energy. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-dev-zebra-crossing-activism-runway.jpg"
+  },
+  {
+    "id": "flux-dev-cobalt-headphones-gold-chains",
+    "modelId": "flux-dev",
+    "title": "Cobalt headphones gold chains",
+    "prompt": "Shot against bold cobalt blue backdrop, model leaning slightly backward chin raised, collarbone and layered gold chains exposed. Oversized vintage studio headphones with visible screws, exposed wires, chunky ear cups. Skin glows bronze undertones, deep rose blush on cheekbones. Caramel gloss lips slightly parted. Eyes look directly through lens with calm confidence, natural bold brows. Small heart tattoo at base of neck peeking under jewelry. She doesn't listen to music she downloads dimensions mood. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-dev-cobalt-headphones-gold-chains.jpg"
+  },
+  {
+    "id": "flux-dev-bronze-sweat-chrome-sunglasses",
+    "modelId": "flux-dev",
+    "title": "Bronze sweat chrome sunglasses",
+    "prompt": "Extreme close-up female model against pure white background under high noon sun. Hair slicked straight back with wet gel, no flyaways. Skin gleams like molten bronze drenched in sweat beads and water droplets catching harsh light across cheekbones and collarbone. Oversized matte black sunglasses with mirrored chrome lenses reflecting sunlit desert scene. Lips parted slightly in sheer glaze, unreadable expression. Contour and lashes only. Shot on 85mm sharp detail, skin texture visible, nothing retouched. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-dev-bronze-sweat-chrome-sunglasses.jpg"
+  },
+  {
+    "id": "flux-dev-teacup-stack-meadow-dawn",
+    "modelId": "flux-dev",
+    "title": "Teacup stack meadow dawn",
+    "prompt": "Gentle spring meadow at dawn, rolling mist, a young woman in a sky-blue sundress balancing carefully on top of a towering stack of oversized teacups painted with delicate floral patterns, dandelion seeds floating around her, distant trees draped with pastel bunting, subtle golden sunlight catching tiny droplets on grass, candid dreamy style. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-dev-teacup-stack-meadow-dawn.jpg"
+  },
+  {
+    "id": "flux-dev-iceland-rainbow-armor-fencing",
+    "modelId": "flux-dev",
+    "title": "Iceland rainbow armor fencing",
+    "prompt": "Volcanic Icelandic black-sand beach, harsh wind whipping up spray, a girl in bright rainbow dragon-scale armor practicing fencing footwork, lava rocks steaming faintly around her, subtle light breaking through thick storm clouds, candid off-balance style, realistic color grading. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-dev-iceland-rainbow-armor-fencing.jpg"
+  },
+  {
+    "id": "flux-dev-salt-flat-melting-silver-gown",
+    "modelId": "flux-dev",
+    "title": "Salt flat melting silver gown",
+    "prompt": "Vast salt flat under pastel sunrise, a woman in a flowing pale blue silk gown standing motionless as her dress appears to melt into pools of reflective liquid silver spreading across the cracked salt crust, faint pink sky reflected, distant mountains warped in shimmering puddles, dreamy candid style. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-dev-salt-flat-melting-silver-gown.jpg"
+  },
+  {
+    "id": "flux-dev-forest-golden-picture-frame",
+    "modelId": "flux-dev",
+    "title": "Forest golden picture frame",
+    "prompt": "Deep forest path, soft morning light, a woman in a flowing emerald gown stepping through an enormous floating golden picture frame, half her body inside half outside as if crossing dimensions, giant moths circling the frame, subtle fog rising from forest floor, muted green and gold tones, candid style. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-dev-forest-golden-picture-frame.jpg"
+  },
+  {
+    "id": "flux-dev-desert-molten-chrome-suit",
+    "modelId": "flux-dev",
+    "title": "Desert molten chrome suit",
+    "prompt": "Desert cliff plateau at sunset, golden hour light, a young man wearing a futuristic metallic suit that seems to drip molten chrome off his shoulders, liquid metal running into dusty red sand, subtle wind lifting strands of hair, distant canyon softly blurred, dreamy cinematic color palette. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-dev-desert-molten-chrome-suit.jpg"
+  },
+  {
+    "id": "flux-schnell-saturn-rings-mustang",
+    "modelId": "flux-schnell",
+    "title": "Saturn rings Mustang",
+    "prompt": "3n0v0. Saturn's rings. Low angle closeup of little 1960 red Ford Mustang driving at high speed on textured surface of colossal Saturn's outermost main ring. Rings curve dramatically into foreground and connect visibly to Saturn's equator in mid-background, only lower hemisphere with clear atmospheric bands. Car tiny compared to ring particles, emphasizing Saturn's colossal size. No detached rings — one continuous ring system attached to planet. Deep space background with distant stars. Reflections on metallic car surfaces and ice crystals in rings. Amateur quality, candid style. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-schnell-saturn-rings-mustang.jpg"
+  },
+  {
+    "id": "flux-schnell-coral-reef-victorian-stove",
+    "modelId": "flux-schnell",
+    "title": "Coral reef Victorian stove",
+    "prompt": "Underwater coral reef, clear tropical sea, giant cast-iron Victorian stove resting among brightly colored coral heads, faint orange flames visible in oven window, clownfish swimming through burners, rays of light through turquoise water, slight lens haze, candid style. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-schnell-coral-reef-victorian-stove.jpg"
+  },
+  {
+    "id": "flux-schnell-kora-bubble-subway",
+    "modelId": "flux-schnell",
+    "title": "KORA bubble subway",
+    "prompt": "Giant subway station flooded with white fog, letters KORA built from massive floating soap bubbles each containing flickering candle flame, little girl in bright yellow raincoat gently pushing letter K like a swing, faint station loudspeaker repeating distorted lullaby, hyper-surreal. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-schnell-kora-bubble-subway.jpg"
+  },
+  {
+    "id": "flux-schnell-yellow-room-velvet-iphone",
+    "modelId": "flux-schnell",
+    "title": "Yellow room velvet iPhone",
+    "prompt": "Male model laying on the floor in a yellow room, dressed in black velvet, shot on iPhone, candid amateur style. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-schnell-yellow-room-velvet-iphone.jpg"
+  },
+  {
+    "id": "flux-schnell-apricot-sunrise-silk-robe",
+    "modelId": "flux-schnell",
+    "title": "Apricot sunrise silk robe",
+    "prompt": "Backlit voile curtains diffuse apricot sunrise across marble vanity as he raises one arm, sleeve of dove-grey silk robe slipping to reveal fine tattoos and glinting signet ring. Other hand steadies at waist level framing collarbones in soft gold light. Linen pillow creases ghost his cheek, pores crisp where warm beam meets cool bathroom shadow. Steam flecks on glass add milky halos bleeding into robe satin texture. Gaze on distant skyline reflection not lens — suite serenity, muted luxury in first-light glow. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-schnell-apricot-sunrise-silk-robe.jpg"
+  },
+  {
+    "id": "flux-schnell-rooftop-pink-cobalt-clouds",
+    "modelId": "flux-schnell",
+    "title": "Rooftop pink cobalt clouds",
+    "prompt": "Electric pink and cobalt clouds collide behind her as she tilts camera slightly upward, city grid glowing below. Cropped lemon vinyl moto jacket bounces neon twilight over slick berry-tinted lips, fine chain earrings catch stray embers of sunset. Breeze lifts bleach-tipped curls, strand edges haloing into lens flare ribbons. Harsh edge-light etches jacket micro-cracks while sky gradient blurs into matte freckles. She watches south tower lights ignite one by one — golden-hour abrasion, rooftop chroma folded into urban calm. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-schnell-rooftop-pink-cobalt-clouds.jpg"
+  },
+  {
+    "id": "flux-schnell-seaside-straw-visor",
+    "modelId": "flux-schnell",
+    "title": "Seaside straw visor",
+    "prompt": "Blazing seaside sun pours white heat over straw visor brim, flaring pastel highlights across butter linen playsuit cinched with braided jute belt. Fine salt crystals spark on dewy skin, wind tugs loose tendril across glossed peach lips. Camera held slightly above eye level exaggerates cobalt ocean lines rippling behind, lens smudge from sunscreen softens burned wood planks into watercolor streaks. Relaxed smile shy of performative — vacation languor, seaside brightness in handheld ease. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-schnell-seaside-straw-visor.jpg"
+  },
+  {
+    "id": "flux-schnell-neon-floor-honey-trench",
+    "modelId": "flux-schnell",
+    "title": "Neon floor honey trench",
+    "prompt": "She sits cross-legged on polished concrete, honey vinyl trench pooling around ankles. One hand props under chin, red lacquer nails catching neon magenta spill from wall projection. Glossy floor mirrors her face in soft blur, stray projector pixels dance across cheekbones. Eyes fixed on ghost-reflection — downtown reverie, liquid light. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-schnell-neon-floor-honey-trench.jpg"
+  },
+  {
+    "id": "flux-schnell-charcoal-lam-keylight",
+    "modelId": "flux-schnell",
+    "title": "Charcoal lamé keylight",
+    "prompt": "Razor keylight bisects his face, chiseling geometric planes of charcoal lamé suit fabric folded into origami lapels. High-crease pleats echo negative-space V down to matte sable mesh top. Background vanishes to obsidian, translucent powder dust on brow arches into faint halo under harsh beam. Steady gaze hovers just over sensor — monochrome architecture, human silhouette turned sculpture. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-schnell-charcoal-lam-keylight.jpg"
+  },
+  {
+    "id": "flux-schnell-melting-mascara-couture",
+    "modelId": "flux-schnell",
+    "title": "Melting mascara couture",
+    "prompt": "Model's face streaked with melting mascara running down like ink tattoos, skin otherwise poreless and glowing. Silver pill capsule earrings, teeth glisten like diamonds. Expressionless — not crying, just melting. All black background, harsh side flash. She cried but make it couture energy. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/flux-schnell-melting-mascara-couture.jpg"
+  },
+  {
+    "id": "nano-banana-2-heart-lollipop-menace",
+    "modelId": "nano-banana-2",
+    "title": "Heart lollipop menace",
+    "prompt": "Extreme close-up. Model stares directly into camera, lip gloss thick like syrup, heart-shaped lollipop melting against cheek instead of mouth. Candy sticks to skin as if branding her. Blank expression bordering on menacing. Lashes spiked like wet daggers. Hair slicked behind ears. Hyper-clean lighting white backdrop, sharp shadows from under-eye glitter. Sweetness is a threat when it doesn't blink mood. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-heart-lollipop-menace.png"
+  },
+  {
+    "id": "nano-banana-2-sweat-scarf-golden-hour",
+    "modelId": "nano-banana-2",
+    "title": "Sweat scarf golden hour",
+    "prompt": "Extreme close-up. Model's face flushed, lips parted, skin glowing with heat and sheen. Silk scarf stuck to temple from sweat clinging like second skin. Hair strands across forehead. One earring dangling out of place. Lip gloss blurred at corners. Eyes fierce. Golden-hour direct lighting. She doesn't melt she softens into power mood. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-sweat-scarf-golden-hour.jpg"
+  },
+  {
+    "id": "nano-banana-2-vaseline-vinyl-gloss-portrait",
+    "modelId": "nano-banana-2",
+    "title": "Vaseline vinyl gloss portrait",
+    "prompt": "Portrait with extreme gloss. Skin coated in thick Vaseline layer under harsh white lighting, forehead and cheeks gleam like vinyl. Red lips smudged from kiss or fight. Nose slightly bruised. No retouching. Stare locked and unreadable. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-vaseline-vinyl-gloss-portrait.png"
+  },
+  {
+    "id": "nano-banana-2-vanity-curlers-breakdown",
+    "modelId": "nano-banana-2",
+    "title": "Vanity curlers breakdown",
+    "prompt": "Front-facing shot under vanity lights. Model expression blank but powerful, pouty glossed lips slightly parted, lids half-shut in sleepy indifference. Skin glows unrealistic blur mix of skincare and Facetune. Blue and pink curlers wrap bangs and crown like tiara of missed opportunities. Pink cocktail dress strap off one shoulder. Half-melted candle behind, knockoff Chanel compact visible. Not ready to go out not staying in either. Sometimes beauty is the breakdown mood. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-vanity-curlers-breakdown.png"
+  },
+  {
+    "id": "nano-banana-2-freckle-constellation-close-up",
+    "modelId": "nano-banana-2",
+    "title": "Freckle constellation close-up",
+    "prompt": "Super close-up of nose cheeks and lips. Natural freckles darkened and multiplied until inked constellations. Lashes tinted red. Lips lined brown with smudged glossy top. Sweat glistening under nose. One tiny nose stud. Blurred sunlight hitting concrete background. Imperfection was never the enemy mood. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-freckle-constellation-close-up.jpg"
+  },
+  {
+    "id": "nano-banana-2-reverse-sprint-acid-suit",
+    "modelId": "nano-banana-2",
+    "title": "Reverse sprint acid suit",
+    "prompt": "Model sprints backward through city alleyways as world moves forward — cars drive birds fly dust swirls but she runs in reverse. Movements glitch slightly stuck in rewind loop. Deconstructed suiting acid yellow asymmetric panels flapping open, pin heels. Hair slicked back makeup running in reverse streaks. Tracking dolly reverse model runs backward normal speed. Rotating drone above intersections. Low-angle rear chase cam skirt dragging pavement. Coat tears into static frames light smears forward while she runs backward. Urgency alienation fighting time fashion wins. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-reverse-sprint-acid-suit.png"
+  },
+  {
+    "id": "nano-banana-2-croissant-golden-oven-dawn",
+    "modelId": "nano-banana-2",
+    "title": "Croissant golden oven dawn",
+    "prompt": "Golden ovens cast buttery glow on his cheek while flaking croissant crumbs cling to rumpled linen collar. Caramel knit cardigan pools soft at throat, powdered sugar dusts beard stubble in faint constellation. Condensation fogs glass between him and sunrise street blooming warm halos across iris flecks. Eyes linger on rising dough beyond lens — break-of-day indulgence wrapped in pastry light. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-croissant-golden-oven-dawn.jpg"
+  },
+  {
+    "id": "nano-banana-2-marquee-pompadour-hollywood",
+    "modelId": "nano-banana-2",
+    "title": "Marquee pompadour Hollywood",
+    "prompt": "Marquee bulbs burst champagne sparkles onto slick pompadour and ivory shawl-collar dinner jacket. Jet satin bow tie hugs throat, peak lapel picks up gold reflections from zig-zag brass sconce at frame edge. Bokeh bulbs smear comet trails subtle lens haze diffuses theatrical smoke behind. Calm eyes on distant stage door — old-Hollywood grandeur timeless hush beneath city glitter. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-marquee-pompadour-hollywood.jpg"
+  },
+  {
+    "id": "nano-banana-2-steam-mug-brownstone-dawn",
+    "modelId": "nano-banana-2",
+    "title": "Steam mug brownstone dawn",
+    "prompt": "Steam curls from matte steel mug held near jaw fogging stray beard hairs glinting in dawn blue light. Rust-flecked iron bars frame shoulders in oversize camel waffle-knit sweater, golden hour teases copper strands through tousled fringe. Slight barrel distortion elongates brick facades behind, soft thumb smudge ghosts lower corner diffusing brick into watercolor. Eyes on waking skyline — quiet ritual elevated brownstone serenity. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-2-steam-mug-brownstone-dawn.jpg"
+  },
+  {
+    "id": "nano-banana-pro-screaming-face-earrings",
+    "modelId": "nano-banana-pro",
+    "title": "Screaming face earrings",
+    "prompt": "Model's face still but earrings absurdly huge shaped like mouthless faces that scream in silence. Eyes calm almost deadpan. Editorial minimal makeup bleached brows sheer skin pale lavender matte lip. Flat brutalist white lighting. Neck strains slightly from weight of earrings. She speaks through statement pieces mood. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-screaming-face-earrings.jpg"
+  },
+  {
+    "id": "nano-banana-pro-fuchsia-strobe-vinyl-puffer",
+    "modelId": "nano-banana-pro",
+    "title": "Fuchsia strobe vinyl puffer",
+    "prompt": "Single strobe flares fuchsia across dewy cheekbones casting holographic highlights along cherry-vinyl puffer shoulders. Gel-slick baby hairs sparkle micro-glitter, magnolia-tinted gloss pools at parted lips. Backdrop paper blurs radial gradient shallow depth isolates every pore. Stare pierces beyond camera glass unwavering — electric bloom fashion-week heartbeat. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-fuchsia-strobe-vinyl-puffer.png"
+  },
+  {
+    "id": "nano-banana-pro-misty-mirror-identity-glitch",
+    "modelId": "nano-banana-pro",
+    "title": "Misty mirror identity glitch",
+    "prompt": "Massive mirror in misty field. Model walks around in one outfit walks into it exits other side in another faster glitchier multiplied. Two polar opposite looks minimalist monochrome vs chaotic texture explosion tulle wire fringe latex. 180 arc around mirror as she paces sudden whip zoom into reflection snap cut other side sideways handheld glide multiple versions appear increasing speed. Reflections stutter blur disappear mid-frame walk becomes echo trails. Identity fracture elegance in glitch mirror is time body is narrative. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-misty-mirror-identity-glitch.png"
+  },
+  {
+    "id": "nano-banana-pro-deepfake-dance-twin",
+    "modelId": "nano-banana-pro",
+    "title": "Deepfake dance twin",
+    "prompt": "Empty industrial space two identical models one real one deepfake. Matching silk gowns identical poses mid-dance one dips other AI version glitches slightly. 360 rotating dolly track seamless take spinning around them every 180 real and clone change positions. Uncanny intimacy human vs echo. Spotlights four directions shadows never align. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-deepfake-dance-twin.png"
+  },
+  {
+    "id": "nano-banana-pro-locker-room-boxer-isolation",
+    "modelId": "nano-banana-pro",
+    "title": "Locker room boxer isolation",
+    "prompt": "Boxer in hoodie sits alone under flickering fluorescent light in locker room. Bloodied knuckles empty chair beside him. Low-key lighting heavy shadows. Emotion pride tainted with isolation. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-locker-room-boxer-isolation.jpg"
+  },
+  {
+    "id": "nano-banana-pro-floating-hair-lavender-field",
+    "modelId": "nano-banana-pro",
+    "title": "Floating hair lavender field",
+    "prompt": "Close-up woman's face with strands of hair floating horizontally suspended unnaturally in air. Eyes closed serene expression listening to something from the past. Blurred lavender field swaying opposite direction background. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-floating-hair-lavender-field.jpg"
+  },
+  {
+    "id": "nano-banana-pro-eclipse-eye-sundial-lashes",
+    "modelId": "nano-banana-pro",
+    "title": "Eclipse eye sundial lashes",
+    "prompt": "Extreme close-up of just one eye pupil contains miniature solar eclipse reflections of crescent light halo around iris. Lashes cast long shadows across skin like sundials. Celestial intimacy a universe blinking mood. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-eclipse-eye-sundial-lashes.jpg"
+  },
+  {
+    "id": "nano-banana-pro-zorixa-dad-cap-cigarette",
+    "modelId": "nano-banana-pro",
+    "title": "Zorixa dad cap cigarette",
+    "prompt": "Tight close-up embroidered text hat dominates frame brim tilted down soft shadow. Natural sunlight bright almost too honest. Cropped jawline fingers mid-puff cigarette unbothered anonymity. Washed-out grey dad cap soft lived-in fabric baby pink embroidery reads WE LOVE ZORIXA. Light grey hoodie drawstrings visible. Cigarette ash at tip slightly curled fingers mid-inhale. Disappearing act aesthetic softboy edge burnt-out romantic streetwear meets mental health merch mood. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-zorixa-dad-cap-cigarette.png"
+  },
+  {
+    "id": "nano-banana-pro-zorixa-graphic-tee-pov",
+    "modelId": "nano-banana-pro",
+    "title": "Zorixa graphic tee POV",
+    "prompt": "Tight close-up top-down angle almost POV placing viewer in her gaze. Soft natural lighting golden-hour warmth intimate vintage tone. Simple beige couch off-white wall background. Fitted white graphic tee stretchy fit red serif text We love ZORIXA question mark. Bold silver rings every finger thick bangles both wrists. Small hoop nose piercing multiple thin chains. Deadpan seductive Tumblr-core alt beauty Y2K chaos soft grunge deadpan baddie film photo coded. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/nano-banana-pro-zorixa-graphic-tee-pov.jpg"
+  },
+  {
+    "id": "seedream-5-burning-newspaper-street",
+    "modelId": "seedream-5",
+    "title": "Burning newspaper street",
+    "prompt": "Calm face burning truth. Young man stands motionless in middle of street reading newspaper engulfed in flames. Expression unbothered eyes focused fire doesn't exist. Loose charcoal trousers dark jacket crisp white shirt underneath AirPods in. Urban Southeast Asian streetscape mopeds cracked sidewalk striped awning tangled wires man background sips tea. Bright cinematic fire curling center fold. Subversive editorial visual metaphor chaoscore Balenciaga meets Banksy if the world is on fire I'll read the fine print. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-burning-newspaper-street.jpg"
+  },
+  {
+    "id": "seedream-5-vaseline-vinyl-gloss-portrait",
+    "modelId": "seedream-5",
+    "title": "Vaseline vinyl gloss portrait",
+    "prompt": "Portrait with extreme gloss. Skin coated thick Vaseline under harsh white lighting forehead and cheeks gleam like vinyl. Red lips smudged from kiss or fight. Nose slightly bruised. No retouching. Stare locked and unreadable. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-vaseline-vinyl-gloss-portrait.jpg"
+  },
+  {
+    "id": "seedream-5-underwater-couch-magazine",
+    "modelId": "seedream-5",
+    "title": "Underwater couch magazine",
+    "prompt": "Figure sits on couch underwater hair flowing upward pages of magazine frozen mid-flip. Sheer pale gown billowing organza. Lighting mimics pool reflections aqua beams dancing across scene. Simulated underwater lens distortion. Surreal detail not a single water droplet on face skin flawless dry unreal. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-underwater-couch-magazine.jpg"
+  },
+  {
+    "id": "seedream-5-broken-doll-porcelain-arch",
+    "modelId": "seedream-5",
+    "title": "Broken doll porcelain arch",
+    "prompt": "Model spine arched backward near-unnatural curve arms stiffly outstretched like broken doll limbs chin tucked into chest eyes wide open. All-white corseted gown sharp ceramic-like panels hair sculpted jagged porcelain shards. Side profile 50mm mid-height emphasize unnatural body arc. Fragile elegant wrong sculpture before collapse Viktor and Rolf meets Tim Burton. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-broken-doll-porcelain-arch.jpg"
+  },
+  {
+    "id": "seedream-5-velvet-theater-wilted-flower",
+    "modelId": "seedream-5",
+    "title": "Velvet theater wilted flower",
+    "prompt": "Inside decaying velvet theater sunlight through broken rafters dust catching golden light. Structured black velvet dress exaggerated shoulders wet hair slicked flat minimal makeup. Sitting sideways red velvet seat one arm draped over back head on fingers legs crossed at ankle other hand holds wilted limp flower. Gaze directly into camera confrontational stillness. Eye-level 50mm shallow depth f/1.4 empty rows blur behind. Warm tone wash slight chromatic aberration. Editorial stillness cinematic decay ghost in love with past life. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-velvet-theater-wilted-flower.jpg"
+  },
+  {
+    "id": "seedream-5-tidepool-dusk-seafoam",
+    "modelId": "seedream-5",
+    "title": "Tidepool dusk seafoam",
+    "prompt": "Tidepools at dusk reflective glassy water mossy rock textures. Floor-length silk dress soaked clinging deep seafoam green no shoes skin dewy wind-kissed. Reclining half-submerged tidepool propped on one elbow hair floating eyes closed lips slightly parted mid-breath one hand floats above surface fingers grazing water. Overhead drone 85mm tilt-down centered above water ripples circular lines. Slow-motion ripple trails natural lens flare golden hour pastel tones. Romantic surrealism nature whispering through skin. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-tidepool-dusk-seafoam.jpg"
+  },
+  {
+    "id": "seedream-5-forest-golden-picture-frame",
+    "modelId": "seedream-5",
+    "title": "Forest golden picture frame",
+    "prompt": "Deep forest path soft morning light woman in flowing emerald gown stepping through enormous floating golden picture frame half body inside half outside crossing dimensions giant moths circling frame subtle fog from forest floor muted green and gold tones candid style. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-forest-golden-picture-frame.jpg"
+  },
+  {
+    "id": "seedream-5-construction-site-cement-rebellion",
+    "modelId": "seedream-5",
+    "title": "Construction site cement rebellion",
+    "prompt": "Live construction site models walk barefoot through freshly poured cement in silk gowns and sunglasses. One sits plastic chair half-submerged in drying concrete. Another paints brick wall wearing opera gloves and steel corset only. Clothing rigid reflective impractical dirt on heels dust on cheeks. Silent rebellion sculptural fashion meets real labor absurd stunning. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-construction-site-cement-rebellion.jpg"
+  },
+  {
+    "id": "seedream-5-giant-apple-nyc-iphone",
+    "modelId": "seedream-5",
+    "title": "Giant apple NYC iPhone",
+    "prompt": "iPhone photo of a giant apple in the middle of NYC street candid amateur style surreal scale. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/seedream-5-giant-apple-nyc-iphone.jpg"
+  },
+  {
+    "id": "zorixa-sand-touch-monochrome-lips",
+    "modelId": "zorixa",
+    "title": "Sand touch monochrome lips",
+    "prompt": "an1ta, extreme close-up of woman's lower face and fingers, skin dusted fine granular sand clinging to lips nose fingertips, lips slightly parted natural texture subtle moisture, nose softly rounded visible pores sand on bridge and nostrils, fingers gently pressed against mouth nails short unpolished sand under cuticles. Monochrome soft grayscale contrast tactile grain subtle shadows. Diffused even lighting from above faint shadows beneath fingers and lip contours. Shallow depth of field blurred background. Tightly framed mouth nose fingers only intimate tactile sensory realism. Serene yet subtly sensual high-fidelity black-and-white an1ta style facial and textural fidelity. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-sand-touch-monochrome-lips.png"
+  },
+  {
+    "id": "zorixa-wet-torso-b-w-sky",
+    "modelId": "zorixa",
+    "title": "Wet torso B&W sky",
+    "prompt": "an1ta, shirtless man wet tousled dark hair trimmed beard gazing off side contemplative under natural daylight. Defined pectorals abs clavicles sharply sculpted glistening water droplets tracing skin and chest hair. Soft shadows accentuate musculature bright highlights on shoulders collarbones. High-contrast black-and-white sky scattered clouds blurred shallow depth of field. Low-angle medium close-up slight upward tilt torso below ribs to top of head. Directional light above and behind subtle rim light on hair and shoulders diffused natural brightness on chest. Realistic pores moisture sheen detailed stubble tension in jawline. Cinematic realism tactile precision. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-wet-torso-b-w-sky.png"
+  },
+  {
+    "id": "zorixa-medusa-chain-sun-wall",
+    "modelId": "zorixa",
+    "title": "Medusa chain sun wall",
+    "prompt": "an1ta, shirtless young man sun-kissed smooth skin defined pectorals and abs stands facing forward slight head tilt piercing blue eyes locking with viewer soft pink lips slightly parted tousled medium wavy brown hair. Delicate gold chain Medusa pendant at collarbone low-rise black trousers matte fabric. Stark white wall dramatic directional sunlight sharp elongated shadows high contrast. Light upper left highlights shoulders clavicle rib cage right arm partial shadow. Medium close-up mid-thigh upward slightly elevated angle calm intense expression quiet confidence. Cinematic intimate sculptural. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-medusa-chain-sun-wall.png"
+  },
+  {
+    "id": "zorixa-airplane-tongue-selfie-duo",
+    "modelId": "zorixa",
+    "title": "Airplane tongue selfie duo",
+    "prompt": "an1ta, close-up selfie two young adults inside airplane cabin both playfully sticking tongues toward camera. Woman foreground long glossy black wavy hair partially covering right eye fair skin soft makeup glossy lips black top. Man behind short styled brown hair light stubble blue eyes black hoodie holding colorful magazine. Cream overhead compartments warm LED strips red accent trim window frames diffused daylight. Tight intimate slightly low angle shallow depth of field candid lighthearted youthful energy. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-airplane-tongue-selfie-duo.png"
+  },
+  {
+    "id": "zorixa-gallery-portrait-twin-painting",
+    "modelId": "zorixa",
+    "title": "Gallery portrait twin painting",
+    "prompt": "Cinematic editorial portrait woman standing classic art gallery before large ornate gold framed oil painting depicting her likeness. Fitted black long sleeve deep neckline high-waisted dark satin skirt. Dark hair soft updo loose curls framing face delicate green pendant at collarbone. Confident contrapposto one hand on hip head slightly turned down painted version behind gazes forward surreal museum dialogue. Deep red patterned wallpaper dark wooden paneling warm gallery lighting rich tones subtle shadows ornate gold baroque frame. Eye level natural lens sharp focus warm color grading editorial fashion meets fine art cinematic realism symmetrical composition high detail. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-gallery-portrait-twin-painting.png"
+  },
+  {
+    "id": "zorixa-blonde-cigarette-smoke-noir",
+    "modelId": "zorixa",
+    "title": "Blonde cigarette smoke noir",
+    "prompt": "Beautiful woman fair skin blue eyes long blonde hair wearing sunglasses cigarette in mouth surrounded smoky atmosphere dark background dramatic lighting cinematic portrait. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-blonde-cigarette-smoke-noir.png"
+  },
+  {
+    "id": "zorixa-wheat-field-mirror-cranes",
+    "modelId": "zorixa",
+    "title": "Wheat field mirror cranes",
+    "prompt": "Endless wheat field golden hour giant floating origami cranes mirror-finish aluminum each 5 meters wide hovering perfect formation casting long warped reflections on crops below. Single scarecrow standing calmly partly torn fluttering subtle morning haze low contrast candid style slight lens flare. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-wheat-field-mirror-cranes.png"
+  },
+  {
+    "id": "zorixa-ice-train-savanna-lions",
+    "modelId": "zorixa",
+    "title": "Ice train savanna lions",
+    "prompt": "High-speed bullet train racing across vast moonlit savanna train cars made entirely transparent ice faint cracks streaking across dry grass lions running alongside moonlight distant storms flashing horizon candid snapshot subtle motion blur. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-ice-train-savanna-lions.png"
+  },
+  {
+    "id": "zorixa-cotton-candy-dam-zorixa",
+    "modelId": "zorixa",
+    "title": "Cotton candy dam Zorixa",
+    "prompt": "Abandoned concrete dam spillway cascade bright pink cotton candy waterfalls spelling ZORIXA tumbling down cracked spill gates barefoot child collecting sticky strands into wicker basket like harvesting flowers faint distant birds dreamy editorial style. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-cotton-candy-dam-zorixa.png"
+  },
+  {
+    "id": "zorixa-coffee-cup-zorixa-parking-lot",
+    "modelId": "zorixa",
+    "title": "Coffee cup Zorixa parking lot",
+    "prompt": "Giant abandoned parking lot dusk soft coral sky reflecting rain-soaked asphalt massive glossy white coffee cups arranged precise formation spelling ZORIXA in towering 10-foot letters each cup gently steaming chilly evening air. Lone woman metallic blue trench coat walking between letters like sculpture garden faint neon gas station reflections in puddles subtle breeze ruffling hair dreamy candid photoreal. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/zorixa-coffee-cup-zorixa-parking-lot.png"
+  },
+  {
+    "id": "gpt-image-2-sand-touch-monochrome-lips",
+    "modelId": "gpt-image-2",
+    "title": "Sand touch monochrome lips",
+    "prompt": "an1ta, extreme close-up of woman's lower face and fingers, skin dusted fine granular sand clinging to lips nose fingertips, lips slightly parted natural texture subtle moisture, nose softly rounded visible pores sand on bridge and nostrils, fingers gently pressed against mouth nails short unpolished sand under cuticles. Monochrome soft grayscale contrast tactile grain subtle shadows. Diffused even lighting from above faint shadows beneath fingers and lip contours. Shallow depth of field blurred background. Tightly framed mouth nose fingers only intimate tactile sensory realism. Serene yet subtly sensual high-fidelity black-and-white an1ta style facial and textural fidelity. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-sand-touch-monochrome-lips.png"
+  },
+  {
+    "id": "gpt-image-2-wet-torso-b-w-sky",
+    "modelId": "gpt-image-2",
+    "title": "Wet torso B&W sky",
+    "prompt": "an1ta, shirtless man wet tousled dark hair trimmed beard gazing off side contemplative under natural daylight. Defined pectorals abs clavicles sharply sculpted glistening water droplets tracing skin and chest hair. Soft shadows accentuate musculature bright highlights on shoulders collarbones. High-contrast black-and-white sky scattered clouds blurred shallow depth of field. Low-angle medium close-up slight upward tilt torso below ribs to top of head. Directional light above and behind subtle rim light on hair and shoulders diffused natural brightness on chest. Realistic pores moisture sheen detailed stubble tension in jawline. Cinematic realism tactile precision. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-wet-torso-b-w-sky.png"
+  },
+  {
+    "id": "gpt-image-2-medusa-chain-sun-wall",
+    "modelId": "gpt-image-2",
+    "title": "Medusa chain sun wall",
+    "prompt": "an1ta, shirtless young man sun-kissed smooth skin defined pectorals and abs stands facing forward slight head tilt piercing blue eyes locking with viewer soft pink lips slightly parted tousled medium wavy brown hair. Delicate gold chain Medusa pendant at collarbone low-rise black trousers matte fabric. Stark white wall dramatic directional sunlight sharp elongated shadows high contrast. Light upper left highlights shoulders clavicle rib cage right arm partial shadow. Medium close-up mid-thigh upward slightly elevated angle calm intense expression quiet confidence. Cinematic intimate sculptural. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-medusa-chain-sun-wall.png"
+  },
+  {
+    "id": "gpt-image-2-airplane-tongue-selfie-duo",
+    "modelId": "gpt-image-2",
+    "title": "Airplane tongue selfie duo",
+    "prompt": "an1ta, close-up selfie two young adults inside airplane cabin both playfully sticking tongues toward camera. Woman foreground long glossy black wavy hair partially covering right eye fair skin soft makeup glossy lips black top. Man behind short styled brown hair light stubble blue eyes black hoodie holding colorful magazine. Cream overhead compartments warm LED strips red accent trim window frames diffused daylight. Tight intimate slightly low angle shallow depth of field candid lighthearted youthful energy. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-airplane-tongue-selfie-duo.png"
+  },
+  {
+    "id": "gpt-image-2-gallery-portrait-twin-painting",
+    "modelId": "gpt-image-2",
+    "title": "Gallery portrait twin painting",
+    "prompt": "Cinematic editorial portrait woman standing classic art gallery before large ornate gold framed oil painting depicting her likeness. Fitted black long sleeve deep neckline high-waisted dark satin skirt. Dark hair soft updo loose curls framing face delicate green pendant at collarbone. Confident contrapposto one hand on hip head slightly turned down painted version behind gazes forward surreal museum dialogue. Deep red patterned wallpaper dark wooden paneling warm gallery lighting rich tones subtle shadows ornate gold baroque frame. Eye level natural lens sharp focus warm color grading editorial fashion meets fine art cinematic realism symmetrical composition high detail. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-gallery-portrait-twin-painting.png"
+  },
+  {
+    "id": "gpt-image-2-blonde-cigarette-smoke-noir",
+    "modelId": "gpt-image-2",
+    "title": "Blonde cigarette smoke noir",
+    "prompt": "Beautiful woman fair skin blue eyes long blonde hair wearing sunglasses cigarette in mouth surrounded smoky atmosphere dark background dramatic lighting cinematic portrait. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-blonde-cigarette-smoke-noir.png"
+  },
+  {
+    "id": "gpt-image-2-wheat-field-mirror-cranes",
+    "modelId": "gpt-image-2",
+    "title": "Wheat field mirror cranes",
+    "prompt": "Endless wheat field golden hour giant floating origami cranes mirror-finish aluminum each 5 meters wide hovering perfect formation casting long warped reflections on crops below. Single scarecrow standing calmly partly torn fluttering subtle morning haze low contrast candid style slight lens flare. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-wheat-field-mirror-cranes.png"
+  },
+  {
+    "id": "gpt-image-2-ice-train-savanna-lions",
+    "modelId": "gpt-image-2",
+    "title": "Ice train savanna lions",
+    "prompt": "High-speed bullet train racing across vast moonlit savanna train cars made entirely transparent ice faint cracks streaking across dry grass lions running alongside moonlight distant storms flashing horizon candid snapshot subtle motion blur. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-ice-train-savanna-lions.png"
+  },
+  {
+    "id": "gpt-image-2-cotton-candy-dam-zorixa",
+    "modelId": "gpt-image-2",
+    "title": "Cotton candy dam Zorixa",
+    "prompt": "Abandoned concrete dam spillway cascade bright pink cotton candy waterfalls spelling ZORIXA tumbling down cracked spill gates barefoot child collecting sticky strands into wicker basket like harvesting flowers faint distant birds dreamy editorial style. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-cotton-candy-dam-zorixa.png"
+  },
+  {
+    "id": "gpt-image-2-coffee-cup-zorixa-parking-lot",
+    "modelId": "gpt-image-2",
+    "title": "Coffee cup Zorixa parking lot",
+    "prompt": "Giant abandoned parking lot dusk soft coral sky reflecting rain-soaked asphalt massive glossy white coffee cups arranged precise formation spelling ZORIXA in towering 10-foot letters each cup gently steaming chilly evening air. Lone woman metallic blue trench coat walking between letters like sculpture garden faint neon gas station reflections in puddles subtle breeze ruffling hair dreamy candid photoreal. Vertical 3:4 portrait.",
+    "aspectRatio": "3:4",
+    "imageUrl": "/explore-prompts/gpt-image-2-coffee-cup-zorixa-parking-lot.png"
+  }
+]

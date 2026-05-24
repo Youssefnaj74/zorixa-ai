@@ -41,6 +41,21 @@ export function defaultGptImage2Selection(): {
   return { resolution: "1K", aspect: "3:2" };
 }
 
+/** GPT Image 2 size tier that supports the requested aspect (e.g. Explore prompts 3:4). */
+export function gptImage2SelectionForAspect(aspect: string): {
+  resolution: string;
+  aspect: string;
+} {
+  const a = aspect.trim();
+  if (!a || a === "Auto") return defaultGptImage2Selection();
+  for (const tier of ["1K", "2K", "3K"] as const) {
+    if (isGptImage2SizeSelection(tier, a)) {
+      return { resolution: tier, aspect: a };
+    }
+  }
+  return defaultGptImage2Selection();
+}
+
 export {
   defaultSeedreamSelection,
   formatSeedreamPixelLabel,

@@ -12,7 +12,9 @@ import { ImagePreview } from "@/components/image/ImagePreview";
 import {
   defaultGptImage2Selection,
   defaultSeedreamSelection,
+  gptImage2SelectionForAspect,
   IMAGE_ASPECTS,
+  IMAGE_RESOLUTIONS,
   isGptImage2SizeSelection,
   isSeedreamSizeSelection
 } from "@/components/image/image-bottom-bar-constants";
@@ -26,6 +28,7 @@ import {
   extractAtlasVideoOutputUrl,
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
+import { EXPLORE_PROMPT_DEFAULT_ASPECT } from "@/lib/explore-prompts-catalog";
 import { resolveImageStudioFromQuery } from "@/lib/studio-catalog-link";
 import {
   COMPOSER_DOCK_WITH_TABS_HEIGHT,
@@ -147,17 +150,57 @@ export function ImageGenerationPage() {
     }
 
     const aspectFromQuery = searchParams.get("aspect")?.trim();
-    if (aspectFromQuery && IMAGE_ASPECTS.includes(aspectFromQuery as (typeof IMAGE_ASPECTS)[number])) {
-      setAspect(aspectFromQuery);
+    const resolutionFromQuery = searchParams.get("resolution")?.trim();
+    const modelFromQuery = resolved?.model ?? searchParams.get("model")?.trim();
+
+    if (modelFromQuery === "gpt-image-2") {
+      const gpt = gptImage2SelectionForAspect(aspectFromQuery || EXPLORE_PROMPT_DEFAULT_ASPECT);
+      const res =
+        resolutionFromQuery &&
+        (IMAGE_RESOLUTIONS as readonly string[]).includes(resolutionFromQuery)
+          ? resolutionFromQuery
+          : gpt.resolution;
+      const asp =
+        aspectFromQuery && (IMAGE_ASPECTS as readonly string[]).includes(aspectFromQuery)
+          ? aspectFromQuery
+          : gpt.aspect;
+      if (isGptImage2SizeSelection(res, asp)) {
+        setResolution(res);
+        setAspect(asp);
+      } else {
+        setResolution(gpt.resolution);
+        setAspect(gpt.aspect);
+      }
+    } else {
+      if (aspectFromQuery && IMAGE_ASPECTS.includes(aspectFromQuery as (typeof IMAGE_ASPECTS)[number])) {
+        setAspect(aspectFromQuery);
+      }
+      if (
+        resolutionFromQuery &&
+        (IMAGE_RESOLUTIONS as readonly string[]).includes(resolutionFromQuery)
+      ) {
+        setResolution(resolutionFromQuery);
+      }
     }
   }, [searchParams]);
 
   useEffect(() => {
     if (modelId === "gpt-image-2") {
+      const aspectFromQuery = searchParams.get("aspect")?.trim();
+      const resolutionFromQuery = searchParams.get("resolution")?.trim();
+      if (
+        aspectFromQuery &&
+        resolutionFromQuery &&
+        isGptImage2SizeSelection(resolutionFromQuery, aspectFromQuery)
+      ) {
+        return;
+      }
       if (!isGptImage2SizeSelection(resolution, aspect)) {
-        const d = defaultGptImage2Selection();
-        setResolution(d.resolution);
-        setAspect(d.aspect);
+        const sel = gptImage2SelectionForAspect(
+          aspectFromQuery && aspectFromQuery !== "Auto" ? aspectFromQuery : aspect
+        );
+        setResolution(sel.resolution);
+        setAspect(sel.aspect);
       }
       return;
     }

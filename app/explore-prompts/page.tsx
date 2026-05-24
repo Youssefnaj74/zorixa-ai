@@ -11,9 +11,9 @@ const NAV_H = 56;
 
 export default function ExplorePromptsPage() {
   return (
-    <div className="min-h-dvh bg-zorixa-bg font-body">
+    <div className="min-h-dvh bg-black font-body">
       <Navbar />
-      <main className="zorixa-grid-bg min-h-[calc(100dvh-56px)]" style={{ paddingTop: NAV_H }}>
+      <main className="min-h-[calc(100dvh-56px)] bg-black" style={{ paddingTop: NAV_H }}>
         <Suspense fallback={<div className="min-h-[40vh]" />}>
           <ExplorePromptsView />
         </Suspense>
