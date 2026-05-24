@@ -23,7 +23,11 @@ export async function GET(request: Request) {
   try {
     const voices = await fetchElevenLabsVoices(apiKey);
     const sorted = [...voices].sort((a, b) => a.name.localeCompare(b.name));
-    return NextResponse.json({ voices: sorted, source: "elevenlabs" });
+    return NextResponse.json({
+      voices: sorted,
+      source: "elevenlabs",
+      note: "Free ElevenLabs API plans support default (premade) voices only. Voice Library voices require a paid subscription."
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to load voices";
     return NextResponse.json(

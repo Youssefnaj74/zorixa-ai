@@ -132,6 +132,52 @@ export function TextToSpeechPage() {
 
   const charCount = text.length;
   const useInVideoHref = audioUrl ? buildAudioToVideoWithAudioHref(audioUrl) : null;
+  const previewRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!audioUrl) return;
+    previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [audioUrl]);
+
+  const previewSection =
+    audioUrl ? (
+      <section
+        ref={previewRef}
+        className="zorixa-card-border sticky z-20 space-y-4 rounded-2xl border-[#00e5ff]/20 bg-zorixa-card p-4 shadow-glow sm:p-6"
+        style={{ top: `calc(${NAV_H}px + 0.75rem)` }}
+      >
+        <h2 className="font-display text-sm font-semibold text-white">Preview</h2>
+        <audio ref={audioRef} className="hidden" preload="metadata" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={togglePlay}
+            className="h-10 rounded-xl border border-white/10 bg-white/5 px-4 text-white hover:bg-white/10"
+          >
+            {playing ? <Square className="mr-2 size-4" /> : <Play className="mr-2 size-4" />}
+            {playing ? "Stop" : "Play"}
+          </Button>
+          <a
+            href={audioUrl}
+            download="zorixa-speech.mp3"
+            className="inline-flex h-10 items-center rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white hover:bg-white/10"
+          >
+            <Download className="mr-2 size-4" />
+            Download MP3
+          </a>
+          {useInVideoHref ? (
+            <Link
+              href={useInVideoHref}
+              className="inline-flex h-10 items-center rounded-xl border border-[#00e5ff]/30 bg-[#00e5ff]/10 px-4 text-sm font-semibold text-[#00e5ff] hover:bg-[#00e5ff]/20"
+            >
+              <Video className="mr-2 size-4" />
+              Use in Video
+            </Link>
+          ) : null}
+        </div>
+      </section>
+    ) : null;
 
   return (
     <div className="min-h-dvh bg-zorixa-bg font-body">
@@ -150,6 +196,8 @@ export function TextToSpeechPage() {
             Turn text into natural speech, then use it in Audio to Video.
           </p>
         </header>
+
+        {previewSection}
 
         <section className="zorixa-card-border space-y-4 rounded-2xl bg-zorixa-card p-4 shadow-glow sm:p-6">
           <div className="space-y-2">
@@ -187,6 +235,10 @@ export function TextToSpeechPage() {
                 </option>
               ))}
             </select>
+            <p className="text-xs text-zorixa-muted">
+              Free ElevenLabs plan: use default voices (Rachel, Adam, Eric…). Voice Library
+              (e.g. Ghizlane) needs a paid subscription.
+            </p>
           </div>
 
           {error ? (
@@ -204,41 +256,6 @@ export function TextToSpeechPage() {
             {generating ? "Generating…" : "Generate speech"}
           </Button>
         </section>
-
-        {audioUrl ? (
-          <section className="zorixa-card-border space-y-4 rounded-2xl bg-zorixa-card p-4 shadow-glow sm:p-6">
-            <h2 className="font-display text-sm font-semibold text-white">Preview</h2>
-            <audio ref={audioRef} className="hidden" preload="metadata" />
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={togglePlay}
-                className="h-10 rounded-xl border border-white/10 bg-white/5 px-4 text-white hover:bg-white/10"
-              >
-                {playing ? <Square className="mr-2 size-4" /> : <Play className="mr-2 size-4" />}
-                {playing ? "Stop" : "Play"}
-              </Button>
-              <a
-                href={audioUrl}
-                download="zorixa-speech.mp3"
-                className="inline-flex h-10 items-center rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white hover:bg-white/10"
-              >
-                <Download className="mr-2 size-4" />
-                Download MP3
-              </a>
-              {useInVideoHref ? (
-                <Link
-                  href={useInVideoHref}
-                  className="inline-flex h-10 items-center rounded-xl border border-[#00e5ff]/30 bg-[#00e5ff]/10 px-4 text-sm font-semibold text-[#00e5ff] hover:bg-[#00e5ff]/20"
-                >
-                  <Video className="mr-2 size-4" />
-                  Use in Video
-                </Link>
-              ) : null}
-            </div>
-          </section>
-        ) : null}
 
         {history.length > 0 ? (
           <section className="space-y-3">

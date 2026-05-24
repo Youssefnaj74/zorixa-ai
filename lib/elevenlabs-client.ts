@@ -9,7 +9,12 @@ export type ElevenLabsVoice = {
   name: string;
   preview_url?: string | null;
   labels?: Record<string, string>;
+  /** premade | cloned | generated | professional — from ElevenLabs API */
+  category?: string | null;
 };
+
+/** Categories usable on ElevenLabs free tier via API (library/pro voices need paid plan). */
+const API_FREE_VOICE_CATEGORIES = new Set(["premade", "cloned"]);
 
 /** Curated fallback when the voices API is unavailable. */
 export const ELEVENLABS_DEFAULT_VOICES: ElevenLabsVoice[] = [
@@ -44,16 +49,55 @@ export async function fetchElevenLabsVoices(apiKey?: string): Promise<ElevenLabs
         : `ElevenLabs voices error (${res.status})`
     );
   }
-  const data = (await res.json()) as { voices?: ElevenLabsVoice[] };
+  const data = (await res.json()) as {
+    voices?: Array<ElevenLabsVoice & { category?: string }>;
+  };
   const voices = Array.isArray(data.voices) ? data.voices : [];
-  return voices
+  const mapped = voices
     .filter((v) => typeof v.voice_id === "string" && typeof v.name === "string")
     .map((v) => ({
       voice_id: v.voice_id,
       name: v.name,
       preview_url: v.preview_url ?? null,
-      labels: v.labels
+      labels: v.labels,
+      category: typeof v.category === "string" ? v.category : null
     }));
+
+  const apiFree = mapped.filter((v) => {
+    const cat = v.category?.toLowerCase();
+    if (!cat) {
+      return ELEVENLABS_DEFAULT_VOICES.some((d) => d.voice_id === v.voice_id);
+    }
+    return API_FREE_VOICE_CATEGORIES.has(cat);
+  });
+
+  return apiFree.length > 0 ? apiFree : ELEVENLABS_DEFAULT_VOICES;
+}
+
+export function formatElevenLabsTtsError(status: number, detail: string): string {
+  try {
+    const parsed = JSON.parse(detail) as {
+      detail?: { code?: string; message?: string } | string;
+    };
+    const inner =
+      typeof parsed.detail === "object" && parsed.detail !== null
+        ? parsed.detail
+        : null;
+    if (inner?.code === "paid_plan_required") {
+      return "This voice needs a paid ElevenLabs plan (Voice Library). Pick a default voice like Rachel or Adam, or upgrade your ElevenLabs subscription.";
+    }
+    if (typeof inner?.message === "string" && inner.message.trim()) {
+      return inner.message.trim();
+    }
+    if (typeof parsed.detail === "string" && parsed.detail.trim()) {
+      return parsed.detail.trim();
+    }
+  } catch {
+    /* not JSON */
+  }
+  const trimmed = detail.trim();
+  if (trimmed.length > 0) return trimmed.slice(0, 280);
+  return `Speech generation failed (${status})`;
 }
 
 export type ElevenLabsTtsInput = {
@@ -94,11 +138,7 @@ export async function synthesizeElevenLabsSpeech(
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    throw new Error(
-      detail.trim().length > 0
-        ? `ElevenLabs TTS error (${res.status}): ${detail.slice(0, 300)}`
-        : `ElevenLabs TTS error (${res.status})`
-    );
+    throw new Error(formatElevenLabsTtsError(res.status, detail));
   }
 
   return res.arrayBuffer();
