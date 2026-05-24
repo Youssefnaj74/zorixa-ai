@@ -24,6 +24,7 @@ const navLinks = [
   { href: "/dashboard/enhance", label: "Skin", active: false, badge: null },
   { href: "/image", label: "Image", active: false, badge: null },
   { href: "/video", label: "Video", active: false, badge: null },
+  { href: "/audio", label: "Speech", active: false, badge: "NEW" },
   { href: "/dashboard/history", label: "Gallery", active: false, badge: null },
 ] as const;
 

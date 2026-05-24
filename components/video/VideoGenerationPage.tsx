@@ -555,7 +555,13 @@ export function VideoGenerationPage() {
           : normalizeSeedanceReferenceDurationSeconds(t)
       );
     }
-  }, [searchParams]);
+
+    const audioParam = searchParams.get("audio");
+    if (audioParam && resolved.tab === "Audio to Video") {
+      const coerced = coerceToPublicHttpsUrl(audioParam.trim());
+      if (coerced) setLipsyncAudioUrlSafe(coerced);
+    }
+  }, [searchParams, setLipsyncAudioUrlSafe]);
 
   useEffect(() => {
     if (composerModelId !== KLING_30_PRO_MODEL_ID) return;

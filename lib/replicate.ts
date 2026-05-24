@@ -10,7 +10,9 @@ export const CREDIT_COSTS = {
   /** Set to 0 for free testing; restore to 5 (or your plan) for production. */
   enhance: 0,
   /** Set to 0 for free testing; restore to 20 (or your plan) for production. */
-  video: 0
+  video: 0,
+  /** Set to 0 for free testing; restore to ~2–5 for production (ElevenLabs cost). */
+  tts: 0
 } as const;
 
 export const replicateModels = {

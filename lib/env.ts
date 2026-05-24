@@ -18,6 +18,11 @@ export function requireAtlasCloudApiKey(): string {
   return required("ATLASCLOUD_API_KEY");
 }
 
+/** ElevenLabs REST API key for text-to-speech (`https://api.elevenlabs.io`). */
+export function requireElevenLabsApiKey(): string {
+  return required("ELEVENLABS_API_KEY");
+}
+
 /** Validates `NEXT_PUBLIC_SUPABASE_*` before creating any Supabase client. */
 export function requirePublicSupabaseEnv(): { url: string; anonKey: string } {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -38,6 +43,8 @@ export const env = {
   atlasCloudApiKey: envTrim("ATLASCLOUD_API_KEY"),
   /** Shared secret for Cursor MCP → Zorixa API (see zorixa-mcp/). */
   zorixaMcpApiKey: envTrim("ZORIXA_MCP_API_KEY"),
+  /** Trimmed `ELEVENLABS_API_KEY` (empty if unset). Prefer `requireElevenLabsApiKey()` when required. */
+  elevenLabsApiKey: envTrim("ELEVENLABS_API_KEY"),
   supabase: {
     url: envTrim("NEXT_PUBLIC_SUPABASE_URL"),
     anonKey: envTrim("NEXT_PUBLIC_SUPABASE_ANON_KEY"),

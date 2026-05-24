@@ -46,6 +46,16 @@ function imageTabForSection(sectionId: ToolCatalogSectionId): ImageStudioTab {
   return "Text to Image";
 }
 
+/** Deep link from TTS studio → Audio to Video with preloaded audio. */
+export function buildAudioToVideoWithAudioHref(audioUrl: string): string {
+  const params = new URLSearchParams({
+    tab: "Audio to Video",
+    model: INFINITETALK_COMPOSER_ID,
+    audio: audioUrl
+  });
+  return `/video?${params.toString()}`;
+}
+
 /** Deep link from /tools card → /video or /image with tab + model. */
 export function buildCatalogStudioHref(
   sectionId: ToolCatalogSectionId,

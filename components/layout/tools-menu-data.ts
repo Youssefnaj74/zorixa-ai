@@ -76,6 +76,15 @@ export const TOOLS_MENU_COLUMNS: ToolMenuItem[][] = [
       categories: ["video"]
     },
     {
+      id: "text-to-speech",
+      title: "Text to Speech",
+      subtitle: "ElevenLabs voices · MP3 export",
+      icon: "🗣️",
+      href: "/audio",
+      isNew: true,
+      categories: ["audio"]
+    },
+    {
       id: "audio-to-video",
       title: "Audio to Video",
       subtitle: "Drive video from audio (Atlas)",
