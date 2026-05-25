@@ -287,30 +287,42 @@ function NewModelsStrip() {
         </Link>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {NEW_MODEL_CARDS.map(({ title, subtitle, href, icon: Icon, badge }) => (
-          <Link
-            key={`${title}-${subtitle}`}
-            href={href}
-            className="group relative flex min-w-[220px] items-center gap-3 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.045] px-4 py-3 transition hover:-translate-y-0.5 hover:border-[#00e5ff]/35 hover:bg-white/[0.07]"
-          >
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-black/30 text-white/70 transition group-hover:border-[#00e5ff]/40 group-hover:text-[#00e5ff]">
-              <Icon className="size-4" aria-hidden />
-            </span>
-            <span className="min-w-0">
-              <span className="flex items-center gap-2">
-                <span className="truncate text-sm font-bold text-white">{title}</span>
-                {badge ? (
-                  <span className="rounded-full bg-[#001b26] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#00e5ff]">
-                    {badge}
+      <div className="relative overflow-hidden pb-1">
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-[#090914] to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-[#090914] to-transparent" />
+        <motion.div
+          className="flex w-max gap-3"
+          animate={{ x: ["0%", "-50%"] }}
+          transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
+        >
+          {[0, 1].map((loop) =>
+            NEW_MODEL_CARDS.map(({ title, subtitle, href, icon: Icon, badge }) => (
+              <Link
+                key={`${loop}-${title}-${subtitle}`}
+                href={href}
+                aria-hidden={loop === 1}
+                tabIndex={loop === 1 ? -1 : undefined}
+                className="group relative flex min-w-[220px] items-center gap-3 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.045] px-4 py-3 transition hover:-translate-y-0.5 hover:border-[#00e5ff]/35 hover:bg-white/[0.07]"
+              >
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-black/30 text-white/70 transition group-hover:border-[#00e5ff]/40 group-hover:text-[#00e5ff]">
+                  <Icon className="size-4" aria-hidden />
+                </span>
+                <span className="min-w-0">
+                  <span className="flex items-center gap-2">
+                    <span className="truncate text-sm font-bold text-white">{title}</span>
+                    {badge ? (
+                      <span className="rounded-full bg-[#001b26] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#00e5ff]">
+                        {badge}
+                      </span>
+                    ) : null}
                   </span>
-                ) : null}
-              </span>
-              <span className="mt-0.5 block truncate text-xs text-white/42">{subtitle}</span>
-            </span>
-            <span className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-[#00e5ff]/45 to-transparent opacity-0 transition group-hover:opacity-100" />
-          </Link>
-        ))}
+                  <span className="mt-0.5 block truncate text-xs text-white/42">{subtitle}</span>
+                </span>
+                <span className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-[#00e5ff]/45 to-transparent opacity-0 transition group-hover:opacity-100" />
+              </Link>
+            ))
+          )}
+        </motion.div>
       </div>
     </section>
   );
