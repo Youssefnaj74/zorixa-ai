@@ -13,7 +13,7 @@ const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/image", label: "Image" },
   { href: "/video", label: "Video" },
-  { href: "/dashboard/history", label: "Gallery" }
+  { href: "/dashboard/history", label: "History" }
 ] as const;
 
 function avatarInitial(displayName: string | null, email: string | null): string {

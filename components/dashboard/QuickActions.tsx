@@ -16,7 +16,7 @@ const ACTIONS = [
   },
   {
     href: "/dashboard/history",
-    label: "Gallery & history",
+    label: "History",
     description: "All your outputs",
     icon: LayoutGrid,
     accent: "from-amber-500/20 to-orange-600/10"

@@ -69,10 +69,6 @@ export function ToolsCatalogView() {
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-16 pt-6 lg:px-8">
       <header className="mb-8">
         <h1 className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">Tools</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zorixa-muted">
-          Atlas Cloud models in Zorixa — open Image or Video studio from any card. Credits per model
-          coming soon.
-        </p>
       </header>
 
       <div className="scrollbar-hide mb-8 flex flex-wrap gap-2">

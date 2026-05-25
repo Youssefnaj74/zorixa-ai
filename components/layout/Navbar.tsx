@@ -23,7 +23,7 @@ const navLinks = [
   { href: "/image", label: "Image", active: false, badge: null },
   { href: "/video", label: "Video", active: false, badge: null },
   { href: "/audio", label: "Speech", active: false, badge: "NEW" },
-  { href: "/dashboard/history", label: "Gallery", active: false, badge: null },
+  { href: "/dashboard/history", label: "History", active: false, badge: null },
 ] as const;
 
 const dropdownItems = [
