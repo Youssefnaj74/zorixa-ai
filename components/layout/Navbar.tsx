@@ -20,8 +20,6 @@ export type DashboardNavbarProps = {
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard", active: true, badge: null },
-  { href: "/image", label: "Create", active: false, badge: "NEW" },
-  { href: "/dashboard/enhance", label: "Skin", active: false, badge: null },
   { href: "/image", label: "Image", active: false, badge: null },
   { href: "/video", label: "Video", active: false, badge: null },
   { href: "/audio", label: "Speech", active: false, badge: "NEW" },

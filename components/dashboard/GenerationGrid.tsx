@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type VideoHTMLAttributes } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clapperboard, Play, X } from "lucide-react";
+import { Clapperboard, Mic, Play, Volume2, X } from "lucide-react";
 
 import { ExternalImage } from "@/components/ui/ExternalImage";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
@@ -16,8 +16,10 @@ export type GenerationTile = {
   src?: string;
   /** Raw CDN video URL */
   videoSrc?: string;
+  /** MP3 / audio output URL */
+  audioSrc?: string;
   title: string;
-  kind?: "image" | "video";
+  kind?: "image" | "video" | "audio";
   categoryLabel?: string;
 };
 
@@ -32,6 +34,94 @@ function useProxiedVideoPlaybackUrl(raw: string | undefined): string | null {
     if (typeof window === "undefined") return normalized;
     return buildSameOriginVideoPlaybackUrl(normalized, window.location.origin);
   }, [raw]);
+}
+
+function HistoryAudioLightbox({
+  item,
+  onClose
+}: {
+  item: GenerationTile;
+  onClose: () => void;
+}) {
+  const openUrl = item.audioSrc ?? item.src;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  const category = item.categoryLabel ?? "Text to Speech · Zorixa AI";
+
+  return (
+    <motion.div
+      role="dialog"
+      aria-modal="true"
+      aria-label={item.title}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 sm:p-8"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.96 }}
+        transition={{ duration: 0.2 }}
+        className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-zorixa-card p-6 shadow-glow"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-4 top-4 grid size-9 place-items-center rounded-full border border-white/15 bg-black/40 text-white hover:bg-white/10"
+          aria-label="Close preview"
+        >
+          <X className="size-4" />
+        </button>
+
+        <motion.div className="flex flex-col items-center gap-4 pt-2">
+          <span className="grid size-16 place-items-center rounded-2xl bg-[#00e5ff]/10 text-[#00e5ff]">
+            <Mic className="size-8" aria-hidden />
+          </span>
+          {item.audioSrc ? (
+            <audio
+              src={item.audioSrc}
+              controls
+              autoPlay
+              preload="auto"
+              className="w-full"
+            />
+          ) : (
+            <p className="text-sm text-zorixa-muted">No audio preview</p>
+          )}
+        </motion.div>
+
+        <div className="mt-5 space-y-1 border-t border-white/10 pt-4">
+          <p className="font-medium text-white">{item.title}</p>
+          <p className="text-xs text-white/60">{category}</p>
+          {openUrl ? (
+            <a
+              href={openUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex pt-2 text-sm font-medium text-[#00e5ff] hover:opacity-80"
+            >
+              Download MP3
+            </a>
+          ) : null}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
 }
 
 function HistoryVideoLightbox({
@@ -131,6 +221,22 @@ function HistoryVideoLightbox({
 }
 
 function GridMedia({ item }: { item: GenerationTile }) {
+  const isAudio = item.kind === "audio" || Boolean(item.audioSrc);
+
+  if (isAudio) {
+    return (
+      <div className="flex size-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#8338eb]/20 via-zinc-900 to-[#00e5ff]/10 text-[#00e5ff]">
+        <span className="grid size-14 place-items-center rounded-2xl bg-black/30 ring-1 ring-[#00e5ff]/30">
+          <Mic className="size-7" aria-hidden />
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white/80">
+          <Volume2 className="size-3.5" aria-hidden />
+          Listen
+        </span>
+      </div>
+    );
+  }
+
   const isVideo = Boolean(item.videoSrc);
 
   if (isVideo) {
@@ -187,9 +293,11 @@ export function GenerationGrid({
   const [selected, setSelected] = useState<GenerationTile | null>(null);
   const close = useCallback(() => setSelected(null), []);
   const selectedImageSrc =
-    selected && !selected.videoSrc && selected.src ? selected.src : null;
+    selected && !selected.videoSrc && !selected.audioSrc && selected.src ? selected.src : null;
   const selectedVideo =
-    selected && selected.videoSrc ? selected : null;
+    selected && selected.videoSrc && selected.kind !== "audio" ? selected : null;
+  const selectedAudio =
+    selected && (selected.kind === "audio" || selected.audioSrc) ? selected : null;
 
   return (
     <>
@@ -197,7 +305,11 @@ export function GenerationGrid({
         {items.map((item, i) => {
           const footer =
             item.categoryLabel ??
-            (item.kind === "video" ? "UGC video · Zorixa AI" : "AI image · Zorixa AI");
+            (item.kind === "audio"
+              ? "Text to Speech · Zorixa AI"
+              : item.kind === "video"
+                ? "UGC video · Zorixa AI"
+                : "AI image · Zorixa AI");
           return (
             <motion.button
               key={item.id}
@@ -235,6 +347,9 @@ export function GenerationGrid({
       <AnimatePresence>
         {selectedVideo ? (
           <HistoryVideoLightbox item={selectedVideo} onClose={close} />
+        ) : null}
+        {selectedAudio ? (
+          <HistoryAudioLightbox item={selectedAudio} onClose={close} />
         ) : null}
       </AnimatePresence>
     </>

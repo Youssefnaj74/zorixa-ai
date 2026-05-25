@@ -116,7 +116,7 @@ export const TOOLS_MENU_COLUMNS: ToolMenuItem[][] = [
       title: "Video Upscaler",
       subtitle: "Enhance video quality",
       icon: "🎯",
-      href: "/dashboard/enhance",
+      href: "/image",
       categories: ["video"]
     },
     {

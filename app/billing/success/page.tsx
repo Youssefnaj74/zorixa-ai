@@ -13,8 +13,8 @@ export default function BillingSuccessPage() {
         <Link href="/pricing">
           <Button className="bg-white/10 text-white hover:bg-white/15">Go to billing</Button>
         </Link>
-        <Link href="/dashboard/enhance">
-          <Button className="bg-violet-500 hover:bg-violet-400">Enhance an image</Button>
+        <Link href="/image">
+          <Button className="bg-violet-500 hover:bg-violet-400">Open image studio</Button>
         </Link>
       </div>
     </main>

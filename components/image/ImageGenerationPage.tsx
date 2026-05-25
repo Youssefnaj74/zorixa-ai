@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { ImageActionTab } from "@/components/image/ImageActionTabsRow";
 import type { ImageGenerateContext } from "@/components/image/ImageBottomBar";
@@ -29,7 +30,10 @@ import {
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
 import { EXPLORE_PROMPT_DEFAULT_ASPECT } from "@/lib/explore-prompts-catalog";
-import { resolveImageStudioFromQuery } from "@/lib/studio-catalog-link";
+import {
+  parseImageStudioLock,
+  resolveImageStudioFromQuery
+} from "@/lib/studio-catalog-link";
 import {
   COMPOSER_DOCK_WITH_TABS_HEIGHT,
   IMAGE_I2I_DOCK_HEIGHT
@@ -107,6 +111,7 @@ async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<strin
 
 export function ImageGenerationPage() {
   const searchParams = useSearchParams();
+  const studioLock = useMemo(() => parseImageStudioLock(searchParams), [searchParams]);
   const [bottomBarHeight, setBottomBarHeight] = useState(COMPOSER_DOCK_WITH_TABS_HEIGHT);
 
   const [actionTab, setActionTab] = useState<ImageActionTab>("Text to Image");
@@ -388,7 +393,25 @@ export function ImageGenerationPage() {
         style={{ marginTop: NAV_H, paddingBottom: bottomBarHeight }}
       >
         <div className="mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 flex-col gap-4 overflow-x-hidden font-body lg:flex-row lg:items-stretch lg:gap-5">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:min-h-0">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:min-h-0">
+            {studioLock ? (
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-[rgba(131,56,235,0.25)] bg-[#1a1a24]/90 px-4 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-brand">
+                    Tool · {studioLock.tab}
+                  </p>
+                  <p className="truncate font-display text-sm font-semibold text-white">
+                    {studioLock.toolTitle ?? studioLock.modelId}
+                  </p>
+                </div>
+                <Link
+                  href="/tools"
+                  className="shrink-0 text-xs font-medium text-zorixa-muted transition-colors hover:text-white"
+                >
+                  All tools
+                </Link>
+              </div>
+            ) : null}
             <ImagePreview
               imageUrl={imageUrl}
               loading={loading}
@@ -435,6 +458,7 @@ export function ImageGenerationPage() {
         loadingGenerate={loading}
         onGenerate={runGeneration}
         onHeightChange={setBottomBarHeight}
+        studioLock={studioLock}
       />
     </div>
   );

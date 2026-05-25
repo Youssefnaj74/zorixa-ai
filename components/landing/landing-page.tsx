@@ -443,7 +443,7 @@ export function LandingPage() {
                   Start Creating
                 </Link>
                 <Link
-                  href="/login?redirect=/dashboard/enhance"
+                  href="/login?redirect=/image"
                   className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-8 text-sm font-semibold text-white/90 hover:bg-white/[0.06]"
                 >
                   Explore Enhancement

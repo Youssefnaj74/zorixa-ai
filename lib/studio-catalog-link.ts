@@ -40,7 +40,7 @@ const VIDEO_TAB_BY_SECTION: Partial<Record<ToolCatalogSectionId, VideoStudioTab>
 };
 
 function imageTabForSection(sectionId: ToolCatalogSectionId): ImageStudioTab {
-  if (sectionId === "image-to-image" || sectionId === "image-editing") {
+  if (sectionId === "image-to-image") {
     return "Image to Image";
   }
   return "Text to Image";
@@ -56,38 +56,71 @@ export function buildAudioToVideoWithAudioHref(audioUrl: string): string {
   return `/video?${params.toString()}`;
 }
 
+export const STUDIO_FROM_TOOLS = "tools";
+
+export type ImageStudioLock = {
+  tab: ImageStudioTab;
+  modelId: string;
+  toolTitle?: string;
+};
+
 /** Deep link from /tools card → /video or /image with tab + model. */
 export function buildCatalogStudioHref(
   sectionId: ToolCatalogSectionId,
-  composerModelId: string
+  composerModelId: string,
+  opts?: { toolName?: string }
 ): string {
+  const appendTools = (params: URLSearchParams) => {
+    params.set("from", STUDIO_FROM_TOOLS);
+    const name = opts?.toolName?.trim();
+    if (name) params.set("name", name);
+  };
+
   if (composerModelId === "studio-lipsync") {
     const params = new URLSearchParams({
       tab: "Audio to Video",
       model: INFINITETALK_COMPOSER_ID
     });
+    appendTools(params);
     return `/video?${params.toString()}`;
   }
 
   if (sectionId === "audio-to-video") {
     const params = new URLSearchParams({ tab: "Audio to Video", model: composerModelId });
+    appendTools(params);
     return `/video?${params.toString()}`;
   }
 
   if (sectionId === "character-swap") {
     const params = new URLSearchParams({ tab: "Character Swap", model: composerModelId });
+    appendTools(params);
     return `/video?${params.toString()}`;
   }
 
   const videoTab = VIDEO_TAB_BY_SECTION[sectionId];
   if (videoTab) {
     const params = new URLSearchParams({ tab: videoTab, model: composerModelId });
+    appendTools(params);
     return `/video?${params.toString()}`;
   }
 
   const imageTab = imageTabForSection(sectionId);
   const params = new URLSearchParams({ tab: imageTab, model: composerModelId });
+  appendTools(params);
   return `/image?${params.toString()}`;
+}
+
+/** Locked studio when opened from /tools (one model + tab per card). */
+export function parseImageStudioLock(params: URLSearchParams): ImageStudioLock | null {
+  if (params.get("from") !== STUDIO_FROM_TOOLS) return null;
+  const resolved = resolveImageStudioFromQuery(params.get("tab"), params.get("model"));
+  if (!resolved) return null;
+  const toolTitle = params.get("name")?.trim();
+  return {
+    tab: resolved.tab,
+    modelId: resolved.model,
+    toolTitle: toolTitle || undefined
+  };
 }
 
 export function parseVideoActionTab(raw: string | null): VideoStudioTab | null {

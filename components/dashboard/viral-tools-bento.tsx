@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Clapperboard, ImageIcon, Sparkles } from "lucide-react";
+import { ArrowUpRight, ImageIcon } from "lucide-react";
 
 import { buildCatalogStudioHref } from "@/lib/studio-catalog-link";
 import { cn } from "@/lib/utils";
@@ -234,44 +234,18 @@ export function ViralToolsBento() {
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Link
-          href="/image"
-          className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-[#101018] px-4 py-3 transition-colors hover:border-[#c8ff00]/30"
-        >
-          <span className="grid size-10 place-items-center rounded-lg bg-[#c8ff00]/10 text-[#c8ff00]">
-            <ImageIcon className="size-5" aria-hidden />
-          </span>
-          <div>
-            <p className="text-sm font-bold text-white">Image studio</p>
-            <p className="text-xs text-white/45">Flux · Seedream · Wan image</p>
-          </div>
-        </Link>
-        <Link
-          href="/video"
-          className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-[#101018] px-4 py-3 transition-colors hover:border-[#c8ff00]/30"
-        >
-          <span className="grid size-10 place-items-center rounded-lg bg-[#c8ff00]/10 text-[#c8ff00]">
-            <Clapperboard className="size-5" aria-hidden />
-          </span>
-          <div>
-            <p className="text-sm font-bold text-white">Video studio</p>
-            <p className="text-xs text-white/45">All Atlas video models</p>
-          </div>
-        </Link>
-        <Link
-          href="/dashboard/enhance"
-          className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-[#101018] px-4 py-3 transition-colors hover:border-[#c8ff00]/30"
-        >
-          <span className="grid size-10 place-items-center rounded-lg bg-[#8338eb]/15 text-[#c8ff00]">
-            <Sparkles className="size-5" aria-hidden />
-          </span>
-          <div>
-            <p className="text-sm font-bold text-white">Enhance</p>
-            <p className="text-xs text-white/45">Upscale &amp; retouch stills</p>
-          </div>
-        </Link>
-      </div>
+      <Link
+        href="/image"
+        className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-[#101018] px-4 py-3 transition-colors hover:border-[#c8ff00]/30"
+      >
+        <span className="grid size-10 place-items-center rounded-lg bg-[#c8ff00]/10 text-[#c8ff00]">
+          <ImageIcon className="size-5" aria-hidden />
+        </span>
+        <div>
+          <p className="text-sm font-bold text-white">Image studio</p>
+          <p className="text-xs text-white/45">Atlas · Flux · Seedream · Zorixa Image</p>
+        </div>
+      </Link>
     </section>
   );
 }

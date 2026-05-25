@@ -8,10 +8,28 @@ function copyResponseCookies(from: NextResponse, to: NextResponse) {
   });
 }
 
-export async function proxy(request: NextRequest) {
-  const { response, user } = await updateSession(request);
+/** Routes that must not block on Supabase session refresh (landing, legal, health). */
+function isSessionOptionalPath(pathname: string): boolean {
+  if (pathname === "/" || pathname === "/pricing" || pathname === "/privacy" || pathname === "/terms") {
+    return true;
+  }
+  if (pathname === "/explore-prompts" || pathname.startsWith("/explore-prompts/")) {
+    return true;
+  }
+  if (pathname === "/api/health") {
+    return true;
+  }
+  return false;
+}
 
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  if (isSessionOptionalPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  const { response, user } = await updateSession(request);
   const isAuthRoute = pathname === "/login" || pathname === "/signup";
   const isProtected =
     pathname.startsWith("/dashboard") ||

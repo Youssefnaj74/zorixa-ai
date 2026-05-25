@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ImageActionTabsRow, type ImageActionTab } from "@/components/image/ImageActionTabsRow";
+import type { ImageStudioLock } from "@/lib/studio-catalog-link";
 import {
   GPT_IMAGE_2_SIZE_GROUPS,
   IMAGE_ASPECTS,
@@ -48,6 +49,8 @@ export type ImageBottomBarProps = {
   loadingGenerate: boolean;
   onGenerate: (ctx: ImageGenerateContext) => void | Promise<void>;
   onHeightChange?: (height: number) => void;
+  /** When set (from /tools), tab + model are fixed to this tool card. */
+  studioLock?: ImageStudioLock | null;
 };
 
 type OpenPanel =
@@ -133,7 +136,8 @@ export function ImageBottomBar({
   creditsLine,
   loadingGenerate,
   onGenerate,
-  onHeightChange
+  onHeightChange,
+  studioLock = null
 }: ImageBottomBarProps) {
   const [open, setOpen] = useState<OpenPanel>(null);
   const bottomBarRef = useRef<HTMLElement>(null);
@@ -153,6 +157,10 @@ export function ImageBottomBar({
   const showUploads = actionTab === "Image to Image";
   const isGptImage2 = modelId === "gpt-image-2";
   const isSeedream = modelId === "seedream-5";
+  const lockedFromTools = studioLock != null;
+  const promptPlaceholder = lockedFromTools
+    ? `Describe your ${selectedModel.label} image…`
+    : "Describe your image...";
 
   const useStableDockHeight = showUploads;
   const stableDockHeight = IMAGE_I2I_DOCK_HEIGHT;
@@ -255,13 +263,26 @@ export function ImageBottomBar({
           useStableDockHeight && "min-h-0 flex-1"
         )}
       >
-        <div className="shrink-0">
-          <ImageActionTabsRow
-            active={actionTab}
-            onChange={onActionTabChange}
-            className="h-11 min-h-[44px] w-full"
-          />
-        </div>
+        {lockedFromTools ? (
+          <div className="flex shrink-0 items-center gap-2 rounded-lg border border-[rgba(131,56,235,0.2)] bg-[#1a1a24] px-3 py-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
+              {studioLock.tab}
+            </span>
+            <span className="h-4 w-px bg-white/10" aria-hidden />
+            <span className="truncate font-display text-sm font-semibold text-white">
+              {selectedModel.label}
+            </span>
+            {selectedModel.badge ? <span className="shrink-0">{selectedModel.badge}</span> : null}
+          </div>
+        ) : (
+          <div className="shrink-0">
+            <ImageActionTabsRow
+              active={actionTab}
+              onChange={onActionTabChange}
+              className="h-11 min-h-[44px] w-full"
+            />
+          </div>
+        )}
 
         <div
           className={cn(
@@ -357,7 +378,7 @@ export function ImageBottomBar({
               value={prompt}
               onChange={(e) => onPromptChange(e.target.value)}
               rows={2}
-              placeholder="Describe your image..."
+              placeholder={promptPlaceholder}
               style={{ resize: "none" }}
               className={cn(
                 "scrollbar-hide w-full resize-none rounded-lg bg-[#0a0a0a] px-3 py-2.5 text-sm leading-relaxed text-white outline-none placeholder:text-zorixa-muted",
@@ -375,40 +396,49 @@ export function ImageBottomBar({
         >
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Model</span>
-            <div className="relative">
-              <button
-                type="button"
+            {lockedFromTools ? (
+              <span
                 title={selectedModel.title ?? selectedModel.label}
-                onClick={() => openOnly("model")}
-                className={cn(triggerClass, open === "model" && "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.1)]")}
+                className={cn(triggerClass, "cursor-default border-[rgba(131,56,235,0.35)] bg-[rgba(131,56,235,0.08)]")}
               >
-                <span className="max-w-[140px] truncate">{selectedModel.label}</span>
-                <ChevronUp className={cn("size-3.5 text-zorixa-muted", open === "model" && "rotate-180")} />
-              </button>
-              <AnimatePresence>
-                {open === "model" ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    style={{ transformOrigin: "bottom left" }}
-                    className={cn(dropupPanelClass, "left-0 min-w-[240px] py-1")}
-                  >
-                    {pickerModels.map((m) => (
-                      <ModelPickRow
-                        key={m.id}
-                        model={m}
-                        active={m.id === modelId}
-                        onPick={() => {
-                          onModelChange(m.id);
-                          setOpen(null);
-                        }}
-                      />
-                    ))}
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
-            </div>
+                <span className="max-w-[180px] truncate">{selectedModel.label}</span>
+              </span>
+            ) : (
+              <div className="relative">
+                <button
+                  type="button"
+                  title={selectedModel.title ?? selectedModel.label}
+                  onClick={() => openOnly("model")}
+                  className={cn(triggerClass, open === "model" && "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.1)]")}
+                >
+                  <span className="max-w-[140px] truncate">{selectedModel.label}</span>
+                  <ChevronUp className={cn("size-3.5 text-zorixa-muted", open === "model" && "rotate-180")} />
+                </button>
+                <AnimatePresence>
+                  {open === "model" ? (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      style={{ transformOrigin: "bottom left" }}
+                      className={cn(dropupPanelClass, "left-0 min-w-[240px] py-1")}
+                    >
+                      {pickerModels.map((m) => (
+                        <ModelPickRow
+                          key={m.id}
+                          model={m}
+                          active={m.id === modelId}
+                          onPick={() => {
+                            onModelChange(m.id);
+                            setOpen(null);
+                          }}
+                        />
+                      ))}
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
 
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />

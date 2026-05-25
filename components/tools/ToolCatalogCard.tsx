@@ -8,7 +8,6 @@ import {
   Film,
   Images,
   Mic2,
-  Pencil,
   Sparkles,
   Wand2
 } from "lucide-react";
@@ -20,7 +19,6 @@ import { cn } from "@/lib/utils";
 const SECTION_ICONS: Record<ToolCatalogSectionId, LucideIcon> = {
   "text-to-image": Sparkles,
   "image-to-image": Images,
-  "image-editing": Pencil,
   "text-to-video": Clapperboard,
   "image-to-video": Film,
   "reference-to-video": Wand2,
@@ -29,8 +27,15 @@ const SECTION_ICONS: Record<ToolCatalogSectionId, LucideIcon> = {
   "audio-to-video": Mic2
 };
 
-export function ToolCatalogCard({ item }: { item: ToolCatalogItem }) {
+export function ToolCatalogCard({
+  item,
+  generatedPreviewUrl
+}: {
+  item: ToolCatalogItem;
+  generatedPreviewUrl?: string;
+}) {
   const Icon = SECTION_ICONS[item.sectionId];
+  const previewSrc = generatedPreviewUrl ?? item.previewSrc;
 
   return (
     <Link
@@ -42,14 +47,34 @@ export function ToolCatalogCard({ item }: { item: ToolCatalogItem }) {
       )}
     >
       <div className="relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden bg-zorixa-bg-secondary">
-        <div
-          className="absolute inset-0 bg-gradient-to-br from-brand-dark/90 via-brand/40 to-zorixa-bg-secondary"
-          aria-hidden
-        />
-        <div className="absolute inset-0 bg-gradient-mesh opacity-40" aria-hidden />
-        <span className="relative grid size-12 place-items-center rounded-xl border border-[rgba(131,56,235,0.25)] bg-[#1a1a24]/80 text-brand shadow-[0_0_20px_rgba(131,56,235,0.2)] backdrop-blur-sm transition-transform duration-200 group-hover:scale-105">
-          <Icon className="size-6 text-white" strokeWidth={1.75} aria-hidden />
-        </span>
+        {previewSrc ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element -- previews can be user-generated Supabase URLs */}
+            <img
+              src={previewSrc}
+              alt=""
+              className="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-105"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" aria-hidden />
+            {generatedPreviewUrl ? (
+              <span className="absolute left-2 top-2 rounded-full border border-emerald-400/25 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-100 backdrop-blur">
+                Generated
+              </span>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <div
+              className="absolute inset-0 bg-gradient-to-br from-brand-dark/90 via-brand/40 to-zorixa-bg-secondary"
+              aria-hidden
+            />
+            <div className="absolute inset-0 bg-gradient-mesh opacity-40" aria-hidden />
+            <span className="relative grid size-12 place-items-center rounded-xl border border-[rgba(131,56,235,0.25)] bg-[#1a1a24]/80 text-brand shadow-[0_0_20px_rgba(131,56,235,0.2)] backdrop-blur-sm transition-transform duration-200 group-hover:scale-105">
+              <Icon className="size-6 text-white" strokeWidth={1.75} aria-hidden />
+            </span>
+          </>
+        )}
         {item.badge ? (
           <span className="absolute right-2 top-2">
             {item.badge === "PRO" ? (

@@ -15,7 +15,6 @@ import { buildCatalogStudioHref } from "@/lib/studio-catalog-link";
 export type ToolCatalogSectionId =
   | "text-to-image"
   | "image-to-image"
-  | "image-editing"
   | "text-to-video"
   | "image-to-video"
   | "reference-to-video"
@@ -33,6 +32,8 @@ export type ToolCatalogItem = {
   composerModelId: string;
   /** Gradient key for card thumbnail (no remote assets yet). */
   thumbVariant: string;
+  /** Static fallback preview shown until the user generates with this model. */
+  previewSrc?: string;
   wired: boolean;
   badge?: "NEW" | "PRO";
 };
@@ -80,6 +81,48 @@ const VIDEO_LABELS: Record<string, string> = {
 
 const CREDITS_PLACEHOLDER = "Credits TBD";
 
+const MODEL_PREVIEWS: Record<string, string> = {
+  "gpt-image-2": "/tool-previews/gpt-image-2.png",
+  "nano-banana-2": "/tool-previews/nano-banana-2.png",
+  "nano-banana-pro": "/tool-previews/nano-banana-pro.png",
+  zorixa: "/tool-previews/zorixa.png",
+  "seedream-5": "/tool-previews/seedream-5.png",
+  "grok-imagine": "/tool-previews/grok-imagine.png",
+  "flux-dev": "/tool-previews/flux-dev.png",
+  "flux-schnell": "/tool-previews/flux-schnell.png",
+  "flux-dev-lora": "/tool-previews/flux-dev-lora.png",
+  "flux-kontext-dev": "/tool-previews/flux-kontext-dev.png",
+  "flux-kontext-dev-lora": "/tool-previews/flux-kontext-dev-lora.png",
+  "wan-image-2-7": "/tool-previews/wan-image-2-7.png",
+  "wan-image-2-7-pro": "/tool-previews/wan-image-2-7-pro.png",
+  "wan-image-2-6": "/tool-previews/wan-image-2-6.png"
+};
+
+function previewFor(sectionId: ToolCatalogSectionId, modelId: string): string | undefined {
+  if (sectionId === "image-to-image") {
+    return `/tool-previews/image-to-image-${modelId}.png`;
+  }
+  if (sectionId === "text-to-video") {
+    return `/tool-previews/text-to-video-${modelId}.png`;
+  }
+  if (sectionId === "image-to-video") {
+    return `/tool-previews/image-to-video-${modelId}.png`;
+  }
+  if (sectionId === "reference-to-video") {
+    return `/tool-previews/reference-to-video-${modelId}.png`;
+  }
+  if (sectionId === "video-to-video") {
+    return `/tool-previews/video-to-video-${modelId}.png`;
+  }
+  if (sectionId === "character-swap") {
+    return `/tool-previews/character-swap-${modelId}.png`;
+  }
+  if (sectionId === "audio-to-video") {
+    return `/tool-previews/audio-to-video-${modelId}.png`;
+  }
+  return MODEL_PREVIEWS[modelId];
+}
+
 function imageName(id: string): string {
   return IMAGE_LABELS[id] ?? id;
 }
@@ -103,9 +146,12 @@ function imageItems(
       sectionId,
       title: `${imageName(id)} ${titleSuffix}`,
       creditsLabel: CREDITS_PLACEHOLDER,
-      href: buildCatalogStudioHref(sectionId, id),
+      href: buildCatalogStudioHref(sectionId, id, {
+        toolName: `${imageName(id)} ${titleSuffix}`
+      }),
       composerModelId: id,
       thumbVariant: `${thumbPrefix}-${id}`,
+      previewSrc: previewFor(sectionId, id),
       wired: true,
       badge:
         opts?.badge?.(id) ??
@@ -134,9 +180,12 @@ function videoItems(
       sectionId,
       title: `${videoName(id)} ${titleSuffix}`,
       creditsLabel: CREDITS_PLACEHOLDER,
-      href: buildCatalogStudioHref(sectionId, id),
+      href: buildCatalogStudioHref(sectionId, id, {
+        toolName: `${videoName(id)} ${titleSuffix}`
+      }),
       composerModelId: id,
       thumbVariant: `${thumbPrefix}-${id}`,
+      previewSrc: previewFor(sectionId, id),
       wired: true,
       badge: opts?.badge?.(id)
     }));
@@ -167,13 +216,6 @@ export function buildToolsCatalog(): ToolCatalogSection[] {
             : id === "wan-image-2-7" || id === "wan-image-2-6" || id.startsWith("flux-")
               ? "NEW"
               : undefined
-      })
-    },
-    {
-      id: "image-editing",
-      title: "IMAGE EDITING",
-      items: imageItems("image-editing", "Edit", "edit", {
-        badge: (id) => (id === "flux-kontext-dev-lora" ? "PRO" : undefined)
       })
     },
     {
@@ -254,9 +296,12 @@ export function buildToolsCatalog(): ToolCatalogSection[] {
         title: `${videoName(id)} Audio to Video`,
         subtitle: "Portrait + audio → talking video",
         creditsLabel: CREDITS_PLACEHOLDER,
-        href: buildCatalogStudioHref("audio-to-video", id),
+        href: buildCatalogStudioHref("audio-to-video", id, {
+          toolName: `${videoName(id)} Audio to Video`
+        }),
         composerModelId: id,
         thumbVariant: `a2v-${id}`,
+        previewSrc: previewFor("audio-to-video", id),
         wired: true,
         badge:
           id === "veed-fabric-1" || id === "veed-fabric-1-fast" ? ("NEW" as const) : undefined

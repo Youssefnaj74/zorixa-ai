@@ -11,8 +11,8 @@ export type DashboardNavbarProps = {
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/image", label: "Create" },
-  { href: "/video", label: "Tools" },
+  { href: "/image", label: "Image" },
+  { href: "/video", label: "Video" },
   { href: "/dashboard/history", label: "Gallery" }
 ] as const;
 

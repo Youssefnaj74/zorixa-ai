@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ToolCatalogCard } from "@/components/tools/ToolCatalogCard";
 import { TOOLS_CATALOG_SECTIONS, type ToolCatalogSectionId } from "@/lib/tools-catalog";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 const FILTER_PILLS: { id: "all" | ToolCatalogSectionId; label: string }[] = [
   { id: "all", label: "All" },
   { id: "text-to-image", label: "Text to Image" },
   { id: "image-to-image", label: "Image to Image" },
-  { id: "image-editing", label: "Image Editing" },
   { id: "text-to-video", label: "Text to Video" },
   { id: "image-to-video", label: "Image to Video" },
   { id: "reference-to-video", label: "Reference to Video" },
@@ -24,11 +24,46 @@ const triggerClass =
 
 export function ToolsCatalogView() {
   const [filter, setFilter] = useState<"all" | ToolCatalogSectionId>("all");
+  const [latestImageByTool, setLatestImageByTool] = useState<Record<string, string>>({});
 
   const sections = useMemo(() => {
     if (filter === "all") return TOOLS_CATALOG_SECTIONS;
     return TOOLS_CATALOG_SECTIONS.filter((s) => s.id === filter);
   }, [filter]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLatestGeneratedPreviews() {
+      const supabase = createSupabaseBrowserClient();
+      const { data } = await supabase
+        .from("generations")
+        .select("composer_model_id, input_url, output_url")
+        .eq("feature_type", "image")
+        .eq("status", "completed")
+        .not("output_url", "is", null)
+        .not("composer_model_id", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (cancelled || !data) return;
+
+      const next: Record<string, string> = {};
+      for (const row of data as { composer_model_id: string | null; input_url: string | null; output_url: string | null }[]) {
+        const model = row.composer_model_id?.trim();
+        const url = row.output_url?.trim();
+        const input = row.input_url?.trim() ?? "";
+        const section = input.includes("placehold.co") ? "text-to-image" : "image-to-image";
+        if (model && url && !next[`${section}-${model}`]) next[`${section}-${model}`] = url;
+      }
+      setLatestImageByTool(next);
+    }
+
+    void loadLatestGeneratedPreviews();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-16 pt-6 lg:px-8">
@@ -74,7 +109,11 @@ export function ToolsCatalogView() {
             </h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {section.items.map((item) => (
-                <ToolCatalogCard key={item.id} item={item} />
+                <ToolCatalogCard
+                  key={item.id}
+                  item={item}
+                  generatedPreviewUrl={latestImageByTool[`${item.sectionId}-${item.composerModelId}`]}
+                />
               ))}
             </div>
           </section>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BriefcaseBusiness, CreditCard, History, Image, LayoutGrid, LogOut, Palette, Sparkles, Video } from "lucide-react";
+import { CreditCard, History, Image, LayoutGrid, LogOut, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,10 +11,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const nav = [
   { href: "/dashboard", label: "Overview", icon: LayoutGrid },
-  { href: "/image", label: "Create", icon: Palette },
-  { href: "/dashboard/enhance", label: "Enhance", icon: Image },
-  { href: "/dashboard/video", label: "Video", icon: Video },
-  { href: "/dashboard/freelancer", label: "Freelancer", icon: BriefcaseBusiness },
+  { href: "/image", label: "Image", icon: Image },
   { href: "/dashboard/history", label: "History", icon: History },
   { href: "/pricing", label: "Billing", icon: CreditCard }
 ] as const;

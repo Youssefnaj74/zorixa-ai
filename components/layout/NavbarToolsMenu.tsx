@@ -87,8 +87,8 @@ export function NavbarToolsMenu() {
   const videoGeneratorActive =
     pathname === "/video" ||
     pathname.startsWith("/video/") ||
-    pathname === "/dashboard/video" ||
-    pathname.startsWith("/dashboard/video/");
+    pathname === "/video" ||
+    pathname.startsWith("/video/");
 
   const filteredTools = useMemo(() => {
     return ALL_TOOLS.filter(

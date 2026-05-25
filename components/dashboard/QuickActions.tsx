@@ -2,31 +2,17 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Clapperboard, ImageIcon, LayoutGrid, Sparkles } from "lucide-react";
+import { ArrowUpRight, ImageIcon, LayoutGrid } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const ACTIONS = [
   {
     href: "/image",
-    label: "Generate image",
-    description: "Still creatives & ads",
+    label: "Image studio",
+    description: "Atlas models · generate & edit",
     icon: ImageIcon,
     accent: "from-emerald-500/25 to-teal-600/10"
-  },
-  {
-    href: "/dashboard/video",
-    label: "Generate video",
-    description: "UGC & motion clips",
-    icon: Clapperboard,
-    accent: "from-sky-500/25 to-blue-600/10"
-  },
-  {
-    href: "/dashboard/enhance",
-    label: "Enhance & upscale",
-    description: "Studio before / after",
-    icon: Sparkles,
-    accent: "from-violet-500/30 to-fuchsia-600/10"
   },
   {
     href: "/dashboard/history",
@@ -53,7 +39,7 @@ const item = {
 export function QuickActions({ className }: { className?: string }) {
   return (
     <motion.div
-      className={cn("grid gap-3 sm:grid-cols-2 lg:grid-cols-4", className)}
+      className={cn("grid gap-3 sm:grid-cols-2", className)}
       variants={container}
       initial="hidden"
       whileInView="show"

@@ -1,4 +1,5 @@
 import { ENHANCE_MODELS, type EnhanceModelId } from "@/lib/studio-constants";
+import { isTtsGenerationProvider } from "@/lib/tts-generation-shared";
 
 /** Server-safe labels (do not import from `use client` modules). */
 const IMAGE_COMPOSER_LABELS: Record<string, string> = {
@@ -73,6 +74,9 @@ export function composerModelDisplayLabel(
   featureType: "image" | "video",
   provider?: string | null
 ): string {
+  if (isTtsGenerationProvider(provider)) {
+    return "Speech";
+  }
   const id =
     composerModelId?.trim() || parseComposerIdFromProvider(provider) || null;
   if (!id) {

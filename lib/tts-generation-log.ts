@@ -1,6 +1,12 @@
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
+export {
+  isLikelyAudioOutputUrl,
+  isTtsGenerationProvider,
+  isTtsGenerationRow
+} from "@/lib/tts-generation-shared";
+
 const PLACEHOLDER_INPUT =
   "https://placehold.co/640x640/0d0d12/a78bfa?text=Zorixa+Speech";
 

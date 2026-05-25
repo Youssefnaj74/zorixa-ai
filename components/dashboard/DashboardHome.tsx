@@ -16,6 +16,7 @@ import { DashboardNavbar } from "@/components/layout/Navbar";
 import { StatsCard } from "./StatsCard";
 import { GenerationGrid } from "./GenerationGrid";
 import { composerModelDisplayLabel } from "@/lib/composer-model-label";
+import { isTtsGenerationRow } from "@/lib/tts-generation-shared";
 import { QuickActions } from "./QuickActions";
 import { UpgradeBanner } from "./upgrade-banner";
 import { ViralToolsBento } from "./viral-tools-bento";
@@ -36,9 +37,10 @@ type GenerationRow = {
 type GenerationTile = {
   id: string;
   title: string;
-  kind: "image" | "video";
+  kind: "image" | "video" | "audio";
   src?: string;
   videoSrc?: string;
+  audioSrc?: string;
   /** Footer line under title in the grid card */
   categoryLabel?: string;
 };
@@ -81,6 +83,17 @@ function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
       g.provider
     );
     const title = historyTitle(g, modelLabel);
+
+    if (isTtsGenerationRow(g)) {
+      return {
+        id: String(g.id),
+        title,
+        kind: "audio" as const,
+        audioSrc: g.output_url?.trim() || undefined,
+        categoryLabel: "Text to Speech · Zorixa AI"
+      };
+    }
+
     if (g.feature_type === "video") {
       const out = g.output_url;
       const inn = g.input_url;
@@ -135,8 +148,11 @@ export function DashboardHome({
   const historyItems = mapGenerationsToTiles(generations);
   const total = uniqueGenerations.length;
   const imageRuns = uniqueGenerations.filter((g) => g.feature_type === "image").length;
-  const videoRuns = uniqueGenerations.filter((g) => g.feature_type === "video").length;
-  const splitTotal = imageRuns + videoRuns;
+  const speechRuns = uniqueGenerations.filter((g) => isTtsGenerationRow(g)).length;
+  const videoRuns = uniqueGenerations.filter(
+    (g) => g.feature_type === "video" && !isTtsGenerationRow(g)
+  ).length;
+  const splitTotal = imageRuns + videoRuns + speechRuns;
 
   const onSignOut = useCallback(async () => {
     const supabase = createSupabaseBrowserClient();
@@ -168,7 +184,7 @@ export function DashboardHome({
               Dashboard<span className="text-[#00e5ff]">.</span>
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/50">
-              Welcome to your personal creative command center. Image enhancement, UGC video, and recent outputs — all in one place.
+              Welcome to your personal creative command center. Atlas image generation and your recent outputs — all in one place.
             </p>
           </div>
 
@@ -176,20 +192,11 @@ export function DashboardHome({
           <div className="flex flex-wrap gap-3">
             <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
               <Link
-                href="/dashboard/enhance"
+                href="/image"
                 className="inline-flex items-center gap-2 rounded-xl bg-[#00e5ff] px-5 py-2.5 text-sm font-bold text-black hover:opacity-90 transition-opacity"
               >
                 <Wand2 className="size-4" />
-                Enhance image
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
-              <Link
-                href="/video"
-                className="inline-flex items-center gap-2 rounded-xl border border-[#1e1e30] bg-[#0f0f1e] px-5 py-2.5 text-sm font-semibold text-white hover:border-[#00e5ff]/40 transition-colors"
-              >
-                <Clapperboard className="size-4" />
-                New UGC video
+                Open image studio
               </Link>
             </motion.div>
             <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
