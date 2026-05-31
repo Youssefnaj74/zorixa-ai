@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 import { NavbarExplorePromptsLink } from "@/components/layout/NavbarExplorePromptsLink";
 import { NavbarToolsLink } from "@/components/layout/NavbarToolsLink";
+import { ZorixaLogo } from "@/components/layout/ZorixaLogo";
 import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -57,10 +58,7 @@ export function DashboardNavbar({
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/[0.06] bg-[#080810]/95 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between gap-4 px-4 lg:px-8">
 
-        {/* Logo */}
-        <Link href="/dashboard" className="text-lg font-extrabold tracking-tight text-white shrink-0">
-          Zorixa AI
-        </Link>
+        <ZorixaLogo href="/dashboard" textClassName="text-lg font-extrabold" />
 
         {/* Nav links */}
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main">

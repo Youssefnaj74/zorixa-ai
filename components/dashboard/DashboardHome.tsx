@@ -20,11 +20,10 @@ import {
 } from "lucide-react";
 import { DashboardNavbar } from "@/components/layout/Navbar";
 import { StatsCard } from "./StatsCard";
-import { GenerationGrid } from "./GenerationGrid";
-import { composerModelDisplayLabel } from "@/lib/composer-model-label";
 import { buildCatalogStudioHref } from "@/lib/studio-catalog-link";
 import { isTtsGenerationRow } from "@/lib/tts-generation-shared";
 import { UpgradeBanner } from "./upgrade-banner";
+import { DashboardSeedanceShowcase } from "./dashboard-seedance-showcase";
 import { ViralToolsBento } from "./viral-tools-bento";
 
 type GenerationRow = {
@@ -39,26 +38,10 @@ type GenerationRow = {
   prompt?: string | null;
 };
 
-type GenerationTile = {
-  id: string;
-  title: string;
-  kind: "image" | "video" | "audio";
-  src?: string;
-  videoSrc?: string;
-  audioSrc?: string;
-  /** Footer line under title in the grid card */
-  categoryLabel?: string;
-};
-
 function formatCreditsStat(n: number): string {
   const v = Math.round(n);
   if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
   return String(v);
-}
-
-function isLikelyVideoFile(url: string): boolean {
-  const path = url.split("?")[0]?.toLowerCase() ?? "";
-  return [".mp4", ".webm", ".mov", ".m4v"].some((ext) => path.endsWith(ext));
 }
 
 /** One tile per output URL — hides legacy duplicate DB rows in dashboard history. */
@@ -72,61 +55,6 @@ function dedupeGenerationsByOutput(items: GenerationRow[]): GenerationRow[] {
     out.push(g);
   }
   return out;
-}
-
-function historyTitle(g: GenerationRow, modelLabel: string): string {
-  const prompt = g.prompt?.trim();
-  if (prompt) return prompt.length > 48 ? `${prompt.slice(0, 48)}…` : prompt;
-  return g.status === "completed" ? modelLabel : `${modelLabel} (${g.status})`;
-}
-
-function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
-  return dedupeGenerationsByOutput(items).map((g) => {
-    const modelLabel = composerModelDisplayLabel(
-      g.composer_model_id,
-      g.feature_type,
-      g.provider
-    );
-    const title = historyTitle(g, modelLabel);
-
-    if (isTtsGenerationRow(g)) {
-      return {
-        id: String(g.id),
-        title,
-        kind: "audio" as const,
-        audioSrc: g.output_url?.trim() || undefined,
-        categoryLabel: "Text to Speech · Zorixa AI"
-      };
-    }
-
-    if (g.feature_type === "video") {
-      const out = g.output_url;
-      const inn = g.input_url;
-      const videoSrc = out?.trim() ? out : undefined;
-
-      let src: string | undefined;
-      if (out && !isLikelyVideoFile(out)) src = out;
-      else if (inn && !isLikelyVideoFile(inn) && !inn.includes("placehold.co")) src = inn;
-      return {
-        id: String(g.id),
-        title,
-        kind: "video" as const,
-        src,
-        videoSrc,
-        categoryLabel: "Zorixa AI"
-      };
-    }
-    const out = g.output_url;
-    const inn = g.input_url;
-    const src = out ?? (inn && !inn.includes("placehold.co") ? inn : undefined);
-    return {
-      id: String(g.id),
-      title,
-      kind: "image" as const,
-      src,
-      categoryLabel: "Zorixa AI"
-    };
-  });
 }
 
 const FEATURED_MODELS = [
@@ -146,7 +74,7 @@ const FEATURED_MODELS = [
   },
   {
     title: "UGC Video",
-    subtitle: "Plan product clips, creator ads, and vertical social content.",
+    subtitle: "Creator ads, product demos, and social-first vertical clips.",
     href: "/video",
     src: "/dashboard-assets/dashboard-ugc-video.png",
     badge: "UGC"
@@ -402,7 +330,6 @@ export function DashboardHome({
 }) {
   const scheduleNavigation = useScheduledAppRouterNavigation();
   const uniqueGenerations = dedupeGenerationsByOutput(generations);
-  const historyItems = mapGenerationsToTiles(generations);
   const total = uniqueGenerations.length;
   const imageRuns = uniqueGenerations.filter((g) => g.feature_type === "image").length;
   const speechRuns = uniqueGenerations.filter((g) => isTtsGenerationRow(g)).length;
@@ -503,11 +430,11 @@ export function DashboardHome({
             />
             <StudioCard
               href="/video"
-              title="UGC Video"
-              subtitle="Create creator ads, product demos, cinematic motion, and social-first clips."
-              src="/dashboard-assets/dashboard-ugc-video.png"
+              title="Cinema Studio"
+              subtitle="Storyboard scenes, film frames, and Veo · Wan · Kling · Seedance workflows."
+              src="/dashboard-assets/dashboard-cinema-studio.png"
               icon={Clapperboard}
-              badge="VIDEO + UGC"
+              badge="VIDEO + CINEMA"
             />
           </div>
         </motion.div>
@@ -525,31 +452,9 @@ export function DashboardHome({
 
         <FeaturedModelStrip />
 
-        <ViralToolsBento />
+        <DashboardSeedanceShowcase />
 
-        <section>
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#00e5ff]">
-                History
-              </p>
-              <h2 className="mt-1 text-2xl font-bold tracking-tight text-white">
-                Recent outputs
-              </h2>
-              <p className="mt-2 text-sm text-white/40">Your latest AI images, videos, and speech assets.</p>
-            </div>
-            <Link href="/dashboard/history" className="text-sm font-medium text-[#00e5ff] transition hover:opacity-70">
-              View all
-            </Link>
-          </div>
-          {historyItems.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[#1e1e30] bg-[#0f0f1e] px-6 py-12 text-center text-sm text-white/30">
-              No generations yet. Start with Image Studio or Video Studio.
-            </div>
-          ) : (
-            <GenerationGrid items={historyItems} />
-          )}
-        </section>
+        <ViralToolsBento />
 
       </main>
     </div>

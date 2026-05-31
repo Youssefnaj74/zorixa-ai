@@ -25,6 +25,12 @@ const SEEDANCE_PRESETS: Record<string, Record<string, { width: number; height: n
     "480p": { width: 640, height: 480 },
     "720p": { width: 960, height: 720 },
     "1080p": { width: 1440, height: 1080 }
+  },
+  "3:4": {
+    "480p": { width: 480, height: 640 },
+    "720p": { width: 720, height: 960 },
+    "750p": { width: 752, height: 1000 },
+    "1080p": { width: 1080, height: 1440 }
   }
 };
 
@@ -74,7 +80,8 @@ const ASPECT_HINT: Record<string, string> = {
   "9:16": "Vertical 9:16 portrait video, tall mobile frame, not widescreen.",
   "16:9": "Widescreen 16:9 landscape cinematic format.",
   "1:1": "Square 1:1 video format.",
-  "4:3": "4:3 aspect ratio video."
+  "4:3": "4:3 aspect ratio video.",
+  "3:4": "Vertical 3:4 portrait video, tall mobile frame."
 };
 
 /** Strengthen aspect in prompt when Seedance would otherwise go adaptive → 16:9. */

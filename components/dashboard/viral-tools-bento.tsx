@@ -3,7 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import {
+  ArrowUpRight,
+  Clapperboard,
+  UserRound,
+  Volume2,
+  Wand2
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { buildCatalogStudioHref } from "@/lib/studio-catalog-link";
 import { cn } from "@/lib/utils";
@@ -20,10 +27,21 @@ type BentoTileProps = {
   size?: "hero" | "tall" | "wide" | "default";
 };
 
-function badgeClass(tone: BentoTileProps["badgeTone"]) {
+type CompactToolCard = {
+  href: string;
+  title: string;
+  subtitle: string;
+  badge?: string;
+  badgeTone?: "cyan" | "lime" | "pink";
+  icon: LucideIcon;
+};
+
+function badgeClass(tone: BentoTileProps["badgeTone"] | CompactToolCard["badgeTone"]) {
   switch (tone) {
+    case "lime":
+      return "bg-[#c8ff2e] text-black";
     case "pink":
-      return "bg-[#ff4fd8]/90 text-white";
+      return "bg-[#ff2f92] text-white";
     case "violet":
       return "bg-[#8338eb]/90 text-white";
     case "cyan":
@@ -113,8 +131,46 @@ function BentoTile({
   );
 }
 
-/** Higgsfield-style bento — Seedance, GPT Image 2, latest video models. */
-export function ViralToolsBento() {
+function CompactToolCard({
+  href,
+  title,
+  subtitle,
+  badge,
+  badgeTone = "cyan",
+  icon: Icon
+}: CompactToolCard) {
+  return (
+    <Link
+      href={href}
+      className="group relative min-h-[132px] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#18181d] p-5 transition duration-300 hover:-translate-y-0.5 hover:border-[#00e5ff]/35 hover:bg-[#1f2027] hover:shadow-[0_18px_60px_rgba(0,229,255,0.08)]"
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(0,229,255,0.08),transparent_34%),radial-gradient(circle_at_100%_100%,rgba(131,56,235,0.1),transparent_38%)] opacity-70" />
+      <div className="relative flex h-full flex-col justify-between gap-5">
+        <div className="flex items-start justify-between gap-3">
+          <span className="grid size-9 place-items-center rounded-xl text-white/90 transition group-hover:text-[#00e5ff]">
+            <Icon className="size-5" aria-hidden />
+          </span>
+          {badge ? (
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider shadow-[0_0_18px_rgba(0,229,255,0.2)]",
+                badgeClass(badgeTone)
+              )}
+            >
+              {badge}
+            </span>
+          ) : null}
+        </div>
+        <div>
+          <h3 className="font-display text-base font-bold tracking-tight text-white">{title}</h3>
+          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-white/42">{subtitle}</p>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function StudioLaunchpadBento() {
   const seedanceI2v = buildCatalogStudioHref("image-to-video", "seedance-2");
   const seedanceT2v = buildCatalogStudioHref("text-to-video", "seedance-2");
   const seedanceR2v = buildCatalogStudioHref("reference-to-video", "seedance-2");
@@ -243,15 +299,121 @@ export function ViralToolsBento() {
           title="Cinema studio"
           subtitle="Veo · Wan · Kling · Seedance workflows."
         />
-        <BentoTile
-          href="/tools"
-          size="wide"
-          src="/dashboard-assets/dashboard-ugc-video.png"
-          badge="UGC"
-          title="UGC video"
-          subtitle="Creator workflows, ads, and product content."
-        />
       </div>
     </section>
+  );
+}
+
+function QuickLaunchTools() {
+  const seedanceCinema = buildCatalogStudioHref("image-to-video", "seedance-2", {
+    toolName: "Seedance 2.0 Image to Video"
+  });
+  const textToVideo = buildCatalogStudioHref("text-to-video", "seedance-2", {
+    toolName: "Seedance 2.0 Text to Video"
+  });
+  const referenceToVideo = buildCatalogStudioHref("reference-to-video", "seedance-2", {
+    toolName: "Seedance 2.0 Reference to Video"
+  });
+  const characterSwap = buildCatalogStudioHref("character-swap", "wan-2-2-character-swap", {
+    toolName: "Character Swap"
+  });
+  const audioToVideo = buildCatalogStudioHref("audio-to-video", "infinitetalk", {
+    toolName: "InfiniteTalk Audio to Video"
+  });
+
+  const toolCards: CompactToolCard[] = [
+    {
+      href: textToVideo,
+      title: "Text to Video",
+      subtitle: "Create high-quality videos from text prompts",
+      icon: Clapperboard,
+      badge: "TRENDING",
+      badgeTone: "cyan"
+    },
+    {
+      href: referenceToVideo,
+      title: "Reference to Video",
+      subtitle: "Guide videos with images, clips, and audio",
+      icon: Wand2,
+      badge: "NEW",
+      badgeTone: "cyan"
+    },
+    {
+      href: characterSwap,
+      title: "Character Swap",
+      subtitle: "Swap characters into video scenes",
+      icon: UserRound,
+      badge: "NEW",
+      badgeTone: "cyan"
+    },
+    {
+      href: audioToVideo,
+      title: "Audio to Video",
+      subtitle: "Turn portraits and audio into talking videos",
+      icon: Volume2
+    }
+  ];
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <p className="font-heading text-xs font-semibold uppercase tracking-[0.2em] text-[#00e5ff]">
+          Quick launch
+        </p>
+        <h2 className="mt-1 text-xl font-bold tracking-tight text-white sm:text-2xl">
+          Popular workflows
+        </h2>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[0.68fr_1fr]">
+        <Link
+          href={seedanceCinema}
+          className="group relative min-h-[280px] overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#101018] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.32)] transition duration-300 hover:border-[#00e5ff]/35"
+        >
+          <Image
+            src="/dashboard-assets/dashboard-seedance-cinema.png"
+            alt=""
+            fill
+            className="object-cover opacity-60 transition duration-700 group-hover:scale-105 group-hover:opacity-75"
+            sizes="(max-width: 1024px) 100vw, 40vw"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,#0d1114_0%,rgba(13,17,20,0.82)_32%,rgba(13,17,20,0.2)_100%)]" />
+          <div className="relative flex h-full min-h-[232px] flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-display text-2xl font-black uppercase tracking-tight text-white">
+                  Seedance 2.0 Cinema
+                </h3>
+                <span className="rounded-full bg-[#00e5ff] px-2 py-0.5 text-[9px] font-black uppercase italic text-black">
+                  New
+                </span>
+              </div>
+              <p className="mt-2 max-w-[250px] text-sm leading-relaxed text-white/55">
+                Turn stills into cinematic motion with Seedance 2.0.
+              </p>
+            </div>
+            <span className="inline-flex w-fit items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-black transition group-hover:bg-[#00e5ff]">
+              Try now
+              <ArrowUpRight className="size-4" aria-hidden />
+            </span>
+          </div>
+        </Link>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {toolCards.map((card) => (
+            <CompactToolCard key={card.title} {...card} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function ViralToolsBento() {
+  return (
+    <div className="space-y-10">
+      <StudioLaunchpadBento />
+      <QuickLaunchTools />
+    </div>
   );
 }

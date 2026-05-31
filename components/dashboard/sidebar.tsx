@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CreditCard, History, Image, LayoutGrid, LogOut, Sparkles } from "lucide-react";
+import { CreditCard, History, Image, LayoutGrid, LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ZorixaLogo } from "@/components/layout/ZorixaLogo";
 import { cn } from "@/lib/utils";
 import { useCredits } from "@/lib/hooks/use-credits";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -33,12 +34,7 @@ export function DashboardSidebar() {
 
   return (
     <aside className="flex h-dvh w-64 flex-col border-r border-white/10 bg-zinc-950 px-4 py-5">
-      <Link href="/" className="flex items-center gap-2 px-2 text-sm font-semibold">
-        <span className="grid size-8 place-items-center rounded-lg bg-white/5 ring-1 ring-white/10">
-          <Sparkles className="size-4 text-violet-300" />
-        </span>
-        <span>Zorixa AI</span>
-      </Link>
+      <ZorixaLogo href="/" className="px-2" textClassName="text-sm font-semibold" />
 
       <nav className="mt-6 space-y-1">
         {nav.map((item) => {

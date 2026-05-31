@@ -1,0 +1,78 @@
+{
+  "title": "Seedance 2.0",
+  "aspectRatio": "3/4",
+  "clips": [
+    {
+      "id": "01",
+      "prompt": "Two cowboys sitting at a wooden saloon bar, dim amber light, cinematic western film, slow push-in, dust in the air, photorealistic.",
+      "src": "/dashboard-assets/seedance-showcase/01.mp4",
+      "href": "/video?tab=Text+to+Video&model=seedance-2&from=tools&name=Seedance+2.0+Text+to+Video"
+    },
+    {
+      "id": "02",
+      "prompt": "Pilot inside a futuristic cockpit surrounded by glowing blue holographic flight displays, cinematic sci-fi, subtle camera drift.",
+      "src": "/dashboard-assets/seedance-showcase/02.mp4",
+      "href": "/video?tab=Text+to+Video&model=seedance-2&from=tools&name=Seedance+2.0+Text+to+Video"
+    },
+    {
+      "id": "03",
+      "prompt": "A man and woman talking across a cafe table, warm window light, shallow depth of field, intimate cinematic dialogue scene.",
+      "src": "/dashboard-assets/seedance-showcase/03.mp4",
+      "href": "/video?tab=Text+to+Video&model=seedance-2&from=tools&name=Seedance+2.0+Text+to+Video"
+    },
+    {
+      "id": "04",
+      "prompt": "Massive ocean wave cresting under a dramatic golden sunset sky, slow motion water spray, epic nature cinematography.",
+      "src": "/dashboard-assets/seedance-showcase/04.mp4",
+      "href": "/video?tab=Text+to+Video&model=seedance-2&from=tools&name=Seedance+2.0+Text+to+Video"
+    },
+    {
+      "id": "05",
+      "prompt": "Busy city crosswalk with pedestrians and a yellow taxi, urban street photography style, handheld cinematic motion.",
+      "src": "/dashboard-assets/seedance-showcase/05.mp4",
+      "href": "/video?tab=Text+to+Video&model=seedance-2&from=tools&name=Seedance+2.0+Text+to+Video"
+    },
+    {
+      "id": "06",
+      "prompt": "Motorcyclist leaning hard into a highway turn, motion blur on the road, adrenaline sports cinematography, golden hour.",
+      "src": "/dashboard-assets/seedance-showcase/06.mp4",
+      "href": "/video?tab=Text+to+Video&model=seedance-2&from=tools&name=Seedance+2.0+Text+to+Video"
+    },
+    {
+      "id": "07",
+      "prompt": "Athlete sprinting on an outdoor track seen from behind, strong motion blur, dynamic sports film look, morning light.",
+      "src": "/dashboard-assets/seedance-showcase/07.mp4",
+      "href": "/video?tab=Text+to+Video&model=seedance-2&from=tools&name=Seedance+2.0+Text+to+Video"
+    },
+    {
+      "id": "08",
+      "prompt": "Sailboat with dark sails on calm sea directly beneath a bright sun, lens flare, serene cinematic seascape.",
+      "src": "/dashboard-assets/seedance-showcase/08.mp4",
+      "href": "/video?tab=Text+to+Video&model=seedance-2&from=tools&name=Seedance+2.0+Text+to+Video"
+    },
+    {
+      "id": "09",
+      "prompt": "Close-up of a dragon head formed from molten lava and glowing embers, fantasy VFX, fiery particles drifting upward.",
+      "src": "/dashboard-assets/seedance-showcase/09.mp4",
+      "href": "/video?tab=Text+to+Video&model=seedance-2&from=tools&name=Seedance+2.0+Text+to+Video"
+    },
+    {
+      "id": "10",
+      "prompt": "Young woman smiling in a bright modern kitchen, natural daylight, lifestyle commercial cinematography, gentle camera move.",
+      "src": "/dashboard-assets/seedance-showcase/10.mp4",
+      "href": "/video?tab=Text+to+Video&model=seedance-2&from=tools&name=Seedance+2.0+Text+to+Video"
+    },
+    {
+      "id": "11",
+      "prompt": "Medieval archer drawing a bowstring, intense close-up on hands and bow, gritty historical cinematic lighting.",
+      "src": "/dashboard-assets/seedance-showcase/11.mp4",
+      "href": "/video?tab=Text+to+Video&model=seedance-2&from=tools&name=Seedance+2.0+Text+to+Video"
+    },
+    {
+      "id": "12",
+      "prompt": "Astronaut floating through a vibrant colorful nebula in space, cosmic particles, awe-inspiring sci-fi cinematography.",
+      "src": "/dashboard-assets/seedance-showcase/12.mp4",
+      "href": "/video?tab=Text+to+Video&model=seedance-2&from=tools&name=Seedance+2.0+Text+to+Video"
+    }
+  ]
+}

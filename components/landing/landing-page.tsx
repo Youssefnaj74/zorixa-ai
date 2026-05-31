@@ -3,9 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowRight, Play, Sparkles } from "lucide-react";
+import { ArrowRight, Play } from "lucide-react";
 
 import { DemoPlexusCanvas } from "@/components/landing/DemoPlexusCanvas";
+import { ZorixaLogo } from "@/components/layout/ZorixaLogo";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -34,12 +35,7 @@ function StickyNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-black/65 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-        <Link href="/" className="flex items-center gap-2 font-display text-base font-semibold tracking-tight text-white">
-          <span className="grid size-8 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-[#00d1ff]">
-            <Sparkles className="size-4" aria-hidden />
-          </span>
-          Zorixa AI
-        </Link>
+        <ZorixaLogo href="/" textClassName="text-base font-semibold" />
 
         <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
           {NAV.map((l) => (

@@ -28,6 +28,11 @@ export const metadata: Metadata = {
   },
   description:
     "Generate stunning images and videos with Zorixa AI. Dark-first studio with models, presets, and production-ready exports.",
+  icons: {
+    icon: [{ url: "/zorixa-icon.png", sizes: "512x512", type: "image/png" }],
+    shortcut: [{ url: "/zorixa-icon.png", type: "image/png" }],
+    apple: [{ url: "/zorixa-icon.png", sizes: "512x512", type: "image/png" }]
+  },
   openGraph: {
     title: "Zorixa AI",
     description: "AI image and video generation platform for creators and teams.",
