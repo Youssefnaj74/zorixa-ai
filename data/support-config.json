@@ -1,0 +1,12 @@
+{
+  "systemStatus": {
+    "level": "operational",
+    "label": "All systems operational",
+    "detail": "Image, video, and billing services are running normally."
+  },
+  "community": {
+    "discord": "",
+    "telegram": "",
+    "facebook": ""
+  }
+}

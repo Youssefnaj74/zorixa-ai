@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Mic, Play, Square, Video } from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
+import {
+  creditsChargedForTts,
+  formatGenerationCreditsLine
+} from "@/lib/atlas-pricing-catalog";
+import { useCredits } from "@/lib/hooks/use-credits";
 import type { ElevenLabsVoice } from "@/lib/elevenlabs-client";
 import { ELEVENLABS_DEFAULT_VOICES, ELEVENLABS_TTS_MAX_CHARS } from "@/lib/elevenlabs-client";
 import { buildAudioToVideoWithAudioHref } from "@/lib/studio-catalog-link";
@@ -22,6 +27,7 @@ type TtsHistoryEntry = {
 };
 
 export function TextToSpeechPage() {
+  const { refresh: refreshCredits } = useCredits();
   const [text, setText] = useState("");
   const [voices, setVoices] = useState<ElevenLabsVoice[]>(ELEVENLABS_DEFAULT_VOICES);
   const [voiceId, setVoiceId] = useState(ELEVENLABS_DEFAULT_VOICES[0]?.voice_id ?? "");
@@ -57,6 +63,11 @@ export function TextToSpeechPage() {
 
   const selectedVoice = voices.find((v) => v.voice_id === voiceId);
 
+  const ttsCreditsLine = useMemo(
+    () => formatGenerationCreditsLine(creditsChargedForTts()),
+    []
+  );
+
   const handleGenerate = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed) {
@@ -78,13 +89,25 @@ export function TextToSpeechPage() {
         credentials: "include",
         body: JSON.stringify({ text: trimmed, voice_id: voiceId })
       });
-      const data = (await res.json()) as { audio_url?: string; error?: string };
+      const data = (await res.json()) as {
+        audio_url?: string;
+        error?: string;
+        credits_balance?: number;
+        credits_required?: number;
+      };
       if (!res.ok) {
+        if (res.status === 402 && data.error === "INSUFFICIENT_CREDITS") {
+          throw new Error(
+            `Not enough credits (need ${data.credits_required ?? "?"}, you have ${data.credits_balance ?? 0}).`
+          );
+        }
         throw new Error(data.error ?? "Generation failed");
       }
       if (!data.audio_url) {
         throw new Error("No audio returned");
       }
+
+      void refreshCredits();
 
       setAudioUrl(data.audio_url);
       setHistory((prev) => [
@@ -102,7 +125,7 @@ export function TextToSpeechPage() {
     } finally {
       setGenerating(false);
     }
-  }, [text, voiceId, selectedVoice?.name]);
+  }, [text, voiceId, selectedVoice?.name, refreshCredits]);
 
   const togglePlay = useCallback(() => {
     if (!audioUrl) return;
@@ -255,6 +278,7 @@ export function TextToSpeechPage() {
           >
             {generating ? "Generating…" : "Generate speech"}
           </Button>
+          <p className="text-center text-xs tabular-nums text-zorixa-muted">{ttsCreditsLine}</p>
         </section>
 
         {history.length > 0 ? (

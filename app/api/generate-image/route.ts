@@ -10,6 +10,13 @@ import {
   resolveAtlasImageModelId
 } from "@/lib/atlas-image-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
+import {
+  assertCanAfford,
+  creditsForImageModel,
+  deductCreditsForPrediction,
+  insufficientCreditsResponse,
+  lookupCreditsSpentForAtlasPrediction
+} from "@/lib/credits-charge";
 import { env } from "@/lib/env";
 import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
@@ -124,13 +131,15 @@ export async function GET(request: Request) {
   if (typeof imageUrl === "string" && imageUrl.trim().length > 0) {
     const actor = await resolveZorixaActor(request);
     if (actor) {
+      const creditsSpent = await lookupCreditsSpentForAtlasPrediction(actor.userId, predictionId);
       void logAtlasImageGenerationIfNew({
         userId: actor.userId,
         outputUrl: imageUrl,
         predictionId,
         composerModelId,
         prompt: pollPrompt,
-        requireTerminalStatus: status
+        requireTerminalStatus: status,
+        creditsSpent
       });
     }
   }
@@ -224,6 +233,22 @@ async function handleGenerateImagePost(request: Request) {
     typeof body.resolution === "string" ? body.resolution.trim() : "";
   const numImages = normalizeNumImages(body.num_images, imageModel);
 
+  const actor = await resolveZorixaActor(request);
+  if (!actor) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const creditCost = creditsForImageModel(imageModel, numImages);
+  const afford = await assertCanAfford(actor.userId, creditCost);
+  if (!afford.ok) {
+    if (afford.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(afford.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
+
   const negativePrompt =
     typeof body.negativePrompt === "string" ? body.negativePrompt.trim() : "";
 
@@ -279,6 +304,23 @@ async function handleGenerateImagePost(request: Request) {
     );
   }
 
+  const charge = await deductCreditsForPrediction({
+    userId: actor.userId,
+    predictionId,
+    amount: creditCost,
+    featureUsed: "enhance"
+  });
+  if (!charge.ok) {
+    if (charge.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(charge.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Could not deduct credits" }, { status: 500 });
+  }
+
+  const creditsSpent = charge.creditsSpent;
+
   const initialStatus = createJson.data?.status;
   if (initialStatus === "completed" || initialStatus === "succeeded") {
     const imageUrl = extractAtlasVideoOutputUrl(createJson.data);
@@ -292,10 +334,16 @@ async function handleGenerateImagePost(request: Request) {
           predictionId: predictionId ?? null,
           composerModelId: imageModel,
           prompt,
-          requireTerminalStatus: initialStatus
+          requireTerminalStatus: initialStatus,
+          creditsSpent
         });
       }
-      return NextResponse.json({ image_url: imageUrl, prediction_id: predictionId });
+      return NextResponse.json({
+        image_url: imageUrl,
+        prediction_id: predictionId,
+        credits_spent: creditsSpent,
+        credits_balance: charge.balanceAfter
+      });
     }
     return NextResponse.json(
       { error: "Atlas returned completed without an output URL" },
@@ -314,6 +362,8 @@ async function handleGenerateImagePost(request: Request) {
   return NextResponse.json({
     pending: true,
     prediction_id: predictionId,
-    poll_interval_ms: CLIENT_POLL_HINT_MS
+    poll_interval_ms: CLIENT_POLL_HINT_MS,
+    credits_spent: creditsSpent,
+    credits_balance: charge.balanceAfter
   });
 }

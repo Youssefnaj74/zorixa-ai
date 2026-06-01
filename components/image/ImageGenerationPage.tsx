@@ -39,6 +39,11 @@ import {
   IMAGE_I2I_DOCK_HEIGHT
 } from "@/lib/composer-dock-height";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
+import {
+  creditsChargedForImageModel,
+  formatGenerationCreditsLine
+} from "@/lib/atlas-pricing-catalog";
+import { useCredits } from "@/lib/hooks/use-credits";
 
 const NAV_H = 56;
 const ATLAS_CLIENT_POLL_MS = 3000;
@@ -109,7 +114,21 @@ async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<strin
   return coerceToPublicHttpsUrl(data.url);
 }
 
+function insufficientCreditsMessage(data: {
+  credits_balance?: number;
+  credits_required?: number;
+  error?: string;
+}): string {
+  if (data.error === "INSUFFICIENT_CREDITS") {
+    const need = data.credits_required ?? "?";
+    const have = data.credits_balance ?? 0;
+    return `Not enough credits (need ${need}, you have ${have}). Buy more on the billing page.`;
+  }
+  return data.error ?? "Not enough credits.";
+}
+
 export function ImageGenerationPage() {
+  const { refresh: refreshCredits } = useCredits();
   const searchParams = useSearchParams();
   const studioLock = useMemo(() => parseImageStudioLock(searchParams), [searchParams]);
   const [bottomBarHeight, setBottomBarHeight] = useState(COMPOSER_DOCK_WITH_TABS_HEIGHT);
@@ -128,7 +147,10 @@ export function ImageGenerationPage() {
 
   const [history, setHistory] = useState<ImageHistoryEntry[]>([]);
 
-  const creditsLine = "-90.00 CR";
+  const creditsLine = useMemo(
+    () => formatGenerationCreditsLine(creditsChargedForImageModel(modelId)),
+    [modelId]
+  );
 
   useEffect(() => {
     if (actionTab === "Image to Image") {
@@ -285,6 +307,9 @@ export function ImageGenerationPage() {
           pending?: boolean;
           prediction_id?: string;
           poll_interval_ms?: number;
+          credits_spent?: number;
+          credits_balance?: number;
+          credits_required?: number;
           error?: string;
         } = {};
         try {
@@ -297,11 +322,17 @@ export function ImageGenerationPage() {
         }
 
         if (!res.ok) {
+          if (res.status === 402) {
+            setGenerateError(insufficientCreditsMessage(data));
+            return;
+          }
           setGenerateError(
             data.error ?? (rawText.trim().slice(0, 200) || `Generation failed (${res.status})`)
           );
           return;
         }
+
+        void refreshCredits();
 
         let finalImageUrl: string | null = pickImageUrlFromPollBody(data as Record<string, unknown>);
         let predictionIdForLog: string | null = pickPredictionIdFromPost(data);
@@ -373,7 +404,7 @@ export function ImageGenerationPage() {
         setLoading(false);
       }
     },
-    [aspect, loading, modelId, prompt, resolution]
+    [aspect, loading, modelId, prompt, refreshCredits, resolution]
   );
 
   const restoreHistory = useCallback((item: ImageHistoryEntry) => {

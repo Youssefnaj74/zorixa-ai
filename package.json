@@ -7,6 +7,7 @@
     "verify:atlas": "node scripts/verify-atlas.mjs",
     "generate:explore-previews": "node scripts/generate-explore-previews.mjs",
     "generate:dashboard-seedance": "node scripts/generate-dashboard-seedance-videos.mjs",
+    "generate:login-showcase": "node scripts/generate-login-showcase.mjs",
     "make:favicon": "node scripts/make-zorixa-favicon.mjs",
     "import:explore-prompts": "node scripts/import-explore-prompts.mjs",
     "dev": "next dev --webpack",

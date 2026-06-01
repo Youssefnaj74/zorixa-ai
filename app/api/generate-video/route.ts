@@ -81,6 +81,12 @@ import {
   videoComposerSupportsMotionControl
 } from "@/lib/atlas-video-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
+import {
+  assertCanAfford,
+  creditsForVideoModel,
+  deductCreditsForPrediction,
+  insufficientCreditsResponse
+} from "@/lib/credits-charge";
 import { env } from "@/lib/env";
 import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
 import { formatAtlasVideoFailureForUi } from "@/lib/atlas-video-failure-message";
@@ -102,6 +108,7 @@ import {
   seedanceAtlasRequestDimensions
 } from "@/lib/seedance-atlas-dimensions";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
+import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
 /** Client polls `GET ?predictionId=` this often (serverless POST cannot block for minutes). */
@@ -401,6 +408,22 @@ async function handleGenerateVideoPost(request: Request) {
       { error: `Unknown video model: ${videoModel}` },
       { status: 400 }
     );
+  }
+
+  const actor = await resolveZorixaActor(request);
+  if (!actor) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const creditCost = creditsForVideoModel(videoModel);
+  const afford = await assertCanAfford(actor.userId, creditCost);
+  if (!afford.ok) {
+    if (afford.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(afford.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
   let image_url =
@@ -1089,11 +1112,33 @@ async function handleGenerateVideoPost(request: Request) {
     );
   }
 
+  const charge = await deductCreditsForPrediction({
+    userId: actor.userId,
+    predictionId,
+    amount: creditCost,
+    featureUsed: "video"
+  });
+  if (!charge.ok) {
+    if (charge.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(charge.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Could not deduct credits" }, { status: 500 });
+  }
+
+  const creditsSpent = charge.creditsSpent;
+
   const initialStatus = createJson.data?.status;
   if (initialStatus === "completed" || initialStatus === "succeeded") {
     const videoUrl = extractAtlasVideoOutputUrl(createJson.data);
     if (videoUrl) {
-      return NextResponse.json({ video_url: videoUrl });
+      return NextResponse.json({
+        video_url: videoUrl,
+        prediction_id: predictionId,
+        credits_spent: creditsSpent,
+        credits_balance: charge.balanceAfter
+      });
     }
     return NextResponse.json(
       { error: "Atlas returned completed without an output URL" },
@@ -1170,6 +1215,8 @@ async function handleGenerateVideoPost(request: Request) {
     prediction_id: predictionId,
     poll_interval_ms: CLIENT_POLL_HINT_MS,
     atlas_model: model,
-    atlas_request: atlasDebug
+    atlas_request: atlasDebug,
+    credits_spent: creditsSpent,
+    credits_balance: charge.balanceAfter
   });
 }

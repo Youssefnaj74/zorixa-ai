@@ -1,5 +1,6 @@
 import { atlasProviderForModel } from "@/lib/composer-model-label";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
+import { lookupCreditsSpentForAtlasPrediction } from "@/lib/credits-charge";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const PLACEHOLDER_INPUT =
@@ -59,6 +60,34 @@ async function patchGenerationPrompt(generationId: number, prompt: string): Prom
   }
 }
 
+async function patchGenerationCreditsSpent(
+  generationId: number,
+  creditsSpent: number | undefined
+): Promise<void> {
+  if (creditsSpent == null || creditsSpent < 0) return;
+  const { data: row } = await supabaseAdmin
+    .from("generations")
+    .select("credits_spent")
+    .eq("id", generationId)
+    .maybeSingle();
+  const current = row?.credits_spent ?? 0;
+  if (current >= creditsSpent) return;
+  await supabaseAdmin.from("generations").update({ credits_spent: creditsSpent }).eq("id", generationId);
+}
+
+async function resolveCreditsSpentForLog(args: {
+  userId: string;
+  predictionId: string | null;
+  creditsSpent?: number;
+}): Promise<number> {
+  if (args.creditsSpent != null && args.creditsSpent > 0) return args.creditsSpent;
+  if (args.predictionId) {
+    const fromTx = await lookupCreditsSpentForAtlasPrediction(args.userId, args.predictionId);
+    if (fromTx > 0) return fromTx;
+  }
+  return Math.max(0, args.creditsSpent ?? 0);
+}
+
 /**
  * Persists a completed Atlas image studio output for dashboard history.
  * Skips duplicate rows when the same prediction id was already logged.
@@ -74,6 +103,8 @@ export async function logAtlasImageGenerationIfNew(args: {
   requireTerminalStatus?: string;
   /** User prompt — stored for Zorixa dashboard (Atlas Cloud may not display Arabic). */
   prompt?: string | null;
+  /** Credits already deducted for this prediction. */
+  creditsSpent?: number;
 }): Promise<boolean> {
   if (
     args.requireTerminalStatus !== undefined &&
@@ -97,6 +128,12 @@ export async function logAtlasImageGenerationIfNew(args: {
 
   const prompt = normalizeStoredPrompt(args.prompt);
 
+  const credits_spent = await resolveCreditsSpentForLog({
+    userId: args.userId,
+    predictionId: prediction_id,
+    creditsSpent: args.creditsSpent
+  });
+
   if (prediction_id) {
     const { data: existing } = await supabaseAdmin
       .from("generations")
@@ -111,6 +148,7 @@ export async function logAtlasImageGenerationIfNew(args: {
       } else if (prompt) {
         await patchGenerationPrompt(existing.id, prompt);
       }
+      await patchGenerationCreditsSpent(existing.id, credits_spent);
       return true;
     }
   }
@@ -128,6 +166,7 @@ export async function logAtlasImageGenerationIfNew(args: {
     } else if (prompt) {
       await patchGenerationPrompt(existingByOutput.id, prompt);
     }
+    await patchGenerationCreditsSpent(existingByOutput.id, credits_spent);
     return true;
   }
 
@@ -142,7 +181,7 @@ export async function logAtlasImageGenerationIfNew(args: {
     output_url,
     provider: atlasProviderForModel(composer_model_id),
     provider_prediction_id: prediction_id,
-    credits_spent: 0,
+    credits_spent,
     status: "completed" as const
   };
 

@@ -1,9 +1,14 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Navbar } from "@/components/layout/Navbar";
+import {
+  creditsChargedForVideoModel,
+  formatGenerationCreditsLine
+} from "@/lib/atlas-pricing-catalog";
+import { useCredits } from "@/lib/hooks/use-credits";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
@@ -218,6 +223,7 @@ function logAtlasComposerVideoToSupabase(payload: {
   input_url?: string;
   prediction_id?: string | null;
   video_model?: string | null;
+  credits_spent?: number;
 }) {
   void fetch("/api/generations/atlas-video-log", {
     method: "POST",
@@ -227,12 +233,27 @@ function logAtlasComposerVideoToSupabase(payload: {
       output_url: payload.output_url,
       input_url: payload.input_url ?? "",
       prediction_id: payload.prediction_id ?? null,
-      video_model: payload.video_model ?? null
+      video_model: payload.video_model ?? null,
+      credits_spent: payload.credits_spent ?? 0
     })
   }).catch(() => {});
 }
 
+function insufficientCreditsMessage(data: {
+  credits_balance?: number;
+  credits_required?: number;
+  error?: string;
+}): string {
+  if (data.error === "INSUFFICIENT_CREDITS") {
+    const need = data.credits_required ?? "?";
+    const have = data.credits_balance ?? 0;
+    return `Not enough credits (need ${need}, you have ${have}). Buy more on the billing page.`;
+  }
+  return data.error ?? "Not enough credits.";
+}
+
 export function VideoGenerationPage() {
+  const { refresh: refreshCredits } = useCredits();
   const searchParams = useSearchParams();
   const [bottomBarHeight, setBottomBarHeight] = useState(COMPOSER_DOCK_WITH_TABS_HEIGHT);
 
@@ -368,7 +389,10 @@ export function VideoGenerationPage() {
 
   const [history, setHistory] = useState<VideoHistoryEntry[]>([]);
 
-  const creditsLine = "428 CR/s";
+  const creditsLine = useMemo(
+    () => formatGenerationCreditsLine(creditsChargedForVideoModel(composerModelId)),
+    [composerModelId]
+  );
 
   const handleBottomBarHeight = useCallback((height: number) => {
     setBottomBarHeight(height);
@@ -981,6 +1005,9 @@ export function VideoGenerationPage() {
           prediction_id?: string;
           predictionId?: string;
           poll_interval_ms?: number;
+          credits_spent?: number;
+          credits_balance?: number;
+          credits_required?: number;
           error?: string;
           atlas_request?: {
             width?: number;
@@ -997,6 +1024,10 @@ export function VideoGenerationPage() {
         }
 
         if (!res.ok) {
+          if (res.status === 402) {
+            setGenerateError(insufficientCreditsMessage(data));
+            return;
+          }
           setGenerateError(
             formatAtlasVideoFailureForUi(data.error, {
               generateAudio: wantGenerateAudio,
@@ -1007,6 +1038,9 @@ export function VideoGenerationPage() {
           );
           return;
         }
+
+        const creditsSpent = data.credits_spent ?? 0;
+        void refreshCredits();
 
         if (data.atlas_request) {
           console.log("[VideoGenerationPage] Atlas request echoed from server", data.atlas_request);
@@ -1187,7 +1221,8 @@ export function VideoGenerationPage() {
           output_url: finalVideoUrl,
           input_url: sourceInputForLog ?? "",
           prediction_id: predictionIdForLog,
-          video_model: composerModelId
+          video_model: composerModelId,
+          credits_spent: creditsSpent
         });
       } catch (e: unknown) {
         setGenerateError(e instanceof Error ? e.message : "Network error. Try again.");
@@ -1195,7 +1230,7 @@ export function VideoGenerationPage() {
         setLoading(false);
       }
     },
-    [aspect, composerModelId, durationStandard, loading, modeValue, prompt, resolution, timeSeconds]
+    [aspect, composerModelId, durationStandard, loading, modeValue, prompt, refreshCredits, resolution, timeSeconds]
   );
 
   const restoreSettings = useCallback(

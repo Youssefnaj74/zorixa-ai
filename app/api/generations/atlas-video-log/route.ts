@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     prediction_id?: string | null;
     video_model?: string | null;
     prompt?: string | null;
+    credits_spent?: number;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -54,13 +55,19 @@ export async function POST(request: Request) {
   const prompt =
     typeof body.prompt === "string" && body.prompt.trim().length > 0 ? body.prompt.trim() : null;
 
+  const creditsSpent =
+    typeof body.credits_spent === "number" && Number.isFinite(body.credits_spent)
+      ? Math.max(0, Math.round(body.credits_spent))
+      : undefined;
+
   const ok = await logAtlasVideoGenerationIfNew({
     userId: actor.userId,
     outputUrl: output_url,
     inputUrl: inputRaw || null,
     predictionId: prediction_id,
     composerModelId: video_model,
-    prompt
+    prompt,
+    creditsSpent
   });
 
   if (!ok) {

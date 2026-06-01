@@ -6,14 +6,23 @@ export type EnhanceType =
   | { kind: "enhance_quality" }
   | { kind: "remove_noise" };
 
+import {
+  creditsForImageModel,
+  creditsForTts,
+  creditsForVideoModel,
+  isCreditsBillingEnabled
+} from "@/lib/credits-charge";
+
 export const CREDIT_COSTS = {
-  /** Set to 0 for free testing; restore to 5 (or your plan) for production. */
-  enhance: 0,
-  /** Set to 0 for free testing; restore to 20 (or your plan) for production. */
-  video: 0,
-  /** Set to 0 for free testing; restore to ~2–5 for production (ElevenLabs cost). */
-  tts: 0
+  /** Atlas image default (Flux Dev tier) with markup — override per model in /api/generate-image. */
+  enhance: creditsForImageModel("flux-dev"),
+  /** Atlas video default (Seedance 2.0 tier) with markup. */
+  video: creditsForVideoModel("seedance-2"),
+  tts: creditsForTts()
 } as const;
+
+/** Re-export for UI that shows test-mode vs live billing. */
+export { isCreditsBillingEnabled };
 
 export const replicateModels = {
   upscale: process.env.REPLICATE_MODEL_UPSCALE ?? "nightmareai/real-esrgan",

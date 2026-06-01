@@ -21,6 +21,12 @@ import {
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
+import {
+  creditsChargedForImageModel,
+  creditsChargedForVideoModel,
+  formatGenerationCreditsLine
+} from "@/lib/atlas-pricing-catalog";
+import { useCredits } from "@/lib/hooks/use-credits";
 import { cn } from "@/lib/utils";
 
 const ATLAS_CLIENT_POLL_MS = 3000;
@@ -97,6 +103,7 @@ async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<strin
 }
 
 export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
+  const { refresh: refreshCredits } = useCredits();
   const [referencePreviewUrls, setReferencePreviewUrls] = useState<string[]>([]);
 
   const [prompt, setPrompt] = useState("");
@@ -119,8 +126,8 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
   const [outputUrl, setOutputUrl] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
-  const creditsLabelVideo = "~90.00 CR";
-  const creditsLabelImage = "-90.00 CR";
+  const creditsLabelImage = formatGenerationCreditsLine(creditsChargedForImageModel(modelId));
+  const creditsLabelVideo = formatGenerationCreditsLine(creditsChargedForVideoModel("seedance-2"));
 
   const applyReferenceFiles = useCallback(
     (files: File[]) => {
@@ -217,6 +224,8 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
           prediction_id?: string;
           predictionId?: string;
           poll_interval_ms?: number;
+          credits_balance?: number;
+          credits_required?: number;
           error?: string;
         } = {};
         try {
@@ -227,9 +236,17 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
         }
 
         if (!res.ok) {
+          if (res.status === 402 && data.error === "INSUFFICIENT_CREDITS") {
+            setGenerateError(
+              `Not enough credits (need ${data.credits_required ?? "?"}, you have ${data.credits_balance ?? 0}).`
+            );
+            return;
+          }
           setGenerateError(data.error ?? `Generation failed (${res.status})`);
           return;
         }
+
+        void refreshCredits();
 
         let finalImageUrl: string | null = null;
         let predictionIdForLog: string | null = pickPredictionIdFromPost(data);

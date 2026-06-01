@@ -37,6 +37,20 @@ create table if not exists public.generations (
   created_at timestamptz not null default now()
 );
 
+-- Support requests from /support
+create table if not exists public.support_requests (
+  id bigserial primary key,
+  user_id uuid references public.users_profiles (id) on delete set null,
+  name text not null,
+  email text not null,
+  issue_type text not null,
+  subject text not null,
+  message text not null,
+  screenshot_url text,
+  status text not null default 'open' check (status in ('open', 'closed')),
+  created_at timestamptz not null default now()
+);
+
 -- Invoices (freelancer tools)
 create table if not exists public.invoices (
   id bigserial primary key,
@@ -73,6 +87,7 @@ for each row execute procedure public.handle_new_user();
 alter table public.users_profiles enable row level security;
 alter table public.transactions enable row level security;
 alter table public.generations enable row level security;
+alter table public.support_requests enable row level security;
 alter table public.invoices enable row level security;
 
 -- profiles: user can read/update own
@@ -98,6 +113,12 @@ drop policy if exists "generations_select_own" on public.generations;
 create policy "generations_select_own"
 on public.generations for select
 using (auth.uid() = user_id);
+
+-- support_requests: user can read own submissions (inserts via API service role)
+drop policy if exists "support_requests_select_own" on public.support_requests;
+create policy "support_requests_select_own"
+on public.support_requests for select
+using (auth.uid() = user_id and user_id is not null);
 
 -- invoices: user can read/insert own
 drop policy if exists "invoices_select_own" on public.invoices;

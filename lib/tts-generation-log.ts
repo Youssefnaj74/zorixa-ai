@@ -24,6 +24,7 @@ export async function logTtsGenerationIfNew(args: {
   outputUrl: string;
   text?: string | null;
   voiceId?: string | null;
+  creditsSpent?: number;
 }): Promise<boolean> {
   const output_url = coerceToPublicHttpsUrl(args.outputUrl.trim());
   if (!output_url) return false;
@@ -49,7 +50,7 @@ export async function logTtsGenerationIfNew(args: {
     input_url: PLACEHOLDER_INPUT,
     output_url,
     provider: voiceId ? `elevenlabs-tts:${voiceId}` : "elevenlabs-tts",
-    credits_spent: 0,
+    credits_spent: args.creditsSpent ?? 0,
     status: "completed"
   };
   if (prompt) row.prompt = prompt;

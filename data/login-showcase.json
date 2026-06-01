@@ -1,0 +1,32 @@
+{
+  "slides": [
+    {
+      "id": "seedance-2",
+      "title": "Seedance 2.0",
+      "tagline": "Cinematic motion from text and stills — Atlas Cloud on Zorixa.",
+      "badge": "VIDEO",
+      "image": "/login-assets/seedance-2.png"
+    },
+    {
+      "id": "cinema-ai",
+      "title": "Cinema AI",
+      "tagline": "Storyboard scenes, film frames, and dramatic campaign visuals.",
+      "badge": "CINEMA",
+      "image": "/login-assets/cinema-ai.png"
+    },
+    {
+      "id": "freelance-ai",
+      "title": "Freelance AI",
+      "tagline": "Client-ready stills, brand boards, and social assets in minutes.",
+      "badge": "IMAGE",
+      "image": "/login-assets/freelance-ai.png"
+    },
+    {
+      "id": "ugc-video",
+      "title": "UGC Video",
+      "tagline": "Creator ads, product demos, and vertical social-first clips.",
+      "badge": "UGC",
+      "image": "/login-assets/ugc-video.png"
+    }
+  ]
+}

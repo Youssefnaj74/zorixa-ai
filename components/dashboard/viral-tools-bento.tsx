@@ -288,7 +288,7 @@ function StudioLaunchpadBento() {
           src="/dashboard-assets/dashboard-freelance-ai.png"
           badge="IMAGE"
           title="Freelance studio"
-          subtitle="GPT Image 2 · Nano Banana · Zorixa Image."
+          subtitle="GPT Image 2 · Nano Banana · Qwen 2.0 Pro."
         />
         <BentoTile
           href="/video"

@@ -138,7 +138,7 @@ export function NavbarAccountMenu() {
             API Access
           </Link>
           <Link
-            href="/"
+            href="/support"
             role="menuitem"
             onClick={() => setOpen(false)}
             className="px-5 py-3 text-sm font-normal text-white transition-opacity hover:opacity-70"

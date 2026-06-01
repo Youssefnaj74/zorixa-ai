@@ -66,7 +66,7 @@ export const EXPLORE_PROMPT_MODEL_FILTERS: ExplorePromptModelFilter[] = [
   { id: "all", label: "All" },
   ...MODEL_OPTIONS.filter((m) => EXPLORE_PROMPT_MODEL_ALLOWLIST.has(m.id)).map((m) => ({
     id: m.id,
-    label: m.id === "zorixa" ? "Zorixa Image" : m.label
+    label: m.id === "zorixa" ? "Qwen 2.0 Pro" : m.label
   }))
 ];
 

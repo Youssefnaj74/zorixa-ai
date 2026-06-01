@@ -8,20 +8,37 @@ import { ExternalImage } from "@/components/ui/ExternalImage";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { normalizeAtlasVideoUrlForPlayback } from "@/lib/resolve-video-playback-url";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
+import {
+  historyCreditsBadgeClass,
+  historyCreditsLabel
+} from "@/lib/history-credits-label";
+import type { GenerationTile } from "@/lib/generation-tile";
 import { cn } from "@/lib/utils";
 
-export type GenerationTile = {
-  id: string;
-  /** Poster / image preview */
-  src?: string;
-  /** Raw CDN video URL */
-  videoSrc?: string;
-  /** MP3 / audio output URL */
-  audioSrc?: string;
-  title: string;
-  kind?: "image" | "video" | "audio";
-  categoryLabel?: string;
-};
+export type { GenerationTile } from "@/lib/generation-tile";
+
+function HistoryCreditsBadge({
+  creditsSpent,
+  status,
+  className
+}: {
+  creditsSpent?: number;
+  status?: string;
+  className?: string;
+}) {
+  const { label, tone } = historyCreditsLabel(creditsSpent, status);
+  return (
+    <span
+      className={cn(
+        "inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold tabular-nums tracking-wide backdrop-blur-sm",
+        historyCreditsBadgeClass(tone),
+        className
+      )}
+    >
+      {label}
+    </span>
+  );
+}
 
 const domVideoAttrs = {
   referrerPolicy: "no-referrer"
@@ -108,6 +125,7 @@ function HistoryAudioLightbox({
         <div className="mt-5 space-y-1 border-t border-white/10 pt-4">
           <p className="font-medium text-white">{item.title}</p>
           <p className="text-xs text-white/60">{category}</p>
+          <HistoryCreditsBadge creditsSpent={item.creditsSpent} status={item.status} className="mt-2" />
           {openUrl ? (
             <a
               href={openUrl}
@@ -203,6 +221,11 @@ function HistoryVideoLightbox({
             <p className="text-xs text-white/60">
               {category} · Zorixa AI
             </p>
+            <HistoryCreditsBadge
+              creditsSpent={item.creditsSpent}
+              status={item.status}
+              className="mt-2"
+            />
           </div>
           {openUrl ? (
             <a
@@ -326,6 +349,9 @@ export function GenerationGrid({
             >
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-900">
                 <GridMedia item={item} />
+                <div className="pointer-events-none absolute right-3 top-3">
+                  <HistoryCreditsBadge creditsSpent={item.creditsSpent} status={item.status} />
+                </div>
                 <motion.div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent p-4">
                   <p className="truncate font-medium text-white">{item.title}</p>
                   <p className="text-xs text-white/60">{footer}</p>

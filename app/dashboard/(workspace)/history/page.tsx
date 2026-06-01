@@ -1,94 +1,11 @@
 import { redirect } from "next/navigation";
 
+import { HistoryFilteredGrid } from "@/components/dashboard/HistoryFilteredGrid";
+import {
+  mapGenerationsToTiles,
+  type GenerationHistoryRow
+} from "@/lib/map-generations-to-tiles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { GenerationGrid, type GenerationTile } from "@/components/dashboard/GenerationGrid";
-import { composerModelDisplayLabel } from "@/lib/composer-model-label";
-import { isTtsGenerationRow } from "@/lib/tts-generation-shared";
-
-type GenerationRow = {
-  id: number;
-  feature_type: "image" | "video";
-  input_url: string;
-  output_url: string | null;
-  status: string;
-  created_at: string;
-  provider?: string | null;
-  composer_model_id?: string | null;
-  prompt?: string | null;
-};
-
-function isLikelyVideoFile(url: string): boolean {
-  const path = url.split("?")[0]?.toLowerCase() ?? "";
-  return [".mp4", ".webm", ".mov", ".m4v"].some((ext) => path.endsWith(ext));
-}
-
-function dedupeGenerationsByOutput(items: GenerationRow[]): GenerationRow[] {
-  const seen = new Set<string>();
-  const out: GenerationRow[] = [];
-  for (const g of items) {
-    const key = (g.output_url?.trim() || `id:${g.id}`).toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(g);
-  }
-  return out;
-}
-
-function historyTitle(g: GenerationRow, modelLabel: string): string {
-  const prompt = g.prompt?.trim();
-  if (prompt) return prompt.length > 48 ? `${prompt.slice(0, 48)}...` : prompt;
-  return g.status === "completed" ? modelLabel : `${modelLabel} (${g.status})`;
-}
-
-function mapGenerationsToTiles(items: GenerationRow[]): GenerationTile[] {
-  return dedupeGenerationsByOutput(items).map((g) => {
-    const modelLabel = composerModelDisplayLabel(
-      g.composer_model_id,
-      g.feature_type,
-      g.provider
-    );
-    const title = historyTitle(g, modelLabel);
-
-    if (isTtsGenerationRow(g)) {
-      return {
-        id: String(g.id),
-        title,
-        kind: "audio",
-        audioSrc: g.output_url?.trim() || undefined,
-        categoryLabel: "Text to Speech · Zorixa AI"
-      };
-    }
-
-    if (g.feature_type === "video") {
-      const out = g.output_url;
-      const inn = g.input_url;
-      const videoSrc = out?.trim() ? out : undefined;
-      let src: string | undefined;
-      if (out && !isLikelyVideoFile(out)) src = out;
-      else if (inn && !isLikelyVideoFile(inn) && !inn.includes("placehold.co")) src = inn;
-
-      return {
-        id: String(g.id),
-        title,
-        kind: "video",
-        src,
-        videoSrc,
-        categoryLabel: "Zorixa AI"
-      };
-    }
-
-    const out = g.output_url;
-    const inn = g.input_url;
-    const src = out ?? (inn && !inn.includes("placehold.co") ? inn : undefined);
-    return {
-      id: String(g.id),
-      title,
-      kind: "image",
-      src,
-      categoryLabel: "Zorixa AI"
-    };
-  });
-}
 
 export default async function HistoryPage() {
   const supabase = await createSupabaseServerClient();
@@ -105,12 +22,13 @@ export default async function HistoryPage() {
 
   const primaryGenerations = await supabase
     .from("generations")
-    .select(`${generationColumnsBase}, composer_model_id, prompt`)
+    .select(`${generationColumnsBase}, composer_model_id, prompt, credits_spent`)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(60);
 
-  let generations = primaryGenerations.data ?? [];
+  let generations: GenerationHistoryRow[] = (primaryGenerations.data ??
+    []) as GenerationHistoryRow[];
 
   if (primaryGenerations.error) {
     const fallbackGenerations = await supabase
@@ -121,13 +39,14 @@ export default async function HistoryPage() {
       .limit(60);
 
     generations = (fallbackGenerations.data ?? []).map((row) => ({
-      ...row,
+      ...(row as GenerationHistoryRow),
       composer_model_id: null,
-      prompt: null
+      prompt: null,
+      credits_spent: 0
     }));
   }
 
-  const historyItems = mapGenerationsToTiles(generations as GenerationRow[]);
+  const historyItems = mapGenerationsToTiles(generations);
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#080810] px-4 py-8 text-white sm:px-6 lg:px-8">
@@ -143,7 +62,7 @@ export default async function HistoryPage() {
               Recent outputs
             </h1>
             <p className="mt-2 text-sm text-white/45">
-              Your latest AI images, videos, and speech assets.
+              Your latest AI images, videos, and speech assets. Credits charged per run.
             </p>
           </div>
         </div>
@@ -153,7 +72,7 @@ export default async function HistoryPage() {
             No generations yet. Start with Image Studio or Video Studio.
           </div>
         ) : (
-          <GenerationGrid items={historyItems} />
+          <HistoryFilteredGrid items={historyItems} />
         )}
       </section>
     </main>

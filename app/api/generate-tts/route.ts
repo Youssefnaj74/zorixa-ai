@@ -5,6 +5,12 @@ import {
   ELEVENLABS_TTS_MAX_CHARS,
   synthesizeElevenLabsSpeech
 } from "@/lib/elevenlabs-client";
+import {
+  assertCanAfford,
+  creditsForTts,
+  deductCredits,
+  insufficientCreditsResponse
+} from "@/lib/credits-charge";
 import { env, requireElevenLabsApiKey } from "@/lib/env";
 import { rateLimit } from "@/lib/rate-limit";
 import { logTtsGenerationIfNew } from "@/lib/tts-generation-log";
@@ -62,6 +68,17 @@ export async function POST(request: Request) {
     (typeof body.voiceId === "string" ? body.voiceId : "");
   const voiceId = voiceIdRaw.trim() || DEFAULT_VOICE_ID;
 
+  const creditCost = creditsForTts();
+  const afford = await assertCanAfford(actor.userId, creditCost);
+  if (!afford.ok) {
+    if (afford.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(afford.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
+
   let audioBuffer: ArrayBuffer;
   try {
     audioBuffer = await synthesizeElevenLabsSpeech(
@@ -81,6 +98,8 @@ export async function POST(request: Request) {
   }
 
   const path = `${actor.userId}/${crypto.randomUUID()}.mp3`;
+  const chargeRef = `tts:${path}`;
+
   const bytes = new Uint8Array(audioBuffer);
   const { error: uploadErr } = await supabaseAdmin.storage.from("uploads").upload(path, bytes, {
     contentType: "audio/mpeg",
@@ -97,6 +116,21 @@ export async function POST(request: Request) {
     );
   }
 
+  const charge = await deductCredits({
+    userId: actor.userId,
+    amount: creditCost,
+    featureUsed: "video",
+    refKey: chargeRef
+  });
+  if (!charge.ok) {
+    if (charge.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(charge.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Could not deduct credits" }, { status: 500 });
+  }
+
   const { data } = supabaseAdmin.storage.from("uploads").getPublicUrl(path);
   const audio_url = data.publicUrl;
 
@@ -104,8 +138,14 @@ export async function POST(request: Request) {
     userId: actor.userId,
     outputUrl: audio_url,
     text,
-    voiceId
+    voiceId,
+    creditsSpent: charge.creditsSpent
   });
 
-  return NextResponse.json({ audio_url, voice_id: voiceId });
+  return NextResponse.json({
+    audio_url,
+    voice_id: voiceId,
+    credits_spent: charge.creditsSpent,
+    credits_balance: charge.balanceAfter
+  });
 }

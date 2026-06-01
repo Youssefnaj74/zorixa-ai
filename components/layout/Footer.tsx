@@ -15,12 +15,9 @@ export default function Footer() {
           <Link href="/privacy" className="text-sm text-white/40 hover:text-white transition-colors">
             Privacy Policy
           </Link>
-          <a
-            href="mailto:support@zorixaai.com"
-            className="text-sm text-white/40 hover:text-white transition-colors"
-          >
+          <Link href="/support" className="text-sm text-white/40 hover:text-white transition-colors">
             Support
-          </a>
+          </Link>
         </div>
       </div>
     </footer>

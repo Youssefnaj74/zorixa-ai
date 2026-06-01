@@ -35,8 +35,7 @@ export const MODEL_OPTIONS: ModelOption[] = [
   },
   {
     id: "zorixa",
-    label: "Zorixa Image",
-    title: "Qwen Image 2.0 Pro",
+    label: "Qwen 2.0 Pro",
     badge: <Badge variant="fullAccess">FULL ACCESS</Badge>
   },
   {
