@@ -20,30 +20,64 @@ export default async function HistoryPage() {
   const generationColumnsBase =
     "id, feature_type, output_url, input_url, status, created_at, provider";
 
-  const primaryGenerations = await supabase
-    .from("generations")
-    .select(`${generationColumnsBase}, composer_model_id, prompt, credits_spent`)
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(60);
-
-  let generations: GenerationHistoryRow[] = (primaryGenerations.data ??
-    []) as GenerationHistoryRow[];
-
-  if (primaryGenerations.error) {
-    const fallbackGenerations = await supabase
+  const fetchGenerations = (columns: string) =>
+    supabase
       .from("generations")
-      .select(generationColumnsBase)
+      .select(columns)
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(60);
 
-    generations = (fallbackGenerations.data ?? []).map((row) => ({
-      ...(row as GenerationHistoryRow),
-      composer_model_id: null,
-      prompt: null,
-      credits_spent: 0
+  async function mergeCreditsSpent(
+    rows: GenerationHistoryRow[]
+  ): Promise<GenerationHistoryRow[]> {
+    const { data: creditRows, error } = await fetchGenerations("id, credits_spent");
+    if (error || !creditRows?.length) return rows;
+    const byId = new Map(
+      creditRows.map((r) => [r.id as number, Math.max(0, Math.round(r.credits_spent ?? 0))])
+    );
+    return rows.map((row) => ({
+      ...row,
+      credits_spent: byId.get(row.id) ?? row.credits_spent ?? 0
     }));
+  }
+
+  let generations: GenerationHistoryRow[] = [];
+
+  const primaryGenerations = await fetchGenerations(
+    `${generationColumnsBase}, composer_model_id, prompt, credits_spent`
+  );
+
+  if (!primaryGenerations.error && primaryGenerations.data) {
+    generations = primaryGenerations.data as GenerationHistoryRow[];
+  } else {
+    const withCredits = await fetchGenerations(
+      `${generationColumnsBase}, credits_spent`
+    );
+    if (!withCredits.error && withCredits.data) {
+      generations = (withCredits.data as GenerationHistoryRow[]).map((row) => ({
+        ...row,
+        composer_model_id: null,
+        prompt: null
+      }));
+    } else {
+      const fallbackGenerations = await fetchGenerations(generationColumnsBase);
+      generations = await mergeCreditsSpent(
+        (fallbackGenerations.data ?? []).map((row) => ({
+          ...(row as GenerationHistoryRow),
+          composer_model_id: null,
+          prompt: null,
+          credits_spent: 0
+        }))
+      );
+    }
+  }
+
+  if (
+    generations.length > 0 &&
+    generations.every((g) => !g.credits_spent || g.credits_spent === 0)
+  ) {
+    generations = await mergeCreditsSpent(generations);
   }
 
   const historyItems = mapGenerationsToTiles(generations);
