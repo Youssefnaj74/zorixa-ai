@@ -21,11 +21,13 @@ import {
 } from "@/components/image/image-bottom-bar-constants";
 import { Navbar } from "@/components/layout/Navbar";
 import {
+  clampImageBatchCount,
   imageComposerSupportedOnActionTab,
   isAtlasImageComposerId
 } from "@/lib/atlas-image-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import {
+  extractAtlasImageOutputUrls,
   extractAtlasVideoOutputUrl,
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
@@ -64,11 +66,74 @@ function pickPredictionIdFromPost(data: {
   return camel.length > 0 ? camel : null;
 }
 
-function pickImageUrlFromPollBody(data: Record<string, unknown>): string | null {
-  for (const v of [data.image_url, data.imageUrl]) {
-    if (typeof v === "string" && v.trim().length > 0) return v.trim();
+function pickPredictionIdsFromPost(data: {
+  prediction_id?: string;
+  predictionId?: string;
+  prediction_ids?: string[];
+}): string[] {
+  if (Array.isArray(data.prediction_ids)) {
+    const ids = data.prediction_ids
+      .filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+      .map((id) => id.trim());
+    if (ids.length > 0) return ids;
   }
-  return extractAtlasVideoOutputUrl(data as unknown as AtlasLikeVideoPayload);
+  const one = pickPredictionIdFromPost(data);
+  return one ? [one] : [];
+}
+
+async function pollAtlasImagePrediction(
+  predictionId: string,
+  modelId: string,
+  interval: number,
+  deadline: number
+): Promise<string[]> {
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, interval));
+    const pr = await fetch(
+      `/api/generate-image?predictionId=${encodeURIComponent(predictionId)}&imageModel=${encodeURIComponent(modelId)}`,
+      { cache: "no-store", credentials: "include" }
+    );
+    let pd: Record<string, unknown> = {};
+    try {
+      pd = (await pr.json()) as Record<string, unknown>;
+    } catch {
+      throw new Error(`Status check failed (${pr.status})`);
+    }
+    if (!pr.ok) {
+      const err =
+        typeof pd.error === "string" ? pd.error : `Status check failed (${pr.status})`;
+      throw new Error(err);
+    }
+    const urls = pickImageUrlsFromPollBody(pd);
+    if (urls.length > 0) return urls;
+    const status = String(pd.status ?? "").toLowerCase();
+    if (status === "failed") {
+      throw new Error(
+        typeof pd.error === "string" ? pd.error : "Atlas prediction failed"
+      );
+    }
+    if (atlasTerminalSuccessStatus(String(pd.status ?? "")) && urls.length === 0) {
+      throw new Error("Generation finished but no image URL was returned.");
+    }
+  }
+  return [];
+}
+
+function pickImageUrlsFromPollBody(data: Record<string, unknown>): string[] {
+  const listed = data.image_urls;
+  if (Array.isArray(listed)) {
+    const urls = listed
+      .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+      .map((v) => v.trim());
+    if (urls.length > 0) return urls;
+  }
+  const fromAtlas = extractAtlasImageOutputUrls(data as unknown as AtlasLikeVideoPayload);
+  if (fromAtlas.length > 0) return fromAtlas;
+  for (const v of [data.image_url, data.imageUrl]) {
+    if (typeof v === "string" && v.trim().length > 0) return [v.trim()];
+  }
+  const one = extractAtlasVideoOutputUrl(data as unknown as AtlasLikeVideoPayload);
+  return one ? [one] : [];
 }
 
 function extensionForUploadedBlob(blob: Blob): string {
@@ -140,17 +205,22 @@ export function ImageGenerationPage() {
   const [cameraStyle, setCameraStyle] = useState("None");
   const [resolution, setResolution] = useState("2K");
   const [aspect, setAspect] = useState("Auto");
+  const [batchCount, setBatchCount] = useState(1);
 
   const [loading, setLoading] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [outputUrls, setOutputUrls] = useState<string[]>([]);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
   const [history, setHistory] = useState<ImageHistoryEntry[]>([]);
 
   const creditsLine = useMemo(
-    () => formatGenerationCreditsLine(creditsChargedForImageModel(modelId)),
-    [modelId]
+    () => formatGenerationCreditsLine(creditsChargedForImageModel(modelId, batchCount)),
+    [batchCount, modelId]
   );
+
+  useEffect(() => {
+    setBatchCount((c) => clampImageBatchCount(modelId, c));
+  }, [modelId]);
 
   useEffect(() => {
     if (actionTab === "Image to Image") {
@@ -258,7 +328,7 @@ export function ImageGenerationPage() {
       if (loading) return;
 
       setGenerateError(null);
-      setImageUrl(null);
+      setOutputUrls([]);
 
       const promptValue = ctx.promptText.trim() || prompt.trim();
       const promptForAtlas = stripVideoComposerAssetTokens(promptValue);
@@ -304,8 +374,11 @@ export function ImageGenerationPage() {
         const rawText = await res.text();
         let data: {
           image_url?: string;
+          image_urls?: string[];
+          batch?: boolean;
           pending?: boolean;
           prediction_id?: string;
+          prediction_ids?: string[];
           poll_interval_ms?: number;
           credits_spent?: number;
           credits_balance?: number;
@@ -334,84 +407,100 @@ export function ImageGenerationPage() {
 
         void refreshCredits();
 
-        let finalImageUrl: string | null = pickImageUrlFromPollBody(data as Record<string, unknown>);
-        let predictionIdForLog: string | null = pickPredictionIdFromPost(data);
+        const predictionIds = pickPredictionIdsFromPost(data);
+        const collected = new Set(pickImageUrlsFromPollBody(data as Record<string, unknown>));
 
-        if (!finalImageUrl && predictionIdForLog && data.pending !== false) {
-          const predictionId = predictionIdForLog;
-          if (!predictionId) {
-            setGenerateError("No image URL or job id was returned.");
-            return;
-          }
+        const needsPoll =
+          predictionIds.length > 0 &&
+          (data.pending !== false || collected.size < predictionIds.length);
+
+        if (needsPoll) {
           const interval = data.poll_interval_ms ?? ATLAS_CLIENT_POLL_MS;
           const deadline = Date.now() + ATLAS_CLIENT_MAX_WAIT_MS;
-          while (Date.now() < deadline) {
-            await new Promise((r) => setTimeout(r, interval));
-            const pr = await fetch(
-              `/api/generate-image?predictionId=${encodeURIComponent(predictionId)}&imageModel=${encodeURIComponent(modelId)}`,
-              { cache: "no-store", credentials: "include" }
+          const pollErrors: string[] = [];
+
+          if (data.batch && predictionIds.length > 1) {
+            await Promise.all(
+              predictionIds.map(async (predictionId) => {
+                try {
+                  const urls = await pollAtlasImagePrediction(
+                    predictionId,
+                    modelId,
+                    interval,
+                    deadline
+                  );
+                  for (const u of urls) collected.add(u);
+                } catch (e: unknown) {
+                  pollErrors.push(
+                    e instanceof Error ? e.message : "One image in the batch failed."
+                  );
+                }
+              })
             );
-            let pd: {
-              image_url?: string | null;
-              status?: string;
-              error?: string | null;
-            } = {};
+          } else {
+            const predictionId = predictionIds[0];
+            if (!predictionId) {
+              setGenerateError("No image URL or job id was returned.");
+              return;
+            }
             try {
-              pd = (await pr.json()) as typeof pd;
-            } catch {
-              setGenerateError(`Status check failed (${pr.status})`);
+              const urls = await pollAtlasImagePrediction(
+                predictionId,
+                modelId,
+                interval,
+                deadline
+              );
+              for (const u of urls) collected.add(u);
+            } catch (e: unknown) {
+              setGenerateError(
+                e instanceof Error ? e.message : "Image generation failed."
+              );
               return;
             }
-            if (!pr.ok) {
-              setGenerateError(pd.error ?? `Status check failed (${pr.status})`);
-              return;
-            }
-            const polled = pickImageUrlFromPollBody(pd as Record<string, unknown>);
-            if (polled) {
-              finalImageUrl = polled;
-              break;
-            }
-            if ((pd.status ?? "").toLowerCase() === "failed") {
-              setGenerateError(pd.error ?? "Atlas prediction failed");
-              return;
-            }
-            if (atlasTerminalSuccessStatus(pd.status) && !polled) {
-              setGenerateError("Generation finished but no image URL was returned.");
-              return;
-            }
+          }
+
+          if (collected.size === 0) {
+            setGenerateError(
+              pollErrors[0] ?? "Image generation timed out. Check your connection and try again."
+            );
+            return;
           }
         }
 
-        if (!finalImageUrl) {
+        const outputUrls = [...collected];
+
+        if (outputUrls.length === 0) {
           setGenerateError("Image generation timed out. Check your connection and try again.");
           return;
         }
 
-        setImageUrl(finalImageUrl);
-        const id = `img-${Date.now()}`;
-        setHistory((prev) => [
-          {
-            id,
-            thumb: finalImageUrl,
-            title: promptForAtlas.slice(0, 42) || modelId,
-            outputImageUrl: finalImageUrl
-          },
-          ...prev.filter((h) => h.outputImageUrl !== finalImageUrl)
-        ]);
+        setOutputUrls(outputUrls);
+        const baseTitle = promptForAtlas.slice(0, 42) || modelId;
+        setHistory((prev) => {
+          const newEntries: ImageHistoryEntry[] = outputUrls.map((url, i) => ({
+            id: `img-${Date.now()}-${i}`,
+            thumb: url,
+            title: outputUrls.length > 1 ? `${baseTitle} (${i + 1}/${outputUrls.length})` : baseTitle,
+            subtitle: outputUrls.length > 1 ? "Batch output" : undefined,
+            outputImageUrl: url
+          }));
+          const urlSet = new Set(outputUrls);
+          return [...newEntries, ...prev.filter((h) => !h.outputImageUrl || !urlSet.has(h.outputImageUrl))];
+        });
       } catch (e: unknown) {
         setGenerateError(e instanceof Error ? e.message : "Network error. Try again.");
       } finally {
         setLoading(false);
       }
     },
-    [aspect, loading, modelId, prompt, refreshCredits, resolution]
+    [aspect, loading, modelId, prompt, refreshCredits, resolution, batchCount]
   );
 
   const restoreHistory = useCallback((item: ImageHistoryEntry) => {
     const url = item.outputImageUrl ?? item.thumb;
     if (url.startsWith("http")) {
       setGenerateError(null);
-      setImageUrl(url);
+      setOutputUrls([url]);
     }
   }, []);
 
@@ -444,7 +533,7 @@ export function ImageGenerationPage() {
               </div>
             ) : null}
             <ImagePreview
-              imageUrl={imageUrl}
+              imageUrls={outputUrls}
               loading={loading}
               errorMessage={generateError}
               referenceThumbUrl={referenceUrls[0] ?? null}
@@ -485,6 +574,8 @@ export function ImageGenerationPage() {
         onResolutionChange={setResolution}
         aspect={aspect}
         onAspectChange={setAspect}
+        batchCount={batchCount}
+        onBatchCountChange={setBatchCount}
         creditsLine={creditsLine}
         loadingGenerate={loading}
         onGenerate={runGeneration}

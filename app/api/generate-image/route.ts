@@ -6,8 +6,10 @@ import {
 } from "@/lib/build-atlas-image-body";
 import { logAtlasImageGenerationIfNew } from "@/lib/atlas-image-generation-log";
 import {
+  getAtlasImageModelLimits,
   isAtlasImageComposerId,
-  resolveAtlasImageModelId
+  resolveAtlasImageModelId,
+  usesParallelImageBatch
 } from "@/lib/atlas-image-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import {
@@ -18,7 +20,10 @@ import {
   lookupCreditsSpentForAtlasPrediction
 } from "@/lib/credits-charge";
 import { env } from "@/lib/env";
-import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
+import {
+  extractAtlasImageOutputUrls,
+  extractAtlasVideoOutputUrl
+} from "@/lib/extract-atlas-video-output-url";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 
@@ -58,7 +63,8 @@ function normalizeAspectRatio(raw: unknown): string | null {
 
 function normalizeNumImages(raw: unknown, imageModel: string): number {
   if (typeof raw !== "number" || !Number.isFinite(raw)) return 1;
-  const n = Math.min(16, Math.max(1, Math.round(raw)));
+  const max = getAtlasImageModelLimits(imageModel).maxBatch;
+  const n = Math.min(max, Math.max(1, Math.round(raw)));
   if (imageModel === "gpt-image-2") return 1;
   return n;
 }
@@ -122,31 +128,39 @@ export async function GET(request: Request) {
   }
 
   const status = pollJson.data?.status ?? "unknown";
-  const imageUrl = extractAtlasVideoOutputUrl(pollJson.data);
+  const imageUrls = extractAtlasImageOutputUrls(pollJson.data);
+  const imageUrl = imageUrls[0] ?? extractAtlasVideoOutputUrl(pollJson.data);
   const err =
     pollJson.data?.error ??
     (typeof pollJson.message === "string" ? pollJson.message : null);
   const statusNorm = String(status).toLowerCase();
 
-  if (typeof imageUrl === "string" && imageUrl.trim().length > 0) {
+  if (imageUrls.length > 0) {
     const actor = await resolveZorixaActor(request);
     if (actor) {
       const creditsSpent = await lookupCreditsSpentForAtlasPrediction(actor.userId, predictionId);
-      void logAtlasImageGenerationIfNew({
-        userId: actor.userId,
-        outputUrl: imageUrl,
-        predictionId,
-        composerModelId,
-        prompt: pollPrompt,
-        requireTerminalStatus: status,
-        creditsSpent
-      });
+      const creditsPerImage =
+        creditsSpent > 0 && imageUrls.length > 1
+          ? Math.max(1, Math.round(creditsSpent / imageUrls.length))
+          : creditsSpent;
+      for (const outputUrl of imageUrls) {
+        void logAtlasImageGenerationIfNew({
+          userId: actor.userId,
+          outputUrl,
+          predictionId,
+          composerModelId,
+          prompt: pollPrompt,
+          requireTerminalStatus: status,
+          creditsSpent: creditsPerImage
+        });
+      }
     }
   }
 
   return NextResponse.json({
     status,
     image_url: typeof imageUrl === "string" ? imageUrl : null,
+    image_urls: imageUrls.length > 0 ? imageUrls : null,
     outputs: pollJson.data?.outputs ?? null,
     output: pollJson.data?.output ?? null,
     error: statusNorm === "failed" ? err : null,
@@ -164,6 +178,139 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+async function handleParallelImageBatchPost(args: {
+  apiKey: string;
+  userId: string;
+  imageModel: string;
+  model: string;
+  prompt: string;
+  isEdit: boolean;
+  imageUrls: string[];
+  aspectRatio: string | null;
+  resolution: string;
+  numImages: number;
+  negativePrompt: string;
+}): Promise<NextResponse> {
+  const {
+    apiKey,
+    userId,
+    imageModel,
+    model,
+    prompt,
+    isEdit,
+    imageUrls,
+    aspectRatio,
+    resolution,
+    numImages,
+    negativePrompt
+  } = args;
+
+  const perImageCredits = creditsForImageModel(imageModel, 1);
+  const predictionIds: string[] = [];
+  const immediateUrls: string[] = [];
+  let totalCreditsSpent = 0;
+  let balanceAfter = 0;
+
+  for (let i = 0; i < numImages; i++) {
+    const atlasBody = buildAtlasImageBody({
+      model,
+      prompt,
+      isEdit,
+      imageUrls,
+      aspectRatio,
+      resolution,
+      numImages: 1,
+      negativePrompt
+    });
+
+    const createRes = await fetch(`${ATLAS_BASE}/generateImage`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify(atlasBody)
+    });
+
+    const createJson = (await createRes.json()) as AtlasEnvelope;
+    if (!createRes.ok) {
+      return NextResponse.json(
+        {
+          error: atlasGenerateImageErrorMessage(createJson, createRes.status),
+          partial_prediction_ids: predictionIds.length > 0 ? predictionIds : undefined,
+          credits_spent: totalCreditsSpent
+        },
+        { status: createRes.status >= 400 ? createRes.status : 502 }
+      );
+    }
+
+    const predictionId = createJson.data?.id;
+    if (!predictionId) {
+      return NextResponse.json(
+        { error: "Atlas did not return a prediction id", credits_spent: totalCreditsSpent },
+        { status: 502 }
+      );
+    }
+
+    const charge = await deductCreditsForPrediction({
+      userId,
+      predictionId,
+      amount: perImageCredits,
+      featureUsed: "enhance"
+    });
+    if (!charge.ok) {
+      if (charge.error === "INSUFFICIENT_CREDITS") {
+        return NextResponse.json(
+          {
+            ...insufficientCreditsResponse(charge.balance, perImageCredits),
+            partial_prediction_ids: predictionIds.length > 0 ? predictionIds : undefined,
+            credits_spent: totalCreditsSpent
+          },
+          { status: 402 }
+        );
+      }
+      return NextResponse.json({ error: "Could not deduct credits" }, { status: 500 });
+    }
+
+    totalCreditsSpent += charge.creditsSpent;
+    balanceAfter = charge.balanceAfter;
+    predictionIds.push(predictionId);
+
+    const initialStatus = createJson.data?.status;
+    if (initialStatus === "completed" || initialStatus === "succeeded") {
+      const urls = extractAtlasImageOutputUrls(createJson.data);
+      const url = urls[0] ?? extractAtlasVideoOutputUrl(createJson.data);
+      if (url) {
+        immediateUrls.push(url);
+        void logAtlasImageGenerationIfNew({
+          userId,
+          outputUrl: url,
+          inputUrl: imageUrls[0] ?? null,
+          predictionId,
+          composerModelId: imageModel,
+          prompt,
+          requireTerminalStatus: initialStatus,
+          creditsSpent: charge.creditsSpent
+        });
+      }
+    }
+  }
+
+  const allReady = immediateUrls.length >= numImages;
+
+  return NextResponse.json({
+    batch: true,
+    pending: !allReady,
+    prediction_ids: predictionIds,
+    prediction_id: predictionIds[0] ?? null,
+    image_url: immediateUrls[0] ?? null,
+    image_urls: immediateUrls.length > 0 ? immediateUrls : null,
+    poll_interval_ms: CLIENT_POLL_HINT_MS,
+    credits_spent: totalCreditsSpent,
+    credits_balance: balanceAfter
+  });
 }
 
 async function handleGenerateImagePost(request: Request) {
@@ -251,6 +398,22 @@ async function handleGenerateImagePost(request: Request) {
 
   const negativePrompt =
     typeof body.negativePrompt === "string" ? body.negativePrompt.trim() : "";
+
+  if (usesParallelImageBatch(imageModel, numImages)) {
+    return handleParallelImageBatchPost({
+      apiKey,
+      userId: actor.userId,
+      imageModel,
+      model,
+      prompt,
+      isEdit,
+      imageUrls,
+      aspectRatio,
+      resolution,
+      numImages,
+      negativePrompt
+    });
+  }
 
   const atlasBody = buildAtlasImageBody({
     model,

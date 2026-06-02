@@ -137,10 +137,11 @@ export async function logAtlasImageGenerationIfNew(args: {
   if (prediction_id) {
     const { data: existing } = await supabaseAdmin
       .from("generations")
-      .select("id, composer_model_id, provider")
+      .select("id, output_url, composer_model_id, provider")
       .eq("user_id", args.userId)
       .eq("provider_prediction_id", prediction_id)
       .eq("feature_type", "image")
+      .eq("output_url", output_url)
       .maybeSingle();
     if (existing) {
       if (composer_model_id) {

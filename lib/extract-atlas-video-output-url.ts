@@ -55,6 +55,68 @@ function extractFromOutputField(single: unknown): string | null {
   return null;
 }
 
+/** All image URLs from an Atlas prediction payload (batch `num_images`). */
+export function extractAtlasImageOutputUrls(
+  data: AtlasLikeVideoPayload | undefined,
+  depth = 0
+): string[] {
+  if (!data || depth > 4) return [];
+
+  const urls: string[] = [];
+  const seen = new Set<string>();
+  const add = (raw: string | null) => {
+    if (!raw) return;
+    const u = raw.trim();
+    if (!u || seen.has(u)) return;
+    seen.add(u);
+    urls.push(u);
+  };
+
+  const nested = (data as Record<string, unknown>).data;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    for (const u of extractAtlasImageOutputUrls(nested as AtlasLikeVideoPayload, depth + 1)) {
+      add(u);
+    }
+  }
+
+  const outs = data.outputs;
+  if (Array.isArray(outs)) {
+    for (const item of outs) {
+      if (typeof item === "string") add(item);
+      else if (item && typeof item === "object" && !Array.isArray(item)) {
+        add(urlFromRecord(item as Record<string, unknown>));
+      }
+    }
+  }
+
+  const single = data.output;
+  if (typeof single === "string") add(single);
+  else if (Array.isArray(single)) {
+    for (const item of single) {
+      if (typeof item === "string") add(item);
+      else if (item && typeof item === "object" && !Array.isArray(item)) {
+        add(urlFromRecord(item as Record<string, unknown>));
+      }
+    }
+  } else if (single && typeof single === "object" && !Array.isArray(single)) {
+    add(urlFromRecord(single as Record<string, unknown>));
+  }
+
+  const d = data as Record<string, unknown>;
+  add(
+    pickNonEmptyString(
+      data.video_url,
+      data.videoUrl,
+      d.url,
+      d.download_url,
+      d.downloadUrl,
+      d.result
+    )
+  );
+
+  return urls;
+}
+
 export function extractAtlasVideoOutputUrl(
   data: AtlasLikeVideoPayload | undefined,
   depth = 0

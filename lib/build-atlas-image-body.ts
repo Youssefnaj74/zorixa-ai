@@ -227,6 +227,10 @@ export function buildAtlasImageBody(input: BuildAtlasImageBodyInput): Record<str
       width: Number.isFinite(width) ? width : 1024,
       height: Number.isFinite(height) ? height : 1024
     };
+    if (numImages > 1) {
+      body.num_images = numImages;
+      body.n = numImages;
+    }
     if (isEdit && imageUrls.length > 0) {
       body.image = imageUrls[0];
       body.images = imageUrls;

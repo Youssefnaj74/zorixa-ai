@@ -16,6 +16,7 @@ import {
 import { MODEL_OPTIONS, type ModelOption } from "@/components/ui/ModelDropdown";
 import {
   getAtlasImageModelLimits,
+  getImageBatchOptions,
   imageComposerSupportedOnActionTab
 } from "@/lib/atlas-image-model-ids";
 import { IMAGE_I2I_DOCK_HEIGHT } from "@/lib/composer-dock-height";
@@ -45,6 +46,8 @@ export type ImageBottomBarProps = {
   onResolutionChange: (v: string) => void;
   aspect: string;
   onAspectChange: (v: string) => void;
+  batchCount: number;
+  onBatchCountChange: (count: number) => void;
   creditsLine: string;
   loadingGenerate: boolean;
   onGenerate: (ctx: ImageGenerateContext) => void | Promise<void>;
@@ -60,6 +63,7 @@ type OpenPanel =
   | "aspect"
   | "gptSize"
   | "seedreamSize"
+  | "batch"
   | null;
 
 const dropupPanelClass =
@@ -133,6 +137,8 @@ export function ImageBottomBar({
   onResolutionChange,
   aspect,
   onAspectChange,
+  batchCount,
+  onBatchCountChange,
   creditsLine,
   loadingGenerate,
   onGenerate,
@@ -153,7 +159,8 @@ export function ImageBottomBar({
   const selectedModel =
     pickerModels.find((m) => m.id === modelId) ?? pickerModels[0] ?? MODEL_OPTIONS[0];
   const maxRefs = getAtlasImageModelLimits(modelId).maxImages;
-  const defaultBatch = getAtlasImageModelLimits(modelId).defaultBatch;
+  const batchOptions = getImageBatchOptions(modelId);
+  const showBatchPicker = batchOptions.length > 1;
   const showUploads = actionTab === "Image to Image";
   const isGptImage2 = modelId === "gpt-image-2";
   const isSeedream = modelId === "seedream-5";
@@ -233,16 +240,9 @@ export function ImageBottomBar({
       aspectRatio: aspect,
       resolution,
       referenceUrls,
-      batchCount: defaultBatch
+      batchCount
     });
-  }, [
-    actionTab,
-    aspect,
-    defaultBatch,
-    onGenerate,
-    referenceUrls,
-    resolution
-  ]);
+  }, [actionTab, aspect, batchCount, onGenerate, referenceUrls, resolution]);
 
   const ref0 = referenceUrls[0] ?? null;
   const ref1 = referenceUrls[1] ?? null;
@@ -700,6 +700,46 @@ export function ImageBottomBar({
               </div>
             </>
           )}
+
+          {showBatchPicker ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => openOnly("batch")}
+                className={cn(
+                  triggerClass,
+                  open === "batch" && "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.1)]"
+                )}
+                title="Images per generation"
+              >
+                <span className="tabular-nums">{batchCount}×</span>
+                <ChevronUp className={cn("size-3.5 text-zorixa-muted", open === "batch" && "rotate-180")} />
+              </button>
+              <AnimatePresence>
+                {open === "batch" ? (
+                  <motion.div className={cn(dropupPanelClass, "left-0 min-w-[88px] py-1")}>
+                    {batchOptions.map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => {
+                          onBatchCountChange(n);
+                          setOpen(null);
+                        }}
+                        className={cn(
+                          "flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left text-sm tabular-nums",
+                          n === batchCount ? "bg-zorixa-tab text-white" : "hover:bg-white/5"
+                        )}
+                      >
+                        <span>{n} image{n > 1 ? "s" : ""}</span>
+                        {n === batchCount ? <Check className="size-4 text-brand-light" /> : null}
+                      </button>
+                    ))}
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+          ) : null}
 
           <span className="ml-auto text-xs tabular-nums text-zorixa-muted">{creditsLine}</span>
 
