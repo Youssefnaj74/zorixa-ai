@@ -7,6 +7,16 @@ import {
 } from "@/lib/map-generations-to-tiles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+function asGenerationRows(data: unknown): GenerationHistoryRow[] {
+  if (!Array.isArray(data)) return [];
+  return data as GenerationHistoryRow[];
+}
+
+function asCreditRows(data: unknown): Pick<GenerationHistoryRow, "id" | "credits_spent">[] {
+  if (!Array.isArray(data)) return [];
+  return data as Pick<GenerationHistoryRow, "id" | "credits_spent">[];
+}
+
 export default async function HistoryPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -17,10 +27,7 @@ export default async function HistoryPage() {
     redirect("/login?redirect=/dashboard/history");
   }
 
-  const generationColumnsBase =
-    "id, feature_type, output_url, input_url, status, created_at, provider";
-
-  const fetchGenerations = (columns: string) =>
+  const listGenerations = (columns: string) =>
     supabase
       .from("generations")
       .select(columns)
@@ -31,10 +38,12 @@ export default async function HistoryPage() {
   async function mergeCreditsSpent(
     rows: GenerationHistoryRow[]
   ): Promise<GenerationHistoryRow[]> {
-    const { data: creditRows, error } = await fetchGenerations("id, credits_spent");
-    if (error || !creditRows?.length) return rows;
+    const { data, error } = await listGenerations("id, credits_spent");
+    if (error) return rows;
+    const credits = asCreditRows(data);
+    if (!credits.length) return rows;
     const byId = new Map(
-      creditRows.map((r) => [r.id as number, Math.max(0, Math.round(r.credits_spent ?? 0))])
+      credits.map((r) => [r.id, Math.max(0, Math.round(r.credits_spent ?? 0))])
     );
     return rows.map((row) => ({
       ...row,
@@ -44,27 +53,29 @@ export default async function HistoryPage() {
 
   let generations: GenerationHistoryRow[] = [];
 
-  const primaryGenerations = await fetchGenerations(
-    `${generationColumnsBase}, composer_model_id, prompt, credits_spent`
+  const primaryGenerations = await listGenerations(
+    "id, feature_type, output_url, input_url, status, created_at, provider, composer_model_id, prompt, credits_spent"
   );
 
   if (!primaryGenerations.error && primaryGenerations.data) {
-    generations = primaryGenerations.data as GenerationHistoryRow[];
+    generations = asGenerationRows(primaryGenerations.data);
   } else {
-    const withCredits = await fetchGenerations(
-      `${generationColumnsBase}, credits_spent`
+    const withCredits = await listGenerations(
+      "id, feature_type, output_url, input_url, status, created_at, provider, credits_spent"
     );
     if (!withCredits.error && withCredits.data) {
-      generations = (withCredits.data as GenerationHistoryRow[]).map((row) => ({
+      generations = asGenerationRows(withCredits.data).map((row) => ({
         ...row,
         composer_model_id: null,
         prompt: null
       }));
     } else {
-      const fallbackGenerations = await fetchGenerations(generationColumnsBase);
+      const fallbackGenerations = await listGenerations(
+        "id, feature_type, output_url, input_url, status, created_at, provider"
+      );
       generations = await mergeCreditsSpent(
-        (fallbackGenerations.data ?? []).map((row) => ({
-          ...(row as GenerationHistoryRow),
+        asGenerationRows(fallbackGenerations.data).map((row) => ({
+          ...row,
           composer_model_id: null,
           prompt: null,
           credits_spent: 0
