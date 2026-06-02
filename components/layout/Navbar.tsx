@@ -263,17 +263,31 @@ export function Navbar({
       const meta = user.user_metadata as { avatar_url?: string; full_name?: string; name?: string } | undefined;
       setAvatarUrl(typeof meta?.avatar_url === "string" ? meta.avatar_url : null);
 
-      const { data: profile } = await supabase
+      let balance = 0;
+      let profileName: string | null = null;
+
+      const res = await fetch("/api/credits", { credentials: "include" });
+      if (res.ok) {
+        const body = (await res.json()) as { credits_balance?: number };
+        balance = body.credits_balance ?? 0;
+      }
+
+      const { data: profile, error: profileError } = await supabase
         .from("users_profiles")
         .select("credits_balance, full_name")
         .eq("id", user.id)
         .single();
 
+      if (!profileError && profile) {
+        if (!res.ok) balance = profile.credits_balance ?? 0;
+        profileName = profile.full_name ?? null;
+      }
+
       if (cancelled) return;
 
-      setCredits(profile?.credits_balance ?? 0);
+      setCredits(balance);
       setDisplayName(
-        profile?.full_name ??
+        profileName ??
           (typeof meta?.full_name === "string" ? meta.full_name : null) ??
           (typeof meta?.name === "string" ? meta.name : null)
       );

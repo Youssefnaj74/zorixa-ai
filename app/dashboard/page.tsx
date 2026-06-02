@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { getLemonSqueezyCheckoutUrl } from "@/lib/lemon-squeezy/checkout-url";
+import { loadUserProfile } from "@/lib/load-user-profile";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const WELCOME_TAGLINES = [
@@ -32,11 +33,7 @@ export default async function DashboardPage() {
     redirect("/login?redirect=/dashboard");
   }
 
-  const { data: profile } = await supabase
-    .from("users_profiles")
-    .select("credits_balance, full_name, is_premium")
-    .eq("id", user.id)
-    .single();
+  const { profile } = await loadUserProfile(supabase, user.id);
 
   const credits = profile?.credits_balance ?? 0;
   const displayName =

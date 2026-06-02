@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { loadUserProfile } from "@/lib/load-user-profile";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -14,17 +15,15 @@ export async function GET() {
 
   if (!user) return NextResponse.json({ credits_balance: 0 }, { status: 401 });
 
-  const { data, error } = await supabase
-    .from("users_profiles")
-    .select("credits_balance, is_premium")
-    .eq("id", user.id)
-    .single();
+  const { profile, error } = await loadUserProfile(supabase, user.id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!profile) {
+    return NextResponse.json({ error: error ?? "Profile not found" }, { status: 404 });
+  }
 
   return NextResponse.json({
-    credits_balance: data.credits_balance,
-    is_premium: data.is_premium ?? false
+    credits_balance: profile.credits_balance,
+    is_premium: profile.is_premium
   });
 }
 
