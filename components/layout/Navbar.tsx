@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Settings, CreditCard, BarChart2, Key, HelpCircle, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,13 +21,18 @@ export type DashboardNavbarProps = {
 };
 
 const navLinks = [
-  { href: "/dashboard", label: "Dashboard", active: true, badge: null },
-  { href: "/image", label: "Image", active: false, badge: null },
-  { href: "/video", label: "Video", active: false, badge: null },
-  { href: "/audio", label: "Speech", active: false, badge: "NEW" },
-  { href: "/dashboard/history", label: "History", active: false, badge: null },
-  { href: "/support", label: "Support", active: false, badge: null },
+  { href: "/dashboard", label: "Dashboard", badge: null },
+  { href: "/image", label: "Image", badge: null },
+  { href: "/video", label: "Video", badge: null },
+  { href: "/audio", label: "Speech", badge: "NEW" },
+  { href: "/dashboard/history", label: "History", badge: null },
+  { href: "/support", label: "Support", badge: null }
 ] as const;
+
+function isNavLinkActive(pathname: string, href: string): boolean {
+  if (href === "/dashboard") return pathname === "/dashboard";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 const dropdownItems = [
   { label: "Subscription", href: "/pricing", icon: CreditCard },
@@ -42,6 +48,7 @@ export function DashboardNavbar({
   avatarUrl: _avatarUrl,
   onSignOut
 }: DashboardNavbarProps) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -63,14 +70,17 @@ export function DashboardNavbar({
 
         {/* Nav links */}
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
-          {navLinks.map((link) => (
+          {navLinks.map((link) => {
+            const active = isNavLinkActive(pathname, link.href);
+            return (
             <Fragment key={link.href + link.label}>
               <Link
                 href={link.href}
                 className={cn(
                   "relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
-                  link.active ? "bg-white/10 text-white" : "text-white/50 hover:text-white"
+                  active ? "bg-white/10 text-white" : "text-white/50 hover:text-white"
                 )}
+                aria-current={active ? "page" : undefined}
               >
                 {link.label}
                 {link.badge && (
@@ -86,7 +96,8 @@ export function DashboardNavbar({
                 </>
               ) : null}
             </Fragment>
-          ))}
+            );
+          })}
         </nav>
 
         {/* Right side */}
@@ -169,33 +180,41 @@ export function DashboardNavbar({
         className="flex gap-2 overflow-x-auto border-t border-white/[0.06] bg-[#080810]/95 px-4 py-2 md:hidden"
         aria-label="Dashboard shortcuts"
       >
-        {navLinks.map((link) => (
-          <Fragment key={link.href + link.label}>
-            <Link
-              href={link.href}
-              className="flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white/50 transition-colors hover:text-white"
-            >
-              {link.label}
-              {link.badge && (
-                <span className="rounded-full bg-[#00e5ff] px-1.5 py-0.5 text-[10px] font-extrabold text-black leading-none">
-                  {link.badge}
+        {navLinks.map((link) => {
+          const active = isNavLinkActive(pathname, link.href);
+          return (
+            <Fragment key={link.href + link.label}>
+              <Link
+                href={link.href}
+                className={cn(
+                  "flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
+                  active ? "bg-white/10 text-white" : "text-white/50 hover:text-white"
+                )}
+                aria-current={active ? "page" : undefined}
+              >
+                {link.label}
+                {link.badge && (
+                  <span className="rounded-full bg-[#00e5ff] px-1.5 py-0.5 text-[10px] font-extrabold text-black leading-none">
+                    {link.badge}
+                  </span>
+                )}
+              </Link>
+              {link.label === "Video" ? (
+                <span className="flex shrink-0 items-center gap-1">
+                  <NavbarToolsLink />
+                  <NavbarExplorePromptsLink />
                 </span>
-              )}
-            </Link>
-            {link.label === "Video" ? (
-              <span className="flex shrink-0 items-center gap-1">
-                <NavbarToolsLink />
-                <NavbarExplorePromptsLink />
-              </span>
-            ) : null}
-          </Fragment>
-        ))}
+              ) : null}
+            </Fragment>
+          );
+        })}
       </nav>
     </header>
   );
 }
 
 export function DashboardNavbarMobileLinks({ className }: { className?: string }) {
+  const pathname = usePathname();
   return (
     <nav
       className={cn(
@@ -204,22 +223,29 @@ export function DashboardNavbarMobileLinks({ className }: { className?: string }
       )}
       aria-label="Dashboard shortcuts"
     >
-      {navLinks.map((link) => (
-        <Fragment key={link.href + link.label}>
-          <Link
-            href={link.href}
-            className="shrink-0 rounded-full px-3 py-1 text-xs font-semibold text-white/50 transition-colors hover:text-white"
-          >
-            {link.label}
-          </Link>
-          {link.label === "Video" ? (
-            <span className="flex shrink-0 items-center gap-1">
-              <NavbarToolsLink />
-              <NavbarExplorePromptsLink />
-            </span>
-          ) : null}
-        </Fragment>
-      ))}
+      {navLinks.map((link) => {
+        const active = isNavLinkActive(pathname, link.href);
+        return (
+          <Fragment key={link.href + link.label}>
+            <Link
+              href={link.href}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
+                active ? "bg-white/10 text-white" : "text-white/50 hover:text-white"
+              )}
+              aria-current={active ? "page" : undefined}
+            >
+              {link.label}
+            </Link>
+            {link.label === "Video" ? (
+              <span className="flex shrink-0 items-center gap-1">
+                <NavbarToolsLink />
+                <NavbarExplorePromptsLink />
+              </span>
+            ) : null}
+          </Fragment>
+        );
+      })}
     </nav>
   );
 }

@@ -2,19 +2,18 @@
 
 MCP server that calls **zorixaai.com** APIs so image/video generations appear in your **Zorixa dashboard history** (same as the web app).
 
-## Setup
+## Setup (recommended — per-user API key)
 
-1. On **Vercel** (zorixaai.com), set `ZORIXA_MCP_API_KEY` to a long random secret.
-2. Copy the same value locally in `zorixa-mcp/.env` (see `.env.example`).
-3. Set `ZORIXA_USER_ID` to your Supabase user UUID (`users_profiles.id`).
-4. Install and wire Cursor:
+1. Sign in at [zorixaai.com](https://www.zorixaai.com) → **Dashboard → API Access** → **Generate key**.
+2. Copy the key (`zrx_live_…`) — shown once.
+3. Install and wire Cursor:
 
 ```bash
 cd zorixa-mcp
 npm install
 ```
 
-In **Cursor → Settings → MCP**, add a server (or merge into your MCP config):
+In **Cursor → Settings → MCP**:
 
 ```json
 {
@@ -23,8 +22,7 @@ In **Cursor → Settings → MCP**, add a server (or merge into your MCP config)
       "command": "node",
       "args": ["F:/zorixa-ai/zorixa-mcp/src/index.js"],
       "env": {
-        "ZORIXA_MCP_API_KEY": "...",
-        "ZORIXA_USER_ID": "...",
+        "ZORIXA_API_KEY": "zrx_live_…",
         "ZORIXA_API_BASE_URL": "https://www.zorixaai.com"
       }
     }
@@ -33,6 +31,12 @@ In **Cursor → Settings → MCP**, add a server (or merge into your MCP config)
 ```
 
 Adjust the path to `index.js` for your machine.
+
+Credits are deducted from **your** Zorixa account (same balance as the website).
+
+## Legacy (site owner / internal)
+
+Set `ZORIXA_MCP_API_KEY` on Vercel and use `ZORIXA_MCP_API_KEY` + `ZORIXA_USER_ID` in MCP env instead of `ZORIXA_API_KEY`. Do not share the global secret with customers.
 
 ## Tools
 
@@ -43,13 +47,13 @@ Adjust the path to `index.js` for your machine.
 | `list_models` | GET `/api/mcp/models` |
 | `get_credits` | GET `/api/mcp/credits` |
 
-Atlas API key stays on the server (`ATLASCLOUD_API_KEY`); Cursor only needs the Zorixa MCP key + user id.
+Atlas API key stays on the server (`ATLASCLOUD_API_KEY`); clients only need a Zorixa API key.
+
+## Database
+
+Run `supabase/migrations/20260531_user_api_keys.sql` in Supabase SQL Editor before using per-user keys in production.
 
 ## Example prompts in Cursor
 
 - “Use Zorixa to generate a 16:9 image with gpt-image-2: sunset over Marrakech medina”
 - “Generate a 5s Seedance 2 video, text mode, prompt: …”
-
-## Deploy API routes
-
-After changing `app/api/mcp/*` or `lib/zorixa-mcp-auth.ts`, push to `main` and deploy Vercel so production accepts your MCP key.

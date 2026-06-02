@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { buildMcpModelsCatalog } from "@/lib/mcp-models-catalog";
-import { isZorixaMcpRequest, unauthorizedMcpResponse } from "@/lib/zorixa-mcp-auth";
+import { isZorixaApiAuthorized, unauthorizedMcpResponse } from "@/lib/zorixa-mcp-auth";
 
 export async function GET(request: Request) {
-  if (!isZorixaMcpRequest(request)) {
+  if (!(await isZorixaApiAuthorized(request))) {
     return unauthorizedMcpResponse();
   }
 

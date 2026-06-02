@@ -1,24 +1,15 @@
 import { NextResponse } from "next/server";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import {
-  resolveZorixaMcpUserId,
-  isZorixaMcpRequest,
-  unauthorizedMcpResponse
-} from "@/lib/zorixa-mcp-auth";
+import { resolveZorixaActor, unauthorizedMcpResponse } from "@/lib/zorixa-mcp-auth";
 
 export async function GET(request: Request) {
-  if (!isZorixaMcpRequest(request)) {
+  const actor = await resolveZorixaActor(request);
+  if (!actor) {
     return unauthorizedMcpResponse();
   }
 
-  const userId = await resolveZorixaMcpUserId(request);
-  if (!userId) {
-    return NextResponse.json(
-      { error: "Missing or invalid X-Zorixa-User-Id header." },
-      { status: 400 }
-    );
-  }
+  const userId = actor.userId;
 
   const { data, error } = await supabaseAdmin
     .from("users_profiles")

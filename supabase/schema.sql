@@ -51,6 +51,21 @@ create table if not exists public.support_requests (
   created_at timestamptz not null default now()
 );
 
+-- Per-user API keys (REST / Cursor MCP — credits billed to key owner)
+create table if not exists public.user_api_keys (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users_profiles (id) on delete cascade,
+  key_hash text not null unique,
+  key_prefix text not null,
+  label text,
+  created_at timestamptz not null default now(),
+  last_used_at timestamptz,
+  revoked_at timestamptz
+);
+
+create index if not exists user_api_keys_user_id_idx on public.user_api_keys (user_id);
+create index if not exists user_api_keys_active_idx on public.user_api_keys (user_id) where revoked_at is null;
+
 -- Invoices (freelancer tools)
 create table if not exists public.invoices (
   id bigserial primary key,
@@ -89,6 +104,7 @@ alter table public.transactions enable row level security;
 alter table public.generations enable row level security;
 alter table public.support_requests enable row level security;
 alter table public.invoices enable row level security;
+alter table public.user_api_keys enable row level security;
 
 -- profiles: user can read/update own
 drop policy if exists "profiles_select_own" on public.users_profiles;
@@ -130,6 +146,11 @@ drop policy if exists "invoices_insert_own" on public.invoices;
 create policy "invoices_insert_own"
 on public.invoices for insert
 with check (auth.uid() = user_id);
+
+drop policy if exists "user_api_keys_select_own" on public.user_api_keys;
+create policy "user_api_keys_select_own"
+on public.user_api_keys for select
+using (auth.uid() = user_id);
 
 -- Storage bucket for app/api/upload (public read for getPublicUrl; writes use service role)
 insert into storage.buckets (id, name, public)

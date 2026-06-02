@@ -130,7 +130,7 @@ export function NavbarAccountMenu() {
             Usage
           </Link>
           <Link
-            href="/pricing"
+            href="/dashboard/api"
             role="menuitem"
             onClick={() => setOpen(false)}
             className="px-5 py-3 text-sm font-normal text-white transition-opacity hover:opacity-70"

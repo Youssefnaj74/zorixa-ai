@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
+import { formatInteger } from "@/lib/format-number";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -39,9 +40,7 @@ type GenerationRow = {
 };
 
 function formatCreditsStat(n: number): string {
-  const v = Math.round(n);
-  if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
-  return String(v);
+  return formatInteger(n);
 }
 
 /** One tile per output URL — hides legacy duplicate DB rows in dashboard history. */

@@ -7,7 +7,9 @@ export async function zorixaFetch(config, path, init = {}) {
   const url = `${config.apiBase}${path.startsWith("/") ? path : `/${path}`}`;
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${config.apiKey}`);
-  headers.set("X-Zorixa-User-Id", config.userId);
+  if (config.usesLegacyMcp && config.userId) {
+    headers.set("X-Zorixa-User-Id", config.userId);
+  }
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
