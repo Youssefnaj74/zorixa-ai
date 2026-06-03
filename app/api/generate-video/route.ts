@@ -177,6 +177,8 @@ type ClientBody = {
   duration?: number;
   /** Native soundtrack via Atlas `generate_audio` (Seedance, Kling v3, etc.). */
   generate_audio?: boolean;
+  /** Hailuo 2.3 — Atlas prompt expansion / safety checker (default on for T2V Pro). */
+  enable_prompt_expansion?: boolean;
   /** UI Standard/Fast → Atlas model slug tier (Seedance fast, Kling std). */
   speed_tier?: string;
   speedTier?: string;
