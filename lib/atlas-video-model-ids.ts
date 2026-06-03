@@ -1,4 +1,14 @@
 import { isAudioToVideoComposerId } from "@/lib/atlas-audio-to-video";
+import {
+  GEMINI_OMNI_FLASH_I2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_R2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_T2V_COMPOSER_ID
+} from "@/lib/atlas-gemini-omni-video";
+import {
+  GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID
+} from "@/lib/atlas-grok-video";
 
 /**
  * Maps Zorixa video composer IDs → Atlas Cloud `generateVideo` `model` slugs.
@@ -19,6 +29,60 @@ type AtlasModelRow = Record<AtlasVideoRouteAction, string>;
 
 /** Default (quality) tier — Pro for Kling, full Seedance 2.0, etc. */
 export const ATLAS_VIDEO_MODEL_MAP: Record<string, AtlasModelRow> = {
+  [GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID]: {
+    text: "xai/grok-imagine-video/text-to-video",
+    image: "xai/grok-imagine-video/text-to-video",
+    reference: "xai/grok-imagine-video/text-to-video",
+    lipsync: "xai/grok-imagine-video/text-to-video",
+    edit: "xai/grok-imagine-video/text-to-video",
+    "motion-control": "xai/grok-imagine-video/text-to-video",
+    "start-end": "xai/grok-imagine-video/text-to-video"
+  },
+  [GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID]: {
+    text: "xai/grok-imagine-video-v1.5/image-to-video",
+    image: "xai/grok-imagine-video-v1.5/image-to-video",
+    reference: "xai/grok-imagine-video-v1.5/image-to-video",
+    lipsync: "xai/grok-imagine-video-v1.5/image-to-video",
+    edit: "xai/grok-imagine-video-v1.5/image-to-video",
+    "motion-control": "xai/grok-imagine-video-v1.5/image-to-video",
+    "start-end": "xai/grok-imagine-video-v1.5/image-to-video"
+  },
+  [GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID]: {
+    text: "xai/grok-imagine-video/reference-to-video",
+    image: "xai/grok-imagine-video/reference-to-video",
+    reference: "xai/grok-imagine-video/reference-to-video",
+    lipsync: "xai/grok-imagine-video/reference-to-video",
+    edit: "xai/grok-imagine-video/reference-to-video",
+    "motion-control": "xai/grok-imagine-video/reference-to-video",
+    "start-end": "xai/grok-imagine-video/reference-to-video"
+  },
+  [GEMINI_OMNI_FLASH_T2V_COMPOSER_ID]: {
+    text: "google/gemini-omni-flash/text-to-video-developer",
+    image: "google/gemini-omni-flash/text-to-video-developer",
+    reference: "google/gemini-omni-flash/text-to-video-developer",
+    lipsync: "google/gemini-omni-flash/text-to-video-developer",
+    edit: "google/gemini-omni-flash/text-to-video-developer",
+    "motion-control": "google/gemini-omni-flash/text-to-video-developer",
+    "start-end": "google/gemini-omni-flash/text-to-video-developer"
+  },
+  [GEMINI_OMNI_FLASH_I2V_COMPOSER_ID]: {
+    text: "google/gemini-omni-flash/image-to-video-developer",
+    image: "google/gemini-omni-flash/image-to-video-developer",
+    reference: "google/gemini-omni-flash/image-to-video-developer",
+    lipsync: "google/gemini-omni-flash/image-to-video-developer",
+    edit: "google/gemini-omni-flash/image-to-video-developer",
+    "motion-control": "google/gemini-omni-flash/image-to-video-developer",
+    "start-end": "google/gemini-omni-flash/image-to-video-developer"
+  },
+  [GEMINI_OMNI_FLASH_R2V_COMPOSER_ID]: {
+    text: "google/gemini-omni-flash/reference-to-video-developer",
+    image: "google/gemini-omni-flash/reference-to-video-developer",
+    reference: "google/gemini-omni-flash/reference-to-video-developer",
+    lipsync: "google/gemini-omni-flash/reference-to-video-developer",
+    edit: "google/gemini-omni-flash/reference-to-video-developer",
+    "motion-control": "google/gemini-omni-flash/reference-to-video-developer",
+    "start-end": "google/gemini-omni-flash/reference-to-video-developer"
+  },
   "kling-3-pro": {
     text: "kwaivgi/kling-v3.0-pro/text-to-video",
     image: "kwaivgi/kling-v3.0-pro/image-to-video",

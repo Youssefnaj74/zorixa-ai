@@ -1,7 +1,8 @@
 import {
   creditsChargedForImageModel,
   creditsChargedForTts,
-  creditsChargedForVideoModel
+  creditsChargedForVideoModel,
+  type VideoPricingOptions
 } from "@/lib/atlas-pricing-catalog";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -15,9 +16,12 @@ export function creditsForImageModel(composerModelId: string, quantity = 1): num
   return creditsChargedForImageModel(composerModelId, quantity);
 }
 
-export function creditsForVideoModel(composerModelId: string): number {
+export function creditsForVideoModel(
+  composerModelId: string,
+  opts: VideoPricingOptions = {}
+): number {
   if (!isCreditsBillingEnabled()) return 0;
-  return creditsChargedForVideoModel(composerModelId);
+  return creditsChargedForVideoModel(composerModelId, opts);
 }
 
 export function creditsForTts(): number {

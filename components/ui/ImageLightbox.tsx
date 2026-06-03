@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Minus, Plus, X } from "lucide-react";
+import { Minus, Plus, Download, X } from "lucide-react";
 
 import { ExternalImage } from "@/components/ui/ExternalImage";
+import { downloadImageFile, imageDownloadFilename } from "@/lib/download-image-file";
 import { cn } from "@/lib/utils";
 
 const ZOOM_MIN = 1;
@@ -39,18 +40,22 @@ export function ImageLightbox({
   src,
   alt = "Preview",
   title,
+  downloadUrl,
   onClose
 }: {
   open: boolean;
   src: string | null;
   alt?: string;
   title?: string;
+  /** Canonical https URL for full-file download (history / studio outputs). */
+  downloadUrl?: string | null;
   onClose: () => void;
 }) {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [pan, setPan] = useState<Pan>({ x: 0, y: 0 });
   const [imageSize, setImageSize] = useState({ w: 0, h: 0 });
   const [viewportSize, setViewportSize] = useState({ w: 0, h: 0 });
+  const [downloadBusy, setDownloadBusy] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({
     active: false,
@@ -174,6 +179,19 @@ export function ImageLightbox({
     else onClose();
   };
 
+  const onDownload = useCallback(async () => {
+    const url = downloadUrl?.trim() || src?.trim();
+    if (!url || downloadBusy) return;
+    setDownloadBusy(true);
+    try {
+      await downloadImageFile(url, imageDownloadFilename(url, title));
+    } catch (err) {
+      console.error("[ImageLightbox] download failed", err);
+    } finally {
+      setDownloadBusy(false);
+    }
+  }, [downloadBusy, downloadUrl, src, title]);
+
   const zoomPercent = Math.round(zoomLevel * 100);
   const canPan = zoomLevel > 1;
 
@@ -267,8 +285,25 @@ export function ImageLightbox({
               </div>
             </motion.div>
 
-            {title ? (
-              <p className="mt-3 truncate px-1 text-center text-sm text-white/70">{title}</p>
+            {title || downloadUrl || src ? (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-1">
+                {title ? (
+                  <p className="min-w-0 truncate text-sm text-white/70">{title}</p>
+                ) : (
+                  <span />
+                )}
+                {downloadUrl || src ? (
+                  <button
+                    type="button"
+                    onClick={() => void onDownload()}
+                    disabled={downloadBusy}
+                    className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-[#00e5ff] hover:opacity-80 disabled:opacity-50"
+                  >
+                    <Download className="size-4" aria-hidden />
+                    {downloadBusy ? "Downloading…" : "Download"}
+                  </button>
+                ) : null}
+              </div>
             ) : null}
           </motion.div>
         </motion.div>

@@ -58,6 +58,36 @@ export function kling30ProComposerSupportsEndFrame(composerModelId: string): boo
   return isKling30ProComposerId(composerModelId);
 }
 
+export const KLING_V3_SHOT_MODES = ["single", "multi"] as const;
+
+export type KlingV3ShotMode = (typeof KLING_V3_SHOT_MODES)[number];
+
+/** T2V / I2V when Kling 3.0 Pro is selected. */
+export function kling30ProComposerSupportsShotType(
+  composerModelId: string,
+  actionTab: string
+): boolean {
+  if (!isKling30ProComposerId(composerModelId)) return false;
+  return actionTab === "Text to Video" || actionTab === "Image to Video";
+}
+
+export function normalizeKlingV3ShotMode(raw: unknown): KlingV3ShotMode {
+  if (typeof raw === "string" && raw.trim().toLowerCase() === "multi") {
+    return "multi";
+  }
+  return "single";
+}
+
+/**
+ * Kling 3 multi-shot on Atlas (Kuaishou v3 schema).
+ * `intelligent` — model plans linked shots from one prompt (T2V + I2V).
+ * @see https://www.atlascloud.ai/models/kwaivgi/kling-v3.0-pro/text-to-video
+ */
+export function applyKlingV3MultiShotFields(body: Record<string, unknown>): void {
+  body.multi_shot = true;
+  body.shot_type = "intelligent";
+}
+
 export function buildKlingV3AtlasBody(input: {
   model: string;
   prompt: string;
@@ -65,6 +95,7 @@ export function buildKlingV3AtlasBody(input: {
   aspectRatio?: string;
   imageUrl?: string;
   endImageUrl?: string;
+  shotMode?: KlingV3ShotMode;
 }): Record<string, unknown> {
   const body: Record<string, unknown> = {
     model: input.model,
@@ -86,6 +117,10 @@ export function buildKlingV3AtlasBody(input: {
 
   if (input.aspectRatio) {
     body.aspect_ratio = klingV3AspectFromUi(input.aspectRatio);
+  }
+
+  if (input.shotMode === "multi") {
+    applyKlingV3MultiShotFields(body);
   }
 
   return body;

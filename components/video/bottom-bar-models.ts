@@ -6,6 +6,36 @@ import {
   VEED_FABRIC_1_COMPOSER_ID,
   VEED_FABRIC_1_FAST_COMPOSER_ID
 } from "@/lib/atlas-audio-to-video";
+import {
+  GEMINI_OMNI_FLASH_DURATION_OPTIONS,
+  GEMINI_OMNI_FLASH_I2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_MAX_IMAGES,
+  GEMINI_OMNI_FLASH_REFERENCE_DURATION_OPTIONS,
+  GEMINI_OMNI_FLASH_REFERENCE_MAX_VIDEOS,
+  GEMINI_OMNI_FLASH_RESOLUTION_OPTIONS,
+  GEMINI_OMNI_FLASH_R2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_T2V_COMPOSER_ID,
+  geminiOmniFlashAspectFromUi,
+  geminiOmniFlashComposerSupportsAction,
+  isGeminiOmniFlashComposerId,
+  normalizeGeminiOmniFlashDurationSeconds,
+  normalizeGeminiOmniFlashReferenceDurationSeconds
+} from "@/lib/atlas-gemini-omni-video";
+import {
+  GROK_IMAGINE_VIDEO_ASPECT_OPTIONS,
+  GROK_IMAGINE_VIDEO_DURATION_OPTIONS,
+  GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_MAX_REFERENCE_IMAGES,
+  GROK_IMAGINE_VIDEO_REFERENCE_DURATION_OPTIONS,
+  GROK_IMAGINE_VIDEO_RESOLUTION_OPTIONS,
+  GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID,
+  grokImagineVideoAspectFromUi,
+  grokImagineVideoComposerSupportsAction,
+  isGrokImagineVideoComposerId,
+  normalizeGrokImagineVideoDurationSeconds,
+  normalizeGrokImagineVideoReferenceDurationSeconds
+} from "@/lib/atlas-grok-video";
 import { KLING_26_MOTION_COMPOSER_ID } from "@/lib/atlas-kling-motion-control";
 import {
   KLING_V3_COMPOSER_ID,
@@ -79,6 +109,12 @@ export type BottomBarModel = {
 };
 
 export const BOTTOM_BAR_MODELS: BottomBarModel[] = [
+  { id: GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID, label: "Grok Imagine", badge: "newTeal" },
+  { id: GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID, label: "Grok Imagine v1.5", badge: "newTeal" },
+  { id: GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID, label: "Grok Imagine", badge: "newTeal" },
+  { id: GEMINI_OMNI_FLASH_T2V_COMPOSER_ID, label: "Gemini Omni Flash", badge: "newTeal" },
+  { id: GEMINI_OMNI_FLASH_I2V_COMPOSER_ID, label: "Gemini Omni Flash", badge: "newTeal" },
+  { id: GEMINI_OMNI_FLASH_R2V_COMPOSER_ID, label: "Gemini Omni Flash", badge: "newTeal" },
   { id: KLING_30_PRO_MODEL_ID, label: "Kling 3.0 Pro", badge: "pro" },
   { id: KLING_26_MOTION_COMPOSER_ID, label: "Kling 2.6 Motion", badge: "pro" },
   { id: "seedance-2", label: "Seedance 2.0", badge: "newTeal" },
@@ -124,6 +160,8 @@ export function videoComposerSupportsEndFrame(composerModelId: string): boolean 
 export function videoComposerSupportsReferenceToVideo(composerModelId: string): boolean {
   return (
     composerModelId === "seedance-2" ||
+    composerModelId === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID ||
+    composerModelId === GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID ||
     composerModelId === VIDU_Q3_COMPOSER_ID ||
     videoComposerSupportsHappyHorseReference(composerModelId) ||
     videoComposerSupportsWan27Reference(composerModelId) ||
@@ -216,7 +254,18 @@ export function bottomBarModelsForActionTab(actionTab: string): BottomBarModel[]
     return CHARACTER_SWAP_BOTTOM_BAR_MODELS;
   }
   if (actionTab === "Reference to Video") {
-    return BOTTOM_BAR_MODELS.filter((m) => videoComposerSupportsReferenceToVideo(m.id));
+    const referenceOrder = [
+      GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
+      GEMINI_OMNI_FLASH_R2V_COMPOSER_ID,
+      "seedance-2",
+      WAN_27_COMPOSER_ID,
+      HAPPYHORSE_1_COMPOSER_ID,
+      "google-veo-3-1",
+      VIDU_Q3_COMPOSER_ID
+    ];
+    return referenceOrder
+      .map((id) => BOTTOM_BAR_MODELS.find((m) => m.id === id))
+      .filter((m): m is BottomBarModel => Boolean(m));
   }
   if (actionTab === "Video to Video") {
     return BOTTOM_BAR_MODELS.filter(
@@ -225,6 +274,9 @@ export function bottomBarModelsForActionTab(actionTab: string): BottomBarModel[]
   }
   return BOTTOM_BAR_MODELS.filter(
     (m) =>
+      (geminiOmniFlashComposerSupportsAction(m.id, actionTab) ||
+        grokImagineVideoComposerSupportsAction(m.id, actionTab) ||
+        (!isGeminiOmniFlashComposerId(m.id) && !isGrokImagineVideoComposerId(m.id))) &&
       !videoComposerSupportsMotionControlTab(m.id) &&
       !videoComposerSupportsWanCharacterSwapTab(m.id)
   );
@@ -258,6 +310,12 @@ export {
 };
 
 export function referenceToVideoMaxImages(composerModelId: string): number {
+  if (composerModelId === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID) {
+    return GEMINI_OMNI_FLASH_MAX_IMAGES;
+  }
+  if (composerModelId === GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID) {
+    return GROK_IMAGINE_VIDEO_MAX_REFERENCE_IMAGES;
+  }
   if (isVeo31ComposerId(composerModelId)) {
     return VEO_31_REFERENCE_TO_VIDEO_MAX_IMAGES;
   }
@@ -357,6 +415,38 @@ export const HAPPYHORSE_DURATION_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
 
 export const WAN27_DURATION_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as const;
 
+export {
+  GEMINI_OMNI_FLASH_DURATION_OPTIONS,
+  GEMINI_OMNI_FLASH_I2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_MAX_IMAGES,
+  GEMINI_OMNI_FLASH_REFERENCE_DURATION_OPTIONS,
+  GEMINI_OMNI_FLASH_REFERENCE_MAX_VIDEOS,
+  GEMINI_OMNI_FLASH_RESOLUTION_OPTIONS,
+  GEMINI_OMNI_FLASH_R2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_T2V_COMPOSER_ID,
+  geminiOmniFlashAspectFromUi,
+  geminiOmniFlashComposerSupportsAction,
+  isGeminiOmniFlashComposerId,
+  normalizeGeminiOmniFlashDurationSeconds,
+  normalizeGeminiOmniFlashReferenceDurationSeconds
+};
+
+export {
+  GROK_IMAGINE_VIDEO_ASPECT_OPTIONS,
+  GROK_IMAGINE_VIDEO_DURATION_OPTIONS,
+  GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_MAX_REFERENCE_IMAGES,
+  GROK_IMAGINE_VIDEO_REFERENCE_DURATION_OPTIONS,
+  GROK_IMAGINE_VIDEO_RESOLUTION_OPTIONS,
+  GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID,
+  grokImagineVideoAspectFromUi,
+  grokImagineVideoComposerSupportsAction,
+  isGrokImagineVideoComposerId,
+  normalizeGrokImagineVideoDurationSeconds,
+  normalizeGrokImagineVideoReferenceDurationSeconds
+};
+
 export function videoComposerUsesHappyHorse(composerModelId: string): boolean {
   return isHappyHorseComposerId(composerModelId);
 }
@@ -373,10 +463,12 @@ export {
 export {
   isKling30ProComposerId,
   kling30ProComposerSupportsEndFrame,
+  kling30ProComposerSupportsShotType,
   klingV3AspectOptionsForUi,
   klingV3DurationOptionsForUi,
   klingV3AspectFromUi,
-  normalizeKlingV3DurationSeconds
+  normalizeKlingV3DurationSeconds,
+  type KlingV3ShotMode
 } from "@/lib/atlas-kling-v3-video";
 
 export function videoComposerUses720p1080pOnly(composerModelId: string): boolean {

@@ -7,7 +7,6 @@ import { Check, ChevronDown, Zap } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import {
   CREDIT_PACKS,
-  estimateGenerations,
   formatCredits,
   PRICING_CATALOG_SECTIONS
 } from "@/lib/atlas-pricing-catalog";
@@ -15,6 +14,16 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { getLemonSqueezyCheckoutUrl } from "@/lib/lemon-squeezy/checkout-url";
 import { formatInteger } from "@/lib/format-number";
 import { cn } from "@/lib/utils";
+
+function perCreditSavingsPercent(packCredits: number, price: number): number | null {
+  const starter = CREDIT_PACKS.find((pack) => pack.id === "starter");
+  if (!starter || packCredits <= 0 || price <= 0 || starter.credits <= 0) return null;
+
+  const starterUnit = starter.monthly / starter.credits;
+  const unit = price / packCredits;
+  const savings = Math.round((1 - unit / starterUnit) * 100);
+  return savings > 0 ? savings : null;
+}
 
 export function PricingView() {
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
@@ -46,7 +55,7 @@ export function PricingView() {
     <>
       <Navbar />
       <div className="min-h-dvh bg-[#080810] pt-20 font-body text-white">
-        <div className="mx-auto max-w-6xl px-6 pb-24">
+        <div className="mx-auto max-w-7xl px-6 pb-24">
           {/* Header */}
           <div className="mb-12 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#00e5ff]">View Plans</p>
@@ -79,36 +88,49 @@ export function PricingView() {
               >
                 Yearly
                 <span className="rounded-full bg-emerald-950/80 px-2 py-0.5 text-[10px] font-extrabold text-emerald-400">
-                  −20%
+                  −10%
                 </span>
               </button>
             </div>
           </div>
 
           {/* Credit packs */}
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {CREDIT_PACKS.map((pack) => {
               const price = billing === "monthly" ? pack.monthly : pack.yearly;
+              const savingsPercent = perCreditSavingsPercent(pack.credits, price);
               return (
                 <div
                   key={pack.id}
                   className={cn(
-                    "relative flex flex-col rounded-2xl p-6",
+                    "relative flex flex-col rounded-2xl p-5 transition-shadow",
                     pack.popular
-                      ? "border-2 border-[#00e5ff] bg-[#0f0f1e]"
+                      ? "border border-[#00e5ff]/80 bg-[#0f0f1e] shadow-[0_0_36px_rgba(0,229,255,0.18)]"
                       : "border border-white/10 bg-[#0f0f1e]"
                   )}
                 >
                   {pack.popular ? (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#00e5ff] px-4 py-1 text-[11px] font-extrabold text-black">
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#00e5ff]/40 bg-[#0f0f1e]/80 px-4 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#00e5ff] shadow-[0_0_24px_rgba(0,229,255,0.22)] backdrop-blur-md">
                       POPULAR
+                    </div>
+                  ) : null}
+                  {savingsPercent ? (
+                    <div className="absolute right-0 top-0 overflow-hidden rounded-tr-2xl">
+                      <div className="rounded-bl-2xl border-b border-l border-red-400/30 bg-red-500/[0.08] px-3.5 py-2 text-right shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_20px_rgba(248,113,113,0.12)] backdrop-blur-md">
+                        <span className="block text-[10px] font-extrabold uppercase tracking-[0.16em] text-red-300">
+                          Save {savingsPercent}%
+                        </span>
+                        <span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[0.14em] text-red-100/45">
+                          per credit
+                        </span>
+                      </div>
                     </div>
                   ) : null}
 
                   <h2 className="text-base font-bold">{pack.name}</h2>
 
                   <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-5xl font-extrabold">${price}</span>
+                    <span className="text-4xl font-extrabold">${price}</span>
                     <span className="text-sm text-white/40">/month</span>
                   </div>
 
@@ -116,10 +138,6 @@ export function PricingView() {
                     <Zap className="size-3.5 text-[#00e5ff]" aria-hidden />
                     <span className="font-semibold text-[#00e5ff]">
                       {formatInteger(pack.credits)} credits
-                    </span>
-                    <span className="text-white/40">
-                      · {estimateGenerations(pack.credits, "image")} images or{" "}
-                      {estimateGenerations(pack.credits, "video")} videos
                     </span>
                   </div>
 
@@ -155,8 +173,9 @@ export function PricingView() {
             <div className="mb-8">
               <h2 className="font-display text-2xl font-bold">Credits per model</h2>
               <p className="mt-1 max-w-xl text-sm text-white/45">
-                What each generation costs in credits. Video rates are for a typical short clip (~5
-                seconds); longer clips or premium settings may use more.
+                What each generation costs in credits. Video rates below use 5s, 720p,
+                Standard tier, without soundtrack; the studio updates the final charge live
+                for duration, resolution, speed, and audio.
               </p>
             </div>
 

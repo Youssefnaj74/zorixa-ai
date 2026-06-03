@@ -33,8 +33,25 @@ import {
   videoComposerUsesTextOnlyLayout,
   isWan26ComposerId,
   type Wan26ShotType,
+  GEMINI_OMNI_FLASH_I2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_MAX_IMAGES,
+  GEMINI_OMNI_FLASH_REFERENCE_MAX_VIDEOS,
+  GEMINI_OMNI_FLASH_R2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_T2V_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID,
+  geminiOmniFlashAspectFromUi,
+  grokImagineVideoAspectFromUi,
+  isGeminiOmniFlashComposerId,
+  isGrokImagineVideoComposerId,
   klingV3AspectFromUi,
-  normalizeKlingV3DurationSeconds
+  normalizeKlingV3DurationSeconds,
+  normalizeGeminiOmniFlashDurationSeconds,
+  normalizeGeminiOmniFlashReferenceDurationSeconds,
+  normalizeGrokImagineVideoDurationSeconds,
+  normalizeGrokImagineVideoReferenceDurationSeconds,
+  type KlingV3ShotMode
 } from "@/components/video/bottom-bar-models";
 import {
   normalizeSeedanceReferenceDurationSeconds,
@@ -49,6 +66,7 @@ import {
 import type { VideoHistoryEntry, VideoHistorySettingsSnapshot } from "@/components/video/VideoHistory";
 import {
   isAtlasVideoComposerId,
+  normalizeAtlasVideoSpeedTier,
   videoComposerSupportsSpeedTier
 } from "@/lib/atlas-video-model-ids";
 import { videoComposerSupportsGenerateAudio } from "@/lib/atlas-video-generate-audio";
@@ -266,6 +284,7 @@ export function VideoGenerationPage() {
   const [aspect, setAspect] = useState("9:16");
   const [resolution, setResolution] = useState("1080p");
   const [wan26ShotType, setWan26ShotType] = useState<Wan26ShotType>("single");
+  const [klingV3ShotMode, setKlingV3ShotMode] = useState<KlingV3ShotMode>("single");
   const [actionTab, setActionTab] = useState<ActionTab>("Image to Video");
   const [prompt, setPrompt] = useState("");
 
@@ -390,8 +409,25 @@ export function VideoGenerationPage() {
   const [history, setHistory] = useState<VideoHistoryEntry[]>([]);
 
   const creditsLine = useMemo(
-    () => formatGenerationCreditsLine(creditsChargedForVideoModel(composerModelId)),
-    [composerModelId]
+    () => {
+      const supportsNativeAudio =
+        videoComposerSupportsGenerateAudio(composerModelId) &&
+        (actionTab === "Text to Video" ||
+          actionTab === "Image to Video" ||
+          actionTab === "Reference to Video" ||
+          (actionTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(composerModelId)));
+      return formatGenerationCreditsLine(
+        creditsChargedForVideoModel(composerModelId, {
+          durationSeconds: timeSeconds,
+          resolution,
+          speedTier: videoComposerSupportsSpeedTier(composerModelId)
+            ? normalizeAtlasVideoSpeedTier(durationStandard)
+            : "standard",
+          generateAudio: supportsNativeAudio && generateAudioOn
+        })
+      );
+    },
+    [actionTab, composerModelId, durationStandard, generateAudioOn, resolution, timeSeconds]
   );
 
   const handleBottomBarHeight = useCallback((height: number) => {
@@ -408,6 +444,21 @@ export function VideoGenerationPage() {
     }
     if (!videoComposerSupportsSpeedTier(id)) {
       setDurationStandard("Standard");
+    }
+    if (!isGeminiOmniFlashComposerId(id) && resolution === "4k") {
+      setResolution("1080p");
+    }
+    if (isGrokImagineVideoComposerId(id)) {
+      setTimeSeconds((t) =>
+        id === GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID
+          ? normalizeGrokImagineVideoReferenceDurationSeconds(t)
+          : normalizeGrokImagineVideoDurationSeconds(t)
+      );
+      setAspect(grokImagineVideoAspectFromUi(aspect));
+      if (resolution !== "480p" && resolution !== "720p") setResolution("720p");
+      if (id === GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID) setActionTab("Text to Video");
+      if (id === GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID) setActionTab("Image to Video");
+      if (id === GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID) setActionTab("Reference to Video");
     }
     if (!videoComposerSupportsEndFrame(id)) {
       setPromptImage2UrlSafe(null);
@@ -443,6 +494,17 @@ export function VideoGenerationPage() {
       setAspect(veo.aspect);
       setResolution(veo.resolution);
     }
+    if (isGeminiOmniFlashComposerId(id)) {
+      setTimeSeconds((t) =>
+        id === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID
+          ? normalizeGeminiOmniFlashReferenceDurationSeconds(t)
+          : normalizeGeminiOmniFlashDurationSeconds(t)
+      );
+      setAspect(geminiOmniFlashAspectFromUi(aspect));
+      if (resolution === "480p") setResolution("720p");
+      if (id === GEMINI_OMNI_FLASH_I2V_COMPOSER_ID) setActionTab("Image to Video");
+      if (id === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID) setActionTab("Reference to Video");
+    }
     if (id === KLING_30_PRO_MODEL_ID) {
       setActionTab("Text to Video");
       setTimeSeconds((t) => normalizeKlingV3DurationSeconds(t));
@@ -465,7 +527,7 @@ export function VideoGenerationPage() {
     ) {
       setActionTab("Image to Video");
     }
-  }, [actionTab]);
+  }, [actionTab, aspect, resolution, timeSeconds, setPromptImage2UrlSafe]);
 
   useEffect(() => {
     if (actionTab === "Reference to Video" && seedanceComposerSupportsReferenceMedia(composerModelId)) {
@@ -474,6 +536,23 @@ export function VideoGenerationPage() {
       setBottomBarHeight(VIDEO_WAN_R2V_DOCK_HEIGHT);
     } else {
       setBottomBarHeight(COMPOSER_DOCK_WITH_TABS_HEIGHT);
+    }
+  }, [actionTab, composerModelId]);
+
+  useEffect(() => {
+    if (actionTab !== "Reference to Video") return;
+    if (
+      composerModelId === GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID ||
+      composerModelId === GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID
+    ) {
+      setComposerModelId(GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID);
+      return;
+    }
+    if (
+      composerModelId === GEMINI_OMNI_FLASH_T2V_COMPOSER_ID ||
+      composerModelId === GEMINI_OMNI_FLASH_I2V_COMPOSER_ID
+    ) {
+      setComposerModelId(GEMINI_OMNI_FLASH_R2V_COMPOSER_ID);
     }
   }, [actionTab, composerModelId]);
 
@@ -521,6 +600,45 @@ export function VideoGenerationPage() {
       return resizeReferenceImageUrls(prev, max);
     });
   }, [actionTab, composerModelId]);
+
+  useEffect(() => {
+    if (
+      !(
+        (actionTab === "Image to Video" && composerModelId === GEMINI_OMNI_FLASH_I2V_COMPOSER_ID) ||
+        (actionTab === "Reference to Video" && composerModelId === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID)
+      )
+    ) {
+      return;
+    }
+    setReferenceImageUrls((prev) => {
+      if (prev.length === GEMINI_OMNI_FLASH_MAX_IMAGES) return prev;
+      return resizeReferenceImageUrls(prev, GEMINI_OMNI_FLASH_MAX_IMAGES);
+    });
+    setTimeSeconds((t) =>
+      composerModelId === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID
+        ? normalizeGeminiOmniFlashReferenceDurationSeconds(t)
+        : normalizeGeminiOmniFlashDurationSeconds(t)
+    );
+    setAspect((a) => geminiOmniFlashAspectFromUi(a));
+    if (resolution === "480p") setResolution("720p");
+    if (actionTab === "Reference to Video") {
+      setReferenceVideoUrls((prev) => {
+        if (prev.length === GEMINI_OMNI_FLASH_REFERENCE_MAX_VIDEOS) return prev;
+        return resizeReferenceImageUrls(prev, GEMINI_OMNI_FLASH_REFERENCE_MAX_VIDEOS);
+      });
+    }
+  }, [actionTab, composerModelId, resolution]);
+
+  useEffect(() => {
+    if (!isGrokImagineVideoComposerId(composerModelId)) return;
+    setTimeSeconds((t) =>
+      composerModelId === GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID
+        ? normalizeGrokImagineVideoReferenceDurationSeconds(t)
+        : normalizeGrokImagineVideoDurationSeconds(t)
+    );
+    setAspect((a) => grokImagineVideoAspectFromUi(a));
+    if (resolution !== "480p" && resolution !== "720p") setResolution("720p");
+  }, [composerModelId, resolution]);
 
   useEffect(() => {
     if (actionTab !== "Reference to Video" || !wan27ComposerSupportsReferenceMedia(composerModelId)) {
@@ -596,11 +714,41 @@ export function VideoGenerationPage() {
   }, [composerModelId, actionTab]);
 
   const handleActionTabChange = useCallback((tab: ActionTab) => {
+    const wasGemini = isGeminiOmniFlashComposerId(composerModelId);
+    const wasGrok = isGrokImagineVideoComposerId(composerModelId);
     setActionTab(tab);
     setGenerateError(null);
+    if (tab === "Text to Video" && wasGrok) {
+      setComposerModelId(GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID);
+      return;
+    }
+    if (tab === "Image to Video" && wasGrok) {
+      setComposerModelId(GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID);
+      return;
+    }
+    if (tab === "Text to Video" && wasGemini) {
+      setComposerModelId(GEMINI_OMNI_FLASH_T2V_COMPOSER_ID);
+      return;
+    }
+    if (tab === "Image to Video" && wasGemini) {
+      setComposerModelId(GEMINI_OMNI_FLASH_I2V_COMPOSER_ID);
+      return;
+    }
     if (tab === "Reference to Video") {
-      setComposerModelId("seedance-2");
-      setTimeSeconds((t) => normalizeSeedanceReferenceDurationSeconds(t));
+      setComposerModelId(
+        wasGrok
+          ? GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID
+          : wasGemini
+            ? GEMINI_OMNI_FLASH_R2V_COMPOSER_ID
+            : "seedance-2"
+      );
+      setTimeSeconds((t) =>
+        wasGrok
+          ? normalizeGrokImagineVideoReferenceDurationSeconds(t)
+          : wasGemini
+            ? normalizeGeminiOmniFlashReferenceDurationSeconds(t)
+            : normalizeSeedanceReferenceDurationSeconds(t)
+      );
     }
     if (tab === "Video to Video") {
       setComposerModelId("wan-2-6");
@@ -611,7 +759,7 @@ export function VideoGenerationPage() {
         isAudioToVideoResolution(r) ? r : DEFAULT_AUDIO_TO_VIDEO_RESOLUTION
       );
     }
-  }, []);
+  }, [composerModelId]);
 
   const runGeneration = useCallback(
     async (ctx: VideoGenerateContext) => {
@@ -686,6 +834,12 @@ export function VideoGenerationPage() {
             ? { shot_type: ctx.wan26ShotType }
             : {};
 
+        const klingV3ShotPayload =
+          videoModel === KLING_30_PRO_MODEL_ID &&
+          (ctx.actionTab === "Text to Video" || ctx.actionTab === "Image to Video")
+            ? { kling_v3_shot_mode: ctx.klingV3ShotMode }
+            : {};
+
         const atlasAspectForPayload =
           videoModel === KLING_30_PRO_MODEL_ID &&
           (ctx.actionTab === "Text to Video" || ctx.actionTab === "Image to Video")
@@ -710,24 +864,46 @@ export function VideoGenerationPage() {
               duration: atlasDurationForPayload,
               speed_tier,
               ...wan26ShotPayload,
+              ...klingV3ShotPayload,
               ...(supportsNativeAudio ? { generate_audio: wantGenerateAudio } : {})
             };
             break;
           case "Image to Video": {
-            const image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImageUrl);
-            if (!image_url) {
+            const geminiImages: string[] = [];
+            if (videoModel === GEMINI_OMNI_FLASH_I2V_COMPOSER_ID) {
+              for (let i = 0; i < ctx.referenceImageUrls.length; i++) {
+                const raw = ctx.referenceImageUrls[i];
+                if (!raw) continue;
+                const u = await ensureAtlasPublicHttpsMediaUrl(raw);
+                if (!u) {
+                  setGenerateError(`Could not upload reference image ${i + 1}. Try again.`);
+                  return;
+                }
+                geminiImages.push(u);
+              }
+              if (geminiImages.length < 1) {
+                setGenerateError("Add at least one reference image for Gemini Omni Flash.");
+                return;
+              }
+            }
+            const image_url =
+              videoModel === GEMINI_OMNI_FLASH_I2V_COMPOSER_ID
+                ? null
+                : await ensureAtlasPublicHttpsMediaUrl(ctx.promptImageUrl);
+            if (!image_url && videoModel !== GEMINI_OMNI_FLASH_I2V_COMPOSER_ID) {
               setGenerateError("Add a Start frame image for Image to Video.");
               return;
             }
             const last_image_url = videoComposerSupportsEndFrame(videoModel)
               ? await ensureAtlasPublicHttpsMediaUrl(ctx.promptImage2Url)
               : null;
-            sourceInputForLog = image_url;
+            sourceInputForLog = image_url ?? geminiImages[0] ?? null;
             payload = {
               prompt: promptForAtlas,
               action: "image",
               videoModel,
-              image_url,
+              ...(image_url ? { image_url } : {}),
+              ...(geminiImages.length > 0 ? { reference_images: geminiImages } : {}),
               ...(last_image_url ? { last_image_url } : {}),
               ...(videoModel === KLING_30_PRO_MODEL_ID
                 ? { aspectRatio: atlasAspectForPayload }
@@ -735,6 +911,7 @@ export function VideoGenerationPage() {
               duration: atlasDurationForPayload,
               speed_tier,
               ...wan26ShotPayload,
+              ...klingV3ShotPayload,
               ...(supportsNativeAudio ? { generate_audio: wantGenerateAudio } : {})
             };
             break;
@@ -742,7 +919,7 @@ export function VideoGenerationPage() {
           case "Reference to Video": {
             if (!videoComposerSupportsReferenceToVideo(videoModel)) {
               setGenerateError(
-                "Reference to Video requires Seedance 2.0, Vidu Q3, HappyHorse 1.0, Wan 2.7, or Veo 3.1."
+                "Reference to Video requires Seedance 2.0, Gemini Omni Flash R2V, Grok Imagine Video R2V, Vidu Q3, HappyHorse 1.0, Wan 2.7, or Veo 3.1."
               );
               return;
             }
@@ -759,7 +936,11 @@ export function VideoGenerationPage() {
             }
             const reference_videos: string[] = [];
             const reference_audios: string[] = [];
-            if (videoModel === "seedance-2" || isWan27ComposerId(videoModel)) {
+            if (
+              videoModel === "seedance-2" ||
+              isWan27ComposerId(videoModel) ||
+              videoModel === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID
+            ) {
               for (let i = 0; i < ctx.referenceVideoUrls.length; i++) {
                 const raw = ctx.referenceVideoUrls[i];
                 if (!raw) continue;
@@ -786,10 +967,19 @@ export function VideoGenerationPage() {
               }
               if (reference_images.length < 1 && reference_videos.length < 1) {
                 setGenerateError(
-                  isWan27ComposerId(videoModel)
+                  videoModel === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID
+                    ? "Add at least one reference image and one source video for Gemini Omni Flash."
+                    : isWan27ComposerId(videoModel)
                     ? "Add at least one reference image or video (Wan 2.7)."
                     : "Add at least one reference image or reference video (Seedance 2.0)."
                 );
+                return;
+              }
+              if (
+                videoModel === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID &&
+                (reference_images.length < 1 || reference_videos.length < 1)
+              ) {
+                setGenerateError("Add at least one reference image and one source video for Gemini Omni Flash.");
                 return;
               }
             } else if (reference_images.length < 1) {
@@ -797,17 +987,24 @@ export function VideoGenerationPage() {
               return;
             }
             sourceInputForLog = reference_images[0] ?? reference_videos[0] ?? null;
-            const refDuration = isVeo31ComposerId(videoModel)
-              ? normalizeVeo31ReferenceDurationSeconds(duration)
-              : isWan27ComposerId(videoModel)
-                ? normalizeWan27ReferenceDurationSeconds(duration)
-                : normalizeSeedanceReferenceDurationSeconds(duration);
+            const refDuration =
+              videoModel === GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID
+                ? normalizeGrokImagineVideoReferenceDurationSeconds(duration)
+                : videoModel === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID
+                  ? normalizeGeminiOmniFlashReferenceDurationSeconds(duration)
+                : isVeo31ComposerId(videoModel)
+                  ? normalizeVeo31ReferenceDurationSeconds(duration)
+                  : isWan27ComposerId(videoModel)
+                    ? normalizeWan27ReferenceDurationSeconds(duration)
+                    : normalizeSeedanceReferenceDurationSeconds(duration);
             payload = {
               prompt: promptForAtlas,
               action: "reference",
               videoModel,
               reference_images,
-              ...((videoModel === "seedance-2" || isWan27ComposerId(videoModel)) &&
+              ...((videoModel === "seedance-2" ||
+                isWan27ComposerId(videoModel) ||
+                videoModel === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID) &&
               reference_videos.length > 0
                 ? { reference_videos }
                 : {}),
@@ -1418,6 +1615,8 @@ export function VideoGenerationPage() {
         onResolutionChange={setResolution}
         wan26ShotType={wan26ShotType}
         onWan26ShotTypeChange={setWan26ShotType}
+        klingV3ShotMode={klingV3ShotMode}
+        onKlingV3ShotModeChange={setKlingV3ShotMode}
         creditsLine={creditsLine}
         loadingGenerate={loading}
         onGenerate={runGeneration}

@@ -741,24 +741,33 @@ export function ImageBottomBar({
             </div>
           ) : null}
 
-          <span className="ml-auto text-xs tabular-nums text-zorixa-muted">{creditsLine}</span>
-
-          <motion.button
-            type="button"
-            disabled={loadingGenerate}
-            onClick={emitGenerate}
-            whileHover={loadingGenerate ? undefined : { scale: 1.02 }}
-            whileTap={loadingGenerate ? undefined : { scale: 0.98 }}
-            className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
-          >
-            {loadingGenerate ? (
-              <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            ) : (
-              <Sparkles className="size-4" />
-            )}
-            GENERATE
-          </motion.button>
-        </div>
+          <div className="ml-auto flex shrink-0">
+            <motion.button
+              type="button"
+              disabled={loadingGenerate}
+              onClick={emitGenerate}
+              whileHover={loadingGenerate ? undefined : { scale: 1.02 }}
+              whileTap={loadingGenerate ? undefined : { scale: 0.98 }}
+              className="inline-flex min-w-[152px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
+            >
+              <span className="inline-flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-wide text-white">
+                {loadingGenerate ? (
+                  <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                ) : (
+                  <Sparkles className="size-4" />
+                )}
+                GENERATE
+              </span>
+              <span
+                className={cn(
+                  "text-[11px] font-bold tabular-nums tracking-wide",
+                  creditsLine === "Free" ? "text-white/80" : "text-[#b8f4ff]"
+                )}
+              >
+                {creditsLine}
+              </span>
+            </motion.button>
+          </div>
       </div>
     </footer>
   );

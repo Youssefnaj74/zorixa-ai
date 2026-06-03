@@ -33,9 +33,25 @@ import {
   videoComposerUsesVeo31,
   veo31ReferenceDurationSeconds,
   videoComposerUsesWan27,
+  GEMINI_OMNI_FLASH_DURATION_OPTIONS,
+  GEMINI_OMNI_FLASH_I2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_MAX_IMAGES,
+  GEMINI_OMNI_FLASH_REFERENCE_DURATION_OPTIONS,
+  GEMINI_OMNI_FLASH_REFERENCE_MAX_VIDEOS,
+  GEMINI_OMNI_FLASH_RESOLUTION_OPTIONS,
+  GEMINI_OMNI_FLASH_R2V_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_ASPECT_OPTIONS,
+  GROK_IMAGINE_VIDEO_DURATION_OPTIONS,
+  GROK_IMAGINE_VIDEO_REFERENCE_DURATION_OPTIONS,
+  GROK_IMAGINE_VIDEO_RESOLUTION_OPTIONS,
+  GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
+  isGrokImagineVideoComposerId,
   isKling30ProComposerId,
+  isGeminiOmniFlashComposerId,
+  kling30ProComposerSupportsShotType,
   klingV3AspectOptionsForUi,
   klingV3DurationOptionsForUi,
+  type KlingV3ShotMode,
   wan26ComposerSupportsShotType,
   type Wan26ShotType,
   MODE_DROPUP_OPTIONS,
@@ -62,6 +78,7 @@ import { AUDIO_TO_VIDEO_RESOLUTION_OPTIONS } from "@/lib/atlas-audio-to-video";
 import { isViduQ3ComposerId, isViduQ3ProComposerId } from "@/lib/atlas-vidu-video";
 
 import { ActionTabsRow, type ActionTab } from "@/components/video/ActionTabsRow";
+import { ReferenceAtlasColumnUpload } from "@/components/video/ReferenceAtlasColumnUpload";
 import { ReferenceImageUploadStrip } from "@/components/video/ReferenceImageUploadStrip";
 import { SeedanceReferenceUploadPanel } from "@/components/video/SeedanceReferenceUploadPanel";
 import { WanReferenceUploadPanel } from "@/components/video/WanReferenceUploadPanel";
@@ -96,6 +113,8 @@ export type VideoGenerateContext = {
   speedTier: "standard" | "fast";
   /** Wan 2.6 — Atlas `shot_type` (single | multi). */
   wan26ShotType: Wan26ShotType;
+  /** Kling 3.0 Pro — single shot vs multi-shot (intelligent). */
+  klingV3ShotMode: KlingV3ShotMode;
 };
 
 export type VideoBottomBarProps = {
@@ -144,6 +163,9 @@ export type VideoBottomBarProps = {
   /** Wan 2.6 — Shot Type (Atlas `shot_type`). */
   wan26ShotType?: Wan26ShotType;
   onWan26ShotTypeChange?: (v: Wan26ShotType) => void;
+  /** Kling 3.0 Pro — single vs multi-shot. */
+  klingV3ShotMode?: KlingV3ShotMode;
+  onKlingV3ShotModeChange?: (v: KlingV3ShotMode) => void;
   creditsLine: string;
   loadingGenerate: boolean;
   /** Snapshot of prompt + assets at click time (reads textarea ref so text is never stale). */
@@ -222,6 +244,8 @@ export function VideoBottomBar({
   onResolutionChange,
   wan26ShotType = "single",
   onWan26ShotTypeChange,
+  klingV3ShotMode = "single",
+  onKlingV3ShotModeChange,
   creditsLine,
   loadingGenerate,
   onGenerate,
@@ -424,7 +448,10 @@ export function VideoBottomBar({
     showReferenceLayout && seedanceComposerSupportsReferenceMedia(composerModelId);
   const showWanReferenceMedia =
     showReferenceLayout && wan27ComposerSupportsReferenceMedia(composerModelId);
-  const showReferenceMediaPanel = showSeedanceReferenceMedia || showWanReferenceMedia;
+  const showGeminiReferenceMedia =
+    showReferenceLayout && composerModelId === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID;
+  const showReferenceMediaPanel =
+    showSeedanceReferenceMedia || showWanReferenceMedia || showGeminiReferenceMedia;
   const useStableDockHeight = showReferenceMediaPanel;
   const stableDockHeight = showWanReferenceMedia
     ? VIDEO_WAN_R2V_DOCK_HEIGHT
@@ -470,7 +497,17 @@ export function VideoBottomBar({
   const showHappyHorseLayout = videoComposerUsesHappyHorse(composerModelId);
   const showWan27Layout = videoComposerUsesWan27(composerModelId);
   const showKling30Layout = isKling30ProComposerId(composerModelId);
+  const showGeminiLayout = isGeminiOmniFlashComposerId(composerModelId);
+  const showGeminiImageLayout =
+    actionTab === "Image to Video" && composerModelId === GEMINI_OMNI_FLASH_I2V_COMPOSER_ID;
+  const showGrokLayout = isGrokImagineVideoComposerId(composerModelId);
+  const showGrokReferenceMedia =
+    showReferenceLayout && composerModelId === GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID;
   const showVeo31Layout = videoComposerUsesVeo31(composerModelId);
+  const geminiT2vOrI2v =
+    showGeminiLayout && (actionTab === "Text to Video" || actionTab === "Image to Video");
+  const grokT2vOrI2v =
+    showGrokLayout && (actionTab === "Text to Video" || actionTab === "Image to Video");
   const veo31T2vOrI2v =
     showVeo31Layout && (actionTab === "Text to Video" || actionTab === "Image to Video");
   const kling30T2vOrI2v =
@@ -479,7 +516,11 @@ export function VideoBottomBar({
   const hideKlingResolution =
     showKling30Layout &&
     (actionTab === "Text to Video" || actionTab === "Image to Video");
-  const aspectOptionsForTab = veo31T2vOrI2v
+  const aspectOptionsForTab = grokT2vOrI2v || showGrokReferenceMedia
+    ? [...GROK_IMAGINE_VIDEO_ASPECT_OPTIONS]
+    : geminiT2vOrI2v || showGeminiReferenceMedia
+    ? ["16:9", "9:16"]
+    : veo31T2vOrI2v
     ? [...veo31AspectOptionsForUi()]
     : kling30T2vOrI2v
       ? [...klingV3AspectOptionsForUi()]
@@ -492,7 +533,11 @@ export function VideoBottomBar({
   const hideModeAspectControls = showDualAssetV2vLayout || showAudioToVideoLayout;
   const showResolutionControl =
     (showAudioToVideoLayout || !showDualAssetV2vLayout) && !hideKlingResolution;
-  const resolutionOptions = showAudioToVideoLayout
+  const resolutionOptions = showGrokLayout
+    ? [...GROK_IMAGINE_VIDEO_RESOLUTION_OPTIONS]
+    : showGeminiLayout
+    ? [...GEMINI_OMNI_FLASH_RESOLUTION_OPTIONS]
+    : showAudioToVideoLayout
     ? [...AUDIO_TO_VIDEO_RESOLUTION_OPTIONS]
     : show720p1080pOnlyLayout
       ? RESOLUTION_STEP_OPTIONS.filter((r) => r.id !== "480p")
@@ -509,36 +554,36 @@ export function VideoBottomBar({
       actionTab === "Image to Video" ||
       actionTab === "Reference to Video" ||
       (actionTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(composerModelId)));
-  const timeOptionsForTab = showReferenceLayout
-    ? isViduQ3ComposerId(composerModelId)
-      ? Array.from({ length: 16 }, (_, i) => i + 1)
-      : showVeo31Layout
-        ? veo31DurationOptionsForTab(actionTab)
-        : showWan27Layout
-          ? [...wan27ReferenceDurationOptionsForTab(actionTab)]
-          : TIME_SECONDS_OPTIONS.filter((t) => t >= 4 && t <= 15)
-    : showViduStartEndLayout ||
-        isViduQ3ProComposerId(composerModelId) ||
-        (showReferenceLayout && isViduQ3ComposerId(composerModelId))
-      ? Array.from({ length: 16 }, (_, i) => i + 1)
-      : showMotionControlLayout
-        ? MOTION_CONTROL_DURATION_OPTIONS.filter((t) =>
-            characterOrientation === "video" ? t <= 30 : t <= 15
-          )
-        : showWanCharacterSwapLayout
-          ? []
-          : showHappyHorseLayout
-            ? [...HAPPYHORSE_DURATION_OPTIONS]
-            : showWan27Layout
-              ? [...WAN27_DURATION_OPTIONS]
-              : showKling30Layout
-                ? [...klingV3DurationOptionsForUi()]
-                : showVeo31Layout
-                  ? veo31DurationOptionsForTab(actionTab)
-                  : [...TIME_SECONDS_OPTIONS];
+  const timeOptionsForTab = (() => {
+    if (showReferenceLayout) {
+      if (showGrokReferenceMedia) return [...GROK_IMAGINE_VIDEO_REFERENCE_DURATION_OPTIONS];
+      if (showGeminiReferenceMedia) return [...GEMINI_OMNI_FLASH_REFERENCE_DURATION_OPTIONS];
+      if (isViduQ3ComposerId(composerModelId)) return Array.from({ length: 16 }, (_, i) => i + 1);
+      if (showVeo31Layout) return veo31DurationOptionsForTab(actionTab);
+      if (showWan27Layout) return [...wan27ReferenceDurationOptionsForTab(actionTab)];
+      return TIME_SECONDS_OPTIONS.filter((t) => t >= 4 && t <= 15);
+    }
+    if (showViduStartEndLayout || isViduQ3ProComposerId(composerModelId)) {
+      return Array.from({ length: 16 }, (_, i) => i + 1);
+    }
+    if (showMotionControlLayout) {
+      return MOTION_CONTROL_DURATION_OPTIONS.filter((t) =>
+        characterOrientation === "video" ? t <= 30 : t <= 15
+      );
+    }
+    if (showWanCharacterSwapLayout) return [];
+    if (showGrokLayout) return [...GROK_IMAGINE_VIDEO_DURATION_OPTIONS];
+    if (showGeminiLayout) return [...GEMINI_OMNI_FLASH_DURATION_OPTIONS];
+    if (showHappyHorseLayout) return [...HAPPYHORSE_DURATION_OPTIONS];
+    if (showWan27Layout) return [...WAN27_DURATION_OPTIONS];
+    if (showKling30Layout) return [...klingV3DurationOptionsForUi()];
+    if (showVeo31Layout) return veo31DurationOptionsForTab(actionTab);
+    return [...TIME_SECONDS_OPTIONS];
+  })();
   const generateAudioEffective = generateAudioOn && showGenerateAudioControl;
   const showSpeedTierControl = videoComposerSupportsSpeedTier(composerModelId);
   const showWan26ShotTypeControl = wan26ComposerSupportsShotType(composerModelId, actionTab);
+  const showKlingV3ShotTypeControl = kling30ProComposerSupportsShotType(composerModelId, actionTab);
   const speedTier = parseVideoSpeedTierFromUiLabel(durationStandard);
   const showSeedanceI2vTip =
     actionTab === "Image to Video" && composerModelId === "seedance-2";
@@ -571,7 +616,8 @@ export function VideoBottomBar({
       referenceAudioUrls,
       generateAudio: generateAudioEffective,
       speedTier: showSpeedTierControl ? speedTier : "standard",
-      wan26ShotType
+      wan26ShotType,
+      klingV3ShotMode
     };
     console.log("[VideoBottomBar] GENERATE click", {
       promptText,
@@ -609,7 +655,8 @@ export function VideoBottomBar({
     showSpeedTierControl,
     speedTier,
     timeSeconds,
-    wan26ShotType
+    wan26ShotType,
+    klingV3ShotMode
   ]);
 
   return (
@@ -663,6 +710,27 @@ export function VideoBottomBar({
                 onReferenceVideoChange={onReferenceVideoChange}
                 onReferenceVoiceChange={onReferenceAudioChange}
               />
+            ) : showGeminiReferenceMedia ? (
+              <div className="grid min-w-0 max-w-[min(100%,58%)] shrink-0 flex-1 grid-cols-2 gap-2 sm:gap-2.5">
+                <ReferenceAtlasColumnUpload
+                  kind="image"
+                  title="Reference images"
+                  hint={`Up to ${GEMINI_OMNI_FLASH_MAX_IMAGES} · character/style`}
+                  urls={referenceImageUrls}
+                  maxSlots={GEMINI_OMNI_FLASH_MAX_IMAGES}
+                  accept="image/*"
+                  onChange={onReferenceImageChange}
+                />
+                <ReferenceAtlasColumnUpload
+                  kind="video"
+                  title="Source video"
+                  hint="Exactly 1 · mp4/mov"
+                  urls={referenceVideoUrls}
+                  maxSlots={GEMINI_OMNI_FLASH_REFERENCE_MAX_VIDEOS}
+                  accept="video/mp4,video/quicktime,video/*"
+                  onChange={onReferenceVideoChange}
+                />
+              </div>
             ) : (
               <ReferenceImageUploadStrip
                 referenceImageUrls={referenceImageUrls}
@@ -672,7 +740,16 @@ export function VideoBottomBar({
             )
           ) : !showTextOnlyPromptLayout ? (
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start">
-              {showAudioToVideoLayout ? (
+              {showGeminiImageLayout ? (
+                <ReferenceImageUploadStrip
+                  referenceImageUrls={referenceImageUrls}
+                  maxImages={GEMINI_OMNI_FLASH_MAX_IMAGES}
+                  onReferenceImageChange={onReferenceImageChange}
+                  addSlotLabel="image"
+                  countInSlot
+                  matchSourceVideoSlot
+                />
+              ) : showAudioToVideoLayout ? (
                 <>
                   <input
                     ref={fileRef}
@@ -1251,7 +1328,11 @@ export function VideoBottomBar({
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
                     style={{ transformOrigin: "bottom left" }}
-                    className={cn(dropupPanelClass, "left-0 min-w-[220px] py-1")}
+                    className={cn(
+                      dropupPanelClass,
+                      "left-0 min-w-[220px] py-1",
+                      actionTab === "Reference to Video" && "max-h-64 overflow-y-auto"
+                    )}
                   >
                     {pickerModels.map((m) => (
                       <ModelRow
@@ -1356,7 +1437,44 @@ export function VideoBottomBar({
             </>
           ) : null}
 
-          {!hideModeAspectControls ? (
+          {showKlingV3ShotTypeControl ? (
+            <>
+              <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
+              <div className="flex flex-col gap-1">
+                <span
+                  className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted"
+                  title="Multi-shot: Kling 3.0 Pro plans linked camera shots from your prompt (Atlas multi_shot + intelligent). Works on Text to Video and Image to Video."
+                >
+                  Shots
+                  <CircleHelp className="size-3 text-zorixa-muted/80" aria-hidden />
+                </span>
+                <div className="flex gap-1">
+                  {(
+                    [
+                      { id: "single" as const, label: "Single" },
+                      { id: "multi" as const, label: "Multi-shot" }
+                    ] as const
+                  ).map((shot) => (
+                    <button
+                      key={shot.id}
+                      type="button"
+                      onClick={() => onKlingV3ShotModeChange?.(shot.id)}
+                      className={cn(
+                        "rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors",
+                        klingV3ShotMode === shot.id
+                          ? "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.15)] text-white"
+                          : "border-white/10 bg-[#1a1a24] text-zorixa-muted hover:text-white"
+                      )}
+                    >
+                      {shot.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : null}
+
+          {!hideModeAspectControls && !showGeminiLayout && !showGrokLayout ? (
           <>
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
 
@@ -1656,22 +1774,31 @@ export function VideoBottomBar({
 
           </div>
 
-          <div className="ml-auto flex shrink-0 items-end gap-3 pb-0.5">
-            <span className="text-xs tabular-nums text-zorixa-muted">{creditsLine}</span>
+          <div className="ml-auto flex shrink-0 pb-0.5">
             <motion.button
               type="button"
               disabled={loadingGenerate}
               whileHover={loadingGenerate ? undefined : { scale: 1.02 }}
               whileTap={loadingGenerate ? undefined : { scale: 0.98 }}
               onClick={emitGenerate}
-              className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
+              className="inline-flex min-w-[152px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
             >
-              {loadingGenerate ? (
-                <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-              ) : (
-                <Sparkles className="size-4" />
-              )}
-              GENERATE
+              <span className="inline-flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-wide text-white">
+                {loadingGenerate ? (
+                  <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                ) : (
+                  <Sparkles className="size-4" />
+                )}
+                GENERATE
+              </span>
+              <span
+                className={cn(
+                  "text-[11px] font-bold tabular-nums tracking-wide",
+                  creditsLine === "Free" ? "text-white/80" : "text-[#b8f4ff]"
+                )}
+              >
+                {creditsLine}
+              </span>
             </motion.button>
           </div>
         </div>

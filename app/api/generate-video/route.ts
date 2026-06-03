@@ -56,8 +56,33 @@ import {
   buildKlingV3AtlasBody,
   isKlingV3AtlasModel,
   klingV3AspectFromUi,
-  normalizeKlingV3DurationSeconds
+  normalizeKlingV3DurationSeconds,
+  normalizeKlingV3ShotMode
 } from "@/lib/atlas-kling-v3-video";
+import {
+  buildGeminiOmniFlashAtlasBody,
+  GEMINI_OMNI_FLASH_I2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_MAX_IMAGES,
+  GEMINI_OMNI_FLASH_R2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_REFERENCE_MAX_VIDEOS,
+  isGeminiOmniFlashAtlasModel,
+  isGeminiOmniFlashImageAtlasModel,
+  isGeminiOmniFlashReferenceAtlasModel,
+  isGeminiOmniFlashTextAtlasModel,
+  normalizeGeminiOmniFlashDurationSeconds,
+  normalizeGeminiOmniFlashReferenceDurationSeconds
+} from "@/lib/atlas-gemini-omni-video";
+import {
+  buildGrokImagineVideoAtlasBody,
+  GROK_IMAGINE_VIDEO_MAX_REFERENCE_IMAGES,
+  GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
+  isGrokImagineVideoAtlasModel,
+  isGrokImagineVideoImageAtlasModel,
+  isGrokImagineVideoReferenceAtlasModel,
+  isGrokImagineVideoTextAtlasModel,
+  normalizeGrokImagineVideoDurationSeconds,
+  normalizeGrokImagineVideoReferenceDurationSeconds
+} from "@/lib/atlas-grok-video";
 import {
   applyWan26ShotTypeFields,
   isWan26AtlasModel,
@@ -149,6 +174,8 @@ type ClientBody = {
   speedTier?: string;
   /** Wan 2.6 — Atlas `shot_type`: `single` | `multi` (multi sets `enable_prompt_expansion`). */
   shot_type?: string;
+  /** Kling 3.0 Pro — `single` | `multi` (multi sets `multi_shot` + `shot_type: intelligent`). */
+  kling_v3_shot_mode?: string;
 };
 
 const ALLOWED_ASPECT_RATIOS = new Set(["16:9", "9:16", "1:1", "4:3", "3:4"]);
@@ -160,7 +187,7 @@ function normalizeAspectRatio(raw: unknown): string {
   return ALLOWED_ASPECT_RATIOS.has(v) ? v : DEFAULT_ASPECT_RATIO;
 }
 
-const ALLOWED_RESOLUTIONS = new Set(["480p", "720p", "1080p"]);
+const ALLOWED_RESOLUTIONS = new Set(["480p", "720p", "1080p", "4k"]);
 const DEFAULT_RESOLUTION = "1080p";
 
 function normalizeResolution(raw: unknown): string {
@@ -184,6 +211,8 @@ function atlasSeedanceModelUsesDimensions(model: string): boolean {
 
 const REFERENCE_VIDEO_COMPOSER_IDS = new Set([
   "seedance-2",
+  GEMINI_OMNI_FLASH_R2V_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
   "vidu-q3",
   "happyhorse-1",
   "wan-2-7",
@@ -415,17 +444,6 @@ async function handleGenerateVideoPost(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const creditCost = creditsForVideoModel(videoModel);
-  const afford = await assertCanAfford(actor.userId, creditCost);
-  if (!afford.ok) {
-    if (afford.error === "INSUFFICIENT_CREDITS") {
-      return NextResponse.json(insufficientCreditsResponse(afford.balance, creditCost), {
-        status: 402
-      });
-    }
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
-
   let image_url =
     typeof body.image_url === "string" ? body.image_url.trim() : "";
   let last_image_url =
@@ -435,7 +453,11 @@ async function handleGenerateVideoPost(request: Request) {
   let video_url =
     typeof body.video_url === "string" ? body.video_url.trim() : "";
 
-  if (action === "image" && !image_url) {
+  if (
+    action === "image" &&
+    !image_url &&
+    videoModel !== GEMINI_OMNI_FLASH_I2V_COMPOSER_ID
+  ) {
     return NextResponse.json(
       { error: "Missing image_url for Image to Video" },
       { status: 400 }
@@ -505,12 +527,25 @@ async function handleGenerateVideoPost(request: Request) {
   }
   reference_audios = reference_audios.slice(0, SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS);
 
+  if (action === "image" && isGeminiOmniFlashImageAtlasModel(model) && reference_images.length < 1) {
+    return NextResponse.json(
+      { error: "Add at least one reference image for Gemini Omni Flash Image-to-Video." },
+      { status: 400 }
+    );
+  }
+  if (action === "image" && isGrokImagineVideoImageAtlasModel(model) && !image_url) {
+    return NextResponse.json(
+      { error: "Add a start image for Grok Imagine Video Image-to-Video v1.5." },
+      { status: 400 }
+    );
+  }
+
   if (action === "reference") {
     if (!isReferenceVideoComposerId(videoModel)) {
       return NextResponse.json(
         {
           error:
-            "Reference to Video requires Seedance 2.0, Vidu Q3, HappyHorse 1.0, Wan 2.7, or Veo 3.1."
+            "Reference to Video requires Seedance 2.0, Gemini Omni Flash R2V, Grok Imagine Video R2V, Vidu Q3, HappyHorse 1.0, Wan 2.7, or Veo 3.1."
         },
         { status: 400 }
       );
@@ -520,14 +555,36 @@ async function handleGenerateVideoPost(request: Request) {
       !isViduReferenceToVideoModel(model) &&
       !isHappyHorseReferenceToVideoModel(model) &&
       !isWan27ReferenceToVideoModel(model) &&
-      !isVeo31ReferenceToVideoModel(model)
+      !isVeo31ReferenceToVideoModel(model) &&
+      !isGeminiOmniFlashReferenceAtlasModel(model) &&
+      !isGrokImagineVideoReferenceAtlasModel(model)
     ) {
       return NextResponse.json(
         { error: "Reference to Video model slug is not configured for this tier." },
         { status: 400 }
       );
     }
-    if (isSeedanceReferenceToVideoModel(model)) {
+    if (isGeminiOmniFlashReferenceAtlasModel(model)) {
+      if (reference_images.length < 1 || reference_videos.length < 1) {
+        return NextResponse.json(
+          {
+            error:
+              "Gemini Omni Flash Reference-to-Video requires at least one reference image and one source video."
+          },
+          { status: 400 }
+        );
+      }
+    } else if (isGrokImagineVideoReferenceAtlasModel(model)) {
+      if (reference_images.length < 1) {
+        return NextResponse.json(
+          {
+            error:
+              "Grok Imagine Video Reference-to-Video requires at least one reference image."
+          },
+          { status: 400 }
+        );
+      }
+    } else if (isSeedanceReferenceToVideoModel(model)) {
       if (reference_images.length < 1 && reference_videos.length < 1) {
         return NextResponse.json(
           {
@@ -705,7 +762,15 @@ async function handleGenerateVideoPost(request: Request) {
       ? normalizeKlingMotionCharacterOrientation(body.character_orientation)
       : null;
 
-  if (action === "motion-control" && isKlingMotionControlAtlasModel(model)) {
+  if (isGrokImagineVideoAtlasModel(model)) {
+    durationSec = isGrokImagineVideoReferenceAtlasModel(model)
+      ? normalizeGrokImagineVideoReferenceDurationSeconds(durationSec)
+      : normalizeGrokImagineVideoDurationSeconds(durationSec);
+  } else if (isGeminiOmniFlashAtlasModel(model)) {
+    durationSec = isGeminiOmniFlashReferenceAtlasModel(model)
+      ? normalizeGeminiOmniFlashReferenceDurationSeconds(durationSec)
+      : normalizeGeminiOmniFlashDurationSeconds(durationSec);
+  } else if (action === "motion-control" && isKlingMotionControlAtlasModel(model)) {
     durationSec = normalizeKlingMotionDurationSeconds(durationSec, motionOrientation!);
   } else if (isKlingV3AtlasModel(model)) {
     durationSec = normalizeKlingV3DurationSeconds(durationSec);
@@ -753,6 +818,22 @@ async function handleGenerateVideoPost(request: Request) {
     generateAudio = resolveWan27GenerateAudioFlag(body.generate_audio);
   }
 
+  const creditCost = creditsForVideoModel(videoModel, {
+    durationSeconds: durationSec,
+    resolution,
+    speedTier,
+    generateAudio
+  });
+  const afford = await assertCanAfford(actor.userId, creditCost);
+  if (!afford.ok) {
+    if (afford.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(afford.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
+
   const seedanceI2v = isSeedanceImageToVideoModel(model);
   const seedanceRouteAction = action === "image" ? "image" : "text";
 
@@ -785,6 +866,43 @@ async function handleGenerateVideoPost(request: Request) {
       image_url,
       audio_url,
       resolution
+    });
+  } else if (
+    isGeminiOmniFlashTextAtlasModel(model) ||
+    isGeminiOmniFlashImageAtlasModel(model) ||
+    isGeminiOmniFlashReferenceAtlasModel(model)
+  ) {
+    atlasBody = buildGeminiOmniFlashAtlasBody({
+      model,
+      prompt,
+      aspectRatio,
+      resolution,
+      durationSec,
+      images:
+        action === "image" || action === "reference"
+          ? reference_images.slice(0, GEMINI_OMNI_FLASH_MAX_IMAGES)
+          : undefined,
+      videoUrl:
+        action === "reference"
+          ? reference_videos.slice(0, GEMINI_OMNI_FLASH_REFERENCE_MAX_VIDEOS)[0]
+          : undefined
+    });
+  } else if (
+    isGrokImagineVideoTextAtlasModel(model) ||
+    isGrokImagineVideoImageAtlasModel(model) ||
+    isGrokImagineVideoReferenceAtlasModel(model)
+  ) {
+    atlasBody = buildGrokImagineVideoAtlasBody({
+      model,
+      prompt,
+      aspectRatio,
+      resolution,
+      durationSec,
+      imageUrl: action === "image" ? (image_url ?? undefined) : undefined,
+      referenceImages:
+        action === "reference"
+          ? reference_images.slice(0, GROK_IMAGINE_VIDEO_MAX_REFERENCE_IMAGES)
+          : undefined
     });
   } else if (action === "reference" && isSeedanceReferenceToVideoModel(model)) {
     atlasBody = buildSeedanceReferenceAtlasBody({
@@ -934,7 +1052,8 @@ async function handleGenerateVideoPost(request: Request) {
       durationSec,
       aspectRatio: klingV3AspectFromUi(aspectRatio),
       imageUrl: action === "image" ? image_url : undefined,
-      endImageUrl: action === "image" ? last_image_url : undefined
+      endImageUrl: action === "image" ? last_image_url : undefined,
+      shotMode: normalizeKlingV3ShotMode(body.kling_v3_shot_mode)
     });
     if (applyNativeAudio) {
       applyAtlasNativeAudioFields(atlasBody, model, generateAudio);

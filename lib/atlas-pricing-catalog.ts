@@ -9,12 +9,22 @@
  */
 
 import { formatInteger } from "@/lib/format-number";
+import {
+  GEMINI_OMNI_FLASH_I2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_R2V_COMPOSER_ID,
+  GEMINI_OMNI_FLASH_T2V_COMPOSER_ID
+} from "@/lib/atlas-gemini-omni-video";
+import {
+  GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID
+} from "@/lib/atlas-grok-video";
 
 /** Atlas wholesale: $0.001 per credit unit (1,000 units ≈ $1 API spend at cost). */
 export const ATLAS_CREDIT_USD = 0.001;
 
-/** What the user effectively pays per credit when buying a pack ($12 → 10k credits = $0.0012/cr). */
-export const CREDIT_RETAIL_USD = 0.0012;
+/** What the user effectively pays per credit. Keep credits human-scale ($9.99 → ~1,000 CR). */
+export const CREDIT_RETAIL_USD = 0.01;
 
 /**
  * Multiply Atlas cost when deducting credits from the user.
@@ -22,8 +32,32 @@ export const CREDIT_RETAIL_USD = 0.0012;
  */
 export const ZORIXA_USAGE_MARKUP = 1.5;
 
-/** Packs deliver this fraction of "face value" credits (rest is purchase margin). 0.85 ≈ 15% pack margin. */
+/** Legacy helper constant kept for profit calculators; packs below use explicit rounded credit amounts. */
 export const PACK_CREDIT_DISCOUNT = 0.85;
+
+/** Target gross margin for video generations: revenue = Atlas cost / (1 - margin). */
+export const ZORIXA_VIDEO_GROSS_MARGIN = 0.6;
+
+export const ZORIXA_IMAGE_DEFAULT_GROSS_MARGIN = 0.65;
+export const ZORIXA_IMAGE_CHEAP_GROSS_MARGIN = 0.7;
+export const ZORIXA_IMAGE_PREMIUM_GROSS_MARGIN = 0.6;
+export const ZORIXA_VIDEO_DEFAULT_GROSS_MARGIN = 0.65;
+export const ZORIXA_VIDEO_PREMIUM_GROSS_MARGIN = 0.55;
+export const ZORIXA_VIDEO_EXPENSIVE_GROSS_MARGIN = 0.5;
+export const ZORIXA_FAILURE_BUFFER_MULTIPLIER = 1.05;
+
+/** Optional native soundtrack is not always itemized by Atlas; keep a small buffer when enabled. */
+export const VIDEO_SOUNDTRACK_MULTIPLIER = 1.15;
+
+export type VideoResolutionTier = "480p" | "720p" | "1080p" | "4k";
+export type VideoSpeedTier = "standard" | "fast";
+
+export type VideoPricingOptions = {
+  durationSeconds?: number;
+  resolution?: string;
+  speedTier?: VideoSpeedTier | string;
+  generateAudio?: boolean;
+};
 
 export type AtlasPriceUnit =
   | "per image"
@@ -76,6 +110,175 @@ export function atlasUsdToCreditsCharged(atlasUsd: number): number {
   return Math.max(1, Math.ceil((atlasUsd / ATLAS_CREDIT_USD) * ZORIXA_USAGE_MARKUP));
 }
 
+export function atlasUsdToCreditsForGrossMargin(
+  atlasUsd: number,
+  margin = ZORIXA_VIDEO_DEFAULT_GROSS_MARGIN
+): number {
+  const costShare = Math.max(0.01, 1 - margin);
+  return Math.max(1, Math.ceil((atlasUsd / costShare) / CREDIT_RETAIL_USD));
+}
+
+function imageMarginForModel(composerModelId: string, atlasUsd: number): number {
+  if (composerModelId === "flux-schnell") return ZORIXA_IMAGE_CHEAP_GROSS_MARGIN;
+  if (atlasUsd <= 0.02) return ZORIXA_IMAGE_CHEAP_GROSS_MARGIN;
+  if (atlasUsd >= 0.06) return ZORIXA_IMAGE_PREMIUM_GROSS_MARGIN;
+  return ZORIXA_IMAGE_DEFAULT_GROSS_MARGIN;
+}
+
+function normalizeVideoDurationSeconds(raw: unknown): number {
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return 5;
+  return Math.min(60, Math.max(1, Math.round(raw)));
+}
+
+function normalizeVideoResolutionTier(raw: unknown): VideoResolutionTier {
+  const v = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+  if (v === "4k" || v === "2160p") return "4k";
+  if (v === "1080p") return "1080p";
+  if (v === "480p" || v === "450p" || v === "540p") return "480p";
+  return "720p";
+}
+
+function normalizeVideoSpeedTier(raw: unknown): VideoSpeedTier {
+  return typeof raw === "string" && raw.trim().toLowerCase() === "fast" ? "fast" : "standard";
+}
+
+const DEFAULT_RESOLUTION_MULTIPLIER: Record<VideoResolutionTier, number> = {
+  "480p": 0.75,
+  "720p": 1,
+  "1080p": 1.6,
+  "4k": 2.4
+};
+
+type VideoRateCard = {
+  /** Default Atlas cost per generated second at 720p / standard tier. */
+  perSecondUsd?: number;
+  resolutionRates?: Partial<Record<VideoResolutionTier, number>>;
+  fastPerSecondUsd?: number;
+  fastResolutionRates?: Partial<Record<VideoResolutionTier, number>>;
+  fixedResolutionUsd?: Partial<Record<VideoResolutionTier, number>>;
+  note?: string;
+};
+
+/** Atlas video wholesale rates used for Zorixa billing (USD/sec unless noted). */
+export const ATLAS_VIDEO_RATE_CARDS: Record<string, VideoRateCard> = {
+  [GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID]: {
+    perSecondUsd: 0.06,
+    note: "Native audio T2V"
+  },
+  [GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID]: {
+    perSecondUsd: 0.096,
+    note: "Native audio I2V v1.5"
+  },
+  [GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID]: {
+    perSecondUsd: 0.06,
+    note: "1-7 reference images"
+  },
+  [GEMINI_OMNI_FLASH_T2V_COMPOSER_ID]: {
+    resolutionRates: { "720p": 0.15, "1080p": 0.22, "4k": 0.36 },
+    note: "Developer T2V"
+  },
+  [GEMINI_OMNI_FLASH_I2V_COMPOSER_ID]: {
+    resolutionRates: { "720p": 0.15, "1080p": 0.22, "4k": 0.36 },
+    note: "Developer I2V"
+  },
+  [GEMINI_OMNI_FLASH_R2V_COMPOSER_ID]: {
+    fixedResolutionUsd: { "720p": 1.6, "1080p": 1.6, "4k": 2.4 },
+    note: "Developer R2V fixed generation price"
+  },
+  "seedance-2": {
+    perSecondUsd: 0.1,
+    fastPerSecondUsd: 0.081,
+    note: "Standard/Fast, duration based"
+  },
+  "seedance-1-5": {
+    resolutionRates: { "480p": 0.024, "720p": 0.052, "1080p": 0.122 },
+    fastPerSecondUsd: 0.01
+  },
+  "kling-3-pro": {
+    perSecondUsd: 0.112,
+    fastPerSecondUsd: 0.084,
+    note: "Pro or Std tier"
+  },
+  "kling-2-6-motion": {
+    perSecondUsd: 0.084,
+    fastPerSecondUsd: 0.06,
+    note: "Motion control"
+  },
+  "wan-2-6": { perSecondUsd: 0.07 },
+  "wan-2-7": { perSecondUsd: 0.1 },
+  "wan-2-2-character-swap": {
+    perSecondUsd: 0.05,
+    fastPerSecondUsd: 0.07,
+    note: "Std/Pro character swap"
+  },
+  "happyhorse-1": {
+    resolutionRates: { "480p": 0.105, "720p": 0.14, "1080p": 0.28 }
+  },
+  "hailuo-2-3": { perSecondUsd: 0.28 },
+  "google-veo-3-1": {
+    resolutionRates: { "480p": 0.05, "720p": 0.2, "1080p": 0.2 },
+    note: "Veo 3.1 / Lite style tiers"
+  },
+  "vidu-q3": {
+    perSecondUsd: 0.05,
+    fastPerSecondUsd: 0.125,
+    note: "Q3 or Mix reference tier"
+  },
+  "vidu-q3-pro": {
+    resolutionRates: { "480p": 0.07, "720p": 0.15, "1080p": 0.16 },
+    fastPerSecondUsd: 0.05,
+    note: "Pro or Turbo/Start-End"
+  },
+  infinitetalk: { perSecondUsd: 0.15, note: "Audio to video" },
+  "veed-fabric-1": { perSecondUsd: 0.12, note: "Audio to video" },
+  "veed-fabric-1-fast": { perSecondUsd: 0.08, note: "Fast audio to video" }
+};
+
+function videoMarginForModel(composerModelId: string, atlasUsd: number): number {
+  if (
+    composerModelId === "google-veo-3-1" ||
+    composerModelId === "hailuo-2-3" ||
+    composerModelId === "kling-3-pro" ||
+    composerModelId === "happyhorse-1"
+  ) {
+    return ZORIXA_VIDEO_PREMIUM_GROSS_MARGIN;
+  }
+  if (atlasUsd >= 1) return ZORIXA_VIDEO_EXPENSIVE_GROSS_MARGIN;
+  return ZORIXA_VIDEO_DEFAULT_GROSS_MARGIN;
+}
+
+export function atlasVideoUsdForOptions(
+  composerModelId: string,
+  opts: VideoPricingOptions = {}
+): number {
+  const duration = normalizeVideoDurationSeconds(opts.durationSeconds);
+  const resolution = normalizeVideoResolutionTier(opts.resolution);
+  const speedTier = normalizeVideoSpeedTier(opts.speedTier);
+  const card = ATLAS_VIDEO_RATE_CARDS[composerModelId];
+
+  const resolutionMultiplier = DEFAULT_RESOLUTION_MULTIPLIER[resolution];
+  const fixedUsd = card?.fixedResolutionUsd?.[resolution];
+  if (fixedUsd !== undefined) {
+    return fixedUsd * (opts.generateAudio ? VIDEO_SOUNDTRACK_MULTIPLIER : 1);
+  }
+  const rate =
+    speedTier === "fast"
+      ? (card?.fastResolutionRates?.[resolution] ??
+        (card?.fastPerSecondUsd !== undefined
+          ? card.fastPerSecondUsd * resolutionMultiplier
+          : undefined) ??
+        card?.resolutionRates?.[resolution] ??
+        (card?.perSecondUsd !== undefined ? card.perSecondUsd * resolutionMultiplier : undefined))
+      : (card?.resolutionRates?.[resolution] ??
+        (card?.perSecondUsd !== undefined ? card.perSecondUsd * resolutionMultiplier : undefined));
+
+  const fallback =
+    (ATLAS_MODEL_PRICING[composerModelId]?.usd ?? DEFAULT_VIDEO_USD) / 5;
+  const perSecond = rate ?? fallback * resolutionMultiplier;
+  const soundtrackMultiplier = opts.generateAudio ? VIDEO_SOUNDTRACK_MULTIPLIER : 1;
+  return perSecond * duration * soundtrackMultiplier;
+}
+
 const DEFAULT_IMAGE_USD = 0.025;
 const DEFAULT_VIDEO_USD = 0.22;
 const TTS_USD = 0.015;
@@ -83,12 +286,21 @@ const TTS_USD = 0.015;
 /** Client-safe estimate for composer UI (matches server credits-charge). */
 export function creditsChargedForImageModel(composerModelId: string, quantity = 1): number {
   const usd = ATLAS_MODEL_PRICING[composerModelId]?.usd ?? DEFAULT_IMAGE_USD;
-  return atlasUsdToCreditsCharged(usd) * Math.max(1, quantity);
+  const margin = imageMarginForModel(composerModelId, usd);
+  const perImage = atlasUsdToCreditsForGrossMargin(
+    usd * ZORIXA_FAILURE_BUFFER_MULTIPLIER,
+    margin
+  );
+  return perImage * Math.max(1, quantity);
 }
 
-export function creditsChargedForVideoModel(composerModelId: string): number {
-  const usd = ATLAS_MODEL_PRICING[composerModelId]?.usd ?? DEFAULT_VIDEO_USD;
-  return atlasUsdToCreditsCharged(usd);
+export function creditsChargedForVideoModel(
+  composerModelId: string,
+  opts: VideoPricingOptions = {}
+): number {
+  const usd = atlasVideoUsdForOptions(composerModelId, opts);
+  const margin = videoMarginForModel(composerModelId, usd);
+  return atlasUsdToCreditsForGrossMargin(usd * ZORIXA_FAILURE_BUFFER_MULTIPLIER, margin);
 }
 
 export function creditsChargedForTts(): number {
@@ -139,9 +351,9 @@ export const CREDIT_PACKS: CreditPack[] = [
   {
     id: "starter",
     name: "Starter",
-    monthly: 12,
-    yearly: 10,
-    credits: packCreditsForPrice(12),
+    monthly: 9.99,
+    yearly: 8.99,
+    credits: 1000,
     highlights: [
       "All image models (Flux, GPT Image 2, Seedream…)",
       "Video: Seedance, Wan, Hailuo, HappyHorse",
@@ -150,12 +362,11 @@ export const CREDIT_PACKS: CreditPack[] = [
     ]
   },
   {
-    id: "creator",
-    name: "Creator",
-    monthly: 45,
-    yearly: 36,
-    credits: packCreditsForPrice(45),
-    popular: true,
+    id: "pro",
+    name: "Pro",
+    monthly: 25.99,
+    yearly: 23.39,
+    credits: 3200,
     highlights: [
       "Everything in Starter",
       "Kling 3.0 Pro & Seedance 2.0 Reference",
@@ -165,13 +376,27 @@ export const CREDIT_PACKS: CreditPack[] = [
     ]
   },
   {
-    id: "professional",
-    name: "Professional",
-    monthly: 147,
-    yearly: 118,
-    credits: packCreditsForPrice(147),
+    id: "creator",
+    name: "Creator",
+    monthly: 42.99,
+    yearly: 38.69,
+    credits: 5600,
+    popular: true,
     highlights: [
-      "Everything in Creator",
+      "Everything in Pro",
+      "More room for 1080p video generations",
+      "Great value for active creators",
+      "Best balance of price and volume"
+    ]
+  },
+  {
+    id: "ultra",
+    name: "Ultra",
+    monthly: 69.99,
+    yearly: 62.99,
+    credits: 10000,
+    highlights: [
+      "Everything in Pro",
       "Highest credit volume",
       "Priority support",
       "Best for teams & heavy video workflows"
@@ -217,6 +442,12 @@ const IMAGE_NAMES: Record<string, string> = {
 };
 
 const VIDEO_NAMES: Record<string, string> = {
+  [GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID]: "Grok Imagine Video Text-to-Video",
+  [GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID]: "Grok Imagine Video Image-to-Video v1.5",
+  [GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID]: "Grok Imagine Video Reference-to-Video",
+  [GEMINI_OMNI_FLASH_T2V_COMPOSER_ID]: "Gemini Omni Flash Text-to-Video",
+  [GEMINI_OMNI_FLASH_I2V_COMPOSER_ID]: "Gemini Omni Flash Image-to-Video",
+  [GEMINI_OMNI_FLASH_R2V_COMPOSER_ID]: "Gemini Omni Flash Reference-to-Video",
   "seedance-2": "Seedance 2.0",
   "seedance-1-5": "Seedance 1.5 Pro",
   "kling-3-pro": "Kling 3.0 Pro",
@@ -236,18 +467,22 @@ const VIDEO_NAMES: Record<string, string> = {
 
 function modelsFor(ids: string[], names: Record<string, string>): PricingCatalogSection["models"] {
   return ids
-    .filter((id) => ATLAS_MODEL_PRICING[id])
+    .filter((id) => ATLAS_MODEL_PRICING[id] || ATLAS_VIDEO_RATE_CARDS[id])
     .map((id) => {
+      const isVideo = Boolean(VIDEO_NAMES[id]);
       const p = ATLAS_MODEL_PRICING[id];
-      const creditsCharged = atlasUsdToCreditsCharged(p.usd);
+      const atlasUsd = isVideo ? atlasVideoUsdForOptions(id) : (p?.usd ?? DEFAULT_IMAGE_USD);
+      const creditsCharged = isVideo
+        ? creditsChargedForVideoModel(id)
+        : creditsChargedForImageModel(id);
       return {
         id,
         name: names[id] ?? id,
-        atlasUsd: p.usd,
+        atlasUsd,
         creditsCharged,
-        marginUsd: marginUsdPerRun(p.usd),
-        unit: p.unit,
-        note: p.note
+        marginUsd: creditsCharged * CREDIT_RETAIL_USD - atlasUsd,
+        unit: isVideo ? ("per 5s video (720p)" as const) : (p?.unit ?? "per image"),
+        note: ATLAS_VIDEO_RATE_CARDS[id]?.note ?? p?.note
       };
     });
 }
@@ -266,8 +501,12 @@ export const PRICING_CATALOG_SECTIONS: PricingCatalogSection[] = [
 ];
 
 export function estimateGenerations(credits: number, type: "image" | "video"): string {
-  const medianAtlas = type === "image" ? 0.025 : 0.22;
-  const perRun = atlasUsdToCreditsCharged(medianAtlas);
+  if (credits <= 0) return "0";
+  const perRun =
+    type === "image"
+      ? creditsChargedForImageModel("flux-dev")
+      : creditsChargedForVideoModel("seedance-2");
+  if (perRun <= 0) return "0";
   const count = Math.floor(credits / perRun);
   return `~${formatInteger(count)}`;
 }

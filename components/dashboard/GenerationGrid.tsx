@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState, type VideoHTMLAttributes } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clapperboard, Mic, Play, Volume2, X } from "lucide-react";
+import { Clapperboard, Download, Mic, Play, Volume2, X } from "lucide-react";
 
 import { ExternalImage } from "@/components/ui/ExternalImage";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
+import { downloadImageFile, imageDownloadFilename } from "@/lib/download-image-file";
 import { normalizeAtlasVideoUrlForPlayback } from "@/lib/resolve-video-playback-url";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
 import {
@@ -243,6 +244,47 @@ function HistoryVideoLightbox({
   );
 }
 
+function HistoryImageDownloadButton({
+  url,
+  title,
+  className
+}: {
+  url: string;
+  title?: string;
+  className?: string;
+}) {
+  const [busy, setBusy] = useState(false);
+
+  const onDownload = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (busy) return;
+    setBusy(true);
+    try {
+      await downloadImageFile(url, imageDownloadFilename(url, title));
+    } catch (err) {
+      console.error("[History] image download failed", err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => void onDownload(e)}
+      disabled={busy}
+      className={cn(
+        "grid size-9 place-items-center rounded-full border border-white/20 bg-black/55 text-white backdrop-blur-sm transition-colors hover:bg-black/75 disabled:opacity-60",
+        className
+      )}
+      aria-label={busy ? "Downloading image" : "Download image"}
+    >
+      <Download className="size-4" aria-hidden />
+    </button>
+  );
+}
+
 function GridMedia({ item }: { item: GenerationTile }) {
   const isAudio = item.kind === "audio" || Boolean(item.audioSrc);
 
@@ -333,31 +375,49 @@ export function GenerationGrid({
               : item.kind === "video"
                 ? "UGC video · Zorixa AI"
                 : "AI image · Zorixa AI");
+          const isHistoryImage =
+            item.kind !== "audio" &&
+            item.kind !== "video" &&
+            !item.videoSrc &&
+            !item.audioSrc &&
+            Boolean(item.src);
           return (
-            <motion.button
+            <motion.div
               key={item.id}
-              type="button"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, duration: 0.35 }}
-              onClick={() => setSelected(item)}
               className={cn(
-                "zorixa-card-border group cursor-zoom-in overflow-hidden rounded-2xl bg-zorixa-card text-left shadow-glow",
-                "transition-shadow hover:shadow-glow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5ff]/50"
+                "zorixa-card-border group overflow-hidden rounded-2xl bg-zorixa-card text-left shadow-glow",
+                "transition-shadow hover:shadow-glow-lg"
               )}
-              aria-label={`Open ${item.title}`}
             >
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-900">
-                <GridMedia item={item} />
-                <div className="pointer-events-none absolute right-3 top-3">
+                <button
+                  type="button"
+                  onClick={() => setSelected(item)}
+                  className={cn(
+                    "absolute inset-0 z-0 cursor-zoom-in text-left",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#00e5ff]/50"
+                  )}
+                  aria-label={`Open ${item.title}`}
+                >
+                  <GridMedia item={item} />
+                </button>
+                {isHistoryImage && item.src ? (
+                  <div className="absolute left-3 top-3 z-10 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                    <HistoryImageDownloadButton url={item.src} title={item.title} />
+                  </div>
+                ) : null}
+                <div className="pointer-events-none absolute right-3 top-3 z-10">
                   <HistoryCreditsBadge creditsSpent={item.creditsSpent} status={item.status} />
                 </div>
-                <motion.div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent p-4">
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/85 via-black/20 to-transparent p-4">
                   <p className="truncate font-medium text-white">{item.title}</p>
                   <p className="text-xs text-white/60">{footer}</p>
-                </motion.div>
+                </div>
               </div>
-            </motion.button>
+            </motion.div>
           );
         })}
       </div>
@@ -367,6 +427,7 @@ export function GenerationGrid({
         src={selectedImageSrc}
         alt={selected?.title ?? "History preview"}
         title={selected?.title}
+        downloadUrl={selectedImageSrc}
         onClose={close}
       />
 
