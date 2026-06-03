@@ -768,6 +768,7 @@ export function ImageBottomBar({
               </span>
             </motion.button>
           </div>
+        </div>
       </div>
     </footer>
   );
