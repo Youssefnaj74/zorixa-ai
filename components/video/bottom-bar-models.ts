@@ -52,6 +52,13 @@ import {
   isHappyHorseComposerId
 } from "@/lib/atlas-happyhorse-video";
 import {
+  HAILUO_23_COMPOSER_ID,
+  HAILUO_23_I2V_DURATION_OPTIONS,
+  HAILUO_23_T2V_DURATION_SECONDS,
+  isHailuo23ComposerId,
+  normalizeHailuo23I2vDurationSeconds
+} from "@/lib/atlas-hailuo-video";
+import {
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS,
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_IMAGES,
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS,
@@ -123,7 +130,7 @@ export const BOTTOM_BAR_MODELS: BottomBarModel[] = [
   { id: WAN_27_COMPOSER_ID, label: "Wan 2.7", badge: "newTeal" },
   { id: WAN_22_CHARACTER_SWAP_COMPOSER_ID, label: "Wan 2.2 Character Swap", badge: "newTeal" },
   { id: HAPPYHORSE_1_COMPOSER_ID, label: "HappyHorse 1.0", badge: "newTeal" },
-  { id: "hailuo-2-3", label: "Hailuo 2.3", badge: "newTeal" },
+  { id: HAILUO_23_COMPOSER_ID, label: "Hailuo 2.3", badge: "newTeal" },
   { id: "google-veo-3-1", label: "Google Veo 3.1", badge: "newTeal" },
   { id: VIDU_Q3_COMPOSER_ID, label: "Vidu Q3", badge: "newTeal" },
   { id: VIDU_Q3_PRO_COMPOSER_ID, label: "Vidu Q3-Pro", badge: "pro" }
@@ -272,14 +279,39 @@ export function bottomBarModelsForActionTab(actionTab: string): BottomBarModel[]
       (m) => videoComposerSupportsVideoEditTab(m.id) || videoComposerSupportsViduStartEnd(m.id)
     );
   }
-  return BOTTOM_BAR_MODELS.filter(
-    (m) =>
-      (geminiOmniFlashComposerSupportsAction(m.id, actionTab) ||
-        grokImagineVideoComposerSupportsAction(m.id, actionTab) ||
-        (!isGeminiOmniFlashComposerId(m.id) && !isGrokImagineVideoComposerId(m.id))) &&
-      !videoComposerSupportsMotionControlTab(m.id) &&
-      !videoComposerSupportsWanCharacterSwapTab(m.id)
-  );
+  const studioOrder =
+    actionTab === "Image to Video"
+      ? [
+          GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID,
+          GEMINI_OMNI_FLASH_I2V_COMPOSER_ID,
+          KLING_30_PRO_MODEL_ID,
+          "seedance-2",
+          "seedance-1-5",
+          "wan-2-6",
+          WAN_27_COMPOSER_ID,
+          HAPPYHORSE_1_COMPOSER_ID,
+          HAILUO_23_COMPOSER_ID,
+          "google-veo-3-1",
+          VIDU_Q3_COMPOSER_ID,
+          VIDU_Q3_PRO_COMPOSER_ID
+        ]
+      : [
+          GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID,
+          GEMINI_OMNI_FLASH_T2V_COMPOSER_ID,
+          KLING_30_PRO_MODEL_ID,
+          "seedance-2",
+          "seedance-1-5",
+          "wan-2-6",
+          WAN_27_COMPOSER_ID,
+          HAPPYHORSE_1_COMPOSER_ID,
+          HAILUO_23_COMPOSER_ID,
+          "google-veo-3-1",
+          VIDU_Q3_COMPOSER_ID,
+          VIDU_Q3_PRO_COMPOSER_ID
+        ];
+  return studioOrder
+    .map((id) => BOTTOM_BAR_MODELS.find((m) => m.id === id))
+    .filter((m): m is BottomBarModel => Boolean(m));
 }
 
 export function videoComposerUsesAudioToVideoBarLayout(
@@ -450,6 +482,19 @@ export {
 export function videoComposerUsesHappyHorse(composerModelId: string): boolean {
   return isHappyHorseComposerId(composerModelId);
 }
+
+export function videoComposerUsesHailuo(composerModelId: string): boolean {
+  return isHailuo23ComposerId(composerModelId);
+}
+
+export const HAILUO_23_DURATION_OPTIONS = [...HAILUO_23_I2V_DURATION_OPTIONS] as const;
+
+export {
+  HAILUO_23_COMPOSER_ID,
+  HAILUO_23_T2V_DURATION_SECONDS,
+  isHailuo23ComposerId,
+  normalizeHailuo23I2vDurationSeconds
+};
 
 export function videoComposerUsesWan27(composerModelId: string): boolean {
   return isWan27ComposerId(composerModelId);

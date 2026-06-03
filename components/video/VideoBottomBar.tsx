@@ -16,6 +16,8 @@ import {
   ASPECT_STEP_OPTIONS,
   bottomBarModelsForActionTab,
   HAPPYHORSE_DURATION_OPTIONS,
+  HAILUO_23_DURATION_OPTIONS,
+  HAILUO_23_T2V_DURATION_SECONDS,
   happyHorseVideoEditMaxImages,
   happyHorseVideoEditSupportsReferenceImages,
   referenceToVideoMaxImages,
@@ -28,6 +30,7 @@ import {
   videoComposerUsesAudioToVideoBarLayout,
   videoComposerUses720p1080pOnly,
   videoComposerUsesHappyHorse,
+  videoComposerUsesHailuo,
   veo31AspectOptionsForUi,
   veo31DurationOptionsForTab,
   videoComposerUsesVeo31,
@@ -495,6 +498,8 @@ export function VideoBottomBar({
   const happyHorseV2vRefMax = happyHorseVideoEditMaxImages();
   const wanV2vRefMax = wan27VideoEditMaxImages();
   const showHappyHorseLayout = videoComposerUsesHappyHorse(composerModelId);
+  const showHailuoLayout = videoComposerUsesHailuo(composerModelId);
+  const hideHailuoT2vTimeControl = showHailuoLayout && actionTab === "Text to Video";
   const showWan27Layout = videoComposerUsesWan27(composerModelId);
   const showKling30Layout = isKling30ProComposerId(composerModelId);
   const showGeminiLayout = isGeminiOmniFlashComposerId(composerModelId);
@@ -532,7 +537,9 @@ export function VideoBottomBar({
   /** Audio to Video — hide mode/aspect/time; keep model + resolution (480p/720p). */
   const hideModeAspectControls = showDualAssetV2vLayout || showAudioToVideoLayout;
   const showResolutionControl =
-    (showAudioToVideoLayout || !showDualAssetV2vLayout) && !hideKlingResolution;
+    (showAudioToVideoLayout || !showDualAssetV2vLayout) &&
+    !hideKlingResolution &&
+    !showHailuoLayout;
   const resolutionOptions = showGrokLayout
     ? [...GROK_IMAGINE_VIDEO_RESOLUTION_OPTIONS]
     : showGeminiLayout
@@ -575,6 +582,7 @@ export function VideoBottomBar({
     if (showGrokLayout) return [...GROK_IMAGINE_VIDEO_DURATION_OPTIONS];
     if (showGeminiLayout) return [...GEMINI_OMNI_FLASH_DURATION_OPTIONS];
     if (showHappyHorseLayout) return [...HAPPYHORSE_DURATION_OPTIONS];
+    if (showHailuoLayout) return [...HAILUO_23_DURATION_OPTIONS];
     if (showWan27Layout) return [...WAN27_DURATION_OPTIONS];
     if (showKling30Layout) return [...klingV3DurationOptionsForUi()];
     if (showVeo31Layout) return veo31DurationOptionsForTab(actionTab);
@@ -1474,7 +1482,7 @@ export function VideoBottomBar({
             </>
           ) : null}
 
-          {!hideModeAspectControls && !showGeminiLayout && !showGrokLayout ? (
+          {!hideModeAspectControls && !showGeminiLayout && !showGrokLayout && !showHailuoLayout ? (
           <>
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
 
@@ -1605,7 +1613,7 @@ export function VideoBottomBar({
           </>
           ) : null}
 
-          {!showAudioToVideoLayout && !showWanCharacterSwapLayout ? (
+          {!showAudioToVideoLayout && !showWanCharacterSwapLayout && !hideHailuoT2vTimeControl ? (
           <>
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
 
@@ -1656,7 +1664,7 @@ export function VideoBottomBar({
           </>
           ) : null}
 
-          {!hideModeAspectControls ? (
+          {!hideModeAspectControls && !showHailuoLayout ? (
           <>
           {/* Aspect */}
           <div className="flex items-center gap-2">
@@ -1774,31 +1782,22 @@ export function VideoBottomBar({
 
           </div>
 
-          <div className="ml-auto flex shrink-0 pb-0.5">
+          <div className="ml-auto flex shrink-0 items-center gap-2.5 pb-0.5">
+            <span className="text-sm font-semibold tabular-nums text-white/90">{creditsLine}</span>
             <motion.button
               type="button"
               disabled={loadingGenerate}
               whileHover={loadingGenerate ? undefined : { scale: 1.02 }}
               whileTap={loadingGenerate ? undefined : { scale: 0.98 }}
               onClick={emitGenerate}
-              className="inline-flex min-w-[152px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
+              className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
             >
-              <span className="inline-flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-wide text-white">
-                {loadingGenerate ? (
-                  <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                ) : (
-                  <Sparkles className="size-4" />
-                )}
-                GENERATE
-              </span>
-              <span
-                className={cn(
-                  "text-[11px] font-bold tabular-nums tracking-wide",
-                  creditsLine === "Free" ? "text-white/80" : "text-[#b8f4ff]"
-                )}
-              >
-                {creditsLine}
-              </span>
+              {loadingGenerate ? (
+                <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : (
+                <Sparkles className="size-4" />
+              )}
+              GENERATE
             </motion.button>
           </div>
         </div>

@@ -15,6 +15,10 @@ import {
   GEMINI_OMNI_FLASH_T2V_COMPOSER_ID
 } from "@/lib/atlas-gemini-omni-video";
 import {
+  HAILUO_23_COMPOSER_ID,
+  hailuo23AtlasUsdForOptions
+} from "@/lib/atlas-hailuo-video";
+import {
   GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID,
   GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
   GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID
@@ -52,11 +56,22 @@ export const VIDEO_SOUNDTRACK_MULTIPLIER = 1.15;
 export type VideoResolutionTier = "480p" | "720p" | "1080p" | "4k";
 export type VideoSpeedTier = "standard" | "fast";
 
+export type VideoRouteAction =
+  | "text"
+  | "image"
+  | "reference"
+  | "edit"
+  | "motion-control"
+  | "start-end"
+  | "lipsync";
+
 export type VideoPricingOptions = {
   durationSeconds?: number;
   resolution?: string;
   speedTier?: VideoSpeedTier | string;
   generateAudio?: boolean;
+  /** Used for models whose Atlas cost depends on the studio tab (e.g. Hailuo T2V vs I2V). */
+  routeAction?: VideoRouteAction;
 };
 
 export type AtlasPriceUnit =
@@ -96,7 +111,11 @@ export const ATLAS_MODEL_PRICING: Record<string, AtlasModelPrice> = {
   "wan-2-7": { usd: 0.28, unit: "per 5s video (720p)" },
   "wan-2-2-character-swap": { usd: 0.25, unit: "per 5s video (720p)" },
   "happyhorse-1": { usd: 0.2, unit: "per 5s video (720p)" },
-  "hailuo-2-3": { usd: 0.15, unit: "per 5s video (720p)" },
+  "hailuo-2-3": {
+    usd: 0.49,
+    unit: "per 5s video (1080p)",
+    note: "T2V Pro flat run; I2V Standard billed per second"
+  },
   "google-veo-3-1": { usd: 0.85, unit: "per 5s video (1080p)", note: "Premium" },
   "vidu-q3": { usd: 0.32, unit: "per 5s video (720p)" },
   "vidu-q3-pro": { usd: 0.48, unit: "per 5s video (1080p)" },
@@ -214,7 +233,9 @@ export const ATLAS_VIDEO_RATE_CARDS: Record<string, VideoRateCard> = {
   "happyhorse-1": {
     resolutionRates: { "480p": 0.105, "720p": 0.14, "1080p": 0.28 }
   },
-  "hailuo-2-3": { perSecondUsd: 0.28 },
+  "hailuo-2-3": {
+    note: "T2V Pro flat $0.49/run; I2V Standard $0.28/s — see hailuo23AtlasUsdForOptions"
+  },
   "google-veo-3-1": {
     resolutionRates: { "480p": 0.05, "720p": 0.2, "1080p": 0.2 },
     note: "Veo 3.1 / Lite style tiers"
@@ -251,6 +272,10 @@ export function atlasVideoUsdForOptions(
   composerModelId: string,
   opts: VideoPricingOptions = {}
 ): number {
+  if (composerModelId === HAILUO_23_COMPOSER_ID) {
+    return hailuo23AtlasUsdForOptions(opts);
+  }
+
   const duration = normalizeVideoDurationSeconds(opts.durationSeconds);
   const resolution = normalizeVideoResolutionTier(opts.resolution);
   const speedTier = normalizeVideoSpeedTier(opts.speedTier);
@@ -308,7 +333,7 @@ export function creditsChargedForTts(): number {
 }
 
 export function formatGenerationCreditsLine(credits: number): string {
-  return credits > 0 ? `-${formatInteger(credits)} CR` : "Free";
+  return credits > 0 ? `${formatInteger(credits)} Credits` : "Free";
 }
 
 /** Your gross margin per generation (USD). */

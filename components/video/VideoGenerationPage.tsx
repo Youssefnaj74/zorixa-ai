@@ -41,6 +41,10 @@ import {
   GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID,
   GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
   GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID,
+  HAILUO_23_COMPOSER_ID,
+  HAILUO_23_T2V_DURATION_SECONDS,
+  isHailuo23ComposerId,
+  normalizeHailuo23I2vDurationSeconds,
   geminiOmniFlashAspectFromUi,
   grokImagineVideoAspectFromUi,
   isGeminiOmniFlashComposerId,
@@ -142,6 +146,14 @@ function atlasPollActionForTab(
   if (tab === "Image to Video") return "image";
   if (tab === "Reference to Video") return "reference";
   return "text";
+}
+
+function videoPricingRouteAction(
+  tab: ActionTab
+): "text" | "image" | undefined {
+  if (tab === "Text to Video") return "text";
+  if (tab === "Image to Video") return "image";
+  return undefined;
 }
 
 /** POST /api/generate-video returns snake_case; tolerate camelCase if a proxy changes keys. */
@@ -423,7 +435,8 @@ export function VideoGenerationPage() {
           speedTier: videoComposerSupportsSpeedTier(composerModelId)
             ? normalizeAtlasVideoSpeedTier(durationStandard)
             : "standard",
-          generateAudio: supportsNativeAudio && generateAudioOn
+          generateAudio: supportsNativeAudio && generateAudioOn,
+          routeAction: videoPricingRouteAction(actionTab)
         })
       );
     },
@@ -470,6 +483,13 @@ export function VideoGenerationPage() {
       if (!happyAspects.includes(aspect as (typeof happyAspects)[number])) {
         setAspect("16:9");
       }
+    }
+    if (isHailuo23ComposerId(id)) {
+      setTimeSeconds((t) =>
+        actionTab === "Image to Video"
+          ? normalizeHailuo23I2vDurationSeconds(t)
+          : HAILUO_23_T2V_DURATION_SECONDS
+      );
     }
     if (isWan27ComposerId(id)) {
       setTimeSeconds((t) =>
@@ -630,6 +650,15 @@ export function VideoGenerationPage() {
   }, [actionTab, composerModelId, resolution]);
 
   useEffect(() => {
+    if (!isHailuo23ComposerId(composerModelId)) return;
+    setTimeSeconds((t) =>
+      actionTab === "Image to Video"
+        ? normalizeHailuo23I2vDurationSeconds(t)
+        : HAILUO_23_T2V_DURATION_SECONDS
+    );
+  }, [actionTab, composerModelId]);
+
+  useEffect(() => {
     if (!isGrokImagineVideoComposerId(composerModelId)) return;
     setTimeSeconds((t) =>
       composerModelId === GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID
@@ -734,6 +763,14 @@ export function VideoGenerationPage() {
       setComposerModelId(GEMINI_OMNI_FLASH_I2V_COMPOSER_ID);
       return;
     }
+    if (tab === "Text to Video" && isHailuo23ComposerId(composerModelId)) {
+      setTimeSeconds(HAILUO_23_T2V_DURATION_SECONDS);
+      return;
+    }
+    if (tab === "Image to Video" && isHailuo23ComposerId(composerModelId)) {
+      setTimeSeconds((t) => normalizeHailuo23I2vDurationSeconds(t));
+      return;
+    }
     if (tab === "Reference to Video") {
       setComposerModelId(
         wasGrok
@@ -822,9 +859,18 @@ export function VideoGenerationPage() {
                 actionTab: ctx.actionTab
               })
             : null;
+        const hailuoSettings = isHailuo23ComposerId(videoModel)
+          ? {
+              timeSeconds:
+                ctx.actionTab === "Image to Video"
+                  ? normalizeHailuo23I2vDurationSeconds(duration)
+                  : HAILUO_23_T2V_DURATION_SECONDS
+            }
+          : null;
         const atlasAspect = veoT2vI2vSettings?.aspect ?? aspectRatio;
         const atlasResolution = veoT2vI2vSettings?.resolution ?? resTier;
-        const atlasDuration = veoT2vI2vSettings?.timeSeconds ?? duration;
+        const atlasDuration =
+          hailuoSettings?.timeSeconds ?? veoT2vI2vSettings?.timeSeconds ?? duration;
 
         const wan26ShotPayload =
           isWan26ComposerId(videoModel) &&
@@ -857,11 +903,15 @@ export function VideoGenerationPage() {
               prompt: promptForAtlas,
               action: "text",
               videoModel,
-              aspectRatio: atlasAspectForPayload,
-              ...(videoModel === KLING_30_PRO_MODEL_ID
-                ? {}
-                : { resolution: atlasResolution }),
-              duration: atlasDurationForPayload,
+              ...(isHailuo23ComposerId(videoModel)
+                ? { duration: atlasDurationForPayload }
+                : {
+                    aspectRatio: atlasAspectForPayload,
+                    ...(videoModel === KLING_30_PRO_MODEL_ID
+                      ? {}
+                      : { resolution: atlasResolution }),
+                    duration: atlasDurationForPayload
+                  }),
               speed_tier,
               ...wan26ShotPayload,
               ...klingV3ShotPayload,
@@ -905,10 +955,14 @@ export function VideoGenerationPage() {
               ...(image_url ? { image_url } : {}),
               ...(geminiImages.length > 0 ? { reference_images: geminiImages } : {}),
               ...(last_image_url ? { last_image_url } : {}),
-              ...(videoModel === KLING_30_PRO_MODEL_ID
-                ? { aspectRatio: atlasAspectForPayload }
-                : { aspectRatio: atlasAspectForPayload, resolution: atlasResolution }),
-              duration: atlasDurationForPayload,
+              ...(isHailuo23ComposerId(videoModel)
+                ? { duration: atlasDurationForPayload }
+                : {
+                    ...(videoModel === KLING_30_PRO_MODEL_ID
+                      ? { aspectRatio: atlasAspectForPayload }
+                      : { aspectRatio: atlasAspectForPayload, resolution: atlasResolution }),
+                    duration: atlasDurationForPayload
+                  }),
               speed_tier,
               ...wan26ShotPayload,
               ...klingV3ShotPayload,

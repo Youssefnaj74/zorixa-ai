@@ -84,6 +84,14 @@ import {
   normalizeGrokImagineVideoReferenceDurationSeconds
 } from "@/lib/atlas-grok-video";
 import {
+  buildHailuo23AtlasBody,
+  HAILUO_23_T2V_DURATION_SECONDS,
+  isHailuo23AtlasModel,
+  isHailuo23ComposerId,
+  isHailuo23ImageAtlasModel,
+  normalizeHailuo23I2vDurationSeconds
+} from "@/lib/atlas-hailuo-video";
+import {
   applyWan26ShotTypeFields,
   isWan26AtlasModel,
   normalizeWan26ShotType
@@ -435,6 +443,13 @@ async function handleGenerateVideoPost(request: Request) {
   if (!model) {
     return NextResponse.json(
       { error: `Unknown video model: ${videoModel}` },
+      { status: 400 }
+    );
+  }
+
+  if (isHailuo23ComposerId(videoModel) && action !== "text" && action !== "image") {
+    return NextResponse.json(
+      { error: "Hailuo 2.3 supports Text to Video and Image to Video only." },
       { status: 400 }
     );
   }
@@ -793,6 +808,10 @@ async function handleGenerateVideoPost(request: Request) {
     durationSec = normalizeVeo31DurationSeconds(durationSec, resolution);
     aspectRatio = veo31AspectFromUi(aspectRatio);
     resolution = resolution.trim().toLowerCase() === "1080p" ? "1080p" : "720p";
+  } else if (isHailuo23AtlasModel(model) || isHailuo23ComposerId(videoModel)) {
+    durationSec = isHailuo23ImageAtlasModel(model)
+      ? normalizeHailuo23I2vDurationSeconds(durationSec)
+      : HAILUO_23_T2V_DURATION_SECONDS;
   }
 
   const seedanceDimensions = atlasSeedanceModelUsesDimensions(model);
@@ -822,7 +841,8 @@ async function handleGenerateVideoPost(request: Request) {
     durationSeconds: durationSec,
     resolution,
     speedTier,
-    generateAudio
+    generateAudio,
+    routeAction: action
   });
   const afford = await assertCanAfford(actor.userId, creditCost);
   if (!afford.ok) {
@@ -1118,8 +1138,22 @@ async function handleGenerateVideoPost(request: Request) {
     if (applyNativeAudio) {
       applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
     }
+  } else if (isHailuo23AtlasModel(model)) {
+    if (action === "image" && !image_url) {
+      return NextResponse.json(
+        { error: "Missing image for Hailuo 2.3 Image to Video (Atlas requires `image` URL)." },
+        { status: 400 }
+      );
+    }
+    atlasBody = buildHailuo23AtlasBody({
+      model,
+      prompt,
+      durationSec,
+      imageUrl: action === "image" ? image_url : undefined,
+      enablePromptExpansion: body.enable_prompt_expansion !== false
+    });
   } else {
-    // Kling, Veo, Wan, Hailuo — `aspect_ratio` + `resolution` on flat body.
+    // Kling, Veo, Wan — `aspect_ratio` + `resolution` on flat body.
     atlasBody = {
       model,
       prompt,
