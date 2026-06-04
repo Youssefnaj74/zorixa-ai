@@ -1,0 +1,42 @@
+# Zorixa AI
+> AI image and video generation studio for creators and teams.
+
+Zorixa AI is a web platform at https://www.zorixaai.com that aggregates leading AI image and video models in one dashboard with credit-based pricing.
+
+## What Zorixa AI does
+- Text-to-image and image-to-image (GPT Image 2, Flux, Seedream, Nano Banana, Grok Imagine, Wan, and more)
+- Text-to-video, image-to-video, reference-to-video, video-to-video, character swap, audio-to-video
+- Video models include Kling, Google Veo 3.1, Seedance, Hailuo 2.3, Wan, HappyHorse, Vidu, Grok Imagine Video, Gemini Omni Flash
+- Credits-based billing; generation history and downloads
+
+## Key pages
+- Home: https://www.zorixaai.com/
+- About: https://www.zorixaai.com/about
+- Founder: https://www.zorixaai.com/about/founder
+- FAQ: https://www.zorixaai.com/faq
+- Pricing: https://www.zorixaai.com/pricing
+- Tools catalog: https://www.zorixaai.com/tools
+- Contact: https://www.zorixaai.com/contact
+- Support: https://www.zorixaai.com/support
+- Terms: https://www.zorixaai.com/terms
+- Privacy: https://www.zorixaai.com/privacy
+
+## Pricing (USD, monthly — credits per pack)
+- Starter: $9.99/mo — 1,000 credits
+- Pro: $25.99/mo — 3,200 credits (Kling Pro, Veo, Seedance Reference, and more)
+- Creator: $42.99/mo — 5,600 credits
+- Ultra: $69.99/mo — 10,000 credits
+Yearly billing available at a discount on the Pricing page.
+
+## Commercial use
+Users retain ownership of content they create (see Terms of Service). Users must comply with provider policies and applicable law.
+
+## Contact
+- General: hello@zorixaai.com — https://www.zorixaai.com/contact
+- Support: support@zorixaai.com — https://www.zorixaai.com/support
+- Billing: billing@zorixaai.com
+- Privacy: privacy@zorixaai.com
+- Abuse reports: abuse@zorixaai.com
+
+## Company
+Zorixa AI is an independent, remote-first product. Payments via Lemon Squeezy.

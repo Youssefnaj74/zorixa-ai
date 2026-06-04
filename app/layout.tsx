@@ -4,6 +4,7 @@ import Script from "next/script";
 
 import Footer from "@/components/layout/Footer";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { SiteJsonLd } from "@/components/seo/site-json-ld";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
 
 import "./globals.css";
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`min-h-dvh bg-zorixa-bg font-body text-white antialiased ${display.variable} ${body.variable}`}>
+        <SiteJsonLd />
         <Script src="https://app.lemonsqueezy.com/js/lemon.js" strategy="afterInteractive" />
         <ThemeProvider>{children}</ThemeProvider>
         <Footer />

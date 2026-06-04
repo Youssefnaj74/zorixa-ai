@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { verifyLemonSqueezySignature } from "@/lib/lemon-squeezy/verify-signature";
+import { sendPurchaseConfirmationEmail } from "@/lib/support-ticket-email";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 function creditsPerOrder(): number {
@@ -86,6 +87,16 @@ export async function POST(request: Request) {
     lemonsqueezy_order_id: orderId,
     feature_used: null
   });
+
+  const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+  const customerEmail = authUser?.user?.email?.trim();
+  if (customerEmail) {
+    void sendPurchaseConfirmationEmail({
+      email: customerEmail,
+      credits,
+      orderId
+    });
+  }
 
   return NextResponse.json({ received: true });
 }

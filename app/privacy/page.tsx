@@ -1,3 +1,5 @@
+import { BRAND_EMAILS } from "@/lib/site-brand";
+
 export const metadata = {
   title: "Privacy Policy · Zorixa AI",
   description: "Privacy Policy for Zorixa AI platform.",
@@ -89,10 +91,10 @@ export default function PrivacyPage() {
               You have the right to access, correct, or delete your personal data at any time. To exercise these rights,
               contact us at{" "}
               <a
-                href="mailto:support@zorixaai.com"
+                href={`mailto:${BRAND_EMAILS.privacy}`}
                 className="text-[#00e5ff] hover:opacity-70 transition-opacity"
               >
-                support@zorixaai.com
+                {BRAND_EMAILS.privacy}
               </a>{" "}
               or delete your account from settings.
             </p>
@@ -127,10 +129,10 @@ export default function PrivacyPage() {
             <p>
               For privacy-related questions, contact us at{" "}
               <a
-                href="mailto:support@zorixaai.com"
+                href={`mailto:${BRAND_EMAILS.privacy}`}
                 className="text-[#00e5ff] hover:opacity-70 transition-opacity"
               >
-                support@zorixaai.com
+                {BRAND_EMAILS.privacy}
               </a>
             </p>
           </section>

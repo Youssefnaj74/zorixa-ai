@@ -1,3 +1,5 @@
+import { BRAND_EMAILS } from "@/lib/site-brand";
+
 export const metadata = {
   title: "Terms of Service · Zorixa AI",
   description: "Terms of Service for Zorixa AI platform.",
@@ -42,7 +44,15 @@ export default function TermsPage() {
             <p>
               Zorixa AI operates on a credit-based system. Credits are purchased through our payment processor (Lemon
               Squeezy) and are non-refundable unless required by applicable law. Credits do not expire and have no cash
-              value. Subscription plans renew automatically unless cancelled before the renewal date.
+              value. Subscription plans renew automatically unless cancelled before the renewal date. Billing questions
+              and refund requests:{" "}
+              <a
+                href={`mailto:${BRAND_EMAILS.billing}`}
+                className="text-[#00e5ff] hover:opacity-70 transition-opacity"
+              >
+                {BRAND_EMAILS.billing}
+              </a>
+              .
             </p>
           </section>
 
@@ -63,6 +73,16 @@ export default function TermsPage() {
                 </li>
               ))}
             </ul>
+            <p className="mt-4">
+              To report abuse or illegal content, email{" "}
+              <a
+                href={`mailto:${BRAND_EMAILS.abuse}`}
+                className="text-[#00e5ff] hover:opacity-70 transition-opacity"
+              >
+                {BRAND_EMAILS.abuse}
+              </a>
+              .
+            </p>
           </section>
 
           <section>
@@ -112,10 +132,10 @@ export default function TermsPage() {
             <p>
               For questions about these Terms, contact us at{" "}
               <a
-                href="mailto:support@zorixaai.com"
+                href={`mailto:${BRAND_EMAILS.support}`}
                 className="text-[#00e5ff] hover:opacity-70 transition-opacity"
               >
-                support@zorixaai.com
+                {BRAND_EMAILS.support}
               </a>
             </p>
           </section>

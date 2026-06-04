@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { rateLimit } from "@/lib/rate-limit";
+import { BRAND_EMAILS } from "@/lib/site-brand";
+import { sendSupportTicketEmails } from "@/lib/support-ticket-email";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -11,7 +13,11 @@ const ISSUE_TYPES = new Set([
   "Video Generation",
   "Account Problem",
   "Feature Request",
-  "Bug Report"
+  "Bug Report",
+  "General Inquiry",
+  "Business & Partnership",
+  "Press & Media",
+  "Other"
 ]);
 
 function cleanText(value: unknown, maxLen: number): string | null {
@@ -98,10 +104,21 @@ export async function POST(request: Request) {
   if (insertErr) {
     console.error("[support]", insertErr.message);
     return NextResponse.json(
-      { error: "Could not save your message. Please email support@zorixaai.com directly." },
+      {
+        error: `Could not save your message. Please email ${BRAND_EMAILS.support} directly.`
+      },
       { status: 500 }
     );
   }
+
+  void sendSupportTicketEmails({
+    name,
+    email,
+    issue_type,
+    subject,
+    message,
+    screenshot_url
+  });
 
   return NextResponse.json({ ok: true });
 }
