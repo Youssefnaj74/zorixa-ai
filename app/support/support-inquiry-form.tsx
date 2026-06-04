@@ -4,19 +4,12 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, ChevronDown, Paperclip, X } from "lucide-react";
 
+import { SUPPORT_TICKET_TYPES } from "@/data/support-issue-types";
 import supportConfig from "@/data/support-config.json";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
-const ISSUE_TYPES = [
-  "Billing & Payments",
-  "Credits Issue",
-  "Image Generation",
-  "Video Generation",
-  "Account Problem",
-  "Feature Request",
-  "Bug Report"
-] as const;
+const ISSUE_TYPES = SUPPORT_TICKET_TYPES;
 
 const FAQ = [
   {

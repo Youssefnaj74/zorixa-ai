@@ -44,7 +44,7 @@ export function absoluteUrl(path: string): string {
 
 /** On-site inquiry page for each public email (not mailto / external). */
 export const BRAND_INQUIRY_PATHS: Record<BrandEmailKey, string> = {
-  support: "/helpsupport",
+  support: "/support",
   contact: "/contact",
   billing: "/billing",
   privacy: "/contact",

@@ -20,6 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/video",
     "/audio",
     "/explore-prompts",
+    "/support",
     "/helpsupport",
     "/terms",
     "/privacy",

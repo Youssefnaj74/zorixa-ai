@@ -14,8 +14,6 @@ const CONTACT_TOPICS = [
   "Other"
 ] as const;
 
-type ContactTopic = (typeof CONTACT_TOPICS)[number];
-
 const inputClass =
   "mt-2 w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 py-3.5 text-[15px] text-white outline-none placeholder:text-white/30 transition focus:border-[#00e5ff]/45 focus:ring-2 focus:ring-[#00e5ff]/15";
 
@@ -24,18 +22,22 @@ const selectClass =
 
 export function ContactForm({
   fixedIssueType,
+  issueTypes,
+  topicLabel = "Topic",
   subjectPlaceholder = "How can we help?",
   messagePlaceholder = "Tell us what you need…",
   sendLabel = "Send message"
 }: {
   fixedIssueType?: string;
+  issueTypes?: readonly string[];
+  topicLabel?: string;
   subjectPlaceholder?: string;
   messagePlaceholder?: string;
   sendLabel?: string;
 } = {}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [topic, setTopic] = useState<ContactTopic | "">("");
+  const [topic, setTopic] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -171,17 +173,19 @@ export function ContactForm({
 
       {fixedIssueType ? null : (
         <label className="block">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Topic</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
+            {topicLabel}
+          </span>
           <select
             className={selectClass}
             value={topic}
-            onChange={(e) => setTopic(e.target.value as ContactTopic | "")}
+            onChange={(e) => setTopic(e.target.value)}
             required
           >
             <option value="" disabled className="bg-[#0f0f1a] text-white/50">
-              Select a topic…
+              Select…
             </option>
-            {CONTACT_TOPICS.map((item) => (
+            {(issueTypes ?? CONTACT_TOPICS).map((item) => (
               <option key={item} value={item} className="bg-[#0f0f1a]">
                 {item}
               </option>
@@ -251,11 +255,11 @@ export function ContactEmailCard({
         )}
       </div>
       <p className="mt-4 text-sm text-white/45">
-        For billing, generation errors, or account issues, use{" "}
+        For credits, generation help, or FAQs, visit the{" "}
         <a href="/helpsupport" className="text-[#00e5ff] hover:underline">
-          Support
-        </a>{" "}
-        so we can route your ticket faster.
+          Help center
+        </a>
+        .
       </p>
     </div>
   );

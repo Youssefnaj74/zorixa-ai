@@ -26,7 +26,7 @@ const navLinks = [
   { href: "/video", label: "Video", badge: null },
   { href: "/audio", label: "Speech", badge: "NEW" },
   { href: "/dashboard/history", label: "History", badge: null },
-  { href: "/helpsupport", label: "Support", badge: null }
+  { href: "/helpsupport", label: "Help", badge: null }
 ] as const;
 
 function isNavLinkActive(pathname: string, href: string): boolean {
@@ -38,7 +38,7 @@ const dropdownItems = [
   { label: "Subscription", href: "/pricing", icon: CreditCard },
   { label: "Usage", href: "/dashboard/usage", icon: BarChart2 },
   { label: "API Access", href: "/dashboard/api", icon: Key },
-  { label: "Support", href: "/helpsupport", icon: HelpCircle },
+  { label: "Help", href: "/helpsupport", icon: HelpCircle },
 ];
 
 export function DashboardNavbar({

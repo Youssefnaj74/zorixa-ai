@@ -17,8 +17,13 @@ export default function NotFound() {
           </Link>
         </li>
         <li>
-          <Link href="/helpsupport" className="text-[#00e5ff] hover:underline">
+          <Link href="/support" className="text-[#00e5ff] hover:underline">
             Support — {BRAND_EMAILS.support}
+          </Link>
+        </li>
+        <li>
+          <Link href="/helpsupport" className="text-[#00e5ff] hover:underline">
+            Help center
           </Link>
         </li>
         <li>

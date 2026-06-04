@@ -38,7 +38,7 @@ export function MarketingDocLayout({
             </Link>
             {" · "}
             <Link href="/helpsupport" className="text-[#00e5ff] hover:underline">
-              Support
+              Help center
             </Link>
           </p>
         </div>

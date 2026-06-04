@@ -68,7 +68,7 @@ export async function sendSupportTicketEmails(ticket: SupportTicketPayload): Pro
     <p><strong>Subject:</strong> ${safeSubject}</p>
     <p><strong>Message:</strong><br>${safeMessage}</p>
     ${screenshotBlock}
-    <p><a href="${escapeHtml(absoluteUrl("/helpsupport"))}">Support page</a></p>
+    <p><a href="${escapeHtml(absoluteUrl("/support"))}">Support page</a></p>
   `;
 
   const userHtml = `
