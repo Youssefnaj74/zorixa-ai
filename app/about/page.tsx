@@ -76,7 +76,7 @@ export default function AboutPage() {
         <p className="mt-3">
           Zorixa AI is publicly available and actively developed. New models and studio improvements ship
           regularly. We are early-stage and welcome feedback via{" "}
-          <Link href="/support" className="text-[#00e5ff] hover:underline">
+          <Link href="/helpsupport" className="text-[#00e5ff] hover:underline">
             Support
           </Link>
           .

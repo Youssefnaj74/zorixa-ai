@@ -37,7 +37,7 @@ export default function BillingPage() {
       <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 text-sm text-white/50">
         <p>
           Technical issues (generations, login, models)? Use{" "}
-          <Link href="/support" className="text-[#00e5ff] hover:underline">
+          <Link href="/helpsupport" className="text-[#00e5ff] hover:underline">
             Support
           </Link>
           .

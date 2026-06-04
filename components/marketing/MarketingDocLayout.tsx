@@ -37,7 +37,7 @@ export function MarketingDocLayout({
               Pricing
             </Link>
             {" · "}
-            <Link href="/support" className="text-[#00e5ff] hover:underline">
+            <Link href="/helpsupport" className="text-[#00e5ff] hover:underline">
               Support
             </Link>
           </p>

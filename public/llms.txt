@@ -18,7 +18,7 @@ Zorixa AI is a web platform at https://www.zorixaai.com that aggregates leading 
 - Tools catalog: https://www.zorixaai.com/tools
 - Contact: https://www.zorixaai.com/contact
 - Billing: https://www.zorixaai.com/billing
-- Support: https://www.zorixaai.com/support
+- Support: https://www.zorixaai.com/helpsupport
 - Abuse reports: https://www.zorixaai.com/abuse
 - Terms: https://www.zorixaai.com/terms
 - Privacy: https://www.zorixaai.com/privacy

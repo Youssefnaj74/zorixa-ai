@@ -238,7 +238,7 @@ export function PricingView() {
 
           <p className="mt-10 text-center text-xs text-white/30">
             Need help choosing?{" "}
-            <Link href="/support" className="text-[#00e5ff] hover:text-white">
+            <Link href="/helpsupport" className="text-[#00e5ff] hover:text-white">
               Contact support
             </Link>
             {" · "}
