@@ -226,7 +226,12 @@ export function ContactEmailCard({ email }: { email: string }) {
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
       <p className="text-sm font-semibold text-white">Email</p>
-      <EmailLink email={email} className="mt-3 items-start text-left" size="sm" />
+      <EmailLink
+        email={email}
+        subject="Zorixa AI"
+        className="mt-3 justify-start"
+        size="sm"
+      />
       <p className="mt-4 text-sm text-white/45">
         For billing, generation errors, or account issues, use{" "}
         <a href="/support" className="text-[#00e5ff] hover:underline">

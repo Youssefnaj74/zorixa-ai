@@ -41,3 +41,10 @@ export function absoluteUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${base}${p}`;
 }
+
+/** Opens Gmail compose in the browser (works when mailto: has no local mail app). */
+export function gmailComposeUrl(to: string, subject?: string): string {
+  const params = new URLSearchParams({ view: "cm", fs: "1", to });
+  if (subject?.trim()) params.set("su", subject.trim());
+  return `https://mail.google.com/mail/?${params.toString()}`;
+}

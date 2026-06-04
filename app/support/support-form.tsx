@@ -477,9 +477,11 @@ export function SupportForm() {
 
           <section className="mt-10 rounded-2xl border border-[#00e5ff]/20 bg-[#00e5ff]/5 p-5 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Direct email</p>
-            <div className="mt-3">
-              <EmailLink email={BRAND_EMAILS.support} />
-            </div>
+            <EmailLink
+              email={BRAND_EMAILS.support}
+              subject="Zorixa AI support"
+              className="mt-3"
+            />
             <p className="mt-2 text-xs text-white/40">For urgent billing or account issues</p>
           </section>
         </div>

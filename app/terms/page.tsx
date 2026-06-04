@@ -1,4 +1,4 @@
-import { BRAND_EMAILS } from "@/lib/site-brand";
+import { BRAND_EMAILS, gmailComposeUrl } from "@/lib/site-brand";
 
 export const metadata = {
   title: "Terms of Service · Zorixa AI",
@@ -47,7 +47,9 @@ export default function TermsPage() {
               value. Subscription plans renew automatically unless cancelled before the renewal date. Billing questions
               and refund requests:{" "}
               <a
-                href={`mailto:${BRAND_EMAILS.billing}`}
+                href={gmailComposeUrl(BRAND_EMAILS.billing, "Zorixa AI billing")}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-[#00e5ff] hover:opacity-70 transition-opacity"
               >
                 {BRAND_EMAILS.billing}
@@ -76,7 +78,9 @@ export default function TermsPage() {
             <p className="mt-4">
               To report abuse or illegal content, email{" "}
               <a
-                href={`mailto:${BRAND_EMAILS.abuse}`}
+                href={gmailComposeUrl(BRAND_EMAILS.abuse, "Zorixa AI abuse report")}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-[#00e5ff] hover:opacity-70 transition-opacity"
               >
                 {BRAND_EMAILS.abuse}
@@ -132,7 +136,9 @@ export default function TermsPage() {
             <p>
               For questions about these Terms, contact us at{" "}
               <a
-                href={`mailto:${BRAND_EMAILS.support}`}
+                href={gmailComposeUrl(BRAND_EMAILS.support, "Zorixa AI — Terms question")}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-[#00e5ff] hover:opacity-70 transition-opacity"
               >
                 {BRAND_EMAILS.support}

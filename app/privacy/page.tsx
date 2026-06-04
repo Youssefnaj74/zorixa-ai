@@ -1,4 +1,4 @@
-import { BRAND_EMAILS } from "@/lib/site-brand";
+import { BRAND_EMAILS, gmailComposeUrl } from "@/lib/site-brand";
 
 export const metadata = {
   title: "Privacy Policy · Zorixa AI",
@@ -91,7 +91,9 @@ export default function PrivacyPage() {
               You have the right to access, correct, or delete your personal data at any time. To exercise these rights,
               contact us at{" "}
               <a
-                href={`mailto:${BRAND_EMAILS.privacy}`}
+                href={gmailComposeUrl(BRAND_EMAILS.privacy, "Zorixa AI — privacy request")}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-[#00e5ff] hover:opacity-70 transition-opacity"
               >
                 {BRAND_EMAILS.privacy}
@@ -129,7 +131,9 @@ export default function PrivacyPage() {
             <p>
               For privacy-related questions, contact us at{" "}
               <a
-                href={`mailto:${BRAND_EMAILS.privacy}`}
+                href={gmailComposeUrl(BRAND_EMAILS.privacy, "Zorixa AI — privacy request")}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-[#00e5ff] hover:opacity-70 transition-opacity"
               >
                 {BRAND_EMAILS.privacy}
