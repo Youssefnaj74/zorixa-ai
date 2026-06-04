@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Mail } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
+
+import { EmailLink } from "@/components/marketing/EmailLink";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
@@ -223,27 +225,15 @@ export function ContactForm() {
 export function ContactEmailCard({ email }: { email: string }) {
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
-      <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#00e5ff]/30 bg-[#00e5ff]/10 text-[#00e5ff]">
-          <Mail className="size-5" strokeWidth={1.75} aria-hidden />
-        </span>
-        <div>
-          <p className="text-sm font-semibold text-white">Email</p>
-          <a
-            href={`mailto:${email}`}
-            className="mt-1 inline-block text-base font-medium text-[#00e5ff] hover:underline"
-          >
-            {email}
-          </a>
-          <p className="mt-2 text-sm text-white/45">
-            For billing, generation errors, or account issues, use{" "}
-            <a href="/support" className="text-[#00e5ff] hover:underline">
-              Support
-            </a>{" "}
-            so we can route your ticket faster.
-          </p>
-        </div>
-      </div>
+      <p className="text-sm font-semibold text-white">Email</p>
+      <EmailLink email={email} className="mt-3 items-start text-left" size="sm" />
+      <p className="mt-4 text-sm text-white/45">
+        For billing, generation errors, or account issues, use{" "}
+        <a href="/support" className="text-[#00e5ff] hover:underline">
+          Support
+        </a>{" "}
+        so we can route your ticket faster.
+      </p>
     </div>
   );
 }

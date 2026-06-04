@@ -7,12 +7,12 @@ import {
   CheckCircle2,
   ChevronDown,
   HelpCircle,
-  Mail,
   Paperclip,
   X
 } from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
+import { EmailLink } from "@/components/marketing/EmailLink";
 import supportConfig from "@/data/support-config.json";
 import { BRAND_EMAILS } from "@/lib/site-brand";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -477,13 +477,9 @@ export function SupportForm() {
 
           <section className="mt-10 rounded-2xl border border-[#00e5ff]/20 bg-[#00e5ff]/5 p-5 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Direct email</p>
-            <a
-              href={`mailto:${BRAND_EMAILS.support}`}
-              className="mt-3 inline-flex items-center justify-center gap-2 font-display text-xl font-bold text-[#00e5ff] transition hover:text-white"
-            >
-              <Mail className="size-5" aria-hidden />
-              {BRAND_EMAILS.support}
-            </a>
+            <div className="mt-3">
+              <EmailLink email={BRAND_EMAILS.support} />
+            </div>
             <p className="mt-2 text-xs text-white/40">For urgent billing or account issues</p>
           </section>
         </div>
