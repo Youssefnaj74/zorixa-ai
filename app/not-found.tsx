@@ -31,6 +31,11 @@ export default function NotFound() {
             Contact — {BRAND_EMAILS.contact}
           </Link>
         </li>
+        <li>
+          <Link href={BRAND_INQUIRY_PATHS.abuse} className="text-[#00e5ff] hover:underline">
+            Abuse — {BRAND_EMAILS.abuse}
+          </Link>
+        </li>
       </ul>
     </div>
   );

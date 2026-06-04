@@ -1,32 +1,36 @@
-import { Suspense } from "react";
+import Link from "next/link";
 
-import { SupportForm } from "./support-form";
+import { ContactEmailCard } from "@/app/contact/contact-form";
+import { SupportInquiryForm } from "@/app/support/support-inquiry-form";
+import { MarketingDocLayout } from "@/components/marketing/MarketingDocLayout";
+import { BRAND_EMAILS } from "@/lib/site-brand";
 
 export const metadata = {
   title: "Support",
-  description: "Contact Zorixa AI support — tell us your name, email, and what went wrong."
+  description:
+    "Zorixa AI support — technical issues, generations, credits, and account help."
 };
-
-function SupportFallback() {
-  return (
-    <div className="min-h-dvh bg-[#080810] pt-20">
-      <div className="mx-auto max-w-lg animate-pulse px-6 py-12">
-        <div className="h-8 w-48 rounded-lg bg-white/5" />
-        <div className="mt-3 h-4 w-72 rounded bg-white/5" />
-        <div className="mt-10 space-y-4">
-          <div className="h-12 rounded-xl bg-white/5" />
-          <div className="h-12 rounded-xl bg-white/5" />
-          <div className="h-32 rounded-xl bg-white/5" />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function SupportPage() {
   return (
-    <Suspense fallback={<SupportFallback />}>
-      <SupportForm />
-    </Suspense>
+    <MarketingDocLayout
+      eyebrow="Support"
+      title="Help & support"
+      subtitle="Account, generation, or platform issues? Send a request below — we reply within 24–48 hours."
+    >
+      <ContactEmailCard email={BRAND_EMAILS.support} />
+
+      <SupportInquiryForm />
+
+      <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 text-sm text-white/50">
+        <p>
+          Payment or refund questions? Use{" "}
+          <Link href="/billing" className="text-[#00e5ff] hover:underline">
+            Billing
+          </Link>
+          .
+        </p>
+      </section>
+    </MarketingDocLayout>
   );
 }

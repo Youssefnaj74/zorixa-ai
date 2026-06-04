@@ -48,7 +48,7 @@ export const BRAND_INQUIRY_PATHS: Record<BrandEmailKey, string> = {
   contact: "/contact",
   billing: "/billing",
   privacy: "/contact",
-  abuse: "/contact"
+  abuse: "/abuse"
 };
 
 export function inquiryPathForEmail(email: string): string {

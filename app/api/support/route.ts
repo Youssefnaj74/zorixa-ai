@@ -17,7 +17,8 @@ const ISSUE_TYPES = new Set([
   "General Inquiry",
   "Business & Partnership",
   "Press & Media",
-  "Other"
+  "Other",
+  "Abuse Report"
 ]);
 
 function cleanText(value: unknown, maxLen: number): string | null {

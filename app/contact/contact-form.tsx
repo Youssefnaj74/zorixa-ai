@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 
+import { BrandEmailLink } from "@/components/marketing/BrandEmailLink";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
@@ -236,7 +237,9 @@ export function ContactEmailCard({ email }: { email: string }) {
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
       <p className="text-sm font-semibold text-white">Email</p>
-      <p className="mt-2 text-base font-medium text-[#00e5ff]">{email}</p>
+      <div className="mt-2">
+        <BrandEmailLink email={email} className="text-base font-medium" />
+      </div>
       <p className="mt-4 text-sm text-white/45">
         For billing, generation errors, or account issues, use{" "}
         <a href="/support" className="text-[#00e5ff] hover:underline">
