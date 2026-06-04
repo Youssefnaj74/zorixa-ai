@@ -1,6 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async redirects() {
+    return [
+      { source: "/support@zorixaai.com", destination: "/support", permanent: true },
+      { source: "/billing@zorixaai.com", destination: "/billing", permanent: true },
+      { source: "/hello@zorixaai.com", destination: "/contact", permanent: true },
+      { source: "/privacy@zorixaai.com", destination: "/contact", permanent: true },
+      { source: "/abuse@zorixaai.com", destination: "/contact", permanent: true }
+    ];
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "picsum.photos", pathname: "/**" },

@@ -10,9 +10,12 @@ export function BrandEmailLink({
   email: string;
   className?: string;
 }) {
+  const href = inquiryPathForEmail(email);
+
   return (
     <Link
-      href={inquiryPathForEmail(email)}
+      href={href}
+      prefetch={false}
       className={cn("text-[#00e5ff] transition hover:text-white hover:underline", className)}
     >
       {email}
