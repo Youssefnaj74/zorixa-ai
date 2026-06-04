@@ -12,6 +12,12 @@ export default function Footer() {
           <Link href="/contact" className="text-sm text-white/40 hover:text-white transition-colors">
             Contact
           </Link>
+          <Link href="/billing" className="text-sm text-white/40 hover:text-white transition-colors">
+            Billing
+          </Link>
+          <Link href="/support" className="text-sm text-white/40 hover:text-white transition-colors">
+            Support
+          </Link>
           <Link href="/faq" className="text-sm text-white/40 hover:text-white transition-colors">
             FAQ
           </Link>
@@ -23,9 +29,6 @@ export default function Footer() {
           </Link>
           <Link href="/privacy" className="text-sm text-white/40 hover:text-white transition-colors">
             Privacy Policy
-          </Link>
-          <Link href="/support" className="text-sm text-white/40 hover:text-white transition-colors">
-            Support
           </Link>
         </div>
       </div>

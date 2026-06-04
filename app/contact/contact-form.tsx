@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 
-import { EmailLink } from "@/components/marketing/EmailLink";
-
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +21,17 @@ const inputClass =
 const selectClass =
   "mt-2 w-full appearance-none rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 py-3.5 text-[15px] text-white outline-none transition focus:border-[#00e5ff]/45 focus:ring-2 focus:ring-[#00e5ff]/15";
 
-export function ContactForm() {
+export function ContactForm({
+  fixedIssueType,
+  subjectPlaceholder = "How can we help?",
+  messagePlaceholder = "Tell us what you need…",
+  sendLabel = "Send message"
+}: {
+  fixedIssueType?: string;
+  subjectPlaceholder?: string;
+  messagePlaceholder?: string;
+  sendLabel?: string;
+} = {}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [topic, setTopic] = useState<ContactTopic | "">("");
@@ -80,7 +88,7 @@ export function ContactForm() {
         body: JSON.stringify({
           name,
           email,
-          issue_type: topic,
+          issue_type: fixedIssueType ?? topic,
           subject,
           message
         })
@@ -160,30 +168,32 @@ export function ContactForm() {
         />
       </label>
 
-      <label className="block">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Topic</span>
-        <select
-          className={selectClass}
-          value={topic}
-          onChange={(e) => setTopic(e.target.value as ContactTopic | "")}
-          required
-        >
-          <option value="" disabled className="bg-[#0f0f1a] text-white/50">
-            Select a topic…
-          </option>
-          {CONTACT_TOPICS.map((item) => (
-            <option key={item} value={item} className="bg-[#0f0f1a]">
-              {item}
+      {fixedIssueType ? null : (
+        <label className="block">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Topic</span>
+          <select
+            className={selectClass}
+            value={topic}
+            onChange={(e) => setTopic(e.target.value as ContactTopic | "")}
+            required
+          >
+            <option value="" disabled className="bg-[#0f0f1a] text-white/50">
+              Select a topic…
             </option>
-          ))}
-        </select>
-      </label>
+            {CONTACT_TOPICS.map((item) => (
+              <option key={item} value={item} className="bg-[#0f0f1a]">
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <label className="block">
         <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Subject</span>
         <input
           className={inputClass}
-          placeholder="How can we help?"
+          placeholder={subjectPlaceholder}
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           required
@@ -196,7 +206,7 @@ export function ContactForm() {
         <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Message</span>
         <textarea
           className={cn(inputClass, "min-h-[140px] resize-y")}
-          placeholder="Tell us what you need…"
+          placeholder={messagePlaceholder}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           required
@@ -216,7 +226,7 @@ export function ContactForm() {
         disabled={loading}
         className="w-full rounded-xl bg-gradient-to-r from-[#00e5ff] to-[#8338eb] px-6 py-3.5 text-[15px] font-bold text-white shadow-lg shadow-[#00e5ff]/10 transition hover:opacity-95 disabled:opacity-50"
       >
-        {loading ? "Sending…" : "Send message"}
+        {loading ? "Sending…" : sendLabel}
       </button>
     </form>
   );
@@ -226,12 +236,7 @@ export function ContactEmailCard({ email }: { email: string }) {
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
       <p className="text-sm font-semibold text-white">Email</p>
-      <EmailLink
-        email={email}
-        subject="Zorixa AI"
-        className="mt-3 justify-start"
-        size="sm"
-      />
+      <p className="mt-2 text-base font-medium text-[#00e5ff]">{email}</p>
       <p className="mt-4 text-sm text-white/45">
         For billing, generation errors, or account issues, use{" "}
         <a href="/support" className="text-[#00e5ff] hover:underline">

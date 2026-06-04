@@ -1,7 +1,8 @@
 import Link from "next/link";
 
 import { MarketingDocLayout } from "@/components/marketing/MarketingDocLayout";
-import { FOUNDER_LINKEDIN_URL, FOUNDER_NAME, SUPPORT_EMAIL, gmailComposeUrl } from "@/lib/site-brand";
+import { BrandEmailLink } from "@/components/marketing/BrandEmailLink";
+import { FOUNDER_LINKEDIN_URL, FOUNDER_NAME, SUPPORT_EMAIL } from "@/lib/site-brand";
 
 export const metadata = {
   title: "Founder",
@@ -56,14 +57,7 @@ export default function FounderPage() {
         <h2 className="text-base font-bold text-white">Get in touch</h2>
         <p className="mt-3">
           Product feedback and partnerships:{" "}
-          <a
-            href={gmailComposeUrl(SUPPORT_EMAIL, "Zorixa AI")}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#00e5ff] hover:underline"
-          >
-            {SUPPORT_EMAIL}
-          </a>
+          <BrandEmailLink email={SUPPORT_EMAIL} />
         </p>
         {FOUNDER_LINKEDIN_URL ? (
           <p className="mt-2">

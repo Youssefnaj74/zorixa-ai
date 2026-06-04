@@ -42,9 +42,18 @@ export function absoluteUrl(path: string): string {
   return `${base}${p}`;
 }
 
-/** Opens Gmail compose in the browser (works when mailto: has no local mail app). */
-export function gmailComposeUrl(to: string, subject?: string): string {
-  const params = new URLSearchParams({ view: "cm", fs: "1", to });
-  if (subject?.trim()) params.set("su", subject.trim());
-  return `https://mail.google.com/mail/?${params.toString()}`;
+/** On-site inquiry page for each public email (not mailto / external). */
+export const BRAND_INQUIRY_PATHS: Record<BrandEmailKey, string> = {
+  support: "/support",
+  contact: "/contact",
+  billing: "/billing",
+  privacy: "/contact",
+  abuse: "/contact"
+};
+
+export function inquiryPathForEmail(email: string): string {
+  for (const key of Object.keys(BRAND_EMAILS) as BrandEmailKey[]) {
+    if (BRAND_EMAILS[key] === email) return BRAND_INQUIRY_PATHS[key];
+  }
+  return "/contact";
 }

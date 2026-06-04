@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
-import { EmailLink } from "@/components/marketing/EmailLink";
 import supportConfig from "@/data/support-config.json";
 import { BRAND_EMAILS } from "@/lib/site-brand";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -298,7 +297,7 @@ export function SupportForm() {
           <StatusBanner />
           <FaqSection />
 
-          <section className="mt-10">
+          <section className="mt-10" id="support-form">
             <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
               Contact support
             </h2>
@@ -477,11 +476,13 @@ export function SupportForm() {
 
           <section className="mt-10 rounded-2xl border border-[#00e5ff]/20 bg-[#00e5ff]/5 p-5 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Direct email</p>
-            <EmailLink
-              email={BRAND_EMAILS.support}
-              subject="Zorixa AI support"
-              className="mt-3"
-            />
+            <p className="mt-3 font-display text-xl font-bold text-[#00e5ff]">{BRAND_EMAILS.support}</p>
+            <Link
+              href="#support-form"
+              className="mt-2 inline-block text-sm font-semibold text-white/60 transition hover:text-[#00e5ff]"
+            >
+              Use the form above to send your message
+            </Link>
             <p className="mt-2 text-xs text-white/40">For urgent billing or account issues</p>
           </section>
         </div>

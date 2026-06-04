@@ -1,4 +1,5 @@
-import { BRAND_EMAILS, gmailComposeUrl } from "@/lib/site-brand";
+import { BrandEmailLink } from "@/components/marketing/BrandEmailLink";
+import { BRAND_EMAILS } from "@/lib/site-brand";
 
 export const metadata = {
   title: "Terms of Service · Zorixa AI",
@@ -46,14 +47,7 @@ export default function TermsPage() {
               Squeezy) and are non-refundable unless required by applicable law. Credits do not expire and have no cash
               value. Subscription plans renew automatically unless cancelled before the renewal date. Billing questions
               and refund requests:{" "}
-              <a
-                href={gmailComposeUrl(BRAND_EMAILS.billing, "Zorixa AI billing")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#00e5ff] hover:opacity-70 transition-opacity"
-              >
-                {BRAND_EMAILS.billing}
-              </a>
+              <BrandEmailLink email={BRAND_EMAILS.billing} className="hover:opacity-70" />
               .
             </p>
           </section>
@@ -77,14 +71,7 @@ export default function TermsPage() {
             </ul>
             <p className="mt-4">
               To report abuse or illegal content, email{" "}
-              <a
-                href={gmailComposeUrl(BRAND_EMAILS.abuse, "Zorixa AI abuse report")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#00e5ff] hover:opacity-70 transition-opacity"
-              >
-                {BRAND_EMAILS.abuse}
-              </a>
+              <BrandEmailLink email={BRAND_EMAILS.abuse} className="hover:opacity-70" />
               .
             </p>
           </section>
@@ -135,14 +122,7 @@ export default function TermsPage() {
             <h2 className="text-base font-bold text-white mb-3">11. Contact</h2>
             <p>
               For questions about these Terms, contact us at{" "}
-              <a
-                href={gmailComposeUrl(BRAND_EMAILS.support, "Zorixa AI — Terms question")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#00e5ff] hover:opacity-70 transition-opacity"
-              >
-                {BRAND_EMAILS.support}
-              </a>
+              <BrandEmailLink email={BRAND_EMAILS.support} className="hover:opacity-70" />
             </p>
           </section>
         </div>

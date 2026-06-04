@@ -24,7 +24,7 @@ export default function ContactPage() {
         <p className="mt-2 text-sm text-white/50">
           Prefer a form? Fill in the details below and we&apos;ll get back to you by email.
         </p>
-        <div className="mt-6">
+        <div className="mt-6" id="contact-form">
           <ContactForm />
         </div>
       </section>
