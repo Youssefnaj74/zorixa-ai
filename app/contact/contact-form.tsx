@@ -26,7 +26,8 @@ export function ContactForm({
   topicLabel = "Topic",
   subjectPlaceholder = "How can we help?",
   messagePlaceholder = "Tell us what you need…",
-  sendLabel = "Send message"
+  sendLabel = "Send message",
+  hideSubject = false
 }: {
   fixedIssueType?: string;
   issueTypes?: readonly string[];
@@ -34,6 +35,7 @@ export function ContactForm({
   subjectPlaceholder?: string;
   messagePlaceholder?: string;
   sendLabel?: string;
+  hideSubject?: boolean;
 } = {}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -85,6 +87,13 @@ export function ContactForm({
     setError(null);
 
     try {
+      const trimmedMessage = message.trim();
+      let resolvedSubject = subject.trim();
+      if (hideSubject) {
+        const fromMessage = trimmedMessage.replace(/\s+/g, " ").slice(0, 120);
+        resolvedSubject = fromMessage.length >= 5 ? fromMessage : "Support request via website";
+      }
+
       const res = await fetch("/api/support", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -92,8 +101,8 @@ export function ContactForm({
           name,
           email,
           issue_type: fixedIssueType ?? topic,
-          subject,
-          message
+          subject: resolvedSubject,
+          message: trimmedMessage
         })
       });
       const data = (await res.json()) as { error?: string };
@@ -171,7 +180,7 @@ export function ContactForm({
         />
       </label>
 
-      {fixedIssueType ? null : (
+      {fixedIssueType || issueTypes ? null : (
         <label className="block">
           <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
             {topicLabel}
@@ -185,7 +194,7 @@ export function ContactForm({
             <option value="" disabled className="bg-[#0f0f1a] text-white/50">
               Select…
             </option>
-            {(issueTypes ?? CONTACT_TOPICS).map((item) => (
+            {CONTACT_TOPICS.map((item) => (
               <option key={item} value={item} className="bg-[#0f0f1a]">
                 {item}
               </option>
@@ -194,18 +203,43 @@ export function ContactForm({
         </label>
       )}
 
-      <label className="block">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Subject</span>
-        <input
-          className={inputClass}
-          placeholder={subjectPlaceholder}
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          required
-          minLength={5}
-          maxLength={200}
-        />
-      </label>
+      {issueTypes && !fixedIssueType ? (
+        <label className="block">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
+            {topicLabel}
+          </span>
+          <select
+            className={selectClass}
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            required
+          >
+            <option value="" disabled className="bg-[#0f0f1a] text-white/50">
+              Select…
+            </option>
+            {issueTypes.map((item) => (
+              <option key={item} value={item} className="bg-[#0f0f1a]">
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
+      {hideSubject ? null : (
+        <label className="block">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Subject</span>
+          <input
+            className={inputClass}
+            placeholder={subjectPlaceholder}
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            required
+            minLength={5}
+            maxLength={200}
+          />
+        </label>
+      )}
 
       <label className="block">
         <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Message</span>

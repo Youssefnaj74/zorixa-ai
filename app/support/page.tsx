@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { ContactEmailCard, ContactForm } from "@/app/contact/contact-form";
 import { MarketingDocLayout } from "@/components/marketing/MarketingDocLayout";
-import { SUPPORT_TICKET_TYPES } from "@/data/support-issue-types";
 import { BRAND_EMAILS } from "@/lib/site-brand";
 
 export const metadata = {
@@ -22,13 +21,12 @@ export default function SupportPage() {
       <section id="support-form">
         <h2 className="text-base font-bold text-white">Send a support request</h2>
         <p className="mt-2 text-sm text-white/50">
-          Include your account email, what went wrong, and the model or feature you used.
+          Write your message below — include what went wrong and which model or feature you used.
         </p>
         <div className="mt-6">
           <ContactForm
-            issueTypes={SUPPORT_TICKET_TYPES}
-            topicLabel="Issue type"
-            subjectPlaceholder="Brief summary of your issue"
+            fixedIssueType="General Inquiry"
+            hideSubject
             messagePlaceholder="Describe what happened — error messages, steps to reproduce…"
             sendLabel="Send support request"
           />
