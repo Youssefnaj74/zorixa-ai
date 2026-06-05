@@ -112,7 +112,7 @@ export async function POST(request: Request) {
     );
   }
 
-  void sendSupportTicketEmails({
+  const emailResult = await sendSupportTicketEmails({
     name,
     email,
     issue_type,
@@ -121,5 +121,9 @@ export async function POST(request: Request) {
     screenshot_url
   });
 
-  return NextResponse.json({ ok: true });
+  if (!emailResult.sent) {
+    console.warn("[support] ticket saved; email notification failed", emailResult.errors);
+  }
+
+  return NextResponse.json({ ok: true, notified: emailResult.sent });
 }

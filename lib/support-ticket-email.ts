@@ -28,9 +28,8 @@ function fromBilling(): string {
   return process.env.RESEND_FROM_BILLING?.trim() || `${SITE_NAME} Billing <${BRAND_EMAILS.billing}>`;
 }
 
-function notifyInbox(): string | null {
-  const to = process.env.SUPPORT_NOTIFY_EMAIL?.trim() || "youssef@zorixaai.com";
-  return to || null;
+function notifyInbox(): string {
+  return process.env.SUPPORT_NOTIFY_EMAIL?.trim() || BRAND_EMAILS.support;
 }
 
 export type SupportTicketPayload = {
@@ -42,14 +41,14 @@ export type SupportTicketPayload = {
   screenshot_url: string | null;
 };
 
-export async function sendSupportTicketEmails(ticket: SupportTicketPayload): Promise<void> {
+export async function sendSupportTicketEmails(
+  ticket: SupportTicketPayload
+): Promise<{ sent: boolean; errors: string[] }> {
   const resend = resendClient();
   const notifyTo = notifyInbox();
-  if (!resend || !notifyTo) {
-    if (!process.env.RESEND_API_KEY?.trim()) {
-      console.warn("[support-email] RESEND_API_KEY not set — skipping notifications");
-    }
-    return;
+  if (!resend) {
+    console.warn("[support-email] RESEND_API_KEY not set — skipping notifications");
+    return { sent: false, errors: ["RESEND_API_KEY not set"] };
   }
 
   const safeName = escapeHtml(ticket.name);
@@ -96,13 +95,20 @@ export async function sendSupportTicketEmails(ticket: SupportTicketPayload): Pro
     })
   ]);
 
+  const errors: string[] = [];
   for (const result of results) {
     if (result.status === "rejected") {
-      console.error("[support-email]", result.reason);
+      const msg = String(result.reason);
+      console.error("[support-email]", msg);
+      errors.push(msg);
     } else if (result.value.error) {
-      console.error("[support-email]", result.value.error);
+      const msg = JSON.stringify(result.value.error);
+      console.error("[support-email]", msg);
+      errors.push(msg);
     }
   }
+
+  return { sent: errors.length === 0, errors };
 }
 
 export async function sendPurchaseConfirmationEmail(params: {
