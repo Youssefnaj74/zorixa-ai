@@ -17,10 +17,14 @@ export function isImageCameraStyle(value: string): value is ImageCameraStyle {
   return (IMAGE_CAMERA_STYLES as readonly string[]).includes(value);
 }
 
+function isAppliedCameraStyle(value: string): value is Exclude<ImageCameraStyle, "None"> {
+  return value !== "None" && isImageCameraStyle(value);
+}
+
 /** Appends camera/framing hints to the user prompt (Atlas has no native camera param). */
 export function applyImageCameraStyle(prompt: string, cameraStyle: string): string {
   const base = prompt.trim();
-  if (!base || cameraStyle === "None" || !isImageCameraStyle(cameraStyle)) return base;
+  if (!base || !isAppliedCameraStyle(cameraStyle)) return base;
   const suffix = CAMERA_STYLE_SUFFIX[cameraStyle];
   if (base.toLowerCase().includes(suffix.slice(0, 24).toLowerCase())) return base;
   return `${base} ${suffix}`;
