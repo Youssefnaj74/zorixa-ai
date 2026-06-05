@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Navbar } from "@/components/layout/Navbar";
 import {
@@ -9,6 +9,8 @@ import {
   formatGenerationCreditsLine
 } from "@/lib/atlas-pricing-catalog";
 import { useCredits } from "@/lib/hooks/use-credits";
+import { composerModelDisplayLabel } from "@/lib/composer-model-label";
+import { getVideoModelShowcase, showcaseVideoAssetUrl } from "@/lib/video-model-showcase";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
@@ -192,19 +194,49 @@ function extensionForUploadedBlob(blob: Blob): string {
   return "png";
 }
 
+/** Atlas must fetch the URL from the public internet (not localhost / LAN). */
+function atlasCanFetchUrlDirectly(url: string): boolean {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.toLowerCase();
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".local")) {
+      return false;
+    }
+    if (/^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host)) {
+      return false;
+    }
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Atlas `generateVideo` needs a public https:// URL in `image` / media fields.
- * Resolves blob: and data: sources via `/api/upload`, upgrades httpâ†’https.
+ * Uploads blob/data URLs and same-origin showcase paths Atlas cannot reach (localhost).
  */
 async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<string | null> {
   if (!url) return null;
-  const t = url.trim();
-  const direct = coerceToPublicHttpsUrl(t);
-  if (direct) return direct;
+  let t = url.trim();
+  if (!t) return null;
 
-  if (!t.startsWith("blob:") && !t.startsWith("data:")) return null;
+  if (t.startsWith("/")) {
+    if (typeof window === "undefined") return null;
+    t = `${window.location.origin}${t}`;
+  }
 
-  const blobRes = await fetch(t);
+  const coerced = coerceToPublicHttpsUrl(t);
+  if (coerced && atlasCanFetchUrlDirectly(coerced)) return coerced;
+
+  const needsUpload =
+    t.startsWith("blob:") ||
+    t.startsWith("data:") ||
+    Boolean(coerced && !atlasCanFetchUrlDirectly(coerced));
+  if (!needsUpload) return null;
+
+  const fetchSrc = t.startsWith("blob:") || t.startsWith("data:") ? t : coerced ?? t;
+  const blobRes = await fetch(fetchSrc);
+  if (!blobRes.ok) return null;
   const blob = await blobRes.blob();
   const ext = extensionForUploadedBlob(blob);
   const file = new File([blob], `upload.${ext}`, {
@@ -417,8 +449,67 @@ export function VideoGenerationPage() {
   /** Raw Atlas/CDN URL for full-file download (playback uses proxied `videoUrl`). */
   const [videoDownloadUrl, setVideoDownloadUrl] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [hasUserGenerated, setHasUserGenerated] = useState(false);
 
   const [history, setHistory] = useState<VideoHistoryEntry[]>([]);
+  const appliedShowcaseForModel = useRef<string | null>(null);
+
+  const modelShowcase = useMemo(
+    () => getVideoModelShowcase(composerModelId, actionTab),
+    [actionTab, composerModelId]
+  );
+  const [showcaseAssetsReady, setShowcaseAssetsReady] = useState(false);
+
+  useEffect(() => {
+    if (!modelShowcase || actionTab !== "Image to Video") {
+      setShowcaseAssetsReady(true);
+      return;
+    }
+    let cancelled = false;
+    setShowcaseAssetsReady(false);
+    const check = async () => {
+      const urls = [modelShowcase.videoUrl, modelShowcase.startFrameImageUrl].filter(
+        (u): u is string => typeof u === "string" && u.trim().length > 0
+      );
+      try {
+        const results = await Promise.all(
+          urls.map(async (path) => {
+            const res = await fetch(path, { method: "HEAD", cache: "no-store" });
+            return res.ok;
+          })
+        );
+        if (!cancelled) setShowcaseAssetsReady(results.every(Boolean));
+      } catch {
+        if (!cancelled) setShowcaseAssetsReady(false);
+      }
+    };
+    void check();
+    return () => {
+      cancelled = true;
+    };
+  }, [actionTab, modelShowcase]);
+
+  const showingModelShowcase = Boolean(
+    modelShowcase && showcaseAssetsReady && !videoUrl && !loading && !hasUserGenerated
+  );
+  const previewVideoUrl = useMemo(() => {
+    if (showingModelShowcase && modelShowcase) {
+      return showcaseVideoAssetUrl(modelShowcase.videoUrl);
+    }
+    return videoUrl;
+  }, [modelShowcase, showingModelShowcase, videoUrl]);
+
+  const historyItems = useMemo(() => {
+    if (!showingModelShowcase || !modelShowcase) return history;
+    const exampleEntry: VideoHistoryEntry = {
+      id: `showcase-${modelShowcase.modelId}`,
+      thumb: modelShowcase.posterUrl,
+      title: modelShowcase.historyTitle,
+      subtitle: `Example · ${composerModelDisplayLabel(modelShowcase.modelId, "video")}`,
+      outputVideoUrl: modelShowcase.videoUrl
+    };
+    return [exampleEntry, ...history];
+  }, [history, modelShowcase, showingModelShowcase]);
 
   const creditsLine = useMemo(
     () => {
@@ -447,7 +538,87 @@ export function VideoGenerationPage() {
     setBottomBarHeight(height);
   }, []);
 
+  const applyModelShowcase = useCallback(
+    (nextModelId: string, tab: ActionTab) => {
+      if (searchParams.get("prompt")?.trim()) return;
+      if (hasUserGenerated) return;
+
+      const showcase = getVideoModelShowcase(nextModelId, tab);
+      const showcaseKey = `${nextModelId}:${tab}`;
+      if (!showcase) {
+        appliedShowcaseForModel.current = null;
+        return;
+      }
+      if (appliedShowcaseForModel.current === showcaseKey) return;
+
+      setPrompt(showcase.prompt);
+      setAspect(showcase.aspect);
+      setResolution(showcase.resolution);
+      setTimeSeconds(showcase.timeSeconds);
+      setDurationStandard(showcase.durationStandard);
+      setGenerateError(null);
+      setVideoUrl(null);
+      setVideoDownloadUrl(null);
+      appliedShowcaseForModel.current = showcaseKey;
+
+      if (isGrokImagineVideoComposerId(nextModelId)) {
+        setAspect(grokImagineVideoAspectFromUi(showcase.aspect));
+        if (showcase.resolution !== "480p" && showcase.resolution !== "720p") {
+          setResolution("720p");
+        }
+      }
+      if (isGeminiOmniFlashComposerId(nextModelId)) {
+        setAspect(geminiOmniFlashAspectFromUi(showcase.aspect));
+        setTimeSeconds(normalizeGeminiOmniFlashDurationSeconds(showcase.timeSeconds));
+      }
+      if (isVeo31ComposerId(nextModelId)) {
+        const veo = normalizeVeo31ComposerSettings({
+          timeSeconds: showcase.timeSeconds,
+          aspect: showcase.aspect,
+          resolution: showcase.resolution,
+          actionTab: tab
+        });
+        setTimeSeconds(veo.timeSeconds);
+        setAspect(veo.aspect);
+        setResolution(veo.resolution);
+      }
+      if (isHailuo23ComposerId(nextModelId) && tab === "Text to Video") {
+        setTimeSeconds(HAILUO_23_T2V_DURATION_SECONDS);
+      }
+      if (isHailuo23ComposerId(nextModelId) && tab === "Image to Video") {
+        setTimeSeconds(normalizeHailuo23I2vDurationSeconds(showcase.timeSeconds));
+      }
+
+      if (tab === "Image to Video") {
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const startUrl = showcase.startFrameImageUrl
+          ? showcaseVideoAssetUrl(showcase.startFrameImageUrl, origin)
+          : null;
+
+        if (nextModelId === GEMINI_OMNI_FLASH_I2V_COMPOSER_ID) {
+          setPromptImageUrlSafe(null);
+          setPromptImage2UrlSafe(null);
+          setReferenceImageUrls(
+            startUrl
+              ? [startUrl, ...Array.from({ length: GEMINI_OMNI_FLASH_MAX_IMAGES - 1 }, () => null)]
+              : Array.from({ length: GEMINI_OMNI_FLASH_MAX_IMAGES }, () => null)
+          );
+        } else {
+          setPromptImageUrlSafe(startUrl);
+          setPromptImage2UrlSafe(null);
+          setReferenceImageUrls(Array.from({ length: referenceToVideoMaxImages(nextModelId) }, () => null));
+        }
+      }
+    },
+    [hasUserGenerated, searchParams, setPromptImage2UrlSafe, setPromptImageUrlSafe]
+  );
+
+  useEffect(() => {
+    applyModelShowcase(composerModelId, actionTab);
+  }, [actionTab, applyModelShowcase, composerModelId]);
+
   const handleComposerModelChange = useCallback((id: string) => {
+    appliedShowcaseForModel.current = null;
     setComposerModelId(id);
     setGenerateError(null);
     if (!videoComposerSupportsGenerateAudio(id)) {
@@ -743,6 +914,7 @@ export function VideoGenerationPage() {
   }, [composerModelId, actionTab]);
 
   const handleActionTabChange = useCallback((tab: ActionTab) => {
+    appliedShowcaseForModel.current = null;
     const wasGemini = isGeminiOmniFlashComposerId(composerModelId);
     const wasGrok = isGrokImagineVideoComposerId(composerModelId);
     setActionTab(tab);
@@ -1467,6 +1639,7 @@ export function VideoGenerationPage() {
           },
           ...prev.filter((h) => h.outputVideoUrl !== finalVideoUrl)
         ]);
+        setHasUserGenerated(true);
 
         logAtlasComposerVideoToSupabase({
           output_url: finalVideoUrl,
@@ -1486,6 +1659,15 @@ export function VideoGenerationPage() {
 
   const restoreSettings = useCallback(
     (item: VideoHistoryEntry) => {
+      if (item.id.startsWith("showcase-")) {
+        setGenerateError(null);
+        setVideoUrl(null);
+        setVideoDownloadUrl(null);
+        setHasUserGenerated(false);
+        appliedShowcaseForModel.current = null;
+        applyModelShowcase(composerModelId, actionTab);
+        return;
+      }
       const snap = item.settingsSnapshot;
       if (snap) {
         setGenerateError(null);
@@ -1575,6 +1757,9 @@ export function VideoGenerationPage() {
       }
     },
     [
+      actionTab,
+      applyModelShowcase,
+      composerModelId,
       setEditSourceVideoUrlSafe,
       setMotionVideoUrlSafe,
       setLipsyncAudioUrlSafe,
@@ -1605,10 +1790,11 @@ export function VideoGenerationPage() {
             <VideoPreview
               actionTab={actionTab}
               composerModelId={composerModelId}
-              videoUrl={videoUrl}
-              videoDownloadUrl={videoDownloadUrl}
+              videoUrl={previewVideoUrl}
+              videoDownloadUrl={showingModelShowcase ? previewVideoUrl : videoDownloadUrl}
               loading={loading}
               errorMessage={generateError}
+              isExample={showingModelShowcase}
               promptThumbUrl={hidePromptThumb ? null : promptImageUrl}
               bottomBarHeight={bottomBarHeight}
               aspectRatio={aspect}
@@ -1617,7 +1803,7 @@ export function VideoGenerationPage() {
           </div>
 
           <VideoHistory
-            items={history}
+            items={historyItems}
             onSelect={restoreSettings}
             scrollPaddingBottom={0}
             className="h-auto max-h-[min(42vh,380px)] min-h-0 w-full shrink-0 lg:h-full lg:max-h-none lg:w-[300px] lg:min-w-[300px] lg:max-w-[300px]"

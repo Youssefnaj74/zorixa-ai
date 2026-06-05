@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ImageActionTab } from "@/components/image/ImageActionTabsRow";
 import type { ImageGenerateContext } from "@/components/image/ImageBottomBar";
@@ -40,6 +40,10 @@ import {
   COMPOSER_DOCK_WITH_TABS_HEIGHT,
   IMAGE_I2I_DOCK_HEIGHT
 } from "@/lib/composer-dock-height";
+import { applyImageCameraStyle } from "@/lib/image-camera-style-prompt";
+import { composerModelDisplayLabel } from "@/lib/composer-model-label";
+import { imageI2iUsesStyleSlot } from "@/lib/image-i2i-model-slots";
+import { getImageModelShowcase, showcaseAssetUrl } from "@/lib/image-model-showcase";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import {
   creditsChargedForImageModel,
@@ -210,12 +214,46 @@ export function ImageGenerationPage() {
   const [loading, setLoading] = useState(false);
   const [outputUrls, setOutputUrls] = useState<string[]>([]);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [hasUserGenerated, setHasUserGenerated] = useState(false);
 
   const [history, setHistory] = useState<ImageHistoryEntry[]>([]);
+  const appliedShowcaseForModel = useRef<string | null>(null);
+
+  const modelShowcase = useMemo(
+    () => getImageModelShowcase(modelId, actionTab),
+    [actionTab, modelId]
+  );
+  const showingModelShowcase = Boolean(
+    modelShowcase &&
+      outputUrls.length === 0 &&
+      !loading &&
+      !hasUserGenerated &&
+      !studioLock
+  );
+  const previewUrls =
+    showingModelShowcase && modelShowcase ? [modelShowcase.imageUrl] : outputUrls;
+
+  const historyItems = useMemo(() => {
+    if (!showingModelShowcase || !modelShowcase) return history;
+    const exampleEntry: ImageHistoryEntry = {
+      id: `showcase-${modelShowcase.modelId}`,
+      thumb: modelShowcase.imageUrl,
+      title: modelShowcase.historyTitle,
+      subtitle: `Example · ${composerModelDisplayLabel(modelShowcase.modelId, "image")}`,
+      outputImageUrl: modelShowcase.imageUrl
+    };
+    return [exampleEntry, ...history];
+  }, [history, modelShowcase, showingModelShowcase]);
 
   const creditsLine = useMemo(
-    () => formatGenerationCreditsLine(creditsChargedForImageModel(modelId, batchCount)),
-    [batchCount, modelId]
+    () =>
+      formatGenerationCreditsLine(
+        creditsChargedForImageModel(modelId, batchCount, {
+          resolution,
+          isEdit: actionTab === "Image to Image"
+        })
+      ),
+    [actionTab, batchCount, modelId, resolution]
   );
 
   useEffect(() => {
@@ -323,6 +361,48 @@ export function ImageGenerationPage() {
     });
   }, []);
 
+  const applyModelShowcase = useCallback(
+    (nextModelId: string, tab: ImageActionTab) => {
+      if (studioLock) return;
+      if (searchParams.get("prompt")?.trim()) return;
+      if (hasUserGenerated) return;
+
+      const showcase = getImageModelShowcase(nextModelId, tab);
+      const showcaseKey = `${nextModelId}:${tab}`;
+      if (!showcase) {
+        appliedShowcaseForModel.current = null;
+        return;
+      }
+      if (appliedShowcaseForModel.current === showcaseKey) return;
+
+      setPrompt(showcase.prompt);
+      setCameraStyle(showcase.cameraStyle);
+      setResolution(showcase.resolution);
+      setAspect(showcase.aspect);
+      setGenerateError(null);
+      appliedShowcaseForModel.current = showcaseKey;
+
+      if (tab === "Image to Image") {
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const paths = [showcase.referenceImageUrl];
+        if (imageI2iUsesStyleSlot(nextModelId) && showcase.styleImageUrl) {
+          paths.push(showcase.styleImageUrl);
+        }
+        const refs = paths
+          .filter((u): u is string => typeof u === "string" && u.trim().length > 0)
+          .map((path) => showcaseAssetUrl(path, origin));
+        setReferenceUrlsSafe(refs);
+      } else {
+        setReferenceUrlsSafe([]);
+      }
+    },
+    [hasUserGenerated, searchParams, setReferenceUrlsSafe, studioLock]
+  );
+
+  useEffect(() => {
+    applyModelShowcase(modelId, actionTab);
+  }, [actionTab, applyModelShowcase, modelId]);
+
   const runGeneration = useCallback(
     async (ctx: ImageGenerateContext) => {
       if (loading) return;
@@ -331,7 +411,9 @@ export function ImageGenerationPage() {
       setOutputUrls([]);
 
       const promptValue = ctx.promptText.trim() || prompt.trim();
-      const promptForAtlas = stripVideoComposerAssetTokens(promptValue);
+      const promptForAtlas = stripVideoComposerAssetTokens(
+        applyImageCameraStyle(promptValue, ctx.cameraStyle)
+      );
       if (!isAtlasImageComposerId(modelId)) {
         setGenerateError("Unsupported image model.");
         return;
@@ -475,6 +557,8 @@ export function ImageGenerationPage() {
         }
 
         setOutputUrls(outputUrls);
+        setHasUserGenerated(true);
+        appliedShowcaseForModel.current = modelId;
         const baseTitle = promptForAtlas.slice(0, 42) || modelId;
         setHistory((prev) => {
           const newEntries: ImageHistoryEntry[] = outputUrls.map((url, i) => ({
@@ -496,13 +580,25 @@ export function ImageGenerationPage() {
     [aspect, loading, modelId, prompt, refreshCredits, resolution, batchCount]
   );
 
-  const restoreHistory = useCallback((item: ImageHistoryEntry) => {
-    const url = item.outputImageUrl ?? item.thumb;
-    if (url.startsWith("http")) {
-      setGenerateError(null);
-      setOutputUrls([url]);
-    }
-  }, []);
+  const restoreHistory = useCallback(
+    (item: ImageHistoryEntry) => {
+      if (item.id.startsWith("showcase-")) {
+        setGenerateError(null);
+        setOutputUrls([]);
+        setHasUserGenerated(false);
+        appliedShowcaseForModel.current = null;
+        applyModelShowcase(modelId, actionTab);
+        return;
+      }
+      const url = item.outputImageUrl ?? item.thumb;
+      if (url.startsWith("http") || url.startsWith("/")) {
+        setGenerateError(null);
+        setOutputUrls([url]);
+        setHasUserGenerated(true);
+      }
+    },
+    [actionTab, applyModelShowcase, modelId]
+  );
 
   return (
     <div className="flex min-h-dvh flex-col bg-zorixa-bg">
@@ -533,17 +629,18 @@ export function ImageGenerationPage() {
               </div>
             ) : null}
             <ImagePreview
-              imageUrls={outputUrls}
+              imageUrls={previewUrls}
               loading={loading}
               errorMessage={generateError}
-              referenceThumbUrl={referenceUrls[0] ?? null}
+              referenceThumbUrls={referenceUrls}
+              isExample={showingModelShowcase}
               bottomBarHeight={bottomBarHeight}
               className="scrollbar-hide h-full min-h-0 w-full min-w-0 flex-1"
             />
           </div>
 
           <ImageHistory
-            items={history}
+            items={historyItems}
             onSelect={restoreHistory}
             className="h-auto max-h-[min(42vh,380px)] min-h-0 w-full shrink-0 lg:h-full lg:max-h-none lg:w-[300px] lg:min-w-[300px] lg:max-w-[300px]"
           />
@@ -560,6 +657,7 @@ export function ImageGenerationPage() {
         onActionTabChange={(tab) => {
           setActionTab(tab);
           setGenerateError(null);
+          appliedShowcaseForModel.current = null;
         }}
         referenceUrls={referenceUrls}
         onReferenceUrlsChange={setReferenceUrlsSafe}
@@ -567,6 +665,7 @@ export function ImageGenerationPage() {
         onModelChange={(id) => {
           setModelId(id);
           setGenerateError(null);
+          appliedShowcaseForModel.current = null;
         }}
         cameraStyle={cameraStyle}
         onCameraStyleChange={setCameraStyle}

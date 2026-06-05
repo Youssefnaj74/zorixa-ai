@@ -1,0 +1,58 @@
+{
+  "shared": {
+    "referencePrompt": "Studio portrait of a young woman, neutral relaxed expression, soft even lighting, plain light grey background, front-facing, photorealistic, sharp face detail, professional headshot",
+    "stylePrompt": "Warm golden hour cinematic color grade mood plate, rich amber and orange tones, soft lens flare, luxury photography atmosphere, dramatic cinematic lighting, no person, abstract light reference"
+  },
+  "defaults": {
+    "cameraStyle": "None",
+    "resolution": "2K",
+    "aspect": "Auto"
+  },
+  "models": {
+    "gpt-image-2": {
+      "editPrompt": "Transform the portrait into a premium cinematic golden hour scene, warm sunlight, realistic skin texture, shallow depth of field, natural facial details, luxury photography, ultra realistic, professional camera quality.",
+      "historyTitle": "Cinematic Golden Hour"
+    },
+    "nano-banana-2": {
+      "editPrompt": "Transform the portrait into a modern lifestyle creator photo, bright natural lighting, authentic social media aesthetic, clean background, realistic facial features, highly detailed photography.",
+      "historyTitle": "Lifestyle Creator"
+    },
+    "nano-banana-pro": {
+      "editPrompt": "Transform the portrait into a luxury fashion magazine cover, designer outfit, elegant city background, cinematic lighting, premium commercial photography, realistic details.",
+      "historyTitle": "Luxury Fashion Editorial"
+    },
+    "zorixa": {
+      "editPrompt": "Transform the portrait into a futuristic AI creator standing in a neon-lit smart city, glowing holograms, cinematic atmosphere, realistic face preservation, ultra detailed.",
+      "historyTitle": "Cyber Future Creator"
+    },
+    "seedream-5": {
+      "editPrompt": "Transform the portrait into a cinematic anime protagonist, detailed anime eyes, dramatic sunset lighting, vibrant colors, masterpiece anime illustration, highly detailed.",
+      "historyTitle": "Anime Hero",
+      "aspect": "9:16"
+    },
+    "grok-imagine": {
+      "editPrompt": "Transform the portrait into a cyberpunk character standing in a rainy neon city street, colorful reflections, futuristic fashion, cinematic cyberpunk atmosphere, golden hour warmth in neon rain.",
+      "historyTitle": "Cyberpunk Street"
+    },
+    "flux-kontext-dev": {
+      "editPrompt": "Transform the portrait into an outdoor explorer standing on a mountain above the clouds, realistic photography, natural lighting, ultra realistic textures, National Geographic quality.",
+      "historyTitle": "Adventure Explorer"
+    },
+    "flux-kontext-dev-lora": {
+      "editPrompt": "Transform the portrait into a powerful fantasy queen wearing ornate golden armor and a magical crown, dramatic lighting, premium fantasy concept art, highly detailed.",
+      "historyTitle": "Fantasy Queen"
+    },
+    "wan-image-2-7": {
+      "editPrompt": "Transform the portrait into a futuristic astronaut exploring an alien planet, cinematic sci-fi environment, realistic lighting, ultra detailed suit design.",
+      "historyTitle": "Sci-Fi Astronaut"
+    },
+    "wan-image-2-7-pro": {
+      "editPrompt": "Transform the portrait into a legendary dragon rider flying above snowy mountains, epic fantasy atmosphere, cinematic composition, blockbuster quality.",
+      "historyTitle": "Dragon Rider"
+    },
+    "wan-image-2-6": {
+      "editPrompt": "Transform the portrait into an explorer discovering a hidden jungle temple, rays of sunlight, lush vegetation, mysterious cinematic atmosphere, highly detailed.",
+      "historyTitle": "Ancient Temple Explorer"
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "defaults": {
+    "timeSeconds": 5,
+    "aspect": "9:16",
+    "resolution": "720p",
+    "durationStandard": "Standard"
+  },
+  "models": {
+    "grok-imagine-video-i2v-15": {
+      "historyTitle": "UGC Creator",
+      "resolution": "480p",
+      "startFramePrompt": "Friendly lifestyle content creator in a modern kitchen, holding a smartphone for a vertical selfie video, natural smile, casual clothing, warm indoor lighting, authentic UGC aesthetic, vertical 9:16 composition, photorealistic.",
+      "prompt": "The creator speaks directly to the camera in a modern kitchen, natural hand gestures, authentic facial expressions, social media content style, handheld smartphone feel, realistic movement."
+    },
+    "gemini-omni-flash-i2v": {
+      "historyTitle": "Documentary Explorer",
+      "startFramePrompt": "Adventure explorer standing at the edge of a lush rainforest trail, documentary photography style, natural daylight, realistic gear and clothing, cinematic composition, vertical 9:16, National Geographic quality.",
+      "prompt": "The explorer walks through a rainforest while looking around naturally, cinematic documentary camera work, realistic environmental motion, National Geographic style.",
+      "timeSeconds": 6
+    },
+    "kling-3-pro": {
+      "historyTitle": "Epic Warrior",
+      "startFramePrompt": "Legendary warrior standing on a rocky mountain cliff, dramatic storm clouds, flowing cape, cinematic portrait, epic fantasy realism, vertical 9:16, blockbuster movie poster quality.",
+      "prompt": "A legendary warrior stands on a mountain cliff during a storm, cape flowing dramatically, cinematic orbit camera movement, blockbuster movie atmosphere."
+    },
+    "seedance-2": {
+      "historyTitle": "Luxury Fashion Commercial",
+      "startFramePrompt": "Luxury red sports car parked on a wet neon city street at night, cinematic automotive photography, premium commercial still, vertical 9:16 composition, no people, elegant advertising quality.",
+      "prompt": "A luxury sports car drives slowly through a neon-lit city street, cinematic tracking shot, reflections on wet pavement, premium fashion commercial energy, luxury advertising quality."
+    },
+    "seedance-1-5": {
+      "historyTitle": "Fantasy Magic",
+      "startFramePrompt": "Fantasy sorcerer in an enchanted forest, glowing magical particles, ornate robes, cinematic fantasy illustration, dreamy atmosphere, vertical 9:16, stylized fantasy art.",
+      "prompt": "A magical sorcerer surrounded by floating glowing particles, enchanted forest background, dreamy cinematic atmosphere, fantasy movie style."
+    },
+    "wan-2-6": {
+      "historyTitle": "Adventure Film",
+      "startFramePrompt": "Adventure explorer standing before an ancient hidden temple entrance in the jungle, rays of sunlight, cinematic adventure photography, vertical 9:16, highly detailed environment.",
+      "prompt": "An explorer discovers an ancient hidden temple, dust particles in the air, cinematic camera push-in, adventure movie feeling."
+    },
+    "wan-2-7": {
+      "historyTitle": "Sci-Fi Hero",
+      "startFramePrompt": "Futuristic astronaut on an alien planet with colorful sky, holographic UI elements, cinematic sci-fi portrait, vertical 9:16, ultra detailed suit design.",
+      "prompt": "A futuristic astronaut on an alien planet, holograms floating around, dramatic camera orbit, cinematic science fiction atmosphere."
+    },
+    "happyhorse-1": {
+      "historyTitle": "Animal Documentary",
+      "startFramePrompt": "Beautiful horse standing in a green meadow at sunrise, golden light, nature documentary photography, vertical 9:16, realistic anatomy and mane detail.",
+      "prompt": "A beautiful horse running through a green meadow at sunrise, realistic movement, flowing mane, nature documentary quality."
+    },
+    "hailuo-2-3": {
+      "historyTitle": "Influencer Reel",
+      "startFramePrompt": "Lifestyle influencer outdoors filming a vertical reel, natural smile, casual trendy outfit, soft daylight, authentic social media aesthetic, vertical 9:16, photorealistic.",
+      "prompt": "A lifestyle influencer filming a vertical reel outdoors, smiling, talking naturally, authentic TikTok and Instagram content style.",
+      "timeSeconds": 6
+    },
+    "google-veo-3-1": {
+      "historyTitle": "Hollywood Cinema",
+      "startFramePrompt": "Mysterious traveler in a desert at sunset, wind-blown clothing, cinematic Hollywood portrait, film-grade lighting, vertical 9:16, ultra realistic.",
+      "prompt": "A mysterious traveler walks through a desert during sunset, wind moving the clothing and sand, cinematic camera movement, Hollywood movie quality.",
+      "timeSeconds": 6
+    },
+    "vidu-q3": {
+      "historyTitle": "Action Chase",
+      "startFramePrompt": "Futuristic motorcycle rider in a neon cyberpunk city street, dynamic action pose, vibrant neon lights, vertical 9:16, cinematic action still.",
+      "prompt": "A futuristic biker racing through a neon cyberpunk city, dynamic chase camera, energetic motion, high-speed action sequence."
+    },
+    "vidu-q3-pro": {
+      "historyTitle": "Luxury Product Ad",
+      "startFramePrompt": "Luxury perfume bottle on a reflective black surface, golden particles, dramatic studio lighting, premium commercial product photography, vertical 9:16, elegant advertising still.",
+      "prompt": "A luxury perfume bottle rotates on a reflective surface with floating golden particles, elegant commercial cinematography, premium advertising quality."
+    }
+  }
+}

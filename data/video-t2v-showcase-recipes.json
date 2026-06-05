@@ -1,0 +1,61 @@
+{
+  "defaults": {
+    "timeSeconds": 5,
+    "aspect": "9:16",
+    "resolution": "720p",
+    "durationStandard": "Standard"
+  },
+  "models": {
+    "grok-imagine-video-t2v": {
+      "prompt": "A friendly content creator recording a vertical smartphone video in a modern kitchen, natural hand gestures, realistic facial expressions, warm morning sunlight through the window, authentic social media style, subtle camera movement, highly realistic, 5-second UGC clip.",
+      "historyTitle": "UGC Kitchen Clip",
+      "resolution": "480p"
+    },
+    "gemini-omni-flash-t2v": {
+      "prompt": "A cinematic fly-through of a futuristic city at sunset, flying vehicles moving between skyscrapers, glowing holograms, realistic lighting, smooth camera motion, ultra detailed sci-fi environment, blockbuster quality, 6-second vertical video.",
+      "historyTitle": "Futuristic City",
+      "timeSeconds": 6
+    },
+    "kling-3-pro": {
+      "prompt": "An epic warrior standing on a mountain cliff during a storm, cape flowing in the wind, dramatic clouds, cinematic camera orbit, volumetric lighting, realistic movement, Hollywood movie quality, 5-second shot.",
+      "historyTitle": "Epic Warrior"
+    },
+    "seedance-2": {
+      "prompt": "A luxury sports car driving through a neon-lit city at night, cinematic tracking shot, realistic reflections on wet roads, premium commercial quality, dynamic camera movement, ultra detailed, 5 seconds.",
+      "historyTitle": "Luxury Car Commercial"
+    },
+    "seedance-1-5": {
+      "prompt": "A magical fantasy forest filled with glowing particles and giant trees, soft rays of sunlight, slow forward camera movement, dreamy atmosphere, highly detailed environment, cinematic quality, 5 seconds.",
+      "historyTitle": "Fantasy Forest"
+    },
+    "wan-2-6": {
+      "prompt": "A massive dragon flying above snowy mountain peaks, clouds moving below, cinematic aerial camera movement, epic fantasy atmosphere, realistic scales and lighting, smooth motion, 5 seconds.",
+      "historyTitle": "Dragon Flight"
+    },
+    "wan-2-7": {
+      "prompt": "A lone astronaut walking across an alien planet, floating dust particles, dramatic colorful sky, cinematic camera orbit, ultra realistic sci-fi environment, smooth motion, 5 seconds.",
+      "historyTitle": "Space Explorer"
+    },
+    "happyhorse-1": {
+      "prompt": "A beautiful horse running freely through a green meadow during golden hour, realistic muscle movement, flowing mane, cinematic slow-motion feeling, natural lighting, highly detailed, 5 seconds.",
+      "historyTitle": "Running Horse"
+    },
+    "hailuo-2-3": {
+      "prompt": "A lifestyle influencer speaking directly to the camera while walking outdoors, natural expressions, authentic social media energy, soft daylight, realistic motion, vertical reel style, 5 seconds.",
+      "historyTitle": "Influencer Reel"
+    },
+    "google-veo-3-1": {
+      "prompt": "A mysterious traveler walking through a desert at sunset, wind moving the clothing and sand, cinematic camera push-in, film-grade lighting, ultra realistic details, Hollywood production quality, 6-second vertical video.",
+      "historyTitle": "Desert Traveler",
+      "timeSeconds": 6
+    },
+    "vidu-q3": {
+      "prompt": "A futuristic motorcycle speeding through a neon cyberpunk city, dynamic chase camera, glowing lights, motion blur, energetic action sequence, vibrant colors, smooth animation, 5 seconds.",
+      "historyTitle": "Neon Bike Chase"
+    },
+    "vidu-q3-pro": {
+      "prompt": "A luxury perfume bottle on a reflective black surface, floating golden particles, dramatic studio lighting, elegant camera movement, premium advertising quality, ultra detailed commercial shot, 5 seconds.",
+      "historyTitle": "Luxury Perfume Ad"
+    }
+  }
+}

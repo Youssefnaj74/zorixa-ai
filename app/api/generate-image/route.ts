@@ -207,7 +207,7 @@ async function handleParallelImageBatchPost(args: {
     negativePrompt
   } = args;
 
-  const perImageCredits = creditsForImageModel(imageModel, 1);
+  const perImageCredits = creditsForImageModel(imageModel, 1, { resolution, isEdit });
   const predictionIds: string[] = [];
   const immediateUrls: string[] = [];
   let totalCreditsSpent = 0;
@@ -385,7 +385,7 @@ async function handleGenerateImagePost(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const creditCost = creditsForImageModel(imageModel, numImages);
+  const creditCost = creditsForImageModel(imageModel, numImages, { resolution, isEdit });
   const afford = await assertCanAfford(actor.userId, creditCost);
   if (!afford.ok) {
     if (afford.error === "INSUFFICIENT_CREDITS") {

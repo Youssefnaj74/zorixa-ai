@@ -66,7 +66,9 @@ export function ImagePreview({
   imageUrls = [],
   loading,
   errorMessage,
+  referenceThumbUrls,
   referenceThumbUrl,
+  isExample = false,
   bottomBarHeight = 130,
   className
 }: {
@@ -74,13 +76,26 @@ export function ImagePreview({
   imageUrls?: string[];
   loading?: boolean;
   errorMessage?: string | null;
+  /** Reference / style uploads shown in Image to Image mode. */
+  referenceThumbUrls?: string[];
+  /** @deprecated Use referenceThumbUrls */
   referenceThumbUrl?: string | null;
+  /** Studio demo output (not a user generation). */
+  isExample?: boolean;
   bottomBarHeight?: number;
   className?: string;
 }) {
   const urls = imageUrls.filter((u) => typeof u === "string" && u.trim().length > 0);
   const primaryUrl = urls[0] ?? null;
   const isBatch = urls.length > 1;
+  const refUrls = (
+    referenceThumbUrls?.length
+      ? referenceThumbUrls
+      : referenceThumbUrl
+        ? [referenceThumbUrl]
+        : []
+  ).filter((u) => typeof u === "string" && u.trim().length > 0);
+  const refLabels = ["Reference", "Style"] as const;
 
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${bottomBarHeight}px)`;
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
@@ -102,6 +117,11 @@ export function ImagePreview({
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2.5 sm:px-4">
           <h2 className="font-display text-sm font-semibold text-white">
             Image Preview
+            {isExample ? (
+              <span className="ml-2 rounded-md bg-brand/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-light">
+                Example
+              </span>
+            ) : null}
             {isBatch ? (
               <span className="ml-2 text-xs font-normal tabular-nums text-zorixa-muted">
                 ({urls.length} images)
@@ -142,20 +162,6 @@ export function ImagePreview({
         </div>
 
         <div className="relative flex min-h-0 flex-1 flex-col bg-zorixa-preview">
-          {referenceThumbUrl ? (
-            <div className="flex shrink-0 justify-center pt-3">
-              <div className="relative size-16 overflow-hidden rounded-lg ring-1 ring-[rgba(131,56,235,0.25)]">
-                <ExternalImage
-                  src={referenceThumbUrl}
-                  alt=""
-                  width={64}
-                  height={64}
-                  className="size-full object-cover"
-                />
-              </div>
-            </div>
-          ) : null}
-
           <div className="relative flex min-h-0 flex-1 flex-col">
             <div
               className={cn(
@@ -201,6 +207,40 @@ export function ImagePreview({
                     className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)] transition-transform group-hover:scale-[1.01]"
                   />
                 </button>
+              ) : refUrls.length > 0 ? (
+                <div
+                  className={cn(
+                    "grid w-full max-w-lg gap-3",
+                    refUrls.length > 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
+                  )}
+                >
+                  {refUrls.map((refUrl, i) => (
+                    <div
+                      key={`${refUrl}-${i}`}
+                      className="flex min-h-[140px] flex-col overflow-hidden rounded-xl bg-black/25 ring-1 ring-[rgba(131,56,235,0.2)]"
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openLightbox(refUrl, refLabels[i] ?? `Reference ${i + 1}`)
+                        }
+                        className="group relative flex flex-1 cursor-zoom-in items-center justify-center p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                        aria-label={`Zoom ${refLabels[i] ?? `reference ${i + 1}`}`}
+                      >
+                        <ExternalImage
+                          src={refUrl}
+                          alt={refLabels[i] ?? `Reference ${i + 1}`}
+                          width={512}
+                          height={512}
+                          className="max-h-[min(38vh,320px)] w-full object-contain transition-transform group-hover:scale-[1.02]"
+                        />
+                      </button>
+                      <div className="border-t border-white/10 bg-black/50 px-3 py-2 text-center text-[11px] font-medium text-white/55">
+                        {refLabels[i] ?? `Reference ${i + 1}`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="m-auto flex flex-col items-center justify-center gap-4">
                   <div className="grid size-16 place-items-center rounded-full bg-[rgba(131,56,235,0.25)] text-brand-light ring-2 ring-white/10">

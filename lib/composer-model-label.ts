@@ -20,6 +20,12 @@ const IMAGE_COMPOSER_LABELS: Record<string, string> = {
 };
 
 const VIDEO_COMPOSER_LABELS: Record<string, string> = {
+  "grok-imagine-video-t2v": "Grok Imagine",
+  "grok-imagine-video-i2v-15": "Grok Imagine v1.5",
+  "grok-imagine-video-r2v": "Grok Imagine",
+  "gemini-omni-flash-t2v": "Gemini Omni Flash",
+  "gemini-omni-flash-i2v": "Gemini Omni Flash",
+  "gemini-omni-flash-r2v": "Gemini Omni Flash",
   "kling-3-pro": "Kling 3.0 Pro",
   "kling-2-6-motion": "Kling 2.6 Motion",
   "seedance-2": "Seedance 2.0",

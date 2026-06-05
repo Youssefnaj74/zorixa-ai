@@ -729,7 +729,9 @@ async function handleGenerateVideoPost(request: Request) {
     action === "image" &&
     last_image_url &&
     !isSeedanceImageToVideoModel(model) &&
-    !isKlingV3AtlasModel(model)
+    !isKlingV3AtlasModel(model) &&
+    !isWan27ImageToVideoModel(model) &&
+    !isVeo31ImageToVideoModel(model)
   ) {
     return NextResponse.json(
       {

@@ -42,9 +42,10 @@ export const PACK_CREDIT_DISCOUNT = 0.85;
 /** Target gross margin for video generations: revenue = Atlas cost / (1 - margin). */
 export const ZORIXA_VIDEO_GROSS_MARGIN = 0.6;
 
-export const ZORIXA_IMAGE_DEFAULT_GROSS_MARGIN = 0.65;
-export const ZORIXA_IMAGE_CHEAP_GROSS_MARGIN = 0.7;
-export const ZORIXA_IMAGE_PREMIUM_GROSS_MARGIN = 0.6;
+/** Target gross margin on image generations (1K / 2K / 3K / 4K tiers). */
+export const ZORIXA_IMAGE_DEFAULT_GROSS_MARGIN = 0.68;
+export const ZORIXA_IMAGE_CHEAP_GROSS_MARGIN = 0.69;
+export const ZORIXA_IMAGE_PREMIUM_GROSS_MARGIN = 0.68;
 export const ZORIXA_VIDEO_DEFAULT_GROSS_MARGIN = 0.65;
 export const ZORIXA_VIDEO_PREMIUM_GROSS_MARGIN = 0.55;
 export const ZORIXA_VIDEO_EXPENSIVE_GROSS_MARGIN = 0.5;
@@ -260,7 +261,8 @@ function videoMarginForModel(composerModelId: string, atlasUsd: number): number 
     composerModelId === "google-veo-3-1" ||
     composerModelId === "hailuo-2-3" ||
     composerModelId === "kling-3-pro" ||
-    composerModelId === "happyhorse-1"
+    composerModelId === "happyhorse-1" ||
+    composerModelId === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID
   ) {
     return ZORIXA_VIDEO_PREMIUM_GROSS_MARGIN;
   }
@@ -308,9 +310,89 @@ const DEFAULT_IMAGE_USD = 0.025;
 const DEFAULT_VIDEO_USD = 0.22;
 const TTS_USD = 0.015;
 
+export type ImageResolutionTier = "1K" | "2K" | "3K" | "4K";
+
+export type ImagePricingOptions = {
+  resolution?: string;
+  /** Image-to-Image / edit routes often cost more per resolution tier on Atlas. */
+  isEdit?: boolean;
+};
+
+const DEFAULT_IMAGE_RESOLUTION_MULTIPLIER: Record<ImageResolutionTier, number> = {
+  "1K": 1,
+  "2K": 1.5,
+  "3K": 1.75,
+  "4K": 2
+};
+
+type ImageRateCard = {
+  /** Absolute Atlas USD per image at each resolution (text-to-image). */
+  resolutionRates?: Partial<Record<ImageResolutionTier, number>>;
+  /** Edit / I2I wholesale when it differs from T2I. */
+  editResolutionRates?: Partial<Record<ImageResolutionTier, number>>;
+  note?: string;
+};
+
+/** Atlas image wholesale by resolution where known; otherwise base × multiplier. */
+export const ATLAS_IMAGE_RATE_CARDS: Record<string, ImageRateCard> = {
+  "gpt-image-2": {
+    resolutionRates: { "1K": 0.012, "2K": 0.024, "3K": 0.048, "4K": 0.048 },
+    note: "Quality tier: 1K low · 2K medium · 3K high"
+  },
+  "nano-banana-2": {
+    resolutionRates: { "1K": 0.02, "2K": 0.03, "4K": 0.04 },
+    editResolutionRates: { "1K": 0.08, "2K": 0.12, "4K": 0.16 },
+    note: "T2I & edit scale 1K → 2K → 4K"
+  },
+  "nano-banana-pro": {
+    resolutionRates: { "1K": 0.04, "2K": 0.06, "4K": 0.08 },
+    editResolutionRates: { "1K": 0.12, "2K": 0.18, "4K": 0.24 },
+    note: "Pro tier; T2I & edit scale with resolution"
+  },
+  "seedream-5": {
+    resolutionRates: { "1K": 0.015, "2K": 0.015, "3K": 0.025, "4K": 0.03 },
+    note: "3K tier higher than 2K on Atlas"
+  },
+  "wan-image-2-7-pro": {
+    resolutionRates: { "1K": 0.05, "2K": 0.075, "4K": 0.075 },
+    note: "Pro / 4K-ready"
+  }
+};
+
+export function normalizeImageResolutionTier(raw: unknown): ImageResolutionTier {
+  const v = typeof raw === "string" ? raw.trim().toUpperCase() : "";
+  if (v === "4K") return "4K";
+  if (v === "3K") return "3K";
+  if (v === "2K") return "2K";
+  return "1K";
+}
+
+/** Atlas wholesale USD for one image at the requested resolution. */
+export function atlasImageUsdForOptions(
+  composerModelId: string,
+  opts: ImagePricingOptions = {}
+): number {
+  const tier = normalizeImageResolutionTier(opts.resolution);
+  const card = ATLAS_IMAGE_RATE_CARDS[composerModelId];
+  const editRates = opts.isEdit ? card?.editResolutionRates : undefined;
+  if (editRates?.[tier] !== undefined) {
+    return editRates[tier]!;
+  }
+  if (card?.resolutionRates?.[tier] !== undefined) {
+    return card.resolutionRates[tier]!;
+  }
+
+  const base = ATLAS_MODEL_PRICING[composerModelId]?.usd ?? DEFAULT_IMAGE_USD;
+  return base * DEFAULT_IMAGE_RESOLUTION_MULTIPLIER[tier];
+}
+
 /** Client-safe estimate for composer UI (matches server credits-charge). */
-export function creditsChargedForImageModel(composerModelId: string, quantity = 1): number {
-  const usd = ATLAS_MODEL_PRICING[composerModelId]?.usd ?? DEFAULT_IMAGE_USD;
+export function creditsChargedForImageModel(
+  composerModelId: string,
+  quantity = 1,
+  opts: ImagePricingOptions = {}
+): number {
+  const usd = atlasImageUsdForOptions(composerModelId, opts);
   const margin = imageMarginForModel(composerModelId, usd);
   const perImage = atlasUsdToCreditsForGrossMargin(
     usd * ZORIXA_FAILURE_BUFFER_MULTIPLIER,
@@ -496,10 +578,13 @@ function modelsFor(ids: string[], names: Record<string, string>): PricingCatalog
     .map((id) => {
       const isVideo = Boolean(VIDEO_NAMES[id]);
       const p = ATLAS_MODEL_PRICING[id];
-      const atlasUsd = isVideo ? atlasVideoUsdForOptions(id) : (p?.usd ?? DEFAULT_IMAGE_USD);
+      const imageOpts = { resolution: "2K" as const };
+      const atlasUsd = isVideo
+        ? atlasVideoUsdForOptions(id)
+        : atlasImageUsdForOptions(id, imageOpts);
       const creditsCharged = isVideo
         ? creditsChargedForVideoModel(id)
-        : creditsChargedForImageModel(id);
+        : creditsChargedForImageModel(id, 1, imageOpts);
       return {
         id,
         name: names[id] ?? id,
@@ -507,7 +592,7 @@ function modelsFor(ids: string[], names: Record<string, string>): PricingCatalog
         creditsCharged,
         marginUsd: creditsCharged * CREDIT_RETAIL_USD - atlasUsd,
         unit: isVideo ? ("per 5s video (720p)" as const) : (p?.unit ?? "per image"),
-        note: ATLAS_VIDEO_RATE_CARDS[id]?.note ?? p?.note
+        note: ATLAS_VIDEO_RATE_CARDS[id]?.note ?? ATLAS_IMAGE_RATE_CARDS[id]?.note ?? p?.note
       };
     });
 }

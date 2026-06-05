@@ -18,7 +18,7 @@ export function MarketingDocLayout({
   return (
     <div className="min-h-dvh bg-[#080810] font-body text-white">
       <Navbar />
-      <main className="zorixa-grid-bg min-h-[calc(100dvh-56px)]" style={{ paddingTop: NAV_H }}>
+      <main className="min-h-[calc(100dvh-56px)]" style={{ paddingTop: NAV_H }}>
         <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#00e5ff]">{eyebrow}</p>
           <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-white">{title}</h1>

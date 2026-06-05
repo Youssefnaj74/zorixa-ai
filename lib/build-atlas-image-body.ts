@@ -44,6 +44,23 @@ function isWanImageAtlasModel(model: string): boolean {
   return /alibaba\/wan-2\.[67]/i.test(model);
 }
 
+function isNanoBananaAtlasModel(model: string): boolean {
+  return /google\/nano-banana/i.test(model);
+}
+
+/** Atlas Nano Banana expects lowercase `resolution`: 1k | 2k | 4k. */
+export function nanoBananaAtlasResolution(resolution: string): "1k" | "2k" | "4k" {
+  switch (resolution.trim().toUpperCase()) {
+    case "4K":
+      return "4k";
+    case "2K":
+      return "2k";
+    case "1K":
+    default:
+      return "1k";
+  }
+}
+
 /** Qwen Image uses `size` as `width*height` (512–2048). */
 export function qwenSizeFromAspectAndResolution(
   aspectRatio: string | null,
@@ -256,6 +273,22 @@ export function buildAtlasImageBody(input: BuildAtlasImageBodyInput): Record<str
       height,
       size: `${width}*${height}`
     };
+    if (isEdit && imageUrls.length > 0) {
+      body.images = imageUrls;
+      body.image = imageUrls[0];
+    }
+    return body;
+  }
+
+  if (isNanoBananaAtlasModel(model)) {
+    const body: Record<string, unknown> = {
+      model,
+      prompt,
+      resolution: nanoBananaAtlasResolution(resolution || "1K")
+    };
+    if (aspectRatio) {
+      body.aspect_ratio = aspectRatio;
+    }
     if (isEdit && imageUrls.length > 0) {
       body.images = imageUrls;
       body.image = imageUrls[0];

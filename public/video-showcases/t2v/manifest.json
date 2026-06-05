@@ -1,0 +1,137 @@
+{
+  "generatedAt": "2026-06-05T20:06:23.681Z",
+  "items": {
+    "grok-imagine-video-t2v": {
+      "modelId": "grok-imagine-video-t2v",
+      "atlasModel": "xai/grok-imagine-video/text-to-video",
+      "prompt": "A friendly content creator recording a vertical smartphone video in a modern kitchen, natural hand gestures, realistic facial expressions, warm morning sunlight through the window, authentic social media style, subtle camera movement, highly realistic, 5-second UGC clip.",
+      "aspect": "9:16",
+      "resolution": "480p",
+      "timeSeconds": 5,
+      "publicPath": "/video-showcases/t2v/grok-imagine-video-t2v.mp4",
+      "atlasOutputUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/videos/58b10867-1940-4ffb-835b-027bc689dc4d.mp4",
+      "predictionId": "97743722b5a24092bf3f2a418d001a96"
+    },
+    "gemini-omni-flash-t2v": {
+      "modelId": "gemini-omni-flash-t2v",
+      "atlasModel": "google/gemini-omni-flash/text-to-video-developer",
+      "prompt": "A cinematic fly-through of a futuristic city at sunset, flying vehicles moving between skyscrapers, glowing holograms, realistic lighting, smooth camera motion, ultra detailed sci-fi environment, blockbuster quality, 6-second vertical video.",
+      "aspect": "9:16",
+      "resolution": "720p",
+      "timeSeconds": 6,
+      "publicPath": "/video-showcases/t2v/gemini-omni-flash-t2v.mp4",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/716db0cc-be9d-420d-93bb-77795b796bc6.mp4",
+      "predictionId": "3f146f9c717b4d09843449f33a0e8332"
+    },
+    "kling-3-pro": {
+      "modelId": "kling-3-pro",
+      "atlasModel": "kwaivgi/kling-v3.0-pro/text-to-video",
+      "prompt": "An epic warrior standing on a mountain cliff during a storm, cape flowing in the wind, dramatic clouds, cinematic camera orbit, volumetric lighting, realistic movement, Hollywood movie quality, 5-second shot.",
+      "aspect": "9:16",
+      "resolution": "720p",
+      "timeSeconds": 5,
+      "publicPath": "/video-showcases/t2v/kling-3-pro.mp4",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/0c34d0e4-1539-49c1-830c-4755b9ce2490.mp4",
+      "predictionId": "1add88e654a14853a32df6a3dd302fb3"
+    },
+    "seedance-2": {
+      "modelId": "seedance-2",
+      "atlasModel": "bytedance/seedance-2.0/text-to-video",
+      "prompt": "A luxury sports car driving through a neon-lit city at night, cinematic tracking shot, realistic reflections on wet roads, premium commercial quality, dynamic camera movement, ultra detailed, 5 seconds.",
+      "aspect": "9:16",
+      "resolution": "720p",
+      "timeSeconds": 5,
+      "publicPath": "/video-showcases/t2v/seedance-2.mp4",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/cgt-20260606035202-cp7sc-0.mp4",
+      "predictionId": "861c4a5df52b4bc68c5f26ed64863e54"
+    },
+    "seedance-1-5": {
+      "modelId": "seedance-1-5",
+      "atlasModel": "bytedance/seedance-v1.5-pro/text-to-video",
+      "prompt": "A magical fantasy forest filled with glowing particles and giant trees, soft rays of sunlight, slow forward camera movement, dreamy atmosphere, highly detailed environment, cinematic quality, 5 seconds.",
+      "aspect": "9:16",
+      "resolution": "720p",
+      "timeSeconds": 5,
+      "publicPath": "/video-showcases/t2v/seedance-1-5.mp4",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/cgt-20260606035451-hnxrm-0.mp4",
+      "predictionId": "33d94332e6954b52b6ad149f71f132c9"
+    },
+    "wan-2-6": {
+      "modelId": "wan-2-6",
+      "atlasModel": "alibaba/wan-2.6/text-to-video",
+      "prompt": "A massive dragon flying above snowy mountain peaks, clouds moving below, cinematic aerial camera movement, epic fantasy atmosphere, realistic scales and lighting, smooth motion, 5 seconds.",
+      "aspect": "9:16",
+      "resolution": "720p",
+      "timeSeconds": 5,
+      "publicPath": "/video-showcases/t2v/wan-2-6.mp4",
+      "atlasOutputUrl": "https://dashscope-463f.oss-accelerate.aliyuncs.com/1d/73/20260606/81aaad5a/86bd98be-3b80-403d-8ce4-37e1890dbc4f.mp4?Expires=1780775799&OSSAccessKeyId=LTAI5t7xkDxYoFdeAc4nqUeU&Signature=ODXFe9aIXJq7jFcw9wnk0UpKo0I%3D",
+      "predictionId": "d9b7f0debc2e4ab4abb3fb22c271bcd6"
+    },
+    "wan-2-7": {
+      "modelId": "wan-2-7",
+      "atlasModel": "alibaba/wan-2.7/text-to-video",
+      "prompt": "A lone astronaut walking across an alien planet, floating dust particles, dramatic colorful sky, cinematic camera orbit, ultra realistic sci-fi environment, smooth motion, 5 seconds.",
+      "aspect": "9:16",
+      "resolution": "720p",
+      "timeSeconds": 5,
+      "publicPath": "/video-showcases/t2v/wan-2-7.mp4",
+      "atlasOutputUrl": "https://dashscope-463f.oss-accelerate.aliyuncs.com/1d/82/20260606/417fa27f/2125147-metadata_user_5375f7e5d8a71fb7.mp4?Expires=1780775885&OSSAccessKeyId=LTAI5t7xkDxYoFdeAc4nqUeU&Signature=brboC7qiBh78dhSriwMDVR5QmY4%3D",
+      "predictionId": "1c709be45c0340deb1c775199ec32774"
+    },
+    "happyhorse-1": {
+      "modelId": "happyhorse-1",
+      "atlasModel": "alibaba/happyhorse-1.0/text-to-video",
+      "prompt": "A beautiful horse running freely through a green meadow during golden hour, realistic muscle movement, flowing mane, cinematic slow-motion feeling, natural lighting, highly detailed, 5 seconds.",
+      "aspect": "9:16",
+      "resolution": "720p",
+      "timeSeconds": 5,
+      "publicPath": "/video-showcases/t2v/happyhorse-1.mp4",
+      "atlasOutputUrl": "https://dashscope-463f.oss-accelerate.aliyuncs.com/1d/69/20260606/3419032b/50885992-metadata_video_720p_90cb448c-d429-4923-8331-e246fc8a2eba_refiner.mp4?Expires=1780775969&OSSAccessKeyId=LTAI5t6ybWkD6u9sDryNkdo6&Signature=DoD3BiOgKXaCO4Boh4oPGzo0T9w%3D",
+      "predictionId": "fcf2e6a354fc41149181b638af422b61"
+    },
+    "hailuo-2-3": {
+      "modelId": "hailuo-2-3",
+      "atlasModel": "minimax/hailuo-2.3/t2v-pro",
+      "prompt": "A lifestyle influencer speaking directly to the camera while walking outdoors, natural expressions, authentic social media energy, soft daylight, realistic motion, vertical reel style, 5 seconds.",
+      "aspect": "9:16",
+      "resolution": "720p",
+      "timeSeconds": 5,
+      "publicPath": "/video-showcases/t2v/hailuo-2-3.mp4",
+      "atlasOutputUrl": "https://video-product.cdn.minimax.io/inference_output/video/2026-06-06/0118b4a5-8467-4659-9078-ad33c8cd71dd/output.mp4",
+      "predictionId": "067b800eedd940858d2832b43ab74607"
+    },
+    "google-veo-3-1": {
+      "modelId": "google-veo-3-1",
+      "atlasModel": "google/veo3.1/text-to-video",
+      "prompt": "A mysterious traveler walking through a desert at sunset, wind moving the clothing and sand, cinematic camera push-in, film-grade lighting, ultra realistic details, Hollywood production quality, 6-second vertical video.",
+      "aspect": "9:16",
+      "resolution": "720p",
+      "timeSeconds": 6,
+      "publicPath": "/video-showcases/t2v/google-veo-3-1.mp4",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/5f21b9cf-636a-4bf2-85f7-785cb079040d.mp4",
+      "predictionId": "e964adfa4f724d748aa3c41c95ea9649"
+    },
+    "vidu-q3": {
+      "modelId": "vidu-q3",
+      "atlasModel": "vidu/q3/reference-to-video",
+      "prompt": "A futuristic motorcycle speeding through a neon cyberpunk city, dynamic chase camera, glowing lights, motion blur, energetic action sequence, vibrant colors, smooth animation, 5 seconds.",
+      "aspect": "9:16",
+      "resolution": "720p",
+      "timeSeconds": 5,
+      "publicPath": "/video-showcases/t2v/vidu-q3.mp4",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/90700a3a-464b-4383-b79d-7c753932fb32.mp4",
+      "predictionId": "6ebce7b2e64a43e1937126cba9cea3e7"
+    },
+    "vidu-q3-pro": {
+      "modelId": "vidu-q3-pro",
+      "atlasModel": "vidu/q3-pro/text-to-video",
+      "prompt": "A luxury perfume bottle on a reflective black surface, floating golden particles, dramatic studio lighting, elegant camera movement, premium advertising quality, ultra detailed commercial shot, 5 seconds.",
+      "aspect": "9:16",
+      "resolution": "720p",
+      "timeSeconds": 5,
+      "publicPath": "/video-showcases/t2v/vidu-q3-pro.mp4",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/2b37575d-44b1-4676-9985-91a8acd53e4c.mp4",
+      "predictionId": "599963555f684b0d9e2ede8f3c7d5fe4"
+    }
+  }
+}

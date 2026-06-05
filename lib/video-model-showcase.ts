@@ -1,0 +1,113 @@
+import type { ActionTab } from "@/components/video/ActionTabsRow";
+import i2vRecipes from "@/data/video-i2v-showcase-recipes.json";
+import t2vRecipes from "@/data/video-t2v-showcase-recipes.json";
+import {
+  videoI2vShowcaseOutputPath,
+  videoI2vShowcasePosterPath,
+  videoI2vShowcaseStartFramePath
+} from "@/lib/video-i2v-showcase-paths";
+import {
+  videoT2vShowcaseOutputPath,
+  videoT2vShowcasePosterPath
+} from "@/lib/video-t2v-showcase-paths";
+
+export type VideoModelShowcase = {
+  modelId: string;
+  actionTab: ActionTab;
+  prompt: string;
+  timeSeconds: number;
+  aspect: string;
+  resolution: string;
+  durationStandard: string;
+  videoUrl: string;
+  posterUrl: string;
+  historyTitle: string;
+  /** Image to Video — per-model start frame. */
+  startFrameImageUrl?: string;
+};
+
+type VideoRecipe = {
+  prompt: string;
+  historyTitle: string;
+  startFramePrompt?: string;
+  timeSeconds?: number;
+  aspect?: string;
+  resolution?: string;
+  durationStandard?: string;
+};
+
+const T2V_DEFAULTS = t2vRecipes.defaults as {
+  timeSeconds: number;
+  aspect: string;
+  resolution: string;
+  durationStandard: string;
+};
+
+const I2V_DEFAULTS = i2vRecipes.defaults as {
+  timeSeconds: number;
+  aspect: string;
+  resolution: string;
+  durationStandard: string;
+};
+
+const T2V_RECIPES = t2vRecipes.models as Record<string, VideoRecipe>;
+const I2V_RECIPES = i2vRecipes.models as Record<string, VideoRecipe>;
+
+export function showcaseVideoAssetUrl(path: string, origin = ""): string {
+  const p = path.trim();
+  if (!p) return p;
+  if (p.startsWith("http://") || p.startsWith("https://") || p.startsWith("blob:")) return p;
+  if (p.startsWith("/") && origin) return `${origin.replace(/\/$/, "")}${p}`;
+  return p;
+}
+
+function buildT2vShowcase(composerModelId: string): VideoModelShowcase | null {
+  const recipe = T2V_RECIPES[composerModelId];
+  if (!recipe?.prompt?.trim()) return null;
+
+  return {
+    modelId: composerModelId,
+    actionTab: "Text to Video",
+    prompt: recipe.prompt,
+    timeSeconds: recipe.timeSeconds ?? T2V_DEFAULTS.timeSeconds,
+    aspect: recipe.aspect ?? T2V_DEFAULTS.aspect,
+    resolution: recipe.resolution ?? T2V_DEFAULTS.resolution,
+    durationStandard: recipe.durationStandard ?? T2V_DEFAULTS.durationStandard,
+    videoUrl: videoT2vShowcaseOutputPath(composerModelId),
+    posterUrl: videoT2vShowcasePosterPath(composerModelId),
+    historyTitle: recipe.historyTitle
+  };
+}
+
+function buildI2vShowcase(composerModelId: string): VideoModelShowcase | null {
+  const recipe = I2V_RECIPES[composerModelId];
+  if (!recipe?.prompt?.trim()) return null;
+
+  return {
+    modelId: composerModelId,
+    actionTab: "Image to Video",
+    prompt: recipe.prompt,
+    timeSeconds: recipe.timeSeconds ?? I2V_DEFAULTS.timeSeconds,
+    aspect: recipe.aspect ?? I2V_DEFAULTS.aspect,
+    resolution: recipe.resolution ?? I2V_DEFAULTS.resolution,
+    durationStandard: recipe.durationStandard ?? I2V_DEFAULTS.durationStandard,
+    videoUrl: videoI2vShowcaseOutputPath(composerModelId),
+    posterUrl: videoI2vShowcasePosterPath(composerModelId),
+    historyTitle: recipe.historyTitle,
+    startFrameImageUrl: videoI2vShowcaseStartFramePath(composerModelId)
+  };
+}
+
+/** First-visit studio demo for Text / Image to Video. */
+export function getVideoModelShowcase(
+  composerModelId: string,
+  actionTab: ActionTab
+): VideoModelShowcase | null {
+  if (actionTab === "Image to Video") {
+    return buildI2vShowcase(composerModelId);
+  }
+  if (actionTab === "Text to Video") {
+    return buildT2vShowcase(composerModelId);
+  }
+  return null;
+}

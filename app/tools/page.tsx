@@ -11,7 +11,7 @@ export default function ToolsPage() {
   return (
     <div className="min-h-dvh bg-zorixa-bg font-body">
       <Navbar />
-      <main className="zorixa-grid-bg min-h-[calc(100dvh-56px)]" style={{ paddingTop: NAV_H }}>
+      <main className="min-h-[calc(100dvh-56px)]" style={{ paddingTop: NAV_H }}>
         <ToolsCatalogView />
       </main>
     </div>

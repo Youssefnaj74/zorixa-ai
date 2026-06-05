@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-06-05T20:19:01.715Z",
+  "items": {
+    "gpt-image-2": {
+      "modelId": "gpt-image-2",
+      "atlasModel": "openai/gpt-image-2/text-to-image",
+      "prompt": "A stunning cinematic portrait of a confident young woman standing in a futuristic city at golden hour, realistic skin texture, detailed eyes, soft wind in her hair, shallow depth of field, dramatic lighting, ultra realistic, professional photography, masterpiece quality.",
+      "aspect": "Auto",
+      "resolution": "2K",
+      "publicPath": "/image-showcases/t2i/gpt-image-2.png",
+      "atlasOutputUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/2585826c-42f6-41f5-8c9b-20e2a52d8c38.png",
+      "predictionId": "323f9dccfca1424fa551b2b678aed50b"
+    },
+    "nano-banana-2": {
+      "modelId": "nano-banana-2",
+      "atlasModel": "google/nano-banana-2/text-to-image",
+      "prompt": "A friendly lifestyle content creator smiling in a modern café, natural lighting, authentic social media aesthetic, realistic facial features, clean composition, highly detailed photography, warm colors, professional camera quality.",
+      "aspect": "Auto",
+      "resolution": "2K",
+      "publicPath": "/image-showcases/t2i/nano-banana-2.png",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/images/ba55d27c-3bc7-4954-82c3-39e780494b04.jpg",
+      "predictionId": "6c5baa4e98d74f31b751741b76c34d64"
+    },
+    "nano-banana-pro": {
+      "modelId": "nano-banana-pro",
+      "atlasModel": "google/nano-banana-pro/text-to-image",
+      "prompt": "A luxury fashion model walking through an elegant European street, designer clothing, cinematic golden hour lighting, premium magazine photography, realistic skin details, high-end commercial quality.",
+      "aspect": "Auto",
+      "resolution": "2K",
+      "publicPath": "/image-showcases/t2i/nano-banana-pro.png",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/images/8bd530d2-8bd3-4ca1-882e-178665f5cade.jpg",
+      "predictionId": "d74c4b2c8245479db1ab95d7a9957b5f"
+    },
+    "zorixa": {
+      "modelId": "zorixa",
+      "atlasModel": "qwen/qwen-image-2.0-pro/text-to-image",
+      "prompt": "A majestic fantasy kingdom floating above the clouds, giant castles, waterfalls cascading into the sky, magical atmosphere, ultra detailed environment, epic fantasy artwork, breathtaking scale.",
+      "aspect": "Auto",
+      "resolution": "2K",
+      "publicPath": "/image-showcases/t2i/zorixa.png",
+      "atlasOutputUrl": "https://dashscope-463f.oss-accelerate.aliyuncs.com/7d/e5/20260606/7a9d0e9f/49a48239-084a-42da-b07d-78fe41891501.png?Expires=1781296349&OSSAccessKeyId=LTAI5tRcsWJEymQaTsKbKqGf&Signature=zvuA9WmYRRk4HF2PgA6WwDNRWio%3D",
+      "predictionId": "a70a9b0147ba47158d1f67214fed61d7"
+    },
+    "seedream-5": {
+      "modelId": "seedream-5",
+      "atlasModel": "bytedance/seedream-v5.0-lite",
+      "prompt": "A heroic anime warrior standing beneath cherry blossom trees, dramatic sunset sky, flowing cape, vibrant colors, detailed character design, cinematic anime illustration, masterpiece quality.",
+      "aspect": "9:16",
+      "resolution": "2K",
+      "publicPath": "/image-showcases/t2i/seedream-5.png",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/images/1279bd0d91e146d59211856edfcdde7e-0.jpeg",
+      "predictionId": "85f8c5a8104444c788fb5805320498ac"
+    },
+    "grok-imagine": {
+      "modelId": "grok-imagine",
+      "atlasModel": "xai/grok-imagine-image-quality/text-to-image",
+      "prompt": "A cyberpunk street market at night, glowing neon signs, rain-soaked pavement reflecting colorful lights, futuristic fashion, cinematic atmosphere, ultra detailed, realistic lighting.",
+      "aspect": "Auto",
+      "resolution": "2K",
+      "publicPath": "/image-showcases/t2i/grok-imagine.png",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/images/6e8ca2d6-7169-4770-b3b4-991b80a4d1e7.jpg",
+      "predictionId": "1454fcb8ca894d9aae10ac55c491c050"
+    },
+    "flux-dev": {
+      "modelId": "flux-dev",
+      "atlasModel": "black-forest-labs/flux-dev",
+      "prompt": "An adventurous traveler standing on a mountain peak above the clouds, realistic outdoor photography, detailed clothing textures, natural sunlight, ultra realistic, National Geographic quality.",
+      "aspect": "Auto",
+      "resolution": "2K",
+      "publicPath": "/image-showcases/t2i/flux-dev.png",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/flux/cc115bc2859c41738cf5f5c37c1cf787_reeee_r1291-u1_c567b752-90a4-4a44-83b8-49f73ad5f7b0.jpeg",
+      "predictionId": "6330d01f0ef04927a02a5d35f3d78537"
+    },
+    "flux-schnell": {
+      "modelId": "flux-schnell",
+      "atlasModel": "black-forest-labs/flux-schnell",
+      "prompt": "A sleek modern sports car parked in front of a luxury skyscraper, dramatic reflections, clean composition, realistic materials, commercial photography, high detail, vibrant colors.",
+      "aspect": "Auto",
+      "resolution": "2K",
+      "publicPath": "/image-showcases/t2i/flux-schnell.png",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/flux/c92c5dc20f9e4cdca8493304bc39a9fc_reeee_r1291-u1_ef829144-e584-4b4a-a3dc-92250422beb0.jpeg",
+      "predictionId": "4a9f075efc734159b8abd149dbf1a08d"
+    },
+    "flux-dev-lora": {
+      "modelId": "flux-dev-lora",
+      "atlasModel": "black-forest-labs/flux-dev-lora",
+      "prompt": "A powerful fantasy queen wearing intricate golden armor, glowing magical crown, detailed jewelry, cinematic lighting, ultra detailed character design, premium concept art quality.",
+      "aspect": "Auto",
+      "resolution": "2K",
+      "publicPath": "/image-showcases/t2i/flux-dev-lora.png",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/flux/996d6778901f41b695c396408bf6c4c0_reeee_r1291-u1_a488056a-b990-4d52-a142-c1eed65befb7.jpeg",
+      "predictionId": "8fb63311af524d3ba2d5c6d39304fe1e"
+    },
+    "wan-image-2-7": {
+      "modelId": "wan-image-2-7",
+      "atlasModel": "alibaba/wan-2.7/text-to-image",
+      "prompt": "A lone astronaut exploring a mysterious alien planet, colorful nebula in the sky, futuristic suit, cinematic composition, ultra realistic sci-fi environment, dramatic lighting.",
+      "aspect": "Auto",
+      "resolution": "2K",
+      "publicPath": "/image-showcases/t2i/wan-image-2-7.png",
+      "atlasOutputUrl": "https://dashscope-463f.oss-accelerate.aliyuncs.com/1d/56/20260606/4938b86d/1780690671_19a4a29f.png?Expires=1780777071&OSSAccessKeyId=LTAI5tRcsWJEymQaTsKbKqGf&Signature=ZPNpfl78UOJKbx79DTv3bGu86Gg%3D",
+      "predictionId": "f6316fdd6ef34dbdbed209ffdcbf3173"
+    },
+    "wan-image-2-7-pro": {
+      "modelId": "wan-image-2-7-pro",
+      "atlasModel": "alibaba/wan-2.7-pro/text-to-image",
+      "prompt": "A legendary dragon rider flying above snowy mountains during sunrise, epic scale, realistic dragon anatomy, cinematic atmosphere, fantasy blockbuster artwork, ultra detailed.",
+      "aspect": "Auto",
+      "resolution": "2K",
+      "publicPath": "/image-showcases/t2i/wan-image-2-7-pro.png",
+      "atlasOutputUrl": "https://dashscope-463f.oss-accelerate.aliyuncs.com/1d/f0/20260606/3d3a021d/1780690724_2c4264a0.png?Expires=1780777124&OSSAccessKeyId=LTAI5tRcsWJEymQaTsKbKqGf&Signature=Y%2BbHoHre7fH9vlw3S0BCmIYwb5c%3D",
+      "predictionId": "d541085e9a93464fa75f602727b20d3c"
+    },
+    "wan-image-2-6": {
+      "modelId": "wan-image-2-6",
+      "atlasModel": "alibaba/wan-2.6/text-to-image",
+      "prompt": "An ancient hidden temple deep within a jungle, rays of sunlight breaking through the trees, lush vegetation, mysterious atmosphere, highly detailed environment, cinematic adventure scene.",
+      "aspect": "Auto",
+      "resolution": "2K",
+      "publicPath": "/image-showcases/t2i/wan-image-2-6.png",
+      "atlasOutputUrl": "https://dashscope-463f.oss-accelerate.aliyuncs.com/1d/9a/20260606/ac736e69/21818134-dHZdmj4j_dc38c9827646.png?Expires=1780777140&OSSAccessKeyId=LTAI5tRcsWJEymQaTsKbKqGf&Signature=Vilf0q0b4Q3rvDxBv9oXG9LfEVg%3D",
+      "predictionId": "521cac2b17564a49a4d214f92a52d2c0"
+    }
+  }
+}

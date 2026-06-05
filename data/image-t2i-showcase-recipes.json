@@ -1,0 +1,58 @@
+{
+  "defaults": {
+    "cameraStyle": "None",
+    "resolution": "2K",
+    "aspect": "Auto"
+  },
+  "models": {
+    "gpt-image-2": {
+      "prompt": "A stunning cinematic portrait of a confident young woman standing in a futuristic city at golden hour, realistic skin texture, detailed eyes, soft wind in her hair, shallow depth of field, dramatic lighting, ultra realistic, professional photography, masterpiece quality.",
+      "historyTitle": "Cinematic Portrait"
+    },
+    "nano-banana-2": {
+      "prompt": "A friendly lifestyle content creator smiling in a modern café, natural lighting, authentic social media aesthetic, realistic facial features, clean composition, highly detailed photography, warm colors, professional camera quality.",
+      "historyTitle": "Lifestyle Creator"
+    },
+    "nano-banana-pro": {
+      "prompt": "A luxury fashion model walking through an elegant European street, designer clothing, cinematic golden hour lighting, premium magazine photography, realistic skin details, high-end commercial quality.",
+      "historyTitle": "Luxury Fashion"
+    },
+    "zorixa": {
+      "prompt": "A majestic fantasy kingdom floating above the clouds, giant castles, waterfalls cascading into the sky, magical atmosphere, ultra detailed environment, epic fantasy artwork, breathtaking scale.",
+      "historyTitle": "Fantasy Kingdom"
+    },
+    "seedream-5": {
+      "prompt": "A heroic anime warrior standing beneath cherry blossom trees, dramatic sunset sky, flowing cape, vibrant colors, detailed character design, cinematic anime illustration, masterpiece quality.",
+      "historyTitle": "Anime Hero",
+      "aspect": "9:16"
+    },
+    "grok-imagine": {
+      "prompt": "A cyberpunk street market at night, glowing neon signs, rain-soaked pavement reflecting colorful lights, futuristic fashion, cinematic atmosphere, ultra detailed, realistic lighting.",
+      "historyTitle": "Cyberpunk Street"
+    },
+    "flux-dev": {
+      "prompt": "An adventurous traveler standing on a mountain peak above the clouds, realistic outdoor photography, detailed clothing textures, natural sunlight, ultra realistic, National Geographic quality.",
+      "historyTitle": "Photorealistic Explorer"
+    },
+    "flux-schnell": {
+      "prompt": "A sleek modern sports car parked in front of a luxury skyscraper, dramatic reflections, clean composition, realistic materials, commercial photography, high detail, vibrant colors.",
+      "historyTitle": "Modern Sports Car"
+    },
+    "flux-dev-lora": {
+      "prompt": "A powerful fantasy queen wearing intricate golden armor, glowing magical crown, detailed jewelry, cinematic lighting, ultra detailed character design, premium concept art quality.",
+      "historyTitle": "Fantasy Character"
+    },
+    "wan-image-2-7": {
+      "prompt": "A lone astronaut exploring a mysterious alien planet, colorful nebula in the sky, futuristic suit, cinematic composition, ultra realistic sci-fi environment, dramatic lighting.",
+      "historyTitle": "Sci-Fi Astronaut"
+    },
+    "wan-image-2-7-pro": {
+      "prompt": "A legendary dragon rider flying above snowy mountains during sunrise, epic scale, realistic dragon anatomy, cinematic atmosphere, fantasy blockbuster artwork, ultra detailed.",
+      "historyTitle": "Dragon Rider"
+    },
+    "wan-image-2-6": {
+      "prompt": "An ancient hidden temple deep within a jungle, rays of sunlight breaking through the trees, lush vegetation, mysterious atmosphere, highly detailed environment, cinematic adventure scene.",
+      "historyTitle": "Ancient Temple"
+    }
+  }
+}

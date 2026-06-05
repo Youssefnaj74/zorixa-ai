@@ -46,6 +46,7 @@ export function VideoPreview({
   videoDownloadUrl,
   loading,
   errorMessage,
+  isExample = false,
   promptThumbUrl,
   bottomBarHeight = 130,
   /** Bottom-bar aspect (9:16, 16:9, …) — frames preview until file metadata loads. */
@@ -61,6 +62,8 @@ export function VideoPreview({
   videoDownloadUrl?: string | null;
   loading: boolean;
   errorMessage?: string | null;
+  /** Model showcase demo — not a user generation. */
+  isExample?: boolean;
   /** Small reference thumbnail (e.g. @PRODUCT_IMAGE1) shown top-center */
   promptThumbUrl?: string | null;
   /** Measured fixed bottom bar height — drives preview card max-height. */
@@ -148,6 +151,11 @@ export function VideoPreview({
       >
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2.5 sm:px-4">
           <h2 className="font-display text-sm font-semibold text-white">Video Preview</h2>
+          {isExample ? (
+            <span className="rounded-md bg-brand/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-light">
+              Example
+            </span>
+          ) : null}
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <Button
               type="button"
@@ -247,13 +255,13 @@ export function VideoPreview({
                       }}
                       onError={(e) => {
                         const el = e.currentTarget;
-                        console.error("[VideoPreview] <video> error", {
-                          code: el.error?.code,
-                          message: el.error?.message,
-                          currentSrc: el.currentSrc,
-                          networkState: el.networkState
-                        });
                         const code = el.error?.code;
+                        if (process.env.NODE_ENV === "development") {
+                          console.warn("[VideoPreview] playback issue", {
+                            code,
+                            currentSrc: el.currentSrc
+                          });
+                        }
                         if (code === 4) {
                           setInlinePlaybackError(
                             "This output uses a format or codec your browser can't play inline (common with some Atlas / OSS files). Open in a new tab or download."

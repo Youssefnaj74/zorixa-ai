@@ -2,7 +2,7 @@
 
 import { Check, ChevronUp, Sparkles, Upload, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ImageActionTabsRow, type ImageActionTab } from "@/components/image/ImageActionTabsRow";
 import type { ImageStudioLock } from "@/lib/studio-catalog-link";
@@ -14,11 +14,8 @@ import {
   SEEDREAM_ATLAS_SIZE_GROUPS
 } from "@/components/image/image-bottom-bar-constants";
 import { MODEL_OPTIONS, type ModelOption } from "@/components/ui/ModelDropdown";
-import {
-  getAtlasImageModelLimits,
-  getImageBatchOptions,
-  imageComposerSupportedOnActionTab
-} from "@/lib/atlas-image-model-ids";
+import { getAtlasImageModelLimits, getImageBatchOptions, imageComposerSupportedOnActionTab } from "@/lib/atlas-image-model-ids";
+import { getImageI2iUploadSlots } from "@/lib/image-i2i-model-slots";
 import { IMAGE_I2I_DOCK_HEIGHT } from "@/lib/composer-dock-height";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +26,7 @@ export type ImageGenerateContext = {
   resolution: string;
   referenceUrls: string[];
   batchCount: number;
+  cameraStyle: string;
 };
 
 export type ImageBottomBarProps = {
@@ -150,8 +148,6 @@ export function ImageBottomBar({
   const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const promptMirrorRef = useRef(prompt);
   promptMirrorRef.current = prompt;
-  const fileRef1 = useRef<HTMLInputElement>(null);
-  const fileRef2 = useRef<HTMLInputElement>(null);
 
   const pickerModels = MODEL_OPTIONS.filter((m) =>
     imageComposerSupportedOnActionTab(m.id, actionTab)
@@ -159,9 +155,13 @@ export function ImageBottomBar({
   const selectedModel =
     pickerModels.find((m) => m.id === modelId) ?? pickerModels[0] ?? MODEL_OPTIONS[0];
   const maxRefs = getAtlasImageModelLimits(modelId).maxImages;
+  const showUploads = actionTab === "Image to Image";
+  const i2iSlots = useMemo(
+    () => (showUploads ? getImageI2iUploadSlots(modelId).slice(0, maxRefs) : []),
+    [maxRefs, modelId, showUploads]
+  );
   const batchOptions = getImageBatchOptions(modelId);
   const showBatchPicker = batchOptions.length > 1;
-  const showUploads = actionTab === "Image to Image";
   const isGptImage2 = modelId === "gpt-image-2";
   const isSeedream = modelId === "seedream-5";
   const lockedFromTools = studioLock != null;
@@ -208,7 +208,7 @@ export function ImageBottomBar({
   }, []);
 
   const setRefAt = useCallback(
-    (index: 0 | 1, url: string | null) => {
+    (index: number, url: string | null) => {
       const next = [...referenceUrls];
       if (url) {
         next[index] = url;
@@ -221,13 +221,19 @@ export function ImageBottomBar({
   );
 
   const applyFile = useCallback(
-    (index: 0 | 1, file: File) => {
+    (index: number, file: File) => {
       if (!file.type.startsWith("image/")) return;
       const url = URL.createObjectURL(file);
       setRefAt(index, url);
     },
     [setRefAt]
   );
+
+  useEffect(() => {
+    if (!showUploads) return;
+    if (referenceUrls.length <= i2iSlots.length) return;
+    onReferenceUrlsChange(referenceUrls.slice(0, i2iSlots.length));
+  }, [i2iSlots.length, onReferenceUrlsChange, referenceUrls, showUploads]);
 
   const emitGenerate = useCallback(() => {
     const fromDom = promptTextareaRef.current?.value;
@@ -240,12 +246,12 @@ export function ImageBottomBar({
       aspectRatio: aspect,
       resolution,
       referenceUrls,
-      batchCount
+      batchCount,
+      cameraStyle
     });
-  }, [actionTab, aspect, batchCount, onGenerate, referenceUrls, resolution]);
+  }, [actionTab, aspect, batchCount, cameraStyle, onGenerate, referenceUrls, resolution]);
 
-  const ref0 = referenceUrls[0] ?? null;
-  const ref1 = referenceUrls[1] ?? null;
+  const fileRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   return (
     <footer
@@ -292,41 +298,35 @@ export function ImageBottomBar({
         >
           {showUploads ? (
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start">
-              <input
-                ref={fileRef1}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                tabIndex={-1}
-                aria-hidden
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) applyFile(0, f);
-                  e.target.value = "";
-                }}
-              />
-              <input
-                ref={fileRef2}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                tabIndex={-1}
-                aria-hidden
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) applyFile(1, f);
-                  e.target.value = "";
-                }}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                {(
-                  [
-                    { idx: 0 as const, label: "Reference", url: ref0, ref: fileRef1 },
-                    { idx: 1 as const, label: "Style", url: ref1, ref: fileRef2 }
-                  ] as const
-                ).map(({ idx, label, url, ref }) => (
+              {i2iSlots.map((slot, idx) => (
+                <input
+                  key={`${slot.label}-${idx}`}
+                  ref={(el) => {
+                    fileRefs.current[idx] = el;
+                  }}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  tabIndex={-1}
+                  aria-hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) applyFile(idx, f);
+                    e.target.value = "";
+                  }}
+                />
+              ))}
+              <div
+                className={cn(
+                  "grid gap-3",
+                  i2iSlots.length > 1 ? "grid-cols-2" : "grid-cols-1"
+                )}
+              >
+                {i2iSlots.map((slot, idx) => {
+                  const url = referenceUrls[idx] ?? null;
+                  return (
                   <div
-                    key={label}
+                    key={`${slot.label}-${idx}`}
                     className="relative"
                     onDragEnter={stopDrag}
                     onDragOver={stopDrag}
@@ -338,7 +338,7 @@ export function ImageBottomBar({
                   >
                     <button
                       type="button"
-                      onClick={() => ref.current?.click()}
+                      onClick={() => fileRefs.current[idx]?.click()}
                       className={cn(
                         "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
                         "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
@@ -351,7 +351,12 @@ export function ImageBottomBar({
                       ) : (
                         <>
                           <Upload className="size-5 opacity-60" />
-                          <span className="mt-2 text-xs font-medium text-zorixa-muted">{label}</span>
+                          <span className="mt-2 text-xs font-medium text-zorixa-muted">{slot.label}</span>
+                          {slot.hint ? (
+                            <span className="mt-0.5 max-w-[130px] truncate px-1 text-[10px] text-zorixa-muted/70">
+                              {slot.hint}
+                            </span>
+                          ) : null}
                         </>
                       )}
                     </button>
@@ -360,13 +365,14 @@ export function ImageBottomBar({
                         type="button"
                         onClick={() => setRefAt(idx, null)}
                         className="absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80 hover:bg-black hover:text-white"
-                        aria-label={`Remove ${label}`}
+                        aria-label={`Remove ${slot.label}`}
                       >
                         <X className="size-3.5" />
                       </button>
                     ) : null}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : null}
