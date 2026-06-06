@@ -1,11 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useState } from "react";
 import { Download, Expand, History, ImageIcon, RotateCcw } from "lucide-react";
 
+import type { ImageActionTab } from "@/components/image/ImageActionTabsRow";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { ExternalImage } from "@/components/ui/ExternalImage";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
+import type { UpscaleTier } from "@/lib/studio-constants";
 import { cn } from "@/lib/utils";
 
 const NAV_H = 56;
@@ -69,7 +78,14 @@ export function ImagePreview({
   referenceThumbUrls,
   referenceThumbUrl,
   isExample = false,
+  actionTab = "Text to Image",
   bottomBarHeight = 130,
+  canPostProcessImage = false,
+  canRunVariations = false,
+  postProcessBusy = false,
+  onResetDefaults,
+  onUpscaleImage,
+  onVariations,
   className
 }: {
   /** One or more generated image URLs (batch shows a grid). */
@@ -82,7 +98,16 @@ export function ImagePreview({
   referenceThumbUrl?: string | null;
   /** Studio demo output (not a user generation). */
   isExample?: boolean;
+  actionTab?: ImageActionTab;
   bottomBarHeight?: number;
+  /** User output available for upscale / variations. */
+  canPostProcessImage?: boolean;
+  /** Current model supports multi-image batch (variations). */
+  canRunVariations?: boolean;
+  postProcessBusy?: boolean;
+  onResetDefaults?: () => void;
+  onUpscaleImage?: (tier: UpscaleTier) => void;
+  onVariations?: () => void;
   className?: string;
 }) {
   const urls = imageUrls.filter((u) => typeof u === "string" && u.trim().length > 0);
@@ -108,6 +133,8 @@ export function ImagePreview({
 
   const closeLightbox = useCallback(() => setLightboxSrc(null), []);
 
+  const postProcessDisabled = !canPostProcessImage || postProcessBusy || loading;
+
   return (
     <div className={cn("flex h-full min-h-0 min-w-0 flex-1 flex-col gap-3 font-body", className)}>
       <div
@@ -129,17 +156,38 @@ export function ImagePreview({
             ) : null}
           </h2>
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={postProcessDisabled}
+                  className="h-8 shrink-0 rounded-lg border border-white/10 bg-transparent px-3 text-xs text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Upscale Image
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  disabled={postProcessDisabled}
+                  onClick={() => onUpscaleImage?.("2x")}
+                >
+                  Upscale 2×
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={postProcessDisabled}
+                  onClick={() => onUpscaleImage?.("4x")}
+                >
+                  Upscale 4×
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               type="button"
               variant="ghost"
-              className="h-8 shrink-0 rounded-lg border border-white/10 bg-transparent px-3 text-xs text-white hover:bg-white/10"
-            >
-              Upscale Image
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-8 shrink-0 rounded-lg border border-white/10 bg-transparent px-3 text-xs text-white hover:bg-white/10"
+              disabled={postProcessDisabled || !canRunVariations}
+              onClick={() => onVariations?.()}
+              className="h-8 shrink-0 rounded-lg border border-white/10 bg-transparent px-3 text-xs text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
             >
               Variations
             </Button>
@@ -154,10 +202,13 @@ export function ImagePreview({
                 <Expand className="size-4" />
               </button>
             ) : null}
-            <span className="flex shrink-0 items-center gap-1 font-display text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted sm:text-xs">
+            <Link
+              href="/dashboard/history"
+              className="flex shrink-0 items-center gap-1 rounded-lg border border-transparent px-1.5 py-1 font-display text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white sm:text-xs"
+            >
               <History className="size-3.5" />
               History
-            </span>
+            </Link>
           </div>
         </div>
 
@@ -256,10 +307,12 @@ export function ImagePreview({
                 <Button
                   type="button"
                   variant="ghost"
-                  className="pointer-events-auto h-9 rounded-lg border border-white/15 bg-black/40 px-3 text-xs text-white backdrop-blur hover:bg-black/60"
+                  disabled={postProcessBusy || loading}
+                  onClick={() => onResetDefaults?.()}
+                  className="pointer-events-auto h-9 rounded-lg border border-white/15 bg-black/40 px-3 text-xs text-white backdrop-blur hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   <RotateCcw className="mr-1 size-3.5" />
-                  Reset to Defaults
+                  Reset {actionTab}
                 </Button>
                 {primaryUrl ? (
                   <a

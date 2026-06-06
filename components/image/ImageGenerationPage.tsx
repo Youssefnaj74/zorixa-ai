@@ -19,12 +19,16 @@ import {
   isGptImage2SizeSelection,
   isSeedreamSizeSelection
 } from "@/components/image/image-bottom-bar-constants";
+import { pollGenerationJob } from "@/components/studio/batch-jobs";
+import { MODEL_OPTIONS } from "@/components/ui/ModelDropdown";
 import { Navbar } from "@/components/layout/Navbar";
 import {
   clampImageBatchCount,
+  getAtlasImageModelLimits,
   imageComposerSupportedOnActionTab,
   isAtlasImageComposerId
 } from "@/lib/atlas-image-model-ids";
+import type { UpscaleTier } from "@/lib/studio-constants";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import {
   extractAtlasImageOutputUrls,
@@ -194,6 +198,26 @@ function insufficientCreditsMessage(data: {
     return `Not enough credits (need ${need}, you have ${have}). Buy more on the billing page.`;
   }
   return data.error ?? "Not enough credits.";
+}
+
+function defaultImageModelForTab(tab: ImageActionTab): string {
+  const models = MODEL_OPTIONS.filter((m) => imageComposerSupportedOnActionTab(m.id, tab));
+  return models[0]?.id ?? "nano-banana-2";
+}
+
+function defaultImageSettingsForModel(model: string): {
+  resolution: string;
+  aspect: string;
+} {
+  if (model === "gpt-image-2") {
+    const gpt = defaultGptImage2Selection();
+    return { resolution: gpt.resolution, aspect: gpt.aspect };
+  }
+  if (model === "seedream-5") {
+    const sd = defaultSeedreamSelection();
+    return { resolution: sd.resolution, aspect: sd.aspect };
+  }
+  return { resolution: "2K", aspect: "Auto" };
 }
 
 export function ImageGenerationPage() {
@@ -600,6 +624,137 @@ export function ImageGenerationPage() {
     [actionTab, applyModelShowcase, modelId]
   );
 
+  const currentGenerateContext = useMemo(
+    (): ImageGenerateContext => ({
+      promptText: prompt,
+      actionTab,
+      aspectRatio: aspect,
+      resolution,
+      referenceUrls,
+      batchCount,
+      cameraStyle
+    }),
+    [actionTab, aspect, batchCount, cameraStyle, prompt, referenceUrls, resolution]
+  );
+
+  const canPostProcessImage = hasUserGenerated && outputUrls.length > 0 && !showingModelShowcase;
+  const canRunVariations = getAtlasImageModelLimits(modelId).maxBatch >= 2;
+
+  const resetImageTabDefaults = useCallback(() => {
+    setGenerateError(null);
+    setPrompt("");
+    setCameraStyle("None");
+    setBatchCount(1);
+    setReferenceUrlsSafe([]);
+
+    const defaultModel = studioLock?.modelId ?? defaultImageModelForTab(actionTab);
+    const defaults = defaultImageSettingsForModel(defaultModel);
+    setModelId(defaultModel);
+    setResolution(defaults.resolution);
+    setAspect(defaults.aspect);
+    appliedShowcaseForModel.current = null;
+    applyModelShowcase(defaultModel, actionTab);
+  }, [actionTab, applyModelShowcase, setReferenceUrlsSafe, studioLock?.modelId]);
+
+  const runImageUpscale = useCallback(
+    async (tier: UpscaleTier) => {
+      const source = outputUrls[0];
+      if (!source || loading || showingModelShowcase) {
+        setGenerateError("Generate an image first, then upscale it.");
+        return;
+      }
+
+      setGenerateError(null);
+      setLoading(true);
+      try {
+        const inputUrl = await ensureAtlasPublicHttpsMediaUrl(source);
+        if (!inputUrl) {
+          setGenerateError("Could not prepare your image for upscale. Try again in a moment.");
+          return;
+        }
+
+        const res = await fetch("/api/enhance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input_url: inputUrl,
+            model: "real_esrgan",
+            upscale: tier
+          }),
+          credentials: "include"
+        });
+
+        const data = (await res.json()) as {
+          id?: string;
+          status?: string;
+          output_url?: string;
+          error?: string;
+          credits_balance?: number;
+          credits_required?: number;
+        };
+
+        if (res.status === 402) {
+          setGenerateError(insufficientCreditsMessage(data));
+          return;
+        }
+        if (!res.ok) {
+          setGenerateError(data.error ?? `Upscale failed (${res.status})`);
+          return;
+        }
+
+        let resultUrl: string | null = null;
+        if (data.status === "completed") {
+          resultUrl = data.output_url ?? null;
+        } else if (data.id) {
+          resultUrl = await pollGenerationJob(data.id);
+        }
+
+        if (!resultUrl) {
+          setGenerateError("Upscale finished without an output URL.");
+          return;
+        }
+
+        setOutputUrls([resultUrl]);
+        setHasUserGenerated(true);
+        setHistory((prev) => [
+          {
+            id: `upscale-${Date.now()}`,
+            thumb: resultUrl,
+            title: `Upscale ${tier}`,
+            subtitle: "Real-ESRGAN",
+            outputImageUrl: resultUrl
+          },
+          ...prev.filter((h) => h.outputImageUrl !== resultUrl)
+        ]);
+        void refreshCredits();
+      } catch (e: unknown) {
+        setGenerateError(e instanceof Error ? e.message : "Upscale network error.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loading, outputUrls, refreshCredits, showingModelShowcase]
+  );
+
+  const runImageVariations = useCallback(async () => {
+    if (!canPostProcessImage) {
+      setGenerateError("Generate an image first, then create variations.");
+      return;
+    }
+    const limits = getAtlasImageModelLimits(modelId);
+    const variationCount = Math.min(4, limits.maxBatch);
+    if (variationCount < 2) {
+      setGenerateError(
+        "This model does not support batch variations. Switch to Nano Banana, Flux, or Seedream."
+      );
+      return;
+    }
+    await runGeneration({
+      ...currentGenerateContext,
+      batchCount: variationCount
+    });
+  }, [canPostProcessImage, currentGenerateContext, modelId, runGeneration]);
+
   return (
     <div className="flex min-h-dvh flex-col bg-zorixa-bg">
       <Navbar fixed />
@@ -634,7 +789,14 @@ export function ImageGenerationPage() {
               errorMessage={generateError}
               referenceThumbUrls={referenceUrls}
               isExample={showingModelShowcase}
+              actionTab={actionTab}
               bottomBarHeight={bottomBarHeight}
+              canPostProcessImage={canPostProcessImage}
+              canRunVariations={canRunVariations}
+              postProcessBusy={loading}
+              onResetDefaults={resetImageTabDefaults}
+              onUpscaleImage={(tier) => void runImageUpscale(tier)}
+              onVariations={() => void runImageVariations()}
               className="scrollbar-hide h-full min-h-0 w-full min-w-0 flex-1"
             />
           </div>

@@ -14,9 +14,8 @@ import {
 import { cn } from "@/lib/utils";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
-import { DirectorGenerationProgress } from "@/components/video/DirectorGenerationProgress";
+import { VideoGenerationProgress } from "@/components/video/VideoGenerationProgress";
 import { DirectorResultBanner } from "@/components/video/DirectorResultBanner";
-import type { DirectorQualityPreset } from "@/lib/ai-director/types";
 import { SeedanceReferenceToVideoTip } from "@/components/video/SeedanceReferenceToVideoTip";
 import { CharacterSwapModelTip } from "@/components/video/CharacterSwapModelTip";
 import { VideoToVideoModelTip } from "@/components/video/VideoToVideoModelTip";
@@ -65,7 +64,7 @@ export function VideoPreview({
   isExample = false,
   directorResult = null,
   directorResultLoading = false,
-  directorGeneration = null,
+  generationProgress = null,
   promptThumbUrl,
   bottomBarHeight = 130,
   /** Bottom-bar aspect (9:16, 16:9, …) — frames preview until file metadata loads. */
@@ -98,11 +97,12 @@ export function VideoPreview({
     onTryAnother: () => void;
   } | null;
   directorResultLoading?: boolean;
-  /** AI Director — in-progress generation UI (timer, cancel, slow banner). */
-  directorGeneration?: {
+  /** In-progress generation UI (timer, stages, cancel). */
+  generationProgress?: {
     modelLabel: string;
-    qualityPreset: DirectorQualityPreset;
     elapsedSec: number;
+    directorRouted: boolean;
+    tip: string;
     showSlowBanner: boolean;
     canTryAnother: boolean;
     onCancel: () => void;
@@ -364,24 +364,18 @@ export function VideoPreview({
                     />
                   ) : null}
                 </div>
-              ) : loading ? (
-                directorGeneration ? (
-                  <DirectorGenerationProgress
-                    modelLabel={directorGeneration.modelLabel}
-                    qualityPreset={directorGeneration.qualityPreset}
-                    elapsedSec={directorGeneration.elapsedSec}
-                    showSlowBanner={directorGeneration.showSlowBanner}
-                    canTryAnother={directorGeneration.canTryAnother}
-                    onCancel={directorGeneration.onCancel}
-                    onKeepWaiting={directorGeneration.onKeepWaiting}
-                    onTryAnother={directorGeneration.onTryAnother}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-3">
-                    <div className="size-12 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />
-                    <p className="text-sm text-zorixa-muted">Generating video…</p>
-                  </div>
-                )
+              ) : loading && generationProgress ? (
+                <VideoGenerationProgress
+                  modelLabel={generationProgress.modelLabel}
+                  elapsedSec={generationProgress.elapsedSec}
+                  directorRouted={generationProgress.directorRouted}
+                  tip={generationProgress.tip}
+                  showSlowBanner={generationProgress.showSlowBanner}
+                  canTryAnother={generationProgress.canTryAnother}
+                  onCancel={generationProgress.onCancel}
+                  onKeepWaiting={generationProgress.onKeepWaiting}
+                  onTryAnother={generationProgress.onTryAnother}
+                />
               ) : errorMessage ? (
                 <div className="max-w-md px-4 text-center">
                   <p className="mb-2 font-display text-xs font-semibold uppercase tracking-wide text-red-300/90">

@@ -1,10 +1,12 @@
 import type { DirectorQualityPreset } from "@/lib/ai-director/types";
 
-export function formatDirectorElapsed(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
+export {
+  DIRECTOR_GENERATION_CANCEL_MESSAGE,
+  DIRECTOR_SLOW_GENERATION_SEC,
+  formatDirectorElapsed,
+  VIDEO_GENERATION_CANCEL_MESSAGE,
+  VIDEO_SLOW_GENERATION_SEC
+} from "@/lib/video-generation-progress";
 
 export function directorTypicalTimeHint(qualityPreset: DirectorQualityPreset): string {
   switch (qualityPreset) {
@@ -16,9 +18,3 @@ export function directorTypicalTimeHint(qualityPreset: DirectorQualityPreset): s
       return "2–5 min for UGC & Balanced";
   }
 }
-
-export const DIRECTOR_GENERATION_CANCEL_MESSAGE =
-  "Generation cancelled.\n\nIf Atlas already started processing, credits may have been consumed.\nCheck History for completed outputs.";
-
-/** Show "taking longer" banner after this many seconds. */
-export const DIRECTOR_SLOW_GENERATION_SEC = 5 * 60;

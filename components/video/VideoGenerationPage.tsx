@@ -12,9 +12,10 @@ import { useCredits } from "@/lib/hooks/use-credits";
 import { composerModelDisplayLabel } from "@/lib/composer-model-label";
 import { getVideoModelShowcase, showcaseVideoAssetUrl } from "@/lib/video-model-showcase";
 import {
-  DIRECTOR_GENERATION_CANCEL_MESSAGE,
-  DIRECTOR_SLOW_GENERATION_SEC
-} from "@/lib/ai-director/generation-hints";
+  VIDEO_GENERATION_CANCEL_MESSAGE,
+  VIDEO_SLOW_GENERATION_SEC,
+  videoGenerationContextTip
+} from "@/lib/video-generation-progress";
 import { directorStyleLabel } from "@/lib/ai-director/config";
 import {
   getDirectorExamples,
@@ -528,6 +529,15 @@ export function VideoGenerationPage() {
   const [directorGenElapsedSec, setDirectorGenElapsedSec] = useState(0);
   const [directorSlowBannerDismissed, setDirectorSlowBannerDismissed] = useState(false);
   const directorGenStartRef = useRef<number | null>(null);
+  const [activeGenMeta, setActiveGenMeta] = useState<{
+    modelId: string;
+    isDirector: boolean;
+    actionTab: ActionTab;
+    directorStyle?: string;
+    directorQualityPreset?: DirectorQualityPreset;
+    generateAudioOn?: boolean;
+    isUpscale?: boolean;
+  } | null>(null);
   const generationAbortRef = useRef<AbortController | null>(null);
   const generationUserCancelledRef = useRef(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -719,10 +729,11 @@ export function VideoGenerationPage() {
   }, []);
 
   useEffect(() => {
-    if (!loading || actionTab !== "AI Director") {
+    if (!loading) {
       directorGenStartRef.current = null;
       setDirectorGenElapsedSec(0);
       setDirectorSlowBannerDismissed(false);
+      setActiveGenMeta(null);
       return;
     }
     directorGenStartRef.current = Date.now();
@@ -734,7 +745,7 @@ export function VideoGenerationPage() {
       setDirectorGenElapsedSec(Math.floor((Date.now() - start) / 1000));
     }, 1000);
     return () => window.clearInterval(id);
-  }, [actionTab, loading]);
+  }, [loading]);
 
   const applyModelShowcase = useCallback(
     (nextModelId: string, tab: ActionTab) => {
@@ -1255,6 +1266,16 @@ export function VideoGenerationPage() {
             (generationTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(videoModel)));
 
         const wantGenerateAudio = supportsNativeAudio && ctx.generateAudio;
+
+        setActiveGenMeta({
+          modelId: videoModel,
+          isDirector: ctx.actionTab === "AI Director",
+          actionTab: ctx.actionTab,
+          directorStyle: directorRoute?.styleResolved,
+          directorQualityPreset: directorRoute?.qualityPreset,
+          generateAudioOn: wantGenerateAudio,
+          isUpscale: false
+        });
 
         const speed_tier = ctx.speedTier;
 
@@ -2100,6 +2121,12 @@ export function VideoGenerationPage() {
     setVideoUrl(null);
     setVideoDownloadUrl(null);
     setLoading(true);
+    setActiveGenMeta({
+      modelId: ATLAS_VIDEO_UPSCALER_COMPOSER_ID,
+      isDirector: false,
+      actionTab,
+      isUpscale: true
+    });
     generationUserCancelledRef.current = false;
     generationAbortRef.current?.abort();
     const abortController = new AbortController();
@@ -2284,9 +2311,9 @@ export function VideoGenerationPage() {
     void runGeneration(buildDirectorGenerateContext());
   }, [buildDirectorGenerateContext, directorLastRoute, runGeneration]);
 
-  const handleDirectorCancelGeneration = useCallback(() => {
+  const handleCancelGeneration = useCallback(() => {
     generationUserCancelledRef.current = true;
-    setGenerateError(DIRECTOR_GENERATION_CANCEL_MESSAGE);
+    setGenerateError(VIDEO_GENERATION_CANCEL_MESSAGE);
     generationAbortRef.current?.abort();
   }, []);
 
@@ -2448,17 +2475,29 @@ export function VideoGenerationPage() {
         }
       : null;
 
-  const directorGenerationPanel =
-    actionTab === "AI Director" && loading && directorLastRoute
+  const generationProgressPanel =
+    loading
       ? {
-          modelLabel: composerModelDisplayLabel(directorLastRoute.modelId, "video"),
-          qualityPreset: directorLastRoute.qualityPreset,
+          modelLabel: composerModelDisplayLabel(
+            activeGenMeta?.modelId ?? previewComposerModelId,
+            "video"
+          ),
           elapsedSec: directorGenElapsedSec,
+          directorRouted: activeGenMeta?.isDirector ?? actionTab === "AI Director",
+          tip: videoGenerationContextTip({
+            actionTab: activeGenMeta?.actionTab ?? actionTab,
+            directorStyle: activeGenMeta?.directorStyle ?? directorStyle,
+            directorQualityPreset:
+              activeGenMeta?.directorQualityPreset ?? directorQualityPreset,
+            generateAudioOn: activeGenMeta?.generateAudioOn ?? generateAudioOn,
+            isUpscale: activeGenMeta?.isUpscale
+          }),
           showSlowBanner:
-            directorGenElapsedSec >= DIRECTOR_SLOW_GENERATION_SEC &&
+            (activeGenMeta?.isDirector ?? actionTab === "AI Director") &&
+            directorGenElapsedSec >= VIDEO_SLOW_GENERATION_SEC &&
             !directorSlowBannerDismissed,
           canTryAnother: directorCanTryAnother,
-          onCancel: handleDirectorCancelGeneration,
+          onCancel: handleCancelGeneration,
           onKeepWaiting: () => setDirectorSlowBannerDismissed(true),
           onTryAnother: handleDirectorSlowTryAnother
         }
@@ -2487,7 +2526,7 @@ export function VideoGenerationPage() {
               isExample={showingModelShowcase}
               directorResult={directorResultPanel}
               directorResultLoading={loading}
-              directorGeneration={directorGenerationPanel}
+              generationProgress={generationProgressPanel}
               promptThumbUrl={hidePromptThumb ? null : promptImageUrl}
               bottomBarHeight={bottomBarHeight}
               aspectRatio={actionTab === "AI Director" ? directorAspectRatio : aspect}
