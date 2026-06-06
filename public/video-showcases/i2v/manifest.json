@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-05T21:52:57.834Z",
+  "generatedAt": "2026-06-06T14:36:18.149Z",
   "shared": {
     "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/e1498c52-69aa-41d6-8891-8173e58d87fd.png",
     "endFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/725729e7-4d37-4313-afbb-55d8b0fc178d.png",
@@ -149,6 +149,19 @@
       "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/1f8fde31-eeb3-4915-8638-14ba1b0f0723.png",
       "publicPath": "/video-showcases/i2v/vidu-q3-pro.mp4",
       "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/3e29affb-4e27-47da-a2d6-691446d10827.mp4"
+    },
+    "seedance-2": {
+      "modelId": "seedance-2",
+      "atlasModel": "bytedance/seedance-2.0/image-to-video",
+      "prompt": "A luxury sports car drives slowly through a neon-lit city street, cinematic tracking shot, reflections on wet pavement, premium fashion commercial energy, luxury advertising quality.",
+      "startFramePrompt": "Luxury red sports car parked on a wet neon city street at night, cinematic automotive photography, premium commercial still, vertical 9:16 composition, no people, elegant advertising quality.",
+      "aspect": "9:16",
+      "resolution": "720p",
+      "timeSeconds": 5,
+      "startFramePath": "/video-showcases/i2v/seedance-2-start.png",
+      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/5ecd313a-43d2-459f-85d3-2f0c84586b08.png",
+      "publicPath": "/video-showcases/i2v/seedance-2.mp4",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/cgt-20260606223406-dxjwx-0.mp4"
     }
   }
 }
