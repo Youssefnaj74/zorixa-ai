@@ -115,6 +115,11 @@ import {
 } from "@/lib/atlas-video-model-ids";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import {
+  ATLAS_VIDEO_UPSCALER_COMPOSER_ID,
+  buildAtlasVideoUpscalerBody,
+  normalizeAtlasVideoUpscalerTarget
+} from "@/lib/atlas-video-upscaler";
+import {
   assertCanAfford,
   creditsForVideoModel,
   deductCreditsForPrediction,
@@ -147,7 +152,7 @@ const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
 /** Client polls `GET ?predictionId=` this often (serverless POST cannot block for minutes). */
 const CLIENT_POLL_HINT_MS = 3000;
 
-type GenerateVideoAction = AtlasVideoRouteAction;
+type GenerateVideoAction = AtlasVideoRouteAction | "upscale";
 
 type ClientBody = {
   prompt?: string;
@@ -185,7 +190,8 @@ type ClientBody = {
   /** Wan 2.6 — Atlas `shot_type`: `single` | `multi` (multi sets `enable_prompt_expansion`). */
   shot_type?: string;
   /** Kling 3.0 Pro — `single` | `multi` (multi sets `multi_shot` + `shot_type: intelligent`). */
-  kling_v3_shot_mode?: string;
+  /** Video upscaler — Atlas `target_resolution` (1080p | 2k). */
+  target_resolution?: string;
 };
 
 const ALLOWED_ASPECT_RATIOS = new Set(["16:9", "9:16", "1:1", "4:3", "3:4"]);
@@ -406,6 +412,129 @@ export async function POST(request: Request) {
   }
 }
 
+async function handleVideoUpscalePost(
+  body: ClientBody,
+  actor: NonNullable<Awaited<ReturnType<typeof resolveZorixaActor>>>,
+  apiKey: string
+) {
+  const rawVideo = typeof body.video_url === "string" ? body.video_url.trim() : "";
+  const video_url = coerceToPublicHttpsUrl(rawVideo);
+  if (!video_url) {
+    return NextResponse.json(
+      { error: "Missing public https:// video URL to upscale." },
+      { status: 400 }
+    );
+  }
+
+  const durationSec = normalizeDurationSeconds(body.duration);
+  const target = normalizeAtlasVideoUpscalerTarget(
+    body.target_resolution ?? body.resolution
+  );
+  const creditCost = creditsForVideoModel(ATLAS_VIDEO_UPSCALER_COMPOSER_ID, {
+    durationSeconds: durationSec,
+    resolution: target
+  });
+
+  const afford = await assertCanAfford(actor.userId, creditCost);
+  if (!afford.ok) {
+    if (afford.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(afford.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
+
+  const atlasBody = buildAtlasVideoUpscalerBody({
+    videoUrl: video_url,
+    targetResolution: target,
+    copyAudio: true
+  });
+
+  const createRes = await fetch(`${ATLAS_BASE}/generateVideo`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(atlasBody)
+  });
+
+  const createJson = (await createRes.json()) as AtlasEnvelope;
+  if (!createRes.ok) {
+    return NextResponse.json(
+      {
+        error:
+          createJson.message ?? `Atlas video upscaler failed (${createRes.status})`,
+        atlas_error: createJson.data?.error ?? createJson.message ?? null
+      },
+      { status: createRes.status >= 400 ? createRes.status : 502 }
+    );
+  }
+
+  const predictionId = createJson.data?.id;
+  if (!predictionId) {
+    return NextResponse.json({ error: "Atlas did not return a prediction id" }, { status: 502 });
+  }
+
+  const charge = await deductCreditsForPrediction({
+    userId: actor.userId,
+    predictionId,
+    amount: creditCost,
+    featureUsed: "video"
+  });
+  if (!charge.ok) {
+    if (charge.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(charge.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Could not deduct credits" }, { status: 500 });
+  }
+
+  const initialStatus = createJson.data?.status;
+  if (initialStatus === "completed" || initialStatus === "succeeded") {
+    const videoUrl = extractAtlasVideoOutputUrl(createJson.data);
+    if (videoUrl) {
+      return NextResponse.json({
+        video_url: videoUrl,
+        prediction_id: predictionId,
+        credits_spent: charge.creditsSpent,
+        credits_balance: charge.balanceAfter
+      });
+    }
+    return NextResponse.json(
+      { error: "Atlas returned completed without an output URL" },
+      { status: 502 }
+    );
+  }
+
+  if (initialStatus === "failed") {
+    const atlasRaw = createJson.data?.error ?? createJson.message ?? "Atlas upscaler failed";
+    return NextResponse.json(
+      {
+        error: formatAtlasVideoFailureForUi(atlasRaw, {
+          generateAudio: false,
+          hostIsProduction: process.env.VERCEL_ENV === "production",
+          action: "edit"
+        }),
+        atlas_error: atlasRaw,
+        prediction_id: predictionId
+      },
+      { status: 502 }
+    );
+  }
+
+  return NextResponse.json({
+    pending: true,
+    prediction_id: predictionId,
+    poll_interval_ms: CLIENT_POLL_HINT_MS,
+    atlas_model: ATLAS_VIDEO_UPSCALER_COMPOSER_ID,
+    credits_spent: charge.creditsSpent,
+    credits_balance: charge.balanceAfter
+  });
+}
+
 async function handleGenerateVideoPost(request: Request) {
   const apiKey = env.atlasCloudApiKey;
   if (!apiKey) {
@@ -422,6 +551,15 @@ async function handleGenerateVideoPost(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
+  const actor = await resolveZorixaActor(request);
+  if (!actor) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (body.action === "upscale") {
+    return handleVideoUpscalePost(body, actor, apiKey);
+  }
+
   let prompt = stripVideoComposerAssetTokens(
     typeof body.prompt === "string" ? body.prompt.trim() : ""
   );
@@ -429,7 +567,7 @@ async function handleGenerateVideoPost(request: Request) {
     return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
   }
 
-  const action: GenerateVideoAction = body.action ?? "text";
+  const action: AtlasVideoRouteAction = (body.action ?? "text") as AtlasVideoRouteAction;
 
   const videoModel =
     typeof body.videoModel === "string" ? body.videoModel.trim() : "";
@@ -456,10 +594,6 @@ async function handleGenerateVideoPost(request: Request) {
     );
   }
 
-  const actor = await resolveZorixaActor(request);
-  if (!actor) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   let image_url =
     typeof body.image_url === "string" ? body.image_url.trim() : "";

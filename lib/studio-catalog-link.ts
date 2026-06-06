@@ -18,6 +18,7 @@ import { isAtlasVideoComposerId } from "@/lib/atlas-video-model-ids";
 import type { ToolCatalogSectionId } from "@/lib/tools-catalog";
 
 export const VIDEO_STUDIO_TABS = [
+  "AI Director",
   "Text to Video",
   "Image to Video",
   "Reference to Video",
@@ -127,6 +128,7 @@ export function parseVideoActionTab(raw: string | null): VideoStudioTab | null {
   if (!raw) return null;
   const trimmed = raw.trim();
   if (trimmed === "Lipsyncing") return "Audio to Video";
+  if (trimmed === "AI Director") return "AI Director";
   const t = trimmed as VideoStudioTab;
   return (VIDEO_STUDIO_TABS as readonly string[]).includes(t) ? t : null;
 }

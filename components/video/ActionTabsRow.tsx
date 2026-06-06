@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const TABS = [
+  "AI Director",
   "Text to Video",
   "Image to Video",
   "Reference to Video",
@@ -27,7 +28,7 @@ export function ActionTabsRow({
   return (
     <div
       className={cn(
-        "grid h-full min-h-0 w-full shrink-0 grid-cols-2 gap-1 rounded-xl border border-white/10 bg-[#0d0d14] p-1 sm:grid-cols-3 lg:grid-cols-6",
+        "grid h-full min-h-0 w-full shrink-0 grid-cols-2 gap-1 rounded-xl border border-white/10 bg-[#0d0d14] p-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7",
         className
       )}
     >
@@ -50,7 +51,9 @@ export function ActionTabsRow({
                 transition={{ type: "spring", stiffness: 380, damping: 28 }}
               />
             ) : null}
-            <span className="relative block truncate">{tab}</span>
+            <span className="relative block truncate">
+              {tab === "AI Director" ? "✨ AI Director" : tab}
+            </span>
           </button>
         );
       })}

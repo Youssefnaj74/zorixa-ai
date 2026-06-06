@@ -14,13 +14,29 @@ import {
 import { cn } from "@/lib/utils";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
+import { DirectorGenerationProgress } from "@/components/video/DirectorGenerationProgress";
+import { DirectorResultBanner } from "@/components/video/DirectorResultBanner";
+import type { DirectorQualityPreset } from "@/lib/ai-director/types";
 import { SeedanceReferenceToVideoTip } from "@/components/video/SeedanceReferenceToVideoTip";
 import { CharacterSwapModelTip } from "@/components/video/CharacterSwapModelTip";
 import { VideoToVideoModelTip } from "@/components/video/VideoToVideoModelTip";
 
 const NAV_H = 56;
 
-/** Tailwind frame for preview — driven by UI aspect, not file metadata. */
+/** Size constraints for the preview frame inside the card. */
+function uiAspectFrameLayoutClass(aspect: string): string {
+  switch (aspect) {
+    case "9:16":
+      return "h-full w-auto max-w-[min(100%,56vh)]";
+    case "1:1":
+      return "w-full max-w-[min(100%,min(56vh,480px))]";
+    case "16:9":
+    default:
+      return "w-full max-w-full";
+  }
+}
+
+/** Tailwind aspect ratio on the preview frame — driven by UI aspect, not file metadata. */
 function uiAspectFrameClass(aspect: string): string {
   switch (aspect) {
     case "16:9":
@@ -47,11 +63,19 @@ export function VideoPreview({
   loading,
   errorMessage,
   isExample = false,
+  directorResult = null,
+  directorResultLoading = false,
+  directorGeneration = null,
   promptThumbUrl,
   bottomBarHeight = 130,
   /** Bottom-bar aspect (9:16, 16:9, …) — frames preview until file metadata loads. */
   aspectRatio = "9:16",
   composerModelId = "seedance-2",
+  canPostProcessVideo = false,
+  postProcessBusy = false,
+  onResetDefaults,
+  onExtendVideo,
+  onUpscaleVideo,
   className
 }: {
   actionTab: ActionTab;
@@ -64,11 +88,37 @@ export function VideoPreview({
   errorMessage?: string | null;
   /** Model showcase demo — not a user generation. */
   isExample?: boolean;
+  /** AI Director — result panel after generation. */
+  directorResult?: {
+    modelLabel: string;
+    styleLabel: string;
+    creditsSpent: number;
+    canTryAnother: boolean;
+    onRegenerate: () => void;
+    onTryAnother: () => void;
+  } | null;
+  directorResultLoading?: boolean;
+  /** AI Director — in-progress generation UI (timer, cancel, slow banner). */
+  directorGeneration?: {
+    modelLabel: string;
+    qualityPreset: DirectorQualityPreset;
+    elapsedSec: number;
+    showSlowBanner: boolean;
+    canTryAnother: boolean;
+    onCancel: () => void;
+    onKeepWaiting: () => void;
+    onTryAnother: () => void;
+  } | null;
   /** Small reference thumbnail (e.g. @PRODUCT_IMAGE1) shown top-center */
   promptThumbUrl?: string | null;
   /** Measured fixed bottom bar height — drives preview card max-height. */
   bottomBarHeight?: number;
   aspectRatio?: string;
+  canPostProcessVideo?: boolean;
+  postProcessBusy?: boolean;
+  onResetDefaults?: () => void;
+  onExtendVideo?: () => void;
+  onUpscaleVideo?: () => void;
   className?: string;
 }) {
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${bottomBarHeight}px)`;
@@ -77,6 +127,7 @@ export function VideoPreview({
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [fileAspectCss, setFileAspectCss] = useState<string | null>(null);
   const frameAspectClass = uiAspectFrameClass(aspectRatio);
+  const frameLayoutClass = uiAspectFrameLayoutClass(aspectRatio);
   const uiPortrait = aspectRatio === "9:16";
   const canonicalDownloadUrl =
     videoDownloadUrl?.trim() ||
@@ -156,18 +207,27 @@ export function VideoPreview({
               Example
             </span>
           ) : null}
+          {directorResult ? (
+            <span className="rounded-md bg-[#8338eb]/20 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[#c084fc]">
+              AI Director
+            </span>
+          ) : null}
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <Button
               type="button"
               variant="ghost"
-              className="h-8 shrink-0 rounded-lg border border-white/10 bg-transparent px-3 text-xs text-white hover:bg-white/10"
+              disabled={!canPostProcessVideo || postProcessBusy || loading}
+              onClick={() => onUpscaleVideo?.()}
+              className="h-8 shrink-0 rounded-lg border border-white/10 bg-transparent px-3 text-xs text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
             >
               Upscale Video
             </Button>
             <Button
               type="button"
               variant="ghost"
-              className="h-8 shrink-0 rounded-lg border border-white/10 bg-transparent px-3 text-xs text-white hover:bg-white/10"
+              disabled={!canPostProcessVideo || postProcessBusy || loading}
+              onClick={() => onExtendVideo?.()}
+              className="h-8 shrink-0 rounded-lg border border-white/10 bg-transparent px-3 text-xs text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
             >
               Extend Video
             </Button>
@@ -218,7 +278,7 @@ export function VideoPreview({
                     className={cn(
                       "relative mx-auto max-h-[min(70vh,100%)] overflow-hidden rounded-xl shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)]",
                       frameAspectClass,
-                      uiPortrait ? "h-full w-auto max-w-[min(100%,56vh)]" : "w-full max-w-full"
+                      frameLayoutClass
                     )}
                   >
                     <video
@@ -292,12 +352,36 @@ export function VideoPreview({
                       </a>
                     </div>
                   ) : null}
+                  {directorResult ? (
+                    <DirectorResultBanner
+                      modelLabel={directorResult.modelLabel}
+                      styleLabel={directorResult.styleLabel}
+                      creditsSpent={directorResult.creditsSpent}
+                      loading={directorResultLoading}
+                      canTryAnother={directorResult.canTryAnother}
+                      onRegenerate={directorResult.onRegenerate}
+                      onTryAnother={directorResult.onTryAnother}
+                    />
+                  ) : null}
                 </div>
               ) : loading ? (
-                <div className="flex flex-col items-center justify-center gap-3">
-                  <div className="size-12 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />
-                  <p className="text-sm text-zorixa-muted">Generating video…</p>
-                </div>
+                directorGeneration ? (
+                  <DirectorGenerationProgress
+                    modelLabel={directorGeneration.modelLabel}
+                    qualityPreset={directorGeneration.qualityPreset}
+                    elapsedSec={directorGeneration.elapsedSec}
+                    showSlowBanner={directorGeneration.showSlowBanner}
+                    canTryAnother={directorGeneration.canTryAnother}
+                    onCancel={directorGeneration.onCancel}
+                    onKeepWaiting={directorGeneration.onKeepWaiting}
+                    onTryAnother={directorGeneration.onTryAnother}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="size-12 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />
+                    <p className="text-sm text-zorixa-muted">Generating video…</p>
+                  </div>
+                )
               ) : errorMessage ? (
                 <div className="max-w-md px-4 text-center">
                   <p className="mb-2 font-display text-xs font-semibold uppercase tracking-wide text-red-300/90">
@@ -322,7 +406,9 @@ export function VideoPreview({
               <Button
                 type="button"
                 variant="ghost"
-                className="pointer-events-auto h-9 rounded-lg border border-white/15 bg-black/40 px-3 text-xs text-white backdrop-blur hover:bg-black/60"
+                disabled={postProcessBusy || loading}
+                onClick={() => onResetDefaults?.()}
+                className="pointer-events-auto h-9 rounded-lg border border-white/15 bg-black/40 px-3 text-xs text-white backdrop-blur hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <RotateCcw className="mr-1 size-3.5" />
                 Reset to Defaults

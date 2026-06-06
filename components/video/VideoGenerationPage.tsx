@@ -11,13 +11,45 @@ import {
 import { useCredits } from "@/lib/hooks/use-credits";
 import { composerModelDisplayLabel } from "@/lib/composer-model-label";
 import { getVideoModelShowcase, showcaseVideoAssetUrl } from "@/lib/video-model-showcase";
+import {
+  DIRECTOR_GENERATION_CANCEL_MESSAGE,
+  DIRECTOR_SLOW_GENERATION_SEC
+} from "@/lib/ai-director/generation-hints";
+import { directorStyleLabel } from "@/lib/ai-director/config";
+import {
+  getDirectorExamples,
+  getNextDirectorModelInChain
+} from "@/lib/ai-director/model-info";
+import { resolveDirectorRoute, directorSpeedTierForQualityPreset } from "@/lib/ai-director/router";
+import {
+  clampDirectorDurationToOptions,
+  getDirectorDurationOptions,
+  normalizeDirectorDurationSeconds,
+  directorDefaultDurationForStyle,
+  DIRECTOR_LAUNCH_DEFAULT_DURATION_SEC,
+} from "@/lib/ai-director/duration-options";
+import {
+  clampDirectorAspectToOptions,
+  directorDefaultAspectForStyle,
+  DIRECTOR_LAUNCH_DEFAULT_ASPECT,
+  getDirectorAspectOptions,
+  type DirectorAspectRatio,
+} from "@/lib/ai-director/aspect-options";
+import type {
+  DirectorExample,
+  DirectorQualityPreset,
+  DirectorRouteResult,
+  DirectorStyleInput
+} from "@/lib/ai-director/types";
 
+import { AiDirectorBottomBar } from "@/components/video/AiDirectorBottomBar";
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
 import type { KlingMotionCharacterOrientation } from "@/lib/atlas-kling-motion-control";
 import {
   KLING_26_MOTION_COMPOSER_ID,
   KLING_30_PRO_MODEL_ID,
+  bottomBarModelsForActionTab,
   happyHorseVideoEditMaxImages,
   happyHorseVideoEditSupportsReferenceImages,
   normalizeVeo31ComposerSettings,
@@ -105,6 +137,11 @@ import {
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
 import { normalizeAtlasVideoUrlForPlayback, videoUrlLooksLikeMp4Path } from "@/lib/resolve-video-playback-url";
+import { extractCanonicalVideoUrlFromProxy } from "@/lib/video-playback-proxy";
+import {
+  ATLAS_VIDEO_UPSCALER_COMPOSER_ID,
+  normalizeAtlasVideoUpscalerTarget
+} from "@/lib/atlas-video-upscaler";
 import {
   formatAtlasVideoFailureForUi,
   isAtlasRealPersonImageError
@@ -280,6 +317,31 @@ function resizeReferenceImageUrls(
   return next;
 }
 
+function logDirectorRunToApi(payload: {
+  style_requested: DirectorStyleInput;
+  style_resolved: string;
+  routed_model: string;
+  route_action: "text" | "image";
+  prompt: string;
+  success: boolean;
+  prediction_id?: string | null;
+  output_url?: string | null;
+  credits_spent?: number;
+}): Promise<number | null> {
+  return fetch("/api/director/log", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload)
+  })
+    .then(async (res) => {
+      if (!res.ok) return null;
+      const data = (await res.json()) as { run_id?: number };
+      return data.run_id ?? null;
+    })
+    .catch(() => null);
+}
+
 function logAtlasComposerVideoToSupabase(payload: {
   output_url: string;
   input_url?: string;
@@ -329,7 +391,25 @@ export function VideoGenerationPage() {
   const [resolution, setResolution] = useState("1080p");
   const [wan26ShotType, setWan26ShotType] = useState<Wan26ShotType>("single");
   const [klingV3ShotMode, setKlingV3ShotMode] = useState<KlingV3ShotMode>("single");
-  const [actionTab, setActionTab] = useState<ActionTab>("Image to Video");
+  const [actionTab, setActionTab] = useState<ActionTab>("AI Director");
+  const [directorStyle, setDirectorStyle] = useState<DirectorStyleInput>("auto");
+  const [directorQualityPreset, setDirectorQualityPreset] =
+    useState<DirectorQualityPreset>("balanced");
+  const [directorSoundtrackOn, setDirectorSoundtrackOn] = useState(true);
+  const [directorDurationSec, setDirectorDurationSec] = useState(
+    DIRECTOR_LAUNCH_DEFAULT_DURATION_SEC
+  );
+  const [directorAspectRatio, setDirectorAspectRatio] = useState<DirectorAspectRatio>(
+    DIRECTOR_LAUNCH_DEFAULT_ASPECT
+  );
+  const [directorActiveExampleId, setDirectorActiveExampleId] = useState<string | null>(null);
+  const [directorForceModelId, setDirectorForceModelId] = useState<string | null>(null);
+  const [directorLastRoute, setDirectorLastRoute] = useState<DirectorRouteResult | null>(null);
+  const [directorLastCreditsSpent, setDirectorLastCreditsSpent] = useState(0);
+  const directorRunIdRef = useRef<number | null>(null);
+  const directorForceModelIdRef = useRef<string | null>(null);
+  const directorAutoResolvedStyleRef = useRef<DirectorRouteResult["styleResolved"] | null>(null);
+  directorForceModelIdRef.current = directorForceModelId;
   const [prompt, setPrompt] = useState("");
 
   const [promptImageUrl, setPromptImageUrl] = useState<string | null>(null);
@@ -445,6 +525,11 @@ export function VideoGenerationPage() {
   }, []);
 
   const [loading, setLoading] = useState(false);
+  const [directorGenElapsedSec, setDirectorGenElapsedSec] = useState(0);
+  const [directorSlowBannerDismissed, setDirectorSlowBannerDismissed] = useState(false);
+  const directorGenStartRef = useRef<number | null>(null);
+  const generationAbortRef = useRef<AbortController | null>(null);
+  const generationUserCancelledRef = useRef(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   /** Raw Atlas/CDN URL for full-file download (playback uses proxied `videoUrl`). */
   const [videoDownloadUrl, setVideoDownloadUrl] = useState<string | null>(null);
@@ -455,7 +540,7 @@ export function VideoGenerationPage() {
   const appliedShowcaseForModel = useRef<string | null>(null);
 
   const modelShowcase = useMemo(
-    () => getVideoModelShowcase(composerModelId, actionTab),
+    () => (actionTab === "AI Director" ? null : getVideoModelShowcase(composerModelId, actionTab)),
     [actionTab, composerModelId]
   );
   const [showcaseAssetsReady, setShowcaseAssetsReady] = useState(false);
@@ -511,32 +596,145 @@ export function VideoGenerationPage() {
     return [exampleEntry, ...history];
   }, [history, modelShowcase, showingModelShowcase]);
 
+  const directorPreviewRoute = useMemo(() => {
+    if (actionTab !== "AI Director") return null;
+    return resolveDirectorRoute({
+      style: directorStyle,
+      prompt: prompt.trim(),
+      hasStartImage: Boolean(promptImageUrl),
+      qualityPreset: directorQualityPreset,
+      forceModelId: directorForceModelId
+    });
+  }, [
+    actionTab,
+    directorForceModelId,
+    directorQualityPreset,
+    directorStyle,
+    prompt,
+    promptImageUrl
+  ]);
+
+  const directorDurationOptions = useMemo(() => {
+    if (!directorPreviewRoute) return [5];
+    return getDirectorDurationOptions(
+      directorPreviewRoute.modelId,
+      directorPreviewRoute.routeAction
+    );
+  }, [directorPreviewRoute]);
+
+  const directorAspectOptions = useMemo(() => {
+    if (!directorPreviewRoute) return [...getDirectorAspectOptions("seedance-2")];
+    return getDirectorAspectOptions(directorPreviewRoute.modelId);
+  }, [directorPreviewRoute]);
+
+  useEffect(() => {
+    if (!directorPreviewRoute) return;
+    setDirectorDurationSec((current) =>
+      clampDirectorDurationToOptions(directorDurationOptions, current)
+    );
+  }, [directorDurationOptions, directorPreviewRoute]);
+
+  useEffect(() => {
+    if (!directorPreviewRoute) return;
+    setDirectorAspectRatio((current) =>
+      clampDirectorAspectToOptions(directorAspectOptions, current)
+    );
+  }, [directorAspectOptions, directorPreviewRoute]);
+
+  useEffect(() => {
+    if (!directorPreviewRoute || directorStyle !== "auto") return;
+    const resolved = directorPreviewRoute.styleResolved;
+    if (directorAutoResolvedStyleRef.current === resolved) return;
+    directorAutoResolvedStyleRef.current = resolved;
+    setDirectorDurationSec(directorDefaultDurationForStyle(resolved));
+    setDirectorAspectRatio(directorDefaultAspectForStyle(resolved));
+  }, [directorPreviewRoute, directorStyle]);
+
+  const directorEstimatedCredits = useMemo(() => {
+    if (!directorPreviewRoute) return 0;
+    const billingActionTab = directorPreviewRoute.actionTab;
+    const supportsNativeAudio =
+      videoComposerSupportsGenerateAudio(directorPreviewRoute.modelId) &&
+      (billingActionTab === "Text to Video" || billingActionTab === "Image to Video");
+    return creditsChargedForVideoModel(directorPreviewRoute.modelId, {
+      durationSeconds: directorDurationSec,
+      resolution: directorPreviewRoute.resolution,
+      speedTier: videoComposerSupportsSpeedTier(directorPreviewRoute.modelId)
+        ? directorSpeedTierForQualityPreset(directorQualityPreset)
+        : "standard",
+      generateAudio: supportsNativeAudio && directorSoundtrackOn,
+      routeAction: videoPricingRouteAction(billingActionTab)
+    });
+  }, [directorPreviewRoute, directorDurationSec, directorSoundtrackOn, directorQualityPreset]);
+
+  const directorExamples = useMemo(() => getDirectorExamples(), []);
+
   const creditsLine = useMemo(
     () => {
+      const billingModelId =
+        actionTab === "AI Director" && directorPreviewRoute
+          ? directorPreviewRoute.modelId
+          : composerModelId;
+      const billingActionTab =
+        actionTab === "AI Director" && directorPreviewRoute
+          ? directorPreviewRoute.actionTab
+          : actionTab;
       const supportsNativeAudio =
-        videoComposerSupportsGenerateAudio(composerModelId) &&
-        (actionTab === "Text to Video" ||
-          actionTab === "Image to Video" ||
-          actionTab === "Reference to Video" ||
-          (actionTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(composerModelId)));
+        videoComposerSupportsGenerateAudio(billingModelId) &&
+        (billingActionTab === "Text to Video" ||
+          billingActionTab === "Image to Video" ||
+          billingActionTab === "Reference to Video" ||
+          (billingActionTab === "Video to Video" &&
+            videoToVideoTabUsesViduStartEnd(billingModelId)));
+      const directorDuration = actionTab === "AI Director" ? directorDurationSec : timeSeconds;
+      const directorResolution =
+        actionTab === "AI Director" && directorPreviewRoute
+          ? directorPreviewRoute.resolution
+          : resolution;
       return formatGenerationCreditsLine(
-        creditsChargedForVideoModel(composerModelId, {
-          durationSeconds: timeSeconds,
-          resolution,
-          speedTier: videoComposerSupportsSpeedTier(composerModelId)
+        creditsChargedForVideoModel(billingModelId, {
+          durationSeconds: directorDuration,
+          resolution: directorResolution,
+          speedTier: videoComposerSupportsSpeedTier(billingModelId)
             ? normalizeAtlasVideoSpeedTier(durationStandard)
             : "standard",
           generateAudio: supportsNativeAudio && generateAudioOn,
-          routeAction: videoPricingRouteAction(actionTab)
+          routeAction: videoPricingRouteAction(billingActionTab)
         })
       );
     },
-    [actionTab, composerModelId, durationStandard, generateAudioOn, resolution, timeSeconds]
+    [
+      actionTab,
+      composerModelId,
+      directorPreviewRoute,
+      durationStandard,
+      generateAudioOn,
+      resolution,
+      timeSeconds
+    ]
   );
 
   const handleBottomBarHeight = useCallback((height: number) => {
     setBottomBarHeight(height);
   }, []);
+
+  useEffect(() => {
+    if (!loading || actionTab !== "AI Director") {
+      directorGenStartRef.current = null;
+      setDirectorGenElapsedSec(0);
+      setDirectorSlowBannerDismissed(false);
+      return;
+    }
+    directorGenStartRef.current = Date.now();
+    setDirectorGenElapsedSec(0);
+    setDirectorSlowBannerDismissed(false);
+    const id = window.setInterval(() => {
+      const start = directorGenStartRef.current;
+      if (!start) return;
+      setDirectorGenElapsedSec(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [actionTab, loading]);
 
   const applyModelShowcase = useCallback(
     (nextModelId: string, tab: ActionTab) => {
@@ -982,7 +1180,7 @@ export function VideoGenerationPage() {
       const promptValue = ctx.promptText.trim() || prompt.trim();
       const promptForAtlas = stripVideoComposerAssetTokens(promptValue);
 
-      if (!isAtlasVideoComposerId(composerModelId)) {
+      if (ctx.actionTab !== "AI Director" && !isAtlasVideoComposerId(composerModelId)) {
         setGenerateError("Unsupported video model.");
         return;
       }
@@ -998,24 +1196,63 @@ export function VideoGenerationPage() {
       }
 
       setLoading(true);
+      generationUserCancelledRef.current = false;
+      generationAbortRef.current?.abort();
+      const abortController = new AbortController();
+      generationAbortRef.current = abortController;
+      const abortSignal = abortController.signal;
       try {
         let payload: Record<string, unknown>;
         let sourceInputForLog: string | null = null;
 
-        const aspectRatio = ctx.aspectRatio.trim() || aspect.trim();
+        let generationTab: ActionTab = ctx.actionTab;
+        let videoModel = composerModelId;
+        let directorRoute: DirectorRouteResult | null = null;
+
+        if (ctx.actionTab === "AI Director") {
+          directorRoute = resolveDirectorRoute({
+            style: directorStyle,
+            prompt: promptValue,
+            hasStartImage: Boolean(ctx.promptImageUrl),
+            qualityPreset: directorQualityPreset,
+            forceModelId: directorForceModelIdRef.current
+          });
+          setDirectorLastRoute(directorRoute);
+          setComposerModelId(directorRoute.modelId);
+          generationTab = directorRoute.actionTab;
+          videoModel = directorRoute.modelId;
+        }
+
+        if (!isAtlasVideoComposerId(videoModel)) {
+          setGenerateError("AI Director could not pick a supported model.");
+          return;
+        }
+
+        const aspectRatio =
+          ctx.actionTab === "AI Director"
+            ? ctx.aspectRatio.trim() || directorAspectRatio
+            : ctx.aspectRatio.trim() || aspect.trim();
         const resTier =
-          ctx.actionTab === "Audio to Video"
-            ? normalizeAudioToVideoResolution(ctx.resolution.trim() || resolution.trim())
-            : ctx.resolution.trim() || resolution.trim();
-        const videoModel = composerModelId;
-        const duration = ctx.durationSeconds;
+          ctx.actionTab === "AI Director"
+            ? (directorRoute?.resolution ?? (ctx.resolution.trim() || "720p"))
+            : ctx.actionTab === "Audio to Video"
+              ? normalizeAudioToVideoResolution(ctx.resolution.trim() || resolution.trim())
+              : ctx.resolution.trim() || resolution.trim();
+        const duration =
+          ctx.actionTab === "AI Director"
+            ? normalizeDirectorDurationSeconds(
+                videoModel,
+                directorRoute?.routeAction ?? "text",
+                ctx.durationSeconds
+              )
+            : ctx.durationSeconds;
 
         const supportsNativeAudio =
           videoComposerSupportsGenerateAudio(videoModel) &&
-          (ctx.actionTab === "Text to Video" ||
-            ctx.actionTab === "Image to Video" ||
-            ctx.actionTab === "Reference to Video" ||
-            (ctx.actionTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(videoModel)));
+          (generationTab === "Text to Video" ||
+            generationTab === "Image to Video" ||
+            generationTab === "Reference to Video" ||
+            (generationTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(videoModel)));
 
         const wantGenerateAudio = supportsNativeAudio && ctx.generateAudio;
 
@@ -1023,18 +1260,18 @@ export function VideoGenerationPage() {
 
         const veoT2vI2vSettings =
           isVeo31ComposerId(videoModel) &&
-          (ctx.actionTab === "Text to Video" || ctx.actionTab === "Image to Video")
+          (generationTab === "Text to Video" || generationTab === "Image to Video")
             ? normalizeVeo31ComposerSettings({
                 timeSeconds: duration,
                 aspect: aspectRatio,
                 resolution: resTier,
-                actionTab: ctx.actionTab
+                actionTab: generationTab
               })
             : null;
         const hailuoSettings = isHailuo23ComposerId(videoModel)
           ? {
               timeSeconds:
-                ctx.actionTab === "Image to Video"
+                generationTab === "Image to Video"
                   ? normalizeHailuo23I2vDurationSeconds(duration)
                   : HAILUO_23_T2V_DURATION_SECONDS
             }
@@ -1046,30 +1283,30 @@ export function VideoGenerationPage() {
 
         const wan26ShotPayload =
           isWan26ComposerId(videoModel) &&
-          (ctx.actionTab === "Text to Video" ||
-            ctx.actionTab === "Image to Video" ||
-            ctx.actionTab === "Video to Video")
+          (generationTab === "Text to Video" ||
+            generationTab === "Image to Video" ||
+            generationTab === "Video to Video")
             ? { shot_type: ctx.wan26ShotType }
             : {};
 
         const klingV3ShotPayload =
           videoModel === KLING_30_PRO_MODEL_ID &&
-          (ctx.actionTab === "Text to Video" || ctx.actionTab === "Image to Video")
+          (generationTab === "Text to Video" || generationTab === "Image to Video")
             ? { kling_v3_shot_mode: ctx.klingV3ShotMode }
             : {};
 
         const atlasAspectForPayload =
           videoModel === KLING_30_PRO_MODEL_ID &&
-          (ctx.actionTab === "Text to Video" || ctx.actionTab === "Image to Video")
+          (generationTab === "Text to Video" || generationTab === "Image to Video")
             ? klingV3AspectFromUi(aspectRatio)
             : atlasAspect;
         const atlasDurationForPayload =
           videoModel === KLING_30_PRO_MODEL_ID &&
-          (ctx.actionTab === "Text to Video" || ctx.actionTab === "Image to Video")
+          (generationTab === "Text to Video" || generationTab === "Image to Video")
             ? normalizeKlingV3DurationSeconds(duration)
             : atlasDuration;
 
-        switch (ctx.actionTab) {
+        switch (generationTab) {
           case "Text to Video":
             payload = {
               prompt: promptForAtlas,
@@ -1418,7 +1655,8 @@ export function VideoGenerationPage() {
         const res = await fetch("/api/generate-video", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          signal: abortSignal
         });
 
         let data: {
@@ -1456,13 +1694,16 @@ export function VideoGenerationPage() {
               generateAudio: wantGenerateAudio,
               hostIsProduction:
                 typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
-              action: atlasPollActionForTab(ctx.actionTab)
+              action: atlasPollActionForTab(generationTab)
             }) || `Generation failed (${res.status})`
           );
           return;
         }
 
         const creditsSpent = data.credits_spent ?? 0;
+        if (directorRoute) {
+          setDirectorLastCreditsSpent(creditsSpent);
+        }
         void refreshCredits();
 
         if (data.atlas_request) {
@@ -1495,13 +1736,16 @@ export function VideoGenerationPage() {
           const interval = data.poll_interval_ms ?? ATLAS_CLIENT_POLL_MS;
           const deadline = Date.now() + ATLAS_CLIENT_MAX_WAIT_MS;
           while (Date.now() < deadline) {
+            if (abortSignal.aborted) return;
             await new Promise((r) => setTimeout(r, interval));
+            if (abortSignal.aborted) return;
             const pollQs = new URLSearchParams({ predictionId });
             if (wantGenerateAudio) pollQs.set("generate_audio", "1");
-            const pollAction = atlasPollActionForTab(ctx.actionTab);
+            const pollAction = atlasPollActionForTab(generationTab);
             if (pollAction !== "text") pollQs.set("action", pollAction);
             const pr = await fetch(`/api/generate-video?${pollQs.toString()}`, {
-              cache: "no-store"
+              cache: "no-store",
+              signal: abortSignal
             });
             let pd: {
               video_url?: string | null;
@@ -1554,7 +1798,7 @@ export function VideoGenerationPage() {
                 generateAudio: wantGenerateAudio,
                 hostIsProduction:
                   typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
-                action: atlasPollActionForTab(ctx.actionTab)
+                action: atlasPollActionForTab(generationTab)
               });
               setGenerateError(
                 pd.prediction_id && !isAtlasRealPersonImageError(pd.atlas_error ?? pd.error)
@@ -1577,9 +1821,10 @@ export function VideoGenerationPage() {
         const displayTitle =
           stripVideoComposerAssetTokens(promptValue).slice(0, 48) || videoModel;
         const thumbForHistory =
-          (ctx.actionTab === "Image to Video" ||
-            ctx.actionTab === "Reference to Video" ||
-            (ctx.actionTab === "Character Swap" &&
+          (generationTab === "Image to Video" ||
+            generationTab === "Reference to Video" ||
+            ctx.actionTab === "AI Director" ||
+            (generationTab === "Character Swap" &&
               characterSwapTabUsesDualAssetPipeline(videoModel))) &&
           sourceInputForLog
             ? sourceInputForLog
@@ -1645,17 +1890,424 @@ export function VideoGenerationPage() {
           output_url: finalVideoUrl,
           input_url: sourceInputForLog ?? "",
           prediction_id: predictionIdForLog,
-          video_model: composerModelId,
+          video_model: videoModel,
           credits_spent: creditsSpent
         });
+
+        if (directorRoute) {
+          void logDirectorRunToApi({
+            style_requested: directorRoute.styleRequested,
+            style_resolved: directorRoute.styleResolved,
+            routed_model: directorRoute.modelId,
+            route_action: directorRoute.routeAction,
+            prompt: promptValue,
+            success: true,
+            prediction_id: predictionIdForLog,
+            output_url: finalVideoUrl,
+            credits_spent: creditsSpent
+          }).then((runId) => {
+            directorRunIdRef.current = runId;
+          });
+        }
       } catch (e: unknown) {
-        setGenerateError(e instanceof Error ? e.message : "Network error. Try again.");
+        if (e instanceof DOMException && e.name === "AbortError") {
+          return;
+        }
+        if (!generationUserCancelledRef.current) {
+          setGenerateError(e instanceof Error ? e.message : "Network error. Try again.");
+        }
       } finally {
+        generationAbortRef.current = null;
         setLoading(false);
       }
     },
-    [aspect, composerModelId, durationStandard, loading, modeValue, prompt, refreshCredits, resolution, timeSeconds]
+    [
+      aspect,
+      composerModelId,
+      directorQualityPreset,
+      directorDurationSec,
+      directorSoundtrackOn,
+      directorStyle,
+      durationStandard,
+      loading,
+      modeValue,
+      prompt,
+      refreshCredits,
+      resolution,
+      timeSeconds
+    ]
   );
+
+  const outputVideoSourceUrl = useMemo(() => {
+    if (showingModelShowcase) return null;
+    return (
+      videoDownloadUrl?.trim() ||
+      (videoUrl ? extractCanonicalVideoUrlFromProxy(videoUrl) : null) ||
+      (videoUrl?.startsWith("https://") ? videoUrl : null) ||
+      null
+    );
+  }, [showingModelShowcase, videoDownloadUrl, videoUrl]);
+
+  const canPostProcessVideo = Boolean(outputVideoSourceUrl);
+
+  const resetDirectorTabDefaults = useCallback(() => {
+    setGenerateError(null);
+    setPrompt("");
+    setPromptImageUrlSafe(null);
+    setDirectorStyle("auto");
+    setDirectorQualityPreset("balanced");
+    setDirectorSoundtrackOn(true);
+    setDirectorDurationSec(DIRECTOR_LAUNCH_DEFAULT_DURATION_SEC);
+    setDirectorAspectRatio(DIRECTOR_LAUNCH_DEFAULT_ASPECT);
+    setDirectorActiveExampleId(null);
+    setDirectorForceModelId(null);
+    directorForceModelIdRef.current = null;
+    directorAutoResolvedStyleRef.current = null;
+    setDirectorLastRoute(null);
+    setDirectorLastCreditsSpent(0);
+    setDirectorSlowBannerDismissed(false);
+    appliedShowcaseForModel.current = null;
+  }, [setPromptImageUrlSafe]);
+
+  const resetComposerTabDefaults = useCallback(
+    (tab: ActionTab) => {
+      setGenerateError(null);
+      setPrompt("");
+      setPromptImageUrlSafe(null);
+      setPromptImage2UrlSafe(null);
+      setLipsyncAudioUrlSafe(null);
+      setEditSourceVideoUrlSafe(null);
+      setMotionVideoUrlSafe(null);
+      setCharacterOrientation("image");
+      setKeepOriginalSound(true);
+      setWan26ShotType("single");
+      setKlingV3ShotMode("single");
+      setModeValue("UGC");
+      setDurationStandard("Standard");
+
+      const models = bottomBarModelsForActionTab(tab);
+      const defaultModel =
+        tab === "Audio to Video"
+          ? INFINITETALK_COMPOSER_ID
+          : tab === "Video to Video"
+            ? "wan-2-6"
+            : (models[0]?.id ?? "seedance-2");
+
+      setComposerModelId(defaultModel);
+      setGenerateAudioOn(isWan27ComposerId(defaultModel));
+      setAspect("9:16");
+      setResolution(
+        tab === "Audio to Video"
+          ? DEFAULT_AUDIO_TO_VIDEO_RESOLUTION
+          : "1080p"
+      );
+      setTimeSeconds(
+        isHailuo23ComposerId(defaultModel) && tab === "Text to Video"
+          ? HAILUO_23_T2V_DURATION_SECONDS
+          : 10
+      );
+
+      setReferenceImageUrls(
+        Array.from({ length: referenceToVideoMaxImages(defaultModel) }, () => null)
+      );
+      setReferenceVideoUrls(
+        Array.from({ length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS }, () => null)
+      );
+      setReferenceAudioUrls(
+        Array.from({ length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS }, () => null)
+      );
+
+      appliedShowcaseForModel.current = null;
+      applyModelShowcase(defaultModel, tab);
+    },
+    [
+      applyModelShowcase,
+      setEditSourceVideoUrlSafe,
+      setLipsyncAudioUrlSafe,
+      setMotionVideoUrlSafe,
+      setPromptImage2UrlSafe,
+      setPromptImageUrlSafe
+    ]
+  );
+
+  const resetCurrentTabDefaults = useCallback(() => {
+    if (actionTab === "AI Director") {
+      resetDirectorTabDefaults();
+    } else {
+      resetComposerTabDefaults(actionTab);
+    }
+  }, [actionTab, resetComposerTabDefaults, resetDirectorTabDefaults]);
+
+  const handleExtendVideo = useCallback(async () => {
+    if (!outputVideoSourceUrl) {
+      setGenerateError("Generate a video first, then extend it.");
+      return;
+    }
+    const httpsUrl = await ensureAtlasPublicHttpsMediaUrl(outputVideoSourceUrl);
+    if (!httpsUrl) {
+      setGenerateError(
+        "Could not prepare your video for extend. Try downloading and re-uploading in Video to Video."
+      );
+      return;
+    }
+    setGenerateError(null);
+    setEditSourceVideoUrlSafe(httpsUrl);
+    setPrompt((current) => {
+      const base = current.trim();
+      const suffix =
+        "Continue the scene seamlessly with natural motion, same style, camera movement, and lighting.";
+      return base ? `${base}\n\n${suffix}` : suffix;
+    });
+    const baseDuration =
+      actionTab === "AI Director" ? directorDurationSec : timeSeconds;
+    setTimeSeconds(Math.min(15, Math.max(10, baseDuration + 5)));
+    setComposerModelId("wan-2-7");
+    setResolution("720p");
+    appliedShowcaseForModel.current = null;
+    setActionTab("Video to Video");
+  }, [
+    actionTab,
+    directorDurationSec,
+    outputVideoSourceUrl,
+    setEditSourceVideoUrlSafe,
+    timeSeconds
+  ]);
+
+  const runVideoUpscale = useCallback(async () => {
+    if (loading || !outputVideoSourceUrl) {
+      setGenerateError("Generate a video first, then upscale it.");
+      return;
+    }
+    const httpsUrl = await ensureAtlasPublicHttpsMediaUrl(outputVideoSourceUrl);
+    if (!httpsUrl) {
+      setGenerateError(
+        "Could not prepare your video for upscale. Try again after the clip finishes processing."
+      );
+      return;
+    }
+
+    const durationSeconds =
+      actionTab === "AI Director" ? directorDurationSec : timeSeconds;
+    const currentRes =
+      actionTab === "AI Director"
+        ? (directorPreviewRoute?.resolution ?? "720p")
+        : resolution;
+    const targetResolution = normalizeAtlasVideoUpscalerTarget(
+      currentRes === "1080p" || currentRes === "4k" ? "2k" : "1080p"
+    );
+
+    setGenerateError(null);
+    setVideoUrl(null);
+    setVideoDownloadUrl(null);
+    setLoading(true);
+    generationUserCancelledRef.current = false;
+    generationAbortRef.current?.abort();
+    const abortController = new AbortController();
+    generationAbortRef.current = abortController;
+    const abortSignal = abortController.signal;
+
+    try {
+      const res = await fetch("/api/generate-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "upscale",
+          video_url: httpsUrl,
+          duration: durationSeconds,
+          target_resolution: targetResolution,
+          videoModel: ATLAS_VIDEO_UPSCALER_COMPOSER_ID
+        }),
+        signal: abortSignal
+      });
+      const data = (await res.json()) as Record<string, unknown>;
+      if (!res.ok) {
+        if (res.status === 402) {
+          setGenerateError(insufficientCreditsMessage(data as Parameters<typeof insufficientCreditsMessage>[0]));
+          return;
+        }
+        setGenerateError(
+          formatAtlasVideoFailureForUi(String(data.error ?? ""), {
+            generateAudio: false,
+            hostIsProduction:
+              typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
+            action: "edit"
+          }) || `Upscale failed (${res.status})`
+        );
+        return;
+      }
+
+      void refreshCredits();
+
+      let finalVideoUrl: string | null = pickVideoUrlFromPollBody(data);
+      if (finalVideoUrl) {
+        finalVideoUrl = normalizeAtlasVideoUrlForPlayback(finalVideoUrl);
+        setVideoDownloadUrl(finalVideoUrl);
+        setVideoUrl(toBrowserVideoSrc(finalVideoUrl));
+        setHasUserGenerated(true);
+        setResolution("1080p");
+        return;
+      }
+
+      const predictionId = pickPredictionIdFromPost(data as { prediction_id?: string; id?: string });
+      if (!predictionId || data.pending === false) {
+        setGenerateError("Upscale did not return a job id.");
+        return;
+      }
+
+      const interval = (data.poll_interval_ms as number | undefined) ?? ATLAS_CLIENT_POLL_MS;
+      const deadline = Date.now() + ATLAS_CLIENT_MAX_WAIT_MS;
+      while (Date.now() < deadline) {
+        if (abortSignal.aborted) return;
+        await new Promise((r) => setTimeout(r, interval));
+        if (abortSignal.aborted) return;
+        const pollQs = new URLSearchParams({ predictionId });
+        pollQs.set("action", "edit");
+        const pr = await fetch(`/api/generate-video?${pollQs.toString()}`, {
+          cache: "no-store",
+          signal: abortSignal
+        });
+        let pd: Record<string, unknown> = {};
+        try {
+          pd = (await pr.json()) as Record<string, unknown>;
+        } catch {
+          setGenerateError(`Upscale status check failed (${pr.status})`);
+          return;
+        }
+        const polledUrl = pickVideoUrlFromPollBody(pd);
+        if (polledUrl) {
+          const normalized = normalizeAtlasVideoUrlForPlayback(polledUrl);
+          setVideoDownloadUrl(normalized);
+          setVideoUrl(toBrowserVideoSrc(normalized));
+          setHasUserGenerated(true);
+          setResolution("1080p");
+          void refreshCredits();
+          return;
+        }
+        const status = typeof pd.status === "string" ? pd.status : "";
+        if (status === "failed") {
+          setGenerateError(
+            formatAtlasVideoFailureForUi(String(pd.error ?? pd.atlas_error ?? ""), {
+              generateAudio: false,
+              hostIsProduction:
+                typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
+              action: "edit"
+            }) || "Video upscale failed."
+          );
+          return;
+        }
+      }
+      setGenerateError("Upscale is taking longer than expected. Check History in a few minutes.");
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setGenerateError(e instanceof Error ? e.message : "Upscale network error.");
+    } finally {
+      generationAbortRef.current = null;
+      setLoading(false);
+    }
+  }, [
+    actionTab,
+    directorDurationSec,
+    directorPreviewRoute?.resolution,
+    loading,
+    outputVideoSourceUrl,
+    refreshCredits,
+    resolution,
+    timeSeconds
+  ]);
+
+  const buildDirectorGenerateContext = useCallback(
+    (): VideoGenerateContext => ({
+      promptText: prompt,
+      actionTab: "AI Director",
+      aspectRatio: directorAspectRatio,
+      resolution: directorPreviewRoute?.resolution ?? "720p",
+      durationSeconds: directorDurationSec,
+      promptImageUrl,
+      promptImage2Url: null,
+      lipsyncAudioUrl: null,
+      editSourceVideoUrl: null,
+      motionVideoUrl: null,
+      characterOrientation: "image",
+      keepOriginalSound: true,
+      referenceImageUrls: [],
+      referenceVideoUrls: [],
+      referenceAudioUrls: [],
+      generateAudio: directorSoundtrackOn,
+      speedTier: directorPreviewRoute
+        ? videoComposerSupportsSpeedTier(directorPreviewRoute.modelId)
+          ? directorSpeedTierForQualityPreset(directorQualityPreset)
+          : "standard"
+        : "standard",
+      wan26ShotType: "single",
+      klingV3ShotMode: "single"
+    }),
+    [
+      prompt,
+      promptImageUrl,
+      directorSoundtrackOn,
+      directorPreviewRoute,
+      directorQualityPreset,
+      directorDurationSec,
+      directorAspectRatio,
+    ]
+  );
+
+  const handleDirectorExampleSelect = useCallback((example: DirectorExample) => {
+    setGenerateError(null);
+    setDirectorForceModelId(null);
+    directorForceModelIdRef.current = null;
+    setDirectorActiveExampleId(example.id);
+    setDirectorStyle(example.style);
+    setDirectorSoundtrackOn(true);
+    setDirectorQualityPreset("balanced");
+    setDirectorDurationSec(
+      example.defaultDurationSec ?? directorDefaultDurationForStyle(example.style)
+    );
+    setDirectorAspectRatio(directorDefaultAspectForStyle(example.style));
+    setPrompt(example.prompt);
+  }, []);
+
+  const handleDirectorRegenerate = useCallback(() => {
+    const modelId = directorLastRoute?.modelId ?? null;
+    setDirectorForceModelId(modelId);
+    directorForceModelIdRef.current = modelId;
+    void runGeneration(buildDirectorGenerateContext());
+  }, [buildDirectorGenerateContext, directorLastRoute, runGeneration]);
+
+  const handleDirectorTryAnother = useCallback(() => {
+    if (!directorLastRoute) return;
+    const nextModel = getNextDirectorModelInChain(
+      directorLastRoute.modelId,
+      directorLastRoute.modelChain
+    );
+    if (!nextModel) return;
+    setDirectorForceModelId(nextModel);
+    directorForceModelIdRef.current = nextModel;
+    void runGeneration(buildDirectorGenerateContext());
+  }, [buildDirectorGenerateContext, directorLastRoute, runGeneration]);
+
+  const handleDirectorCancelGeneration = useCallback(() => {
+    generationUserCancelledRef.current = true;
+    setGenerateError(DIRECTOR_GENERATION_CANCEL_MESSAGE);
+    generationAbortRef.current?.abort();
+  }, []);
+
+  const handleDirectorSlowTryAnother = useCallback(() => {
+    if (!directorLastRoute) return;
+    const nextModel = getNextDirectorModelInChain(
+      directorLastRoute.modelId,
+      directorLastRoute.modelChain
+    );
+    if (!nextModel) return;
+    generationUserCancelledRef.current = true;
+    setGenerateError(null);
+    generationAbortRef.current?.abort();
+    setDirectorForceModelId(nextModel);
+    directorForceModelIdRef.current = nextModel;
+    window.setTimeout(() => {
+      void runGeneration(buildDirectorGenerateContext());
+    }, 100);
+  }, [buildDirectorGenerateContext, directorLastRoute, runGeneration]);
 
   const restoreSettings = useCallback(
     (item: VideoHistoryEntry) => {
@@ -1769,10 +2421,50 @@ export function VideoGenerationPage() {
   );
 
   const hidePromptThumb =
-    actionTab === "Audio to Video"
-      ? false
-      : videoComposerUsesTextOnlyLayout(composerModelId, actionTab) ||
-        actionTab === "Reference to Video";
+    actionTab === "AI Director"
+      ? Boolean(promptImageUrl)
+      : actionTab === "Audio to Video"
+        ? false
+        : videoComposerUsesTextOnlyLayout(composerModelId, actionTab) ||
+          actionTab === "Reference to Video";
+
+  const previewComposerModelId =
+    directorLastRoute?.modelId ?? (actionTab === "AI Director" ? directorPreviewRoute?.modelId : null) ?? composerModelId;
+
+  const directorCanTryAnother =
+    directorLastRoute != null &&
+    getNextDirectorModelInChain(directorLastRoute.modelId, directorLastRoute.modelChain) != null;
+
+  const directorResultPanel =
+    actionTab === "AI Director" &&
+    directorLastRoute &&
+    videoUrl &&
+    !showingModelShowcase
+      ? {
+          modelLabel: composerModelDisplayLabel(directorLastRoute.modelId, "video"),
+          styleLabel: directorStyleLabel(directorLastRoute.styleResolved),
+          creditsSpent: directorLastCreditsSpent,
+          canTryAnother: directorCanTryAnother,
+          onRegenerate: handleDirectorRegenerate,
+          onTryAnother: handleDirectorTryAnother
+        }
+      : null;
+
+  const directorGenerationPanel =
+    actionTab === "AI Director" && loading && directorLastRoute
+      ? {
+          modelLabel: composerModelDisplayLabel(directorLastRoute.modelId, "video"),
+          qualityPreset: directorLastRoute.qualityPreset,
+          elapsedSec: directorGenElapsedSec,
+          showSlowBanner:
+            directorGenElapsedSec >= DIRECTOR_SLOW_GENERATION_SEC &&
+            !directorSlowBannerDismissed,
+          canTryAnother: directorCanTryAnother,
+          onCancel: handleDirectorCancelGeneration,
+          onKeepWaiting: () => setDirectorSlowBannerDismissed(true),
+          onTryAnother: handleDirectorSlowTryAnother
+        }
+      : null;
 
   return (
     <div className="flex min-h-dvh flex-col bg-zorixa-bg">
@@ -1789,15 +2481,23 @@ export function VideoGenerationPage() {
           <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:min-h-0">
             <VideoPreview
               actionTab={actionTab}
-              composerModelId={composerModelId}
+              composerModelId={previewComposerModelId}
               videoUrl={previewVideoUrl}
               videoDownloadUrl={showingModelShowcase ? previewVideoUrl : videoDownloadUrl}
               loading={loading}
               errorMessage={generateError}
               isExample={showingModelShowcase}
+              directorResult={directorResultPanel}
+              directorResultLoading={loading}
+              directorGeneration={directorGenerationPanel}
               promptThumbUrl={hidePromptThumb ? null : promptImageUrl}
               bottomBarHeight={bottomBarHeight}
-              aspectRatio={aspect}
+              aspectRatio={actionTab === "AI Director" ? directorAspectRatio : aspect}
+              canPostProcessVideo={canPostProcessVideo}
+              postProcessBusy={loading}
+              onResetDefaults={resetCurrentTabDefaults}
+              onExtendVideo={() => void handleExtendVideo()}
+              onUpscaleVideo={() => void runVideoUpscale()}
               className="scrollbar-hide h-full min-h-0 w-full min-w-0 flex-1"
             />
           </div>
@@ -1811,6 +2511,68 @@ export function VideoGenerationPage() {
         </div>
       </div>
 
+      {actionTab === "AI Director" ? (
+        <AiDirectorBottomBar
+          prompt={prompt}
+          onPromptChange={(v) => {
+            setGenerateError(null);
+            setDirectorForceModelId(null);
+            setDirectorActiveExampleId(null);
+            setPrompt(v);
+          }}
+          actionTab={actionTab}
+          onActionTabChange={handleActionTabChange}
+          promptImageUrl={promptImageUrl}
+          onPromptImageChange={(url) => {
+            setDirectorForceModelId(null);
+            setPromptImageUrlSafe(url);
+          }}
+          directorStyle={directorStyle}
+          onDirectorStyleChange={(style) => {
+            setDirectorForceModelId(null);
+            setDirectorStyle(style);
+            if (style === "auto") {
+              directorAutoResolvedStyleRef.current = null;
+            } else {
+              setDirectorDurationSec(directorDefaultDurationForStyle(style));
+              setDirectorAspectRatio(directorDefaultAspectForStyle(style));
+            }
+          }}
+          qualityPreset={directorQualityPreset}
+          onQualityPresetChange={(preset) => {
+            setDirectorForceModelId(null);
+            setDirectorQualityPreset(preset);
+          }}
+          modelLabel={
+            directorPreviewRoute
+              ? composerModelDisplayLabel(directorPreviewRoute.modelId, "video")
+              : null
+          }
+          modelSummary={directorPreviewRoute?.modelSummary ?? null}
+          whyBullets={directorPreviewRoute?.whyBullets ?? []}
+          estimatedCredits={directorEstimatedCredits}
+          routedModelId={directorPreviewRoute?.modelId ?? null}
+          directorResolution={directorPreviewRoute?.resolution ?? "720p"}
+          durationSec={directorDurationSec}
+          durationOptions={directorDurationOptions}
+          onDurationChange={setDirectorDurationSec}
+          aspectRatio={directorAspectRatio}
+          aspectOptions={directorAspectOptions}
+          onAspectChange={setDirectorAspectRatio}
+          soundtrackOn={directorSoundtrackOn}
+          onSoundtrackChange={setDirectorSoundtrackOn}
+          directorExamples={directorExamples}
+          activeExampleId={directorActiveExampleId}
+          onExampleSelect={handleDirectorExampleSelect}
+          loadingGenerate={loading}
+          onGenerate={(ctx) => {
+            setDirectorForceModelId(null);
+            directorForceModelIdRef.current = null;
+            void runGeneration(ctx);
+          }}
+          onHeightChange={handleBottomBarHeight}
+        />
+      ) : (
       <VideoBottomBar
         prompt={prompt}
         onPromptChange={(v) => {
@@ -1862,6 +2624,7 @@ export function VideoGenerationPage() {
         onGenerate={runGeneration}
         onHeightChange={handleBottomBarHeight}
       />
+      )}
     </div>
   );
 }

@@ -1,0 +1,262 @@
+{
+  "version": 2,
+  "styles": {
+    "cinematic": {
+      "label": "Cinematic",
+      "textToVideo": {
+        "primary": "seedance-2",
+        "fallbacks": ["kling-3-pro", "google-veo-3-1"]
+      },
+      "imageToVideo": {
+        "primary": "seedance-2",
+        "fallbacks": ["kling-3-pro", "google-veo-3-1"]
+      }
+    },
+    "ugc": {
+      "label": "UGC",
+      "textToVideo": {
+        "primary": "grok-imagine-video-t2v",
+        "fallbacks": ["hailuo-2-3", "kling-3-pro"]
+      },
+      "imageToVideo": {
+        "primary": "grok-imagine-video-i2v-15",
+        "fallbacks": ["hailuo-2-3", "kling-3-pro"]
+      }
+    },
+    "product": {
+      "label": "Product",
+      "textToVideo": {
+        "primary": "vidu-q3-pro",
+        "fallbacks": ["kling-3-pro", "seedance-2"]
+      },
+      "imageToVideo": {
+        "primary": "vidu-q3-pro",
+        "fallbacks": ["kling-3-pro", "seedance-2"]
+      }
+    },
+    "anime": {
+      "label": "Anime",
+      "textToVideo": {
+        "primary": "seedance-1-5",
+        "fallbacks": ["wan-2-6", "kling-3-pro"]
+      },
+      "imageToVideo": {
+        "primary": "seedance-1-5",
+        "fallbacks": ["wan-2-6", "kling-3-pro"]
+      }
+    }
+  },
+  "qualityPresets": {
+    "fast": {
+      "label": "Fast",
+      "resolution": "480p",
+      "byStyle": {
+        "cinematic": "seedance-2",
+        "ugc": "grok-imagine-video-t2v",
+        "product": "vidu-q3",
+        "anime": "seedance-1-5"
+      },
+      "default": "seedance-2"
+    },
+    "balanced": {
+      "label": "Balanced",
+      "resolution": "720p",
+      "useStylePrimary": true
+    },
+    "best": {
+      "label": "Best Quality",
+      "resolution": "720p",
+      "byStyle": {
+        "cinematic": "kling-3-pro",
+        "ugc": "kling-3-pro",
+        "product": "kling-3-pro",
+        "anime": "kling-3-pro"
+      },
+      "default": "kling-3-pro"
+    }
+  },
+  "models": {
+    "seedance-2": {
+      "summary": "Best for cinematic camera movement and commercial-quality visuals.",
+      "whyBullets": [
+        "Cinematic motion",
+        "Strong camera work",
+        "Good commercial style",
+        "Fast rendering"
+      ]
+    },
+    "seedance-1-5": {
+      "summary": "Strong stylized motion — great for anime and fantasy scenes.",
+      "whyBullets": ["Stylized motion", "Fantasy & anime look", "Expressive movement", "Good value"]
+    },
+    "kling-3-pro": {
+      "summary": "Top-tier quality for hero shots, ads, and premium cinematic output.",
+      "whyBullets": [
+        "Highest visual fidelity",
+        "Complex camera moves",
+        "Premium ad quality",
+        "Reliable detail"
+      ]
+    },
+    "hailuo-2-3": {
+      "summary": "Fast, natural motion — silent clip (no native audio). Good for quick motion tests.",
+      "whyBullets": [
+        "Natural human motion",
+        "Social-native look",
+        "Quick turnaround",
+        "Silent output (no dialogue audio)"
+      ]
+    },
+    "grok-imagine-video-t2v": {
+      "summary": "Authentic UGC with built-in native audio — ideal for TikTok ads and creator-style clips.",
+      "whyBullets": [
+        "Native audio included",
+        "UGC aesthetic",
+        "Talking-head friendly",
+        "TikTok & Reels ready"
+      ]
+    },
+    "grok-imagine-video-i2v-15": {
+      "summary": "Image-to-video with authentic creator / selfie-style motion.",
+      "whyBullets": ["UGC from stills", "Natural movement", "Vertical-friendly", "Fast"]
+    },
+    "vidu-q3-pro": {
+      "summary": "Product-focused clips with clean motion and ad-ready polish.",
+      "whyBullets": [
+        "Product hero shots",
+        "Clean commercial motion",
+        "Brand-safe output",
+        "Sharp detail"
+      ]
+    },
+    "vidu-q3": {
+      "summary": "Budget-friendly product and action clips with solid motion.",
+      "whyBullets": ["Good for products", "Fast generation", "Lower cost", "Action scenes"]
+    },
+    "wan-2-6": {
+      "summary": "Versatile adventure and environment motion with rich detail.",
+      "whyBullets": ["Environment motion", "Adventure scenes", "Detailed worlds", "Good fallback"]
+    },
+    "google-veo-3-1": {
+      "summary": "Hollywood-grade realism for cinematic and narrative scenes.",
+      "whyBullets": ["Film-grade realism", "Natural lighting", "Cinematic scenes", "Strong fallback"]
+    }
+  },
+  "directorExamples": [
+    {
+      "id": "ai-influencer-ad",
+      "emoji": "🔥",
+      "label": "AI Influencer Ad",
+      "prompt": "Young female AI influencer reviewing a skincare product in a bright modern bathroom, natural hand gestures, authentic UGC style, TikTok advertisement, realistic lighting.",
+      "style": "ugc",
+      "defaultDurationSec": 8
+    },
+    {
+      "id": "tiktok-shop",
+      "emoji": "🛍️",
+      "label": "TikTok Shop Creator",
+      "prompt": "AI creator unboxing a wireless headset, selfie camera angle, enthusiastic reaction, viral TikTok style, realistic facial expressions.",
+      "style": "ugc",
+      "defaultDurationSec": 8
+    },
+    {
+      "id": "product-ad",
+      "emoji": "📱",
+      "label": "Product Advertisement",
+      "prompt": "Premium smartphone rotating on a minimalist pedestal, soft studio lighting, clean product hero shot, luxury brand commercial, sharp detail.",
+      "style": "product",
+      "defaultDurationSec": 8
+    },
+    {
+      "id": "ugc-review",
+      "emoji": "👨‍💼",
+      "label": "UGC Product Review",
+      "prompt": "Lifestyle creator filming a vertical product review outdoors, talking naturally to camera, authentic TikTok style, soft daylight.",
+      "style": "ugc",
+      "defaultDurationSec": 8
+    },
+    {
+      "id": "luxury-car",
+      "emoji": "🚗",
+      "label": "Luxury Car Commercial",
+      "prompt": "A luxury sports car driving through neon-lit city streets at night, cinematic tracking shot, wet pavement reflections, premium commercial quality, dynamic camera movement.",
+      "style": "cinematic",
+      "defaultDurationSec": 5
+    },
+    {
+      "id": "drone-shot",
+      "emoji": "👑",
+      "label": "Epic Fantasy Villain",
+      "prompt": "A terrifying dark king standing on top of a ruined fortress, giant black armor glowing with molten lava cracks, burning red eyes, dark energy swirling around him, thousands of soldiers below, cinematic drone reveal shot, storm clouds moving rapidly overhead, lightning flashes, epic fantasy movie scene, ultra realistic, dramatic lighting, massive scale, cinematic atmosphere, blockbuster film quality, powerful villain introduction.",
+      "style": "cinematic",
+      "defaultDurationSec": 5
+    },
+    {
+      "id": "anime-battle",
+      "emoji": "🎮",
+      "label": "Anime Battle Scene",
+      "prompt": "Anime warrior unleashing a glowing attack in a mountain valley, dynamic camera orbit, stylized fantasy energy, epic battle atmosphere.",
+      "style": "anime",
+      "defaultDurationSec": 5
+    }
+  ],
+  "autoDetection": {
+    "product": [
+      "commercial",
+      "product",
+      "iphone",
+      "sneaker",
+      "sneakers",
+      "advertisement",
+      "advertising",
+      "brand",
+      "luxury",
+      "perfume",
+      "bottle",
+      "packshot",
+      "studio shot",
+      "nike",
+      "ad for"
+    ],
+    "ugc": [
+      "tiktok",
+      "influencer",
+      "ai influencer",
+      "ugc",
+      "selfie",
+      "reel",
+      "reviewing",
+      "vlog",
+      "instagram",
+      "talking to camera",
+      "creator",
+      "unboxing",
+      "skincare",
+      "viral",
+      "shop creator"
+    ],
+    "anime": [
+      "anime",
+      "manga",
+      "warrior",
+      "dragon",
+      "cel-shaded",
+      "cartoon",
+      "fantasy sorcerer",
+      "magical girl",
+      "studio ghibli"
+    ],
+    "cinematic": [
+      "cinematic",
+      "hollywood",
+      "epic",
+      "film",
+      "movie",
+      "dramatic",
+      "slow motion",
+      "blockbuster",
+      "trailer"
+    ]
+  },
+  "autoDefaultStyle": "ugc"
+}

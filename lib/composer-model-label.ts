@@ -40,7 +40,8 @@ const VIDEO_COMPOSER_LABELS: Record<string, string> = {
   "vidu-q3-pro": "Vidu Q3-Pro",
   infinitetalk: "InfiniteTalk",
   "veed-fabric-1": "VEED Fabric 1.0",
-  "veed-fabric-1-fast": "VEED Fabric 1.0 Fast"
+  "veed-fabric-1-fast": "VEED Fabric 1.0 Fast",
+  "atlas-video-upscaler": "Video Upscaler"
 };
 
 const ENHANCE_LABEL_BY_ID = new Map(ENHANCE_MODELS.map((m) => [m.id, m.name]));

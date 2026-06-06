@@ -19,6 +19,11 @@ import {
   hailuo23AtlasUsdForOptions
 } from "@/lib/atlas-hailuo-video";
 import {
+  ATLAS_VIDEO_UPSCALER_COMPOSER_ID,
+  atlasVideoUpscalerUsd,
+  normalizeAtlasVideoUpscalerTarget
+} from "@/lib/atlas-video-upscaler";
+import {
   GROK_IMAGINE_VIDEO_I2V_15_COMPOSER_ID,
   GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
   GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID
@@ -122,7 +127,8 @@ export const ATLAS_MODEL_PRICING: Record<string, AtlasModelPrice> = {
   "vidu-q3-pro": { usd: 0.48, unit: "per 5s video (1080p)" },
   infinitetalk: { usd: 0.15, unit: "per 5s video (720p)", note: "Audio to video" },
   "veed-fabric-1": { usd: 0.12, unit: "per 5s video (720p)", note: "Audio to video" },
-  "veed-fabric-1-fast": { usd: 0.08, unit: "per 5s video (720p)", note: "Fast A2V" }
+  "veed-fabric-1-fast": { usd: 0.08, unit: "per 5s video (720p)", note: "Fast A2V" },
+  "atlas-video-upscaler": { usd: 0.09, unit: "per 5s clip (1080p upscale)", note: "V2V FlashVSR" }
 };
 
 /** Credits deducted from user balance (Atlas cost × markup). */
@@ -260,7 +266,6 @@ function videoMarginForModel(composerModelId: string, atlasUsd: number): number 
   if (
     composerModelId === "google-veo-3-1" ||
     composerModelId === "hailuo-2-3" ||
-    composerModelId === "kling-3-pro" ||
     composerModelId === "happyhorse-1" ||
     composerModelId === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID
   ) {
@@ -274,6 +279,11 @@ export function atlasVideoUsdForOptions(
   composerModelId: string,
   opts: VideoPricingOptions = {}
 ): number {
+  if (composerModelId === ATLAS_VIDEO_UPSCALER_COMPOSER_ID) {
+    const target = normalizeAtlasVideoUpscalerTarget(opts.resolution);
+    return atlasVideoUpscalerUsd(normalizeVideoDurationSeconds(opts.durationSeconds), target);
+  }
+
   if (composerModelId === HAILUO_23_COMPOSER_ID) {
     return hailuo23AtlasUsdForOptions(opts);
   }
@@ -569,7 +579,8 @@ const VIDEO_NAMES: Record<string, string> = {
   "vidu-q3-pro": "Vidu Q3-Pro",
   infinitetalk: "InfiniteTalk",
   "veed-fabric-1": "VEED Fabric 1.0",
-  "veed-fabric-1-fast": "VEED Fabric 1.0 Fast"
+  "veed-fabric-1-fast": "VEED Fabric 1.0 Fast",
+  "atlas-video-upscaler": "Video Upscaler"
 };
 
 function modelsFor(ids: string[], names: Record<string, string>): PricingCatalogSection["models"] {
