@@ -190,6 +190,7 @@ type ClientBody = {
   /** Wan 2.6 — Atlas `shot_type`: `single` | `multi` (multi sets `enable_prompt_expansion`). */
   shot_type?: string;
   /** Kling 3.0 Pro — `single` | `multi` (multi sets `multi_shot` + `shot_type: intelligent`). */
+  kling_v3_shot_mode?: string;
   /** Video upscaler — Atlas `target_resolution` (1080p | 2k). */
   target_resolution?: string;
 };
@@ -515,8 +516,7 @@ async function handleVideoUpscalePost(
       {
         error: formatAtlasVideoFailureForUi(atlasRaw, {
           generateAudio: false,
-          hostIsProduction: process.env.VERCEL_ENV === "production",
-          action: "edit"
+          hostIsProduction: process.env.VERCEL_ENV === "production"
         }),
         atlas_error: atlasRaw,
         prediction_id: predictionId

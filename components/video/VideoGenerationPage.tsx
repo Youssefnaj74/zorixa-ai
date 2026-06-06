@@ -2129,8 +2129,7 @@ export function VideoGenerationPage() {
           formatAtlasVideoFailureForUi(String(data.error ?? ""), {
             generateAudio: false,
             hostIsProduction:
-              typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
-            action: "edit"
+              typeof window !== "undefined" && !window.location.hostname.includes("localhost")
           }) || `Upscale failed (${res.status})`
         );
         return;
@@ -2189,8 +2188,7 @@ export function VideoGenerationPage() {
             formatAtlasVideoFailureForUi(String(pd.error ?? pd.atlas_error ?? ""), {
               generateAudio: false,
               hostIsProduction:
-                typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
-              action: "edit"
+                typeof window !== "undefined" && !window.location.hostname.includes("localhost")
             }) || "Video upscale failed."
           );
           return;

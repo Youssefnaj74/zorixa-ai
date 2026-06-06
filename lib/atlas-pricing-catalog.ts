@@ -128,7 +128,7 @@ export const ATLAS_MODEL_PRICING: Record<string, AtlasModelPrice> = {
   infinitetalk: { usd: 0.15, unit: "per 5s video (720p)", note: "Audio to video" },
   "veed-fabric-1": { usd: 0.12, unit: "per 5s video (720p)", note: "Audio to video" },
   "veed-fabric-1-fast": { usd: 0.08, unit: "per 5s video (720p)", note: "Fast A2V" },
-  "atlas-video-upscaler": { usd: 0.09, unit: "per 5s clip (1080p upscale)", note: "V2V FlashVSR" }
+  "atlas-video-upscaler": { usd: 0.09, unit: "per 5s video (1080p)", note: "V2V FlashVSR upscale" }
 };
 
 /** Credits deducted from user balance (Atlas cost × markup). */
