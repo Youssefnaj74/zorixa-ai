@@ -7,6 +7,7 @@ import { Clapperboard, Download, Mic, Play, Volume2, X } from "lucide-react";
 import { ExternalImage } from "@/components/ui/ExternalImage";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { downloadImageFile, imageDownloadFilename } from "@/lib/download-image-file";
+import { downloadVideoFile, videoDownloadFilename } from "@/lib/download-video-file";
 import { normalizeAtlasVideoUrlForPlayback } from "@/lib/resolve-video-playback-url";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
 import {
@@ -151,7 +152,21 @@ function HistoryVideoLightbox({
   onClose: () => void;
 }) {
   const playbackUrl = useProxiedVideoPlaybackUrl(item.videoSrc);
-  const openUrl = item.videoSrc ?? item.src;
+  const downloadUrl = item.videoSrc ?? item.src;
+  const [downloadBusy, setDownloadBusy] = useState(false);
+
+  const onDownload = useCallback(async () => {
+    const url = downloadUrl?.trim();
+    if (!url || downloadBusy) return;
+    setDownloadBusy(true);
+    try {
+      await downloadVideoFile(url, videoDownloadFilename(url, item.title));
+    } catch (err) {
+      console.error("[History] video download failed", err);
+    } finally {
+      setDownloadBusy(false);
+    }
+  }, [downloadBusy, downloadUrl, item.title]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -203,10 +218,13 @@ function HistoryVideoLightbox({
               key={playbackUrl}
               src={playbackUrl}
               controls
+              controlsList="nodownload noremoteplayback"
+              disablePictureInPicture
               playsInline
               preload="auto"
               {...domVideoAttrs}
               className="max-h-[78vh] w-full object-contain"
+              onContextMenu={(e) => e.preventDefault()}
             />
           ) : (
             <div className="flex flex-col items-center gap-3 px-8 py-16 text-zorixa-muted">
@@ -228,15 +246,16 @@ function HistoryVideoLightbox({
               className="mt-2"
             />
           </div>
-          {openUrl ? (
-            <a
-              href={openUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="shrink-0 text-sm font-medium text-[#00e5ff] hover:opacity-80"
+          {downloadUrl ? (
+            <button
+              type="button"
+              disabled={downloadBusy}
+              onClick={() => void onDownload()}
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-[#00e5ff] hover:opacity-80 disabled:opacity-60"
             >
-              Open original
-            </a>
+              <Download className="size-4" aria-hidden />
+              {downloadBusy ? "Downloading…" : "Download MP4"}
+            </button>
           ) : null}
         </div>
       </motion.div>

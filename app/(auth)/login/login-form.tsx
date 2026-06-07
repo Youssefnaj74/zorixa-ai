@@ -206,7 +206,7 @@ export function LoginForm() {
             </h1>
             <p className="mt-2 text-sm text-white/45">
               {isSignup
-                ? "Start free — credits, tools, and generations included."
+                ? "Paid credits — choose a plan to unlock image, video, and speech generation."
                 : "Sign in to your studio — credits, tools, and generations."}
             </p>
 
@@ -351,7 +351,7 @@ export function LoginForm() {
                     onClick={() => switchMode("signup")}
                     className="font-semibold text-[#00e5ff] hover:text-white"
                   >
-                    Sign up free
+                    Create account
                   </button>
                 </>
               )}

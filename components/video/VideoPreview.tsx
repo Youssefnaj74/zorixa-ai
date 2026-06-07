@@ -6,11 +6,8 @@ import { motion } from "framer-motion";
 import { useCallback, useEffect, useState, type VideoHTMLAttributes } from "react";
 
 import { Button } from "@/components/ui/button";
-import { downloadVideoFile } from "@/lib/download-video-file";
-import {
-  buildVideoDownloadUrl,
-  extractCanonicalVideoUrlFromProxy
-} from "@/lib/video-playback-proxy";
+import { downloadVideoFile, videoDownloadFilename } from "@/lib/download-video-file";
+import { extractCanonicalVideoUrlFromProxy } from "@/lib/video-playback-proxy";
 import { cn } from "@/lib/utils";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
@@ -140,7 +137,7 @@ export function VideoPreview({
     setDownloadError(null);
     setDownloadBusy(true);
     try {
-      await downloadVideoFile(canonicalDownloadUrl);
+      await downloadVideoFile(canonicalDownloadUrl, videoDownloadFilename(canonicalDownloadUrl));
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Download failed";
       setDownloadError(msg);
@@ -285,10 +282,13 @@ export function VideoPreview({
                     <video
                       key={videoUrl ? `zorixa-preview:${videoUrl}` : "zorixa-preview:empty"}
                       controls
+                      controlsList="nodownload noremoteplayback"
+                      disablePictureInPicture
                       playsInline
                       preload="auto"
                       {...domVideoAttrs}
                       className="size-full object-contain bg-black"
+                      onContextMenu={(e) => e.preventDefault()}
                       onLoadedMetadata={(e) => {
                         const el = e.currentTarget;
                         setInlinePlaybackError(null);
@@ -336,21 +336,14 @@ export function VideoPreview({
                   {inlinePlaybackError ? (
                     <div className="max-w-md rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-100/95">
                       <p>{inlinePlaybackError}</p>
-                      <a
-                        href={
-                          canonicalDownloadUrl
-                            ? buildVideoDownloadUrl(
-                                canonicalDownloadUrl,
-                                typeof window !== "undefined" ? window.location.origin : ""
-                              )
-                            : videoUrl
-                        }
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-2 inline-block font-medium text-amber-200 underline underline-offset-2 hover:text-white"
+                      <button
+                        type="button"
+                        disabled={!canonicalDownloadUrl || downloadBusy}
+                        onClick={() => void onDownloadClick()}
+                        className="mt-2 inline-block font-medium text-amber-200 underline underline-offset-2 hover:text-white disabled:opacity-60"
                       >
-                        Open download via Zorixa
-                      </a>
+                        {downloadBusy ? "Downloading…" : "Download MP4 via Zorixa"}
+                      </button>
                     </div>
                   ) : null}
                   {directorResult ? (
@@ -418,7 +411,7 @@ export function VideoPreview({
                   className="pointer-events-auto h-9 rounded-lg border border-brand/50 bg-black/30 px-3 text-xs font-medium text-white hover:bg-brand/20 disabled:opacity-60"
                 >
                   <Download className="mr-1 size-3.5" />
-                  {downloadBusy ? "Downloading…" : "Download"}
+                  {downloadBusy ? "Downloading…" : "Download MP4"}
                 </Button>
               ) : (
                 <Button

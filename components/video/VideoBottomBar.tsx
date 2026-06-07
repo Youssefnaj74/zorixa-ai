@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronUp, CircleHelp, Film, Mic2, Sparkles, Upload, X } from "lucide-react";
+import { ChevronUp, CircleHelp, Film, Sparkles, Upload, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -82,6 +82,7 @@ import { AUDIO_TO_VIDEO_RESOLUTION_OPTIONS } from "@/lib/atlas-audio-to-video";
 import { isViduQ3ComposerId, isViduQ3ProComposerId } from "@/lib/atlas-vidu-video";
 
 import { ActionTabsRow, type ActionTab } from "@/components/video/ActionTabsRow";
+import { AudioUploadSlotContent, audioUploadSlotClass } from "@/components/video/AudioUploadSlotContent";
 import { ReferenceAtlasColumnUpload } from "@/components/video/ReferenceAtlasColumnUpload";
 import { ReferenceImageUploadStrip } from "@/components/video/ReferenceImageUploadStrip";
 import { SeedanceReferenceUploadPanel } from "@/components/video/SeedanceReferenceUploadPanel";
@@ -828,15 +829,10 @@ export function VideoBottomBar({
                       <button
                         type="button"
                         onClick={() => fileAudioRef.current?.click()}
-                        className={cn(
-                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                          "hover:border-white/30 hover:bg-black/55"
-                        )}
+                        className={audioUploadSlotClass(Boolean(lipsyncAudioUrl))}
                         aria-label={lipsyncAudioUrl ? "Change audio" : "Upload audio"}
                       >
-                        <Mic2 className="size-5 opacity-60" />
-                        <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">Audio</span>
+                        <AudioUploadSlotContent loaded={Boolean(lipsyncAudioUrl)} />
                       </button>
                       {lipsyncAudioUrl ? (
                         <button

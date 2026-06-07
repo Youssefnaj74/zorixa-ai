@@ -25,7 +25,7 @@ export default function SignupPage() {
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`
+        redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent("/dashboard")}`
       }
     });
 
@@ -67,7 +67,7 @@ export default function SignupPage() {
         </Link>
 
         <h1 className="mt-8 text-2xl font-semibold tracking-tight">Create your account</h1>
-        <p className="mt-2 text-sm text-zinc-300">You’ll start with free credits.</p>
+        <p className="mt-2 text-sm text-zinc-300">Credit-based studio — subscribe to add credits and start generating.</p>
 
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6">
           <button

@@ -65,7 +65,7 @@ function StickyNav() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/video"
+            href="/dashboard"
             className="inline-flex h-10 items-center justify-center rounded-full bg-[#00d1ff] px-5 text-sm font-semibold text-black shadow-[0_0_0_1px_rgba(0,209,255,0.35),0_0_28px_rgba(0,209,255,0.35)] transition-transform hover:scale-[1.02]"
           >
             Start Creating
@@ -145,17 +145,17 @@ export function LandingPage() {
 
             <motion.div variants={reveal} className="mt-10 flex flex-wrap items-center gap-4">
               <Link
-                href="/video"
+                href="/dashboard"
                 className="inline-flex h-12 items-center justify-center rounded-full bg-[#00d1ff] px-8 text-sm font-bold text-black shadow-[0_0_0_1px_rgba(0,209,255,0.35),0_0_32px_rgba(0,209,255,0.42)] transition-transform hover:scale-[1.02]"
               >
                 Start Creating
                 <ArrowRight className="ml-2 size-4" aria-hidden />
               </Link>
               <Link
-                href="/signup?redirect=/video"
+                href="/pricing"
                 className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] px-8 text-sm font-semibold text-white transition-colors hover:border-white/25 hover:bg-white/[0.08]"
               >
-                Sign up free
+                View plans
               </Link>
             </motion.div>
           </motion.div>
@@ -338,10 +338,10 @@ export function LandingPage() {
             </motion.p>
             <motion.div variants={reveal} className="relative mt-8 flex items-center justify-center">
               <Link
-                href="/video"
+                href="/dashboard"
                 className="inline-flex h-12 items-center justify-center rounded-full bg-[#00e6c8] px-8 text-sm font-bold text-black shadow-[0_0_0_1px_rgba(0,230,200,0.35),0_0_34px_rgba(0,230,200,0.38)] transition-transform hover:scale-[1.02]"
               >
-                Start Creating for Free →
+                Start Creating →
               </Link>
             </motion.div>
           </motion.div>

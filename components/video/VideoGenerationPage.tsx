@@ -1110,9 +1110,12 @@ export function VideoGenerationPage() {
     const audioParam = searchParams.get("audio");
     if (audioParam && resolved.tab === "Audio to Video") {
       const coerced = coerceToPublicHttpsUrl(audioParam.trim());
-      if (coerced) setLipsyncAudioUrlSafe(coerced);
+      if (coerced) {
+        setLipsyncAudioUrlSafe(coerced);
+        setPromptImageUrlSafe(null);
+      }
     }
-  }, [searchParams, setLipsyncAudioUrlSafe]);
+  }, [searchParams, setLipsyncAudioUrlSafe, setPromptImageUrlSafe]);
 
   useEffect(() => {
     if (composerModelId !== KLING_30_PRO_MODEL_ID) return;
@@ -1172,12 +1175,13 @@ export function VideoGenerationPage() {
       setComposerModelId("wan-2-6");
     }
     if (tab === "Audio to Video") {
+      setPromptImageUrlSafe(null);
       setComposerModelId(INFINITETALK_COMPOSER_ID);
       setResolution((r) =>
         isAudioToVideoResolution(r) ? r : DEFAULT_AUDIO_TO_VIDEO_RESOLUTION
       );
     }
-  }, [composerModelId]);
+  }, [composerModelId, setPromptImageUrlSafe]);
 
   const runGeneration = useCallback(
     async (ctx: VideoGenerateContext) => {
@@ -2449,7 +2453,7 @@ export function VideoGenerationPage() {
     actionTab === "AI Director"
       ? Boolean(promptImageUrl)
       : actionTab === "Audio to Video"
-        ? false
+        ? true
         : videoComposerUsesTextOnlyLayout(composerModelId, actionTab) ||
           actionTab === "Reference to Video";
 
