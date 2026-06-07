@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-06-07T11:34:04.568Z",
+  "pairs": {
+    "ugc": {
+      "id": "ugc",
+      "category": "UGC Creator",
+      "beforePath": "/landing-gallery/ugc/before.png",
+      "afterPath": "/landing-gallery/ugc/after.png",
+      "beforeAtlasUrl": "https://waymetztsgalesimauzg.supabase.co/storage/v1/object/public/uploads/landing-gallery-temp/e9fd4a40-1d0a-4a06-bf11-23e7d768dc6a.png",
+      "afterAtlasUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/images/e4940fef-08b8-451e-a6c1-04198a9250ea.jpg",
+      "beforeModel": "black-forest-labs/flux-schnell",
+      "afterModel": "google/nano-banana-pro/edit"
+    },
+    "enhancement": {
+      "id": "enhancement",
+      "category": "Image Enhancement",
+      "beforePath": "/landing-gallery/enhancement/before.png",
+      "afterPath": "/landing-gallery/enhancement/after.png",
+      "skipped": true
+    },
+    "consistency": {
+      "id": "consistency",
+      "category": "Character Consistency",
+      "beforePath": "/landing-gallery/consistency/before.png",
+      "afterPath": "/landing-gallery/consistency/after.png",
+      "beforeAtlasUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/images/a7c310e6-daaf-4a57-b4d7-fa5fc7b85004.png",
+      "afterAtlasUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/images/5ab0b663-ba05-422c-bfa7-33fcb8150c58.jpg",
+      "beforeModel": "google/nano-banana-2/text-to-image",
+      "afterModel": "google/nano-banana-pro/text-to-image"
+    },
+    "character-swap": {
+      "id": "character-swap",
+      "category": "Character Swap",
+      "beforePath": "/landing-gallery/character-swap/before.png",
+      "afterPath": "/landing-gallery/character-swap/after.png",
+      "skipped": true
+    }
+  }
+}

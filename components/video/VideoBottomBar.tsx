@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
+import { ModelBrandLogo } from "@/components/ui/ModelBrandLogo";
 import {
   VIDEO_SEEDANCE_R2V_DOCK_HEIGHT,
   VIDEO_WAN_R2V_DOCK_HEIGHT
@@ -1320,7 +1321,10 @@ export function VideoBottomBar({
                   open === "model" && "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.1)]"
                 )}
               >
-                <span className="max-w-[160px] truncate">{selectedModel.label}</span>
+                <span className="inline-flex max-w-[160px] items-center gap-2 truncate">
+                  <ModelBrandLogo composerId={selectedModel.id} />
+                  <span className="truncate">{selectedModel.label}</span>
+                </span>
                 <ChevronUp
                   className={cn(
                     "size-3.5 shrink-0 text-zorixa-muted transition-transform",
@@ -1830,6 +1834,7 @@ function ModelRow({
       )}
     >
       <span className="flex min-w-0 flex-1 items-center gap-2">
+        <ModelBrandLogo composerId={model.id} />
         <span className="truncate">{model.label}</span>
         {model.locked ? <span aria-hidden>🔒</span> : null}
         {model.badge === "newTeal" ? <Badge variant="newTeal">NEW</Badge> : null}

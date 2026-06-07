@@ -455,6 +455,7 @@ export type CreditPack = {
   monthly: number;
   yearly: number;
   credits: number;
+  tagline: string;
   popular?: boolean;
   highlights: string[];
 };
@@ -471,6 +472,7 @@ export const CREDIT_PACKS: CreditPack[] = [
     monthly: 9.99,
     yearly: 8.99,
     credits: 1000,
+    tagline: "Perfect for trying ZorixaAI",
     highlights: [
       "All image models (Flux, GPT Image 2, Seedream…)",
       "Video: Seedance, Wan, Hailuo, HappyHorse",
@@ -484,6 +486,7 @@ export const CREDIT_PACKS: CreditPack[] = [
     monthly: 25.99,
     yearly: 23.39,
     credits: 3200,
+    tagline: "For creators generating weekly content",
     highlights: [
       "Everything in Starter",
       "Kling 3.0 Pro & Seedance 2.0 Reference",
@@ -498,6 +501,7 @@ export const CREDIT_PACKS: CreditPack[] = [
     monthly: 42.99,
     yearly: 38.69,
     credits: 5600,
+    tagline: "Best value for active creators",
     popular: true,
     highlights: [
       "Everything in Pro",
@@ -512,6 +516,7 @@ export const CREDIT_PACKS: CreditPack[] = [
     monthly: 69.99,
     yearly: 62.99,
     credits: 10000,
+    tagline: "Built for agencies and power users",
     highlights: [
       "Everything in Pro",
       "Highest credit volume",
@@ -631,3 +636,6 @@ export function estimateGenerations(credits: number, type: "image" | "video"): s
   const count = Math.floor(credits / perRun);
   return `~${formatInteger(count)}`;
 }
+
+export const PRICING_CREDIT_VARIANCE_NOTE =
+  "Credits usage varies by model. Premium models such as Veo 3.1, Kling 3.0 Pro and Gemini Omni Flash consume more credits.";

@@ -2482,6 +2482,7 @@ export function VideoGenerationPage() {
             activeGenMeta?.modelId ?? previewComposerModelId,
             "video"
           ),
+          composerModelId: activeGenMeta?.modelId ?? previewComposerModelId,
           elapsedSec: directorGenElapsedSec,
           directorRouted: activeGenMeta?.isDirector ?? actionTab === "AI Director",
           tip: videoGenerationContextTip({

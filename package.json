@@ -13,6 +13,8 @@
     "generate:image-showcases": "node scripts/generate-image-t2i-showcases.mjs",
     "generate:video-t2v-showcases": "node scripts/generate-video-t2v-showcases.mjs",
     "generate:video-i2v-showcases": "node scripts/generate-video-i2v-showcases.mjs",
+    "generate:landing-gallery": "node scripts/generate-landing-gallery-before-after.mjs",
+    "generate:landing-gallery-videos": "node scripts/generate-landing-gallery-videos.mjs",
     "make:favicon": "node scripts/make-zorixa-favicon.mjs",
     "import:explore-prompts": "node scripts/import-explore-prompts.mjs",
     "dev": "node scripts/dev-local.mjs",

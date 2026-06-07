@@ -8,12 +8,22 @@ import { Navbar } from "@/components/layout/Navbar";
 import {
   CREDIT_PACKS,
   formatCredits,
-  PRICING_CATALOG_SECTIONS
+  PRICING_CATALOG_SECTIONS,
+  PRICING_CREDIT_VARIANCE_NOTE
 } from "@/lib/atlas-pricing-catalog";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { getLemonSqueezyCheckoutUrl } from "@/lib/lemon-squeezy/checkout-url";
 import { formatInteger } from "@/lib/format-number";
 import { cn } from "@/lib/utils";
+
+const STUDIO_WORKFLOWS = [
+  "Text to Video",
+  "Image to Video",
+  "Text to Image",
+  "Image to Image",
+  "Character Swap",
+  "Audio to Video"
+] as const;
 
 function perCreditSavingsPercent(packCredits: number, price: number): number | null {
   const starter = CREDIT_PACKS.find((pack) => pack.id === "starter");
@@ -23,6 +33,23 @@ function perCreditSavingsPercent(packCredits: number, price: number): number | n
   const unit = price / packCredits;
   const savings = Math.round((1 - unit / starterUnit) * 100);
   return savings > 0 ? savings : null;
+}
+
+function formatPerCreditUsd(price: number, credits: number): string {
+  const perCredit = Math.floor((price / credits) * 10_000) / 10_000;
+  return `$${perCredit.toFixed(4).replace(/\.?0+$/, "")} per credit`;
+}
+
+function packCreditValueLabel(
+  packId: string,
+  price: number,
+  credits: number,
+  savingsPercent: number | null
+): string {
+  if (packId === "ultra") return "Best credit value";
+  if (packId === "starter") return formatPerCreditUsd(price, credits);
+  if (savingsPercent) return `Save ${savingsPercent}% per credit`;
+  return formatPerCreditUsd(price, credits);
 }
 
 export function PricingView() {
@@ -134,12 +161,32 @@ export function PricingView() {
                     <span className="text-sm text-white/40">/month</span>
                   </div>
 
-                  <div className="mb-6 mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-white/10 pb-6 text-sm">
-                    <Zap className="size-3.5 text-[#00e5ff]" aria-hidden />
-                    <span className="font-semibold text-[#00e5ff]">
-                      {formatInteger(pack.credits)} credits
-                    </span>
+                  <div className="mb-4 mt-3 border-b border-white/10 pb-4">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                      <Zap className="size-3.5 text-[#00e5ff]" aria-hidden />
+                      <span className="font-semibold text-[#00e5ff]">
+                        {formatInteger(pack.credits)} credits
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-xs font-medium text-white/50">
+                      {packCreditValueLabel(pack.id, price, pack.credits, savingsPercent)}
+                    </p>
                   </div>
+
+                  <p className="text-sm font-semibold text-white">Access 30+ AI models</p>
+                  <p className="mt-1 text-xs leading-relaxed text-white/45">
+                    Credits scale across image and video generation
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-white/40">{pack.tagline}</p>
+
+                  <ul className="mb-6 mt-4 flex flex-col gap-2 border-b border-white/10 pb-6">
+                    {STUDIO_WORKFLOWS.map((workflow) => (
+                      <li key={workflow} className="flex items-start gap-2 text-sm text-white/55">
+                        <Check className="mt-0.5 size-4 shrink-0 text-[#00e5ff]" aria-hidden />
+                        {workflow}
+                      </li>
+                    ))}
+                  </ul>
 
                   <button
                     type="button"
@@ -168,8 +215,17 @@ export function PricingView() {
             })}
           </div>
 
+          <p className="mt-6 text-center text-xs leading-relaxed text-white/40">
+            Usage varies by model.{" "}
+            <a href="#credits-per-model" className="text-[#00e5ff] hover:text-white">
+              See Credits per Model →
+            </a>
+            <br />
+            <span className="mt-1 inline-block">{PRICING_CREDIT_VARIANCE_NOTE}</span>
+          </p>
+
           {/* Model pricing */}
-          <section className="mt-20">
+          <section id="credits-per-model" className="mt-20 scroll-mt-24">
             <div className="mb-8">
               <h2 className="font-display text-2xl font-bold">Credits per model</h2>
               <p className="mt-1 max-w-xl text-sm text-white/45">

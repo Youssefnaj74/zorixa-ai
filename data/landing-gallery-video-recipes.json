@@ -1,0 +1,46 @@
+{
+  "defaults": {
+    "aspect": "9:16",
+    "resolution": "720p",
+    "duration": 5
+  },
+  "videos": {
+    "ugc": {
+      "category": "UGC Creator",
+      "label": "UGC Video · Grok Imagine",
+      "modelId": "grok-imagine-video-i2v-15",
+      "atlasModel": "xai/grok-imagine-video-v1.5/image-to-video",
+      "startFramePath": "ugc/after.png",
+      "prompt": "UGC creator speaks naturally to camera, warm golden hour light through window, subtle hand gestures, authentic vertical reel movement, photorealistic social media content.",
+      "resolution": "480p",
+      "duration": 5
+    },
+    "enhancement": {
+      "category": "Image Enhancement",
+      "label": "Enhanced Video · Hailuo 2.3",
+      "modelId": "hailuo-2-3",
+      "atlasModel": "minimax/hailuo-2.3/i2v-standard",
+      "startFramePath": "enhancement/after.png",
+      "prompt": "Sharp portrait comes alive with subtle natural movement, gentle confident expression, cinematic golden hour lighting, professional campaign quality, minimal motion.",
+      "duration": 6
+    },
+    "consistency": {
+      "category": "Character Consistency",
+      "label": "Consistent Character · Veo 3.1",
+      "modelId": "google-veo-3-1",
+      "atlasModel": "google/veo3.1/image-to-video",
+      "startFramePath": "consistency/after.png",
+      "prompt": "Same AI influencer woman in foggy field slowly turns toward camera, stable identity across movement, cinematic campaign film, natural wind in grass, photorealistic.",
+      "duration": 6
+    },
+    "character-swap": {
+      "category": "Character Swap",
+      "label": "Character Swap · Hailuo 2.3",
+      "modelId": "hailuo-2-3",
+      "atlasModel": "minimax/hailuo-2.3/i2v-standard",
+      "startFramePath": "character-swap/before.png",
+      "prompt": "Lifestyle influencer filming vertical reel outdoors, talking and gesturing naturally toward camera, authentic TikTok content style, tripod and phone in frame, realistic motion.",
+      "duration": 6
+    }
+  }
+}

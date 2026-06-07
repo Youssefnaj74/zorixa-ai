@@ -1,6 +1,8 @@
 "use client";
 
-import { Circle, Clapperboard } from "lucide-react";
+import { Circle } from "lucide-react";
+
+import { ModelBrandLogo } from "@/components/ui/ModelBrandLogo";
 
 import {
   formatVideoElapsed,
@@ -40,6 +42,7 @@ function StageRow({ stage }: { stage: VideoGenStage }) {
 
 export function VideoGenerationProgress({
   modelLabel,
+  composerModelId,
   elapsedSec,
   directorRouted = false,
   tip,
@@ -51,6 +54,7 @@ export function VideoGenerationProgress({
   className
 }: {
   modelLabel: string;
+  composerModelId?: string;
   elapsedSec: number;
   directorRouted?: boolean;
   tip: string;
@@ -72,8 +76,10 @@ export function VideoGenerationProgress({
     >
       <div className="rounded-2xl border border-[#8338eb]/35 bg-[#12121a]/95 px-5 py-5 shadow-[0_0_40px_rgba(131,56,235,0.18)] ring-1 ring-white/5">
         <div className="space-y-3 text-center">
-          <p className="flex items-center justify-center gap-2 text-sm font-semibold text-white">
-            <Clapperboard className="size-4 shrink-0 text-[#c084fc]" aria-hidden />
+          <p className="flex items-center justify-center gap-2.5 text-sm font-semibold text-white">
+            {composerModelId ? (
+              <ModelBrandLogo composerId={composerModelId} />
+            ) : null}
             <span>
               Generating with <span className="text-[#c084fc]">{modelLabel}</span>
             </span>

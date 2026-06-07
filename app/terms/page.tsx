@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { BrandEmailLink } from "@/components/marketing/BrandEmailLink";
 import { BRAND_EMAILS } from "@/lib/site-brand";
 
@@ -45,8 +47,11 @@ export default function TermsPage() {
             <p>
               Zorixa AI operates on a credit-based system. Credits are purchased through our payment processor (Lemon
               Squeezy) and are non-refundable unless required by applicable law. Credits do not expire and have no cash
-              value. Subscription plans renew automatically unless cancelled before the renewal date. Billing questions
-              and refund requests:{" "}
+              value. Subscription plans renew automatically unless cancelled before the renewal date. See our{" "}
+              <Link href="/refund" className="text-[#00e5ff] hover:text-white hover:underline">
+                Refund Policy
+              </Link>{" "}
+              for details. Billing questions and refund requests:{" "}
               <BrandEmailLink email={BRAND_EMAILS.billing} className="hover:opacity-70" />
               .
             </p>

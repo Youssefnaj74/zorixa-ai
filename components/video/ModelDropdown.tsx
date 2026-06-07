@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
+import { ModelBrandLogo } from "@/components/ui/ModelBrandLogo";
 import { cn } from "@/lib/utils";
 
 import type { VideoModelOption } from "@/components/video/model-options";
@@ -43,6 +44,7 @@ export function ModelDropdown({
         className="zorixa-card-border flex w-full items-center justify-between gap-2 rounded-xl bg-zorixa-card px-3 py-2.5 text-left text-sm text-white shadow-glow transition-shadow hover:shadow-glow-lg"
       >
         <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+          <ModelBrandLogo composerId={selected?.id ?? value} />
           <span className="truncate font-medium">{selected?.label}</span>
           {selected?.badge === "fullAccess" ? <Badge variant="fullAccess">FULL ACCESS</Badge> : null}
         </span>
@@ -84,6 +86,7 @@ export function ModelDropdown({
                       )}
                     >
                       <span className="flex min-w-0 flex-1 items-center gap-2">
+                        <ModelBrandLogo composerId={m.id} />
                         <span className="truncate">{m.label}</span>
                         {m.locked ? <span aria-hidden>🔒</span> : null}
                         {m.badge === "newTeal" ? <Badge variant="newTeal">NEW</Badge> : null}

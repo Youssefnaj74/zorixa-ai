@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ZorixaAI Model Logos Preview</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: #0a0a0f;
+        color: #fff;
+        padding: 24px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 16px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 12px;
+      }
+      .card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(131, 56, 235, 0.25);
+        background: #1a1a24;
+      }
+      .card img {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+        flex-shrink: 0;
+      }
+      .label {
+        font-size: 13px;
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Official model logos (20×20)</h1>
+    <div class="grid" id="grid"></div>
+    <script>
+      const logos = [
+        ["Grok", "/models/grok.svg"],
+        ["Gemini", "/models/gemini.svg"],
+        ["Google G / Veo", "/models/veo.svg"],
+        ["Kling", "/models/kling.ico"],
+        ["Seedance", "/models/seedance.png"],
+        ["Wan", "/models/wan.ico"],
+        ["HappyHorse (Alibaba)", "/models/happyhorse.ico"],
+        ["Hailuo", "/models/hailuo.ico"],
+        ["Vidu", "/models/vidu.svg"],
+        ["Flux", "/models/flux.ico"],
+        ["OpenAI", "/models/openai-icon.svg"],
+        ["Qwen", "/models/qwen.ico"]
+      ];
+      const grid = document.getElementById("grid");
+      for (const [label, src] of logos) {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `<img src="${src}" alt="" loading="lazy" /><span class="label">${label}</span>`;
+        grid.appendChild(card);
+      }
+    </script>
+  </body>
+</html>

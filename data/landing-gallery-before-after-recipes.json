@@ -1,0 +1,52 @@
+{
+  "defaults": {
+    "aspect": "3:4",
+    "resolution": "2K"
+  },
+  "pairs": {
+    "ugc": {
+      "category": "UGC Creator",
+      "before": {
+        "model": "black-forest-labs/flux-schnell",
+        "prompt": "Amateur AI influencer selfie, young woman in plain bedroom, flat overhead lighting, slightly plastic skin, generic social media look, visible AI artifacts, low polish, vertical portrait, photorealistic but uncanny."
+      },
+      "after": {
+        "model": "google/nano-banana-pro/edit",
+        "prompt": "Transform into premium UGC creator portrait: exact same woman, warm golden hour sunlight through window, natural skin texture, detailed eyes, authentic lifestyle influencer look, cozy interior background, no phone, no smartphone, no device in hands, relaxed pose looking at camera, cinematic TikTok aesthetic, sharp professional quality."
+      }
+    },
+    "enhancement": {
+      "category": "Image Enhancement",
+      "before": {
+        "model": "black-forest-labs/flux-schnell",
+        "prompt": "Soft blurry portrait of a young man, low detail, flat contrast, compression artifacts, dull colors, amateur phone photo quality, vertical portrait."
+      },
+      "after": {
+        "model": "google/nano-banana-pro/edit",
+        "prompt": "Enhance to professional quality: same man, sharp facial detail, clean skin texture, balanced contrast, cinematic golden hour rooftop lighting, vibrant natural colors, magazine-quality portrait, no blur."
+      }
+    },
+    "consistency": {
+      "category": "Character Consistency",
+      "before": {
+        "model": "google/nano-banana-2/text-to-image",
+        "prompt": "2x2 contact sheet grid, young woman in beige blazer in foggy field, four different poses (front, three-quarter, profile, walking away). CRITICAL: each panel shows a clearly different face — different eyes, nose, jawline and age in every frame, obvious identity drift, uncanny inconsistent AI character, mismatched facial features, editorial collage, vertical 3:4, photorealistic."
+      },
+      "after": {
+        "model": "google/nano-banana-pro/text-to-image",
+        "prompt": "2x2 contact sheet grid, same young woman AI influencer in beige wool blazer and navy shirt in foggy field with tall grass, four poses (front portrait, three-quarter close-up, profile, walking away looking back), CRITICAL: identical face in all four panels — same eyes nose lips jawline and hair everywhere, stable identity, campaign-ready character consistency, film strip frame borders, vertical 3:4, photorealistic."
+      }
+    },
+    "character-swap": {
+      "category": "Character Swap",
+      "before": {
+        "model": "google/nano-banana-2/text-to-image",
+        "prompt": "Lifestyle influencer woman filming vertical UGC outdoors, white tank top, jeans, smartphone on tripod in foreground, natural daylight, authentic social media aesthetic, vertical 3:4 portrait, photorealistic."
+      },
+      "after": {
+        "model": "google/nano-banana-pro/edit",
+        "prompt": "Character swap: replace the woman with a different young man creator, same outdoor scene, same tripod and phone setup, same pose and camera angle, natural daylight, photorealistic UGC video frame."
+      }
+    }
+  }
+}

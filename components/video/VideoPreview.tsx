@@ -100,6 +100,7 @@ export function VideoPreview({
   /** In-progress generation UI (timer, stages, cancel). */
   generationProgress?: {
     modelLabel: string;
+    composerModelId: string;
     elapsedSec: number;
     directorRouted: boolean;
     tip: string;
@@ -367,6 +368,7 @@ export function VideoPreview({
               ) : loading && generationProgress ? (
                 <VideoGenerationProgress
                   modelLabel={generationProgress.modelLabel}
+                  composerModelId={generationProgress.composerModelId}
                   elapsedSec={generationProgress.elapsedSec}
                   directorRouted={generationProgress.directorRouted}
                   tip={generationProgress.tip}

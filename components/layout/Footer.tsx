@@ -12,6 +12,12 @@ export default function Footer() {
           <Link href="/contact" className="text-sm text-white/40 hover:text-white transition-colors">
             Contact
           </Link>
+          <a
+            href="mailto:support@zorixaai.com"
+            className="text-sm text-white/40 hover:text-white transition-colors"
+          >
+            support@zorixaai.com
+          </a>
           <Link href="/billing" className="text-sm text-white/40 hover:text-white transition-colors">
             Billing
           </Link>
@@ -23,6 +29,9 @@ export default function Footer() {
           </Link>
           <Link href="/pricing" className="text-sm text-white/40 hover:text-white transition-colors">
             Pricing
+          </Link>
+          <Link href="/refund" className="text-sm text-white/40 hover:text-white transition-colors">
+            Refund Policy
           </Link>
           <Link href="/terms" className="text-sm text-white/40 hover:text-white transition-colors">
             Terms of Service

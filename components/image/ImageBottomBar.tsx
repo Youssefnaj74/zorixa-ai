@@ -14,6 +14,7 @@ import {
   SEEDREAM_ATLAS_SIZE_GROUPS
 } from "@/components/image/image-bottom-bar-constants";
 import { MODEL_OPTIONS, type ModelOption } from "@/components/ui/ModelDropdown";
+import { ModelBrandLogo } from "@/components/ui/ModelBrandLogo";
 import { getAtlasImageModelLimits, getImageBatchOptions, imageComposerSupportedOnActionTab } from "@/lib/atlas-image-model-ids";
 import { getImageI2iUploadSlots } from "@/lib/image-i2i-model-slots";
 import { IMAGE_I2I_DOCK_HEIGHT } from "@/lib/composer-dock-height";
@@ -112,6 +113,7 @@ function ModelPickRow({
       )}
     >
       <span className="flex min-w-0 flex-1 items-center gap-2">
+        <ModelBrandLogo composerId={model.id} />
         <span className="truncate">{model.label}</span>
         {model.badge}
       </span>
@@ -276,7 +278,10 @@ export function ImageBottomBar({
             </span>
             <span className="h-4 w-px bg-white/10" aria-hidden />
             <span className="truncate font-display text-sm font-semibold text-white">
-              {selectedModel.label}
+              <span className="inline-flex items-center gap-2">
+                <ModelBrandLogo composerId={selectedModel.id} size={18} />
+                {selectedModel.label}
+              </span>
             </span>
             {selectedModel.badge ? <span className="shrink-0">{selectedModel.badge}</span> : null}
           </div>
@@ -407,6 +412,7 @@ export function ImageBottomBar({
                 title={selectedModel.title ?? selectedModel.label}
                 className={cn(triggerClass, "cursor-default border-[rgba(131,56,235,0.35)] bg-[rgba(131,56,235,0.08)]")}
               >
+                <ModelBrandLogo composerId={selectedModel.id} />
                 <span className="max-w-[180px] truncate">{selectedModel.label}</span>
               </span>
             ) : (
@@ -417,7 +423,10 @@ export function ImageBottomBar({
                   onClick={() => openOnly("model")}
                   className={cn(triggerClass, open === "model" && "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.1)]")}
                 >
-                  <span className="max-w-[140px] truncate">{selectedModel.label}</span>
+                  <span className="inline-flex max-w-[140px] items-center gap-2 truncate">
+                    <ModelBrandLogo composerId={selectedModel.id} />
+                    <span className="truncate">{selectedModel.label}</span>
+                  </span>
                   <ChevronUp className={cn("size-3.5 text-zorixa-muted", open === "model" && "rotate-180")} />
                 </button>
                 <AnimatePresence>

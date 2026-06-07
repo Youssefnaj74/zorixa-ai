@@ -24,6 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/helpsupport",
     "/terms",
     "/privacy",
+    "/refund",
     "/login",
     "/signup"
   ];

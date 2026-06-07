@@ -1,19 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
-import { DemoPlexusCanvas } from "@/components/landing/DemoPlexusCanvas";
+import { LandingGenerationsGallery } from "@/components/landing/LandingGenerationsGallery";
+import { LandingPoweredModelsSection } from "@/components/landing/LandingPoweredModelsSection";
+import { LandingProductStudioSection } from "@/components/landing/LandingProductStudioSection";
+import { BrandEmailLink } from "@/components/marketing/BrandEmailLink";
 import { ZorixaLogo } from "@/components/layout/ZorixaLogo";
+import { BRAND_EMAILS } from "@/lib/site-brand";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "#ugc", label: "UGC Studio" },
-  { href: "#influencer", label: "AI Influencers" },
-  { href: "#cinema", label: "Cinema" },
-  { href: "#de-ai", label: "De-AI" }
+  { href: "#why", label: "Why ZorixaAI" },
+  { href: "#models", label: "Models" },
+  { href: "#studio", label: "Studio" },
+  { href: "#gallery", label: "Gallery" },
+  { href: "/pricing", label: "Pricing", route: true as const }
 ] as const;
 
 const reveal = {
@@ -38,20 +42,30 @@ function StickyNav() {
         <ZorixaLogo href="/" textClassName="text-base font-semibold" />
 
         <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
-          {NAV.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="text-sm font-medium text-[#a1a1aa] transition-colors hover:text-white"
-            >
-              {l.label}
-            </a>
-          ))}
+          {NAV.map((l) =>
+            "route" in l && l.route ? (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="text-sm font-medium text-[#a1a1aa] transition-colors hover:text-white"
+              >
+                {l.label}
+              </Link>
+            ) : (
+              <a
+                key={l.href}
+                href={l.href}
+                className="text-sm font-medium text-[#a1a1aa] transition-colors hover:text-white"
+              >
+                {l.label}
+              </a>
+            )
+          )}
         </nav>
 
         <div className="flex items-center gap-3">
           <Link
-            href="/dashboard"
+            href="/video"
             className="inline-flex h-10 items-center justify-center rounded-full bg-[#00d1ff] px-5 text-sm font-semibold text-black shadow-[0_0_0_1px_rgba(0,209,255,0.35),0_0_28px_rgba(0,209,255,0.35)] transition-transform hover:scale-[1.02]"
           >
             Start Creating
@@ -125,28 +139,68 @@ export function LandingPage() {
             </motion.h1>
 
             <motion.p variants={reveal} className="mt-6 max-w-2xl text-base leading-relaxed text-[#a1a1aa] sm:text-lg">
-              Bridge the gap between AI generation and professional reality. High-fidelity skin recovery, consistent
-              identity, and 8K cinematic upscaling.
+              Create professional AI videos and images with leading models. Generate UGC content, cinematic videos,
+              character swaps, and AI-powered visuals from a single platform.
             </motion.p>
 
             <motion.div variants={reveal} className="mt-10 flex flex-wrap items-center gap-4">
               <Link
-                href="/dashboard"
+                href="/video"
                 className="inline-flex h-12 items-center justify-center rounded-full bg-[#00d1ff] px-8 text-sm font-bold text-black shadow-[0_0_0_1px_rgba(0,209,255,0.35),0_0_32px_rgba(0,209,255,0.42)] transition-transform hover:scale-[1.02]"
               >
                 Start Creating
                 <ArrowRight className="ml-2 size-4" aria-hidden />
               </Link>
-              <a
-                href="#demo"
-                className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-8 text-sm font-semibold text-white/90 hover:bg-white/[0.06]"
+              <Link
+                href="/signup?redirect=/video"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] px-8 text-sm font-semibold text-white transition-colors hover:border-white/25 hover:bg-white/[0.08]"
               >
-                <Play className="mr-2 size-4 text-[#00d1ff]" aria-hidden />
-                Watch Demo
-              </a>
+                Sign up free
+              </Link>
             </motion.div>
           </motion.div>
         </section>
+
+        {/* Why ZorixaAI */}
+        <section id="why" className="mx-auto max-w-6xl px-5 pb-16 sm:px-8">
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-90px" }}
+            className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur shadow-[0_24px_70px_rgba(0,0,0,0.65)] sm:p-10"
+          >
+            <motion.p variants={reveal} className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#a1a1aa]">
+              Why ZorixaAI?
+            </motion.p>
+            <motion.h2 variants={reveal} className="mt-4 font-display text-3xl font-black tracking-tighter sm:text-4xl">
+              One platform for image, video, and UGC
+            </motion.h2>
+            <motion.ul variants={reveal} className="mt-8 grid gap-4 sm:grid-cols-2">
+              {[
+                "One platform.",
+                "20+ AI models.",
+                "Image + Video + UGC + Character Swap.",
+                "Pay only for credits you use."
+              ].map((line) => (
+                <li
+                  key={line}
+                  className="flex items-start gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-white"
+                >
+                  <span className="mt-0.5 text-[#00d1ff]" aria-hidden>
+                    ✓
+                  </span>
+                  {line}
+                </li>
+              ))}
+            </motion.ul>
+          </motion.div>
+        </section>
+
+        <LandingPoweredModelsSection />
+
+        <LandingGenerationsGallery />
+
+        <LandingProductStudioSection />
 
         {/* Features Grid */}
         <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8">
@@ -175,8 +229,8 @@ export function LandingPage() {
                 },
                 {
                   icon: "🎥",
-                  title: "Cinematic Upscaling",
-                  body: "Transform flat AI video into 8K film-grade cinematic results"
+                  title: "Video Upscale",
+                  body: "Upscale finished clips with our Atlas video upscaler for sharper delivery"
                 },
                 {
                   icon: "🖼️",
@@ -256,8 +310,8 @@ export function LandingPage() {
               )}
             >
               <p className="font-display text-sm font-semibold tracking-tight text-white">
-                10,000+ creators <span className="text-white/30">·</span> 4.9/5 rating{" "}
-                <span className="text-white/30">·</span> Generate in seconds
+                Pay-as-you-go credits <span className="text-white/30">·</span> 20+ models{" "}
+                <span className="text-white/30">·</span> Image &amp; video in one workspace
               </p>
               <span className="h-px w-full bg-gradient-to-r from-transparent via-[#00e6c8]/30 to-transparent sm:hidden" aria-hidden />
               <span className="inline-flex items-center rounded-full border border-[rgba(0,230,200,0.35)] bg-[rgba(0,230,200,0.10)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7ff7e8]">
@@ -284,7 +338,7 @@ export function LandingPage() {
             </motion.p>
             <motion.div variants={reveal} className="relative mt-8 flex items-center justify-center">
               <Link
-                href="/dashboard"
+                href="/video"
                 className="inline-flex h-12 items-center justify-center rounded-full bg-[#00e6c8] px-8 text-sm font-bold text-black shadow-[0_0_0_1px_rgba(0,230,200,0.35),0_0_34px_rgba(0,230,200,0.38)] transition-transform hover:scale-[1.02]"
               >
                 Start Creating for Free →
@@ -293,46 +347,7 @@ export function LandingPage() {
           </motion.div>
         </section>
 
-        {/* Showcase gallery */}
-        <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8">
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={{ show: { transition: { staggerChildren: 0.06 } } }}
-            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          >
-            {[
-              { src: "/influencer-1.jpg", label: "AI Influencer" },
-              { src: "/cinema-1.jpg", label: "Cinema Mode" },
-              { src: "/identity-1.jpg", label: "Identity Consistency" },
-              { src: "/enhanced-1.jpg", label: "De-AI Enhancement" }
-            ].map((item) => (
-              <motion.div
-                key={item.src}
-                variants={reveal}
-                className="group overflow-hidden rounded-2xl border border-white/[0.10] bg-white/[0.03] shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur"
-              >
-                <div className="relative aspect-[4/5] w-full overflow-hidden bg-black/40">
-                  <Image
-                    src={item.src}
-                    alt={item.label}
-                    fill
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    priority={false}
-                  />
-                </div>
-                <div className="flex items-center justify-between gap-3 px-4 py-3">
-                  <span className="text-xs font-semibold uppercase tracking-[0.22em] text-[#00d1ff]">
-                    {item.label}
-                  </span>
-                  <span className="h-px flex-1 bg-gradient-to-r from-[#00d1ff]/30 to-transparent" aria-hidden />
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </section>
+        {/* Showcase gallery — legacy cards removed; see Real generations above */}
 
         {/* Big 3 */}
         <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8">
@@ -352,7 +367,7 @@ export function LandingPage() {
               id="influencer"
               eyebrow="AI Influencer Hub"
               title="Identity that never drifts."
-              body="Maintain 100% identity consistency across frames. Scale your digital persona in 8K."
+              body="Maintain highly consistent identity across frames. Scale your digital persona across campaigns."
             />
             <HiggsfieldCard
               id="cinema"
@@ -408,61 +423,42 @@ export function LandingPage() {
           </motion.div>
         </section>
 
-        {/* Demo */}
-        <section id="demo" className="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-90px" }}
-            className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]"
-          >
-            <motion.div variants={reveal} className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur">
-              <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
-                <DemoPlexusCanvas className="absolute inset-0 h-full w-full min-h-0" />
-              </div>
-              <p className="mt-4 text-sm text-[#a1a1aa]">
-                Canvas animation fills the frame for now — swap in a real demo video anytime without changing layout.
-              </p>
-            </motion.div>
-
-            <motion.div variants={reveal} className="rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#a1a1aa]">Get started</p>
-              <h3 className="mt-3 font-display text-2xl font-black tracking-tighter">Create your first cinematic result</h3>
-              <p className="mt-3 text-sm leading-relaxed text-[#a1a1aa]">
-                Launch the UGC workflow, generate, then enhance texture and identity until it looks filmed.
-              </p>
-              <div className="mt-6 flex flex-col gap-3">
-                <Link
-                  href="/dashboard"
-                  className="inline-flex h-12 items-center justify-center rounded-full bg-[#00d1ff] px-8 text-sm font-bold text-black shadow-[0_0_0_1px_rgba(0,209,255,0.35),0_0_32px_rgba(0,209,255,0.42)] hover:brightness-110"
-                >
-                  Start Creating
-                </Link>
-                <Link
-                  href="/login?redirect=/image"
-                  className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-8 text-sm font-semibold text-white/90 hover:bg-white/[0.06]"
-                >
-                  Explore Enhancement
-                </Link>
-              </div>
-            </motion.div>
-          </motion.div>
-        </section>
-
         <footer className="border-t border-white/10 bg-black/60">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-10 text-sm text-[#a1a1aa] sm:flex-row sm:items-center sm:justify-between sm:px-8">
-            <p>© {new Date().getFullYear()} Zorixa AI</p>
-            <div className="flex gap-6">
-              <Link className="hover:text-white" href="/login">
-                Login
-              </Link>
-              <Link className="hover:text-white" href="/pricing">
-                Pricing
-              </Link>
-              <Link className="hover:text-white" href="/dashboard">
-                Dashboard
-              </Link>
+          <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="font-display text-sm font-semibold text-white">Zorixa AI</p>
+                <p className="mt-2 text-sm text-[#a1a1aa]">
+                  Questions?{" "}
+                  <BrandEmailLink email={BRAND_EMAILS.support} className="text-[#00d1ff] hover:text-white" />
+                </p>
+                <p className="mt-1 text-sm text-[#a1a1aa]">
+                  General inquiries:{" "}
+                  <BrandEmailLink email={BRAND_EMAILS.contact} className="text-[#00d1ff] hover:text-white" />
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[#a1a1aa]">
+                <Link className="hover:text-white" href="/pricing">
+                  Pricing
+                </Link>
+                <Link className="hover:text-white" href="/dashboard">
+                  Dashboard
+                </Link>
+                <Link className="hover:text-white" href="/login">
+                  Login
+                </Link>
+                <Link className="hover:text-white" href="/terms">
+                  Terms
+                </Link>
+                <Link className="hover:text-white" href="/privacy">
+                  Privacy
+                </Link>
+                <Link className="hover:text-white" href="/refund">
+                  Refund Policy
+                </Link>
+              </div>
             </div>
+            <p className="mt-8 text-xs text-[#a1a1aa]">© {new Date().getFullYear()} Zorixa AI. All rights reserved.</p>
           </div>
         </footer>
       </main>
