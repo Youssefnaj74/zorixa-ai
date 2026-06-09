@@ -10,6 +10,13 @@ import {
 } from "@/lib/dodo-payments/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+function checkoutFeatureFlags(existing?: Record<string, boolean>): Record<string, boolean> {
+  return {
+    ...existing,
+    allow_discount_code: false
+  };
+}
+
 export async function POST(request: Request) {
   const apiKey = getDodoApiKey();
   if (!apiKey) {
@@ -73,7 +80,8 @@ export async function POST(request: Request) {
           pack_id: pack.id,
           credits: String(pack.credits)
         },
-        return_url: getDodoReturnUrl()
+        return_url: getDodoReturnUrl(),
+        feature_flags: checkoutFeatureFlags()
       },
       {
         bearerToken: apiKey,
