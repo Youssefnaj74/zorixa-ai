@@ -32,7 +32,7 @@ export default function ContactPage() {
       <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 text-sm text-white/50">
         <p>
           <span className="font-semibold text-white/70">Remote-first product.</span> Zorixa AI serves creators
-          globally. Payments are processed through Lemon Squeezy; support is in English.
+          globally. Payments are processed through Dodo Payments; support is in English.
         </p>
         <p className="mt-3">
           <Link href="/faq" className="text-[#00e5ff] hover:underline">

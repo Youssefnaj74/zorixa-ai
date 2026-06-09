@@ -45,9 +45,10 @@ export default function TermsPage() {
           <section>
             <h2 className="text-base font-bold text-white mb-3">4. Credits and Payments</h2>
             <p>
-              Zorixa AI operates on a credit-based system. Credits are purchased through our payment processor (Lemon
-              Squeezy) and are non-refundable unless required by applicable law. Credits do not expire and have no cash
-              value. Subscription plans renew automatically unless cancelled before the renewal date. See our{" "}
+              Zorixa AI operates on a credit-based subscription system. Credits are purchased through our payment
+              processor (Dodo Payments) and stack in your account until used. Credits are non-refundable unless
+              required by applicable law. Subscription plans renew automatically unless cancelled before the renewal
+              date. See our{" "}
               <Link href="/refund" className="text-[#00e5ff] hover:text-white hover:underline">
                 Refund Policy
               </Link>{" "}

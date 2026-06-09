@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
 
 import { BillingCheckout } from "@/components/billing/BillingCheckout";
-import { getCreditsPerPurchase, getLemonSqueezyCheckoutUrl } from "@/lib/lemon-squeezy/checkout-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export default async function BillingPage() {
+export default async function DashboardBillingPage() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user }
@@ -14,10 +13,5 @@ export default async function BillingPage() {
     redirect("/login?redirect=/dashboard/billing");
   }
 
-  const checkoutUrl = getLemonSqueezyCheckoutUrl(user.id);
-  const creditsAmount = getCreditsPerPurchase();
-
-  return (
-    <BillingCheckout checkoutUrl={checkoutUrl} creditsAmount={creditsAmount} userEmail={user.email ?? null} />
-  );
+  return <BillingCheckout userEmail={user.email ?? null} />;
 }

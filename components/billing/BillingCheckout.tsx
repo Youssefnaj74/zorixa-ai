@@ -1,46 +1,36 @@
 "use client";
 
-import { useEffect } from "react";
+import Link from "next/link";
 import { Check, Sparkles, Zap } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { useCredits } from "@/lib/hooks/use-credits";
 
-type Props = {
-  checkoutUrl: string | null;
-  creditsAmount: number;
-  userEmail: string | null;
-};
-
 const benefits = [
-  { icon: Sparkles, text: "Applies to image enhancement and UGC video generation" },
-  { icon: Zap, text: "Credits land in your account right after payment" },
-  { icon: Check, text: "Keep creating — top up anytime from this page" }
+  { icon: Sparkles, text: "Monthly credits for image, video, and speech generation" },
+  { icon: Zap, text: "Credits land in your account after payment (via webhook)" },
+  { icon: Check, text: "Choose Starter, Pro, Creator, or Ultra on the pricing page" }
 ];
 
-export function BillingCheckout({ checkoutUrl, creditsAmount, userEmail }: Props) {
+export function BillingCheckout({ userEmail }: { userEmail: string | null }) {
   const { credits, isLoading: creditsLoading } = useCredits();
-
-  useEffect(() => {
-    window.createLemonSqueezy?.();
-  }, [checkoutUrl]);
-
-  const configured = checkoutUrl !== null;
 
   return (
     <main className="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12 lg:max-w-2xl">
-      <p className="text-xs font-medium uppercase tracking-wider text-brand-light">Lemon Squeezy</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-brand-light">Dodo Payments</p>
       <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
-        Unlock {creditsAmount} credits
+        Subscribe for credits
       </h1>
       <div className="mt-4 flex flex-wrap items-baseline gap-2">
         <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">Current balance</span>
         <span className="font-display text-2xl font-bold tabular-nums text-white">
           {creditsLoading ? "…" : credits}
         </span>
-        <span className="text-sm text-zinc-500">credits (synced from Supabase)</span>
+        <span className="text-sm text-zinc-500">credits</span>
       </div>
       <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
-        One pack for Zorixa AI — credits for image enhancement and UGC video when you need them.
+        Zorixa AI subscriptions are billed monthly through Dodo Payments. Pick a plan that matches your
+        studio usage.
       </p>
       {userEmail ? (
         <p className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs text-zinc-400">
@@ -60,30 +50,13 @@ export function BillingCheckout({ checkoutUrl, creditsAmount, userEmail }: Props
       </ul>
 
       <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-        {configured ? (
-          <a
-            href={checkoutUrl}
-            className="lemonsqueezy-button inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-brand px-8 py-3.5 text-center text-base font-semibold text-white shadow-lg shadow-brand/20 transition hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-          >
-            Buy credits
-          </a>
-        ) : (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            Add{" "}
-            <code className="rounded bg-black/30 px-1.5 py-0.5 font-mono text-xs">
-              NEXT_PUBLIC_LEMON_SQUEEZY_STORE_SLUG
-            </code>{" "}
-            and{" "}
-            <code className="rounded bg-black/30 px-1.5 py-0.5 font-mono text-xs">
-              NEXT_PUBLIC_LEMON_SQUEEZY_VARIANT_ID
-            </code>{" "}
-            to enable checkout.
-          </div>
-        )}
+        <Button asChild className="min-h-[48px] flex-1 bg-gradient-to-r from-violet-600 to-brand">
+          <Link href="/pricing">View plans &amp; subscribe</Link>
+        </Button>
       </div>
 
       <p className="mt-8 text-center text-xs text-zinc-500">
-        Secure checkout overlay by Lemon Squeezy. Your balance updates automatically after payment.
+        Secure checkout by Dodo Payments. Your balance updates automatically after payment.
       </p>
     </main>
   );

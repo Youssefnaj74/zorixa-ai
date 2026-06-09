@@ -11,10 +11,10 @@ export default function BillingSuccessPage() {
       </p>
       <div className="mt-8 flex gap-3">
         <Link href="/pricing">
-          <Button className="bg-white/10 text-white hover:bg-white/15">Go to billing</Button>
+          <Button className="bg-white/10 text-white hover:bg-white/15">View plans</Button>
         </Link>
-        <Link href="/image">
-          <Button className="bg-violet-500 hover:bg-violet-400">Open image studio</Button>
+        <Link href="/dashboard">
+          <Button className="bg-violet-500 hover:bg-violet-400">Open dashboard</Button>
         </Link>
       </div>
     </main>

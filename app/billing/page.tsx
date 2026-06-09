@@ -7,7 +7,7 @@ import { BRAND_EMAILS } from "@/lib/site-brand";
 export const metadata = {
   title: "Billing",
   description:
-    "Billing and payments help for Zorixa AI — refunds, Lemon Squeezy charges, credits, and invoices."
+    "Billing and payments help for Zorixa AI — refunds, Dodo Payments charges, credits, and invoices."
 };
 
 export default function BillingPage() {
@@ -22,7 +22,7 @@ export default function BillingPage() {
       <section id="billing-form">
         <h2 className="text-base font-bold text-white">Send a billing request</h2>
         <p className="mt-2 text-sm text-white/50">
-          Include your account email, order ID from Lemon Squeezy if you have one, and what you need help with.
+          Include your account email, order ID from Dodo Payments if you have one, and what you need help with.
         </p>
         <div className="mt-6">
           <ContactForm

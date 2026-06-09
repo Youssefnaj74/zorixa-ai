@@ -12,7 +12,7 @@ export const PUBLIC_FAQ_ITEMS: PublicFaqItem[] = [
   },
   {
     q: "Where is Zorixa AI based?",
-    a: "Zorixa AI operates as a remote-first product. Payments are processed globally through Lemon Squeezy; support is available in English via email."
+    a: "Zorixa AI operates as a remote-first product. Payments are processed globally through Dodo Payments; support is available in English via email."
   },
   {
     q: "Is Zorixa AI safe to use?",

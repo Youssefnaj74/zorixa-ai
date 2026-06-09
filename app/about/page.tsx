@@ -58,7 +58,7 @@ export default function AboutPage() {
       <section>
         <h2 className="text-base font-bold text-white">Payments & trust</h2>
         <p className="mt-3">
-          Subscriptions and credit packs are sold through Lemon Squeezy. We do not store card numbers on our
+          Subscriptions and credit packs are sold through Dodo Payments. We do not store card numbers on our
           servers. For legal terms, see our{" "}
           <Link href="/terms" className="text-[#00e5ff] hover:underline">
             Terms of Service

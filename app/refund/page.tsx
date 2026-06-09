@@ -20,7 +20,7 @@ export default function RefundPage() {
           <section>
             <h2 className="text-base font-bold text-white mb-3">1. Credit purchases</h2>
             <p>
-              Zorixa AI uses a credit-based system. Credits are sold through Lemon Squeezy and are generally{" "}
+              Zorixa AI uses a credit-based system. Credits are sold through Dodo Payments and are generally{" "}
               <strong className="text-white/90">non-refundable</strong> once delivered to your account, except where
               required by applicable law or where we confirm a billing error on our side.
             </p>
@@ -58,7 +58,7 @@ export default function RefundPage() {
               Email{" "}
               <BrandEmailLink email={BRAND_EMAILS.billing} className="hover:opacity-70" /> or{" "}
               <BrandEmailLink email={BRAND_EMAILS.support} className="hover:opacity-70" /> within 14 days of the
-              charge. Include your account email, order ID from Lemon Squeezy, and a short description of the issue. We
+              charge. Include your account email, order ID from Dodo Payments, and a short description of the issue. We
               typically respond within 2–3 business days.
             </p>
           </section>

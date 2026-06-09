@@ -12,7 +12,8 @@ import {
   PRICING_CREDIT_VARIANCE_NOTE
 } from "@/lib/atlas-pricing-catalog";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { getLemonSqueezyCheckoutUrl } from "@/lib/lemon-squeezy/checkout-url";
+import type { DodoPackId } from "@/lib/dodo-payments/config";
+import { startDodoCheckout } from "@/lib/dodo-payments/start-checkout";
 import { formatInteger } from "@/lib/format-number";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +57,8 @@ export function PricingView() {
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [openSection, setOpenSection] = useState<string>("image");
   const [userId, setUserId] = useState<string | null>(null);
+  const [checkoutBusy, setCheckoutBusy] = useState<DodoPackId | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   useEffect(() => {
     void createSupabaseBrowserClient()
@@ -63,19 +66,19 @@ export function PricingView() {
       .then(({ data: { user } }) => setUserId(user?.id ?? null));
   }, []);
 
-  function onSubscribe() {
+  async function onSubscribe(packId: DodoPackId) {
     if (!userId) {
       window.location.href = "/login?redirect=/pricing";
       return;
     }
-    const url = getLemonSqueezyCheckoutUrl(userId);
-    if (url && typeof window !== "undefined" && "LemonSqueezy" in window) {
-      const LemonSqueezy = (window as Window & { LemonSqueezy?: { Url?: { Open: (u: string) => void } } })
-        .LemonSqueezy;
-      LemonSqueezy?.Url?.Open(url);
-      return;
+    setCheckoutError(null);
+    setCheckoutBusy(packId);
+    try {
+      await startDodoCheckout(packId, billing);
+    } catch (err) {
+      setCheckoutError(err instanceof Error ? err.message : "Could not start checkout.");
+      setCheckoutBusy(null);
     }
-    if (url) window.location.href = url;
   }
 
   return (
@@ -90,8 +93,8 @@ export function PricingView() {
               Credits &amp; model pricing
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/45">
-              Buy credits once, use any model in the studio. Each generation deducts credits from
-              your balance — rates below are per run.
+              Monthly credit subscriptions — credits stack in your balance until you use them. Each
+              generation deducts credits from your balance — rates below are per run.
             </p>
 
             <div className="mt-6 inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] p-1">
@@ -119,6 +122,9 @@ export function PricingView() {
                 </span>
               </button>
             </div>
+            {checkoutError ? (
+              <p className="mx-auto mt-4 max-w-lg text-center text-sm text-red-300">{checkoutError}</p>
+            ) : null}
           </div>
 
           {/* Credit packs */}
@@ -190,15 +196,22 @@ export function PricingView() {
 
                   <button
                     type="button"
-                    onClick={onSubscribe}
+                    disabled={checkoutBusy !== null}
+                    onClick={() => void onSubscribe(pack.id)}
                     className={cn(
-                      "mb-6 w-full rounded-full py-3 text-sm font-bold transition-all",
+                      "mb-6 w-full rounded-full py-3 text-sm font-bold transition-all disabled:cursor-wait disabled:opacity-70",
                       pack.popular
                         ? "bg-[#00e5ff] text-black hover:brightness-110"
                         : "border border-white/15 bg-white/[0.04] text-white hover:border-[#00e5ff]/40"
                     )}
                   >
-                    {userId ? "Subscribe now" : "Sign in to subscribe"}
+                    {!userId
+                      ? "Sign in to subscribe"
+                      : checkoutBusy === pack.id
+                        ? "Opening checkout…"
+                        : billing === "yearly"
+                          ? "Subscribe yearly (soon)"
+                          : "Subscribe now"}
                   </button>
 
                   <p className="mb-3 text-[11px] uppercase tracking-widest text-white/35">Includes</p>

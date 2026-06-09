@@ -26,7 +26,7 @@ const FAQ = [
   },
   {
     q: "Can I get a refund?",
-    a: "Credits are generally non-refundable once purchased, except where required by law. For payment issues, use the Billing page with your Lemon Squeezy receipt."
+    a: "Credits are generally non-refundable once purchased, except where required by law. For payment issues, use the Billing page with your Dodo Payments receipt."
   }
 ] as const;
 

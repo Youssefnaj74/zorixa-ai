@@ -21,7 +21,7 @@ export default function PrivacyPage() {
             <ul className="space-y-2">
               {[
                 "Account information: name, email address, and password",
-                "Payment information: processed securely by Lemon Squeezy — we do not store card details",
+                "Payment information: processed securely by Dodo Payments — we do not store card details",
                 "Usage data: generations created, credits used, features accessed",
                 "Content: images and videos you upload for processing",
                 "Technical data: IP address, browser type, device information",
@@ -67,8 +67,7 @@ export default function PrivacyPage() {
             <ul className="space-y-2 mt-3">
               {[
                 "Supabase — database and authentication",
-                "Lemon Squeezy — payment processing",
-                "Stripe — underlying payment infrastructure via Lemon Squeezy",
+                "Dodo Payments — payment processing and subscriptions",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <span className="text-[#00e5ff] mt-0.5">—</span>

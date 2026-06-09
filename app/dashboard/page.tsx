@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { formatInteger } from "@/lib/format-number";
-import { getLemonSqueezyCheckoutUrl } from "@/lib/lemon-squeezy/checkout-url";
 import { loadUserProfile } from "@/lib/load-user-profile";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -73,7 +72,7 @@ export default async function DashboardPage() {
 
   const creditsDisplay = formatInteger(credits);
 
-  const upgradeHref = getLemonSqueezyCheckoutUrl(user.id) ?? "/pricing";
+  const upgradeHref = "/pricing";
   const welcomeTagline = welcomeTaglineFor(user.id);
 
   return (
