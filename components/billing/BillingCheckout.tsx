@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { Check, Sparkles, Zap } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import { useCredits } from "@/lib/hooks/use-credits";
 
 const benefits = [
@@ -50,9 +48,12 @@ export function BillingCheckout({ userEmail }: { userEmail: string | null }) {
       </ul>
 
       <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-        <Button asChild className="min-h-[48px] flex-1 bg-gradient-to-r from-violet-600 to-brand">
-          <Link href="/pricing">View plans &amp; subscribe</Link>
-        </Button>
+        <Link
+          href="/pricing"
+          className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-brand px-8 py-3.5 text-center text-base font-semibold text-white shadow-lg shadow-brand/20 transition hover:opacity-95"
+        >
+          View plans &amp; subscribe
+        </Link>
       </div>
 
       <p className="mt-8 text-center text-xs text-zinc-500">
