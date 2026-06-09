@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { BillingCheckout } from "@/components/billing/BillingCheckout";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export default async function DashboardBillingPage() {
+export default async function BillingPage() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user }

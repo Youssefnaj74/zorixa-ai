@@ -3,7 +3,7 @@ export type UsersProfile = {
   email: string | null;
   full_name: string | null;
   credits_balance: number;
-  /** Subscription / Lemon Squeezy — gates premium dashboard features in UI */
+  /** Subscription / payment provider ref — gates premium dashboard features in UI */
   is_premium: boolean;
   created_at: string;
 };
@@ -13,6 +13,7 @@ export type Transaction = {
   user_id: string;
   type: "purchase" | "usage";
   credits_amount: number;
+  /** External payment reference (Dodo, legacy Lemon, or atlas:…). */
   lemonsqueezy_order_id: string | null;
   feature_used: "enhance" | "video" | null;
   created_at: string;

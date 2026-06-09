@@ -9,12 +9,12 @@ const PRODUCT_ENV_KEYS: Record<DodoPackId, string> = {
   ultra: "DODO_PRODUCT_ULTRA"
 };
 
-/** Default product IDs from Dodo dashboard (overridden by env in production). */
+/** Default product IDs — must match Dodo live API exactly (case-sensitive). */
 const DEFAULT_PRODUCT_IDS: Record<DodoPackId, string> = {
-  starter: "pdt_0Ngft0RP4JoUHCpakR3JG",
+  starter: "pdt_0Ngft0RP4JoUHCPakR3JG",
   pro: "pdt_0NgfthB5ymLtXkYxWD8yR",
-  creator: "pdt_0NgfwucO0G8Anm64lbfaS",
-  ultra: "pdt_0NgfxOGpB9NITRazoi4os"
+  creator: "pdt_0NgfwucO0G8Anm64IbfaS",
+  ultra: "pdt_0NgfxOGpB9NlTRazoi4os"
 };
 
 export function dodoPaymentsEnvironment(): "test_mode" | "live_mode" {
@@ -36,13 +36,11 @@ export function getDodoWebhookKey(): string | null {
 }
 
 export function getDodoReturnUrl(): string {
-  const explicit = process.env.DODO_PAYMENTS_RETURN_URL?.trim();
-  if (explicit) return explicit.replace(/\/$/, "");
-
-  const site =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (site) return `${site.replace(/\/$/, "")}/billing/success`;
-
+  const fromEnv =
+    process.env.DODO_PAYMENTS_RETURN_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, "") + "/billing/success";
   return "http://localhost:3000/billing/success";
 }
 

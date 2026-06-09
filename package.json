@@ -5,6 +5,8 @@
   "scripts": {
     "verify:supabase": "node scripts/supabase-verify.mjs",
     "verify:atlas": "node scripts/verify-atlas.mjs",
+    "verify:dodo": "node scripts/verify-dodo-payments.mjs",
+    "debug:dodo": "node scripts/debug-dodo-422.mjs",
     "generate:explore-previews": "node scripts/generate-explore-previews.mjs",
     "generate:dashboard-seedance": "node scripts/generate-dashboard-seedance-videos.mjs",
     "generate:login-showcase": "node scripts/generate-login-showcase.mjs",

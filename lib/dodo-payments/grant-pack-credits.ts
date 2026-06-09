@@ -9,6 +9,13 @@ export type GrantInput = {
   orderRef: string;
 };
 
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return undefined;
+}
+
 function readMetadataString(metadata: Record<string, unknown> | undefined, key: string): string | null {
   const v = metadata?.[key];
   if (typeof v === "string" && v.trim()) return v.trim();
@@ -16,31 +23,10 @@ function readMetadataString(metadata: Record<string, unknown> | undefined, key: 
   return null;
 }
 
-function metadataFromData(data: Record<string, unknown>): Record<string, unknown> | undefined {
-  if (data.metadata && typeof data.metadata === "object" && !Array.isArray(data.metadata)) {
-    return data.metadata as Record<string, unknown>;
-  }
-  return undefined;
-}
-
-function customerMetadataFromData(data: Record<string, unknown>): Record<string, unknown> | undefined {
-  const customer =
-    data.customer && typeof data.customer === "object" && !Array.isArray(data.customer)
-      ? (data.customer as Record<string, unknown>)
-      : undefined;
-  if (
-    customer?.metadata &&
-    typeof customer.metadata === "object" &&
-    !Array.isArray(customer.metadata)
-  ) {
-    return customer.metadata as Record<string, unknown>;
-  }
-  return undefined;
-}
-
-function extractUserId(data: Record<string, unknown>): string | null {
-  const metadata = metadataFromData(data);
-  const customerMeta = customerMetadataFromData(data);
+function resolveUserId(
+  metadata: Record<string, unknown> | undefined,
+  customerMeta: Record<string, unknown> | undefined
+): string | null {
   return (
     readMetadataString(metadata, "user_id") ??
     readMetadataString(metadata, "userId") ??
@@ -49,79 +35,76 @@ function extractUserId(data: Record<string, unknown>): string | null {
   );
 }
 
-function extractProductId(data: Record<string, unknown>): string | null {
+function resolveProductId(data: Record<string, unknown>): string | null {
   if (typeof data.product_id === "string" && data.product_id.trim()) {
     return data.product_id.trim();
   }
+
   const cart = Array.isArray(data.product_cart) ? data.product_cart : [];
   const first = cart[0];
-  if (first && typeof first === "object" && !Array.isArray(first) && typeof first.product_id === "string") {
-    return first.product_id.trim();
+  if (first && typeof first === "object" && !Array.isArray(first)) {
+    const productId = (first as Record<string, unknown>).product_id;
+    if (typeof productId === "string" && productId.trim()) return productId.trim();
   }
+
   return null;
 }
 
-function resolveCredits(data: Record<string, unknown>): number {
-  const metadata = metadataFromData(data);
+function resolveCredits(
+  metadata: Record<string, unknown> | undefined,
+  productId: string | null
+): number {
   let credits = Number(readMetadataString(metadata, "credits"));
   if (Number.isFinite(credits) && credits > 0) return Math.floor(credits);
-
-  const productId = extractProductId(data);
   if (productId) {
-    credits = creditsForDodoProductId(productId) ?? 0;
-    if (credits > 0) return credits;
+    const fromProduct = creditsForDodoProductId(productId);
+    if (fromProduct) return fromProduct;
   }
   return 0;
 }
 
-function dateToCycleKey(value: unknown): string | null {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10);
+function billingPeriodKey(data: Record<string, unknown>): string {
+  for (const key of ["previous_billing_date", "next_billing_date", "created_at", "updated_at"]) {
+    const value = data[key];
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === "string" && value.trim()) return value.trim();
   }
-  if (typeof value === "string" && value.trim()) {
-    const d = new Date(value);
-    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
-    return value.trim().slice(0, 10);
-  }
-  return null;
+  return "period";
 }
 
-/** One ref per subscription billing cycle — avoids double credit on payment + subscription events. */
-function billingCycleOrderRef(data: Record<string, unknown>): string | null {
-  const subscriptionId =
-    typeof data.subscription_id === "string" ? data.subscription_id.trim() : null;
-  if (!subscriptionId) return null;
-
-  const cycleKey =
-    dateToCycleKey(data.previous_billing_date) ??
-    dateToCycleKey(data.next_billing_date) ??
-    dateToCycleKey(data.created_at);
-
-  if (!cycleKey) return null;
-  return `dodo:cycle:${subscriptionId}:${cycleKey}`;
-}
-
-function buildGrant(
+function baseGrantFromData(
   data: Record<string, unknown>,
   orderRef: string
 ): GrantInput | null {
-  const userId = extractUserId(data);
-  const credits = resolveCredits(data);
-  if (!userId || credits <= 0) return null;
+  const metadata = asRecord(data.metadata);
+  const customer = asRecord(data.customer);
+  const customerMeta = asRecord(customer?.metadata);
+
+  const userId = resolveUserId(metadata, customerMeta);
+  if (!userId) return null;
+
+  const productId = resolveProductId(data);
+  const credits = resolveCredits(metadata, productId);
+  if (credits <= 0) return null;
+
   return { userId, credits, orderRef };
 }
 
-/** payment.succeeded — initial charge and renewals. */
+/** One-time payments (no subscription_id on payload). */
 export function resolveGrantFromPaymentData(data: Record<string, unknown>): GrantInput | null {
   const paymentId = typeof data.payment_id === "string" ? data.payment_id.trim() : null;
   if (!paymentId) return null;
 
-  const cycleRef = billingCycleOrderRef(data);
-  const orderRef = cycleRef ?? `dodo:pay:${paymentId}`;
-  return buildGrant(data, orderRef);
+  const subscriptionId =
+    typeof data.subscription_id === "string" ? data.subscription_id.trim() : null;
+  if (subscriptionId) {
+    return null;
+  }
+
+  return baseGrantFromData(data, `dodo:payment:${paymentId}`);
 }
 
-/** subscription.active — first activation (same cycle ref as first payment when possible). */
+/** First billing period when a subscription becomes active. */
 export function resolveGrantFromSubscriptionActiveData(
   data: Record<string, unknown>
 ): GrantInput | null {
@@ -129,13 +112,10 @@ export function resolveGrantFromSubscriptionActiveData(
     typeof data.subscription_id === "string" ? data.subscription_id.trim() : null;
   if (!subscriptionId) return null;
 
-  const orderRef =
-    billingCycleOrderRef(data) ?? `dodo:sub-active:${subscriptionId}:${dateToCycleKey(data.created_at) ?? "start"}`;
-
-  return buildGrant(data, orderRef);
+  return baseGrantFromData(data, `dodo:sub-active:${subscriptionId}`);
 }
 
-/** subscription.renewed — monthly renewal credits. */
+/** Each subscription renewal period. */
 export function resolveGrantFromSubscriptionRenewedData(
   data: Record<string, unknown>
 ): GrantInput | null {
@@ -143,11 +123,8 @@ export function resolveGrantFromSubscriptionRenewedData(
     typeof data.subscription_id === "string" ? data.subscription_id.trim() : null;
   if (!subscriptionId) return null;
 
-  const orderRef =
-    billingCycleOrderRef(data) ??
-    `dodo:sub-renew:${subscriptionId}:${dateToCycleKey(data.previous_billing_date) ?? "renew"}`;
-
-  return buildGrant(data, orderRef);
+  const period = billingPeriodKey(data);
+  return baseGrantFromData(data, `dodo:sub-renew:${subscriptionId}:${period}`);
 }
 
 export async function grantPackCredits(input: GrantInput): Promise<{ duplicate: boolean }> {
@@ -163,17 +140,14 @@ export async function grantPackCredits(input: GrantInput): Promise<{ duplicate: 
 
   const { data: profile, error: profileErr } = await supabaseAdmin
     .from("users_profiles")
-    .select("credits_balance, is_premium")
+    .select("credits_balance")
     .eq("id", userId)
     .single();
 
   if (!profileErr && profile) {
     await supabaseAdmin
       .from("users_profiles")
-      .update({
-        credits_balance: profile.credits_balance + credits,
-        is_premium: true
-      })
+      .update({ credits_balance: profile.credits_balance + credits })
       .eq("id", userId);
   }
 

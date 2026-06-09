@@ -1,3 +1,4 @@
+/** Legacy Lemon Squeezy webhook — historical orders only. New billing: /api/webhooks/dodo-payments */
 import { NextResponse } from "next/server";
 
 import { verifyLemonSqueezySignature } from "@/lib/lemon-squeezy/verify-signature";
