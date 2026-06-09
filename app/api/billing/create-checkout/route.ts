@@ -1,4 +1,4 @@
-import { createCheckoutSession } from "@dodopayments/core";
+import DodoPayments from "dodopayments";
 import { NextResponse } from "next/server";
 
 import {
@@ -70,27 +70,26 @@ export async function POST(request: Request) {
     "Zorixa customer";
 
   try {
-    const session = await createCheckoutSession(
-      {
-        product_cart: [{ product_id: productId, quantity: 1 }],
-        customer: {
-          email: customerEmail,
-          name
-        },
-        metadata: {
-          user_id: user.id,
-          pack_id: pack.id,
-          credits: String(pack.credits)
-        },
-        return_url: getDodoReturnUrl(),
-        minimal_address: true,
-        feature_flags: checkoutFeatureFlags()
-      } as Parameters<typeof createCheckoutSession>[0],
-      {
-        bearerToken: apiKey,
-        environment: dodoPaymentsEnvironment()
-      }
-    );
+    const client = new DodoPayments({
+      bearerToken: apiKey,
+      environment: dodoPaymentsEnvironment()
+    });
+
+    const session = await client.checkoutSessions.create({
+      product_cart: [{ product_id: productId, quantity: 1 }],
+      customer: {
+        email: customerEmail,
+        name
+      },
+      metadata: {
+        user_id: user.id,
+        pack_id: pack.id,
+        credits: String(pack.credits)
+      },
+      return_url: getDodoReturnUrl(),
+      minimal_address: true,
+      feature_flags: checkoutFeatureFlags()
+    });
 
     return NextResponse.json({ checkout_url: session.checkout_url });
   } catch (err) {
