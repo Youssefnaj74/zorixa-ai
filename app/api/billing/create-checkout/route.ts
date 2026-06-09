@@ -13,7 +13,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 function checkoutFeatureFlags(existing?: Record<string, boolean>): Record<string, boolean> {
   return {
     ...existing,
-    allow_discount_code: false
+    allow_discount_code: false,
+    allow_phone_number_collection: false,
+    require_phone_number: false
   };
 }
 
@@ -81,8 +83,9 @@ export async function POST(request: Request) {
           credits: String(pack.credits)
         },
         return_url: getDodoReturnUrl(),
+        minimal_address: true,
         feature_flags: checkoutFeatureFlags()
-      },
+      } as Parameters<typeof createCheckoutSession>[0],
       {
         bearerToken: apiKey,
         environment: dodoPaymentsEnvironment()
