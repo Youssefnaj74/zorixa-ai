@@ -72,6 +72,15 @@ function billingPeriodKey(data: Record<string, unknown>): string {
   return "period";
 }
 
+/** Dodo fires subscription.renewed on the first charge alongside subscription.active. */
+function isInitialSubscriptionPeriod(data: Record<string, unknown>): boolean {
+  const createdAt = typeof data.created_at === "string" ? data.created_at.trim() : null;
+  const previousBilling =
+    typeof data.previous_billing_date === "string" ? data.previous_billing_date.trim() : null;
+  if (!createdAt || !previousBilling) return false;
+  return createdAt === previousBilling;
+}
+
 function baseGrantFromData(
   data: Record<string, unknown>,
   orderRef: string
@@ -115,13 +124,17 @@ export function resolveGrantFromSubscriptionActiveData(
   return baseGrantFromData(data, `dodo:sub-active:${subscriptionId}`);
 }
 
-/** Each subscription renewal period. */
+/** Each subscription renewal period (not the initial charge — see subscription.active). */
 export function resolveGrantFromSubscriptionRenewedData(
   data: Record<string, unknown>
 ): GrantInput | null {
   const subscriptionId =
     typeof data.subscription_id === "string" ? data.subscription_id.trim() : null;
   if (!subscriptionId) return null;
+
+  if (isInitialSubscriptionPeriod(data)) {
+    return null;
+  }
 
   const period = billingPeriodKey(data);
   return baseGrantFromData(data, `dodo:sub-renew:${subscriptionId}:${period}`);

@@ -150,6 +150,52 @@ if (subActive?.credits === 1000) {
   errors++;
 }
 
+function resolveSubRenewedGrant(data) {
+  const subId = data.subscription_id?.trim?.() ?? data.subscription_id;
+  if (!subId) return null;
+  const createdAt = data.created_at?.trim?.() ?? data.created_at;
+  const prevBilling = data.previous_billing_date?.trim?.() ?? data.previous_billing_date;
+  if (createdAt && prevBilling && createdAt === prevBilling) return null;
+  const meta = data.metadata ?? {};
+  const userId = meta.user_id;
+  if (!userId) return null;
+  const pid = data.product_id;
+  const credits =
+    Number(meta.credits) ||
+    EXPECTED_PRODUCTS[Object.keys(EXPECTED_PRODUCTS).find((k) => EXPECTED_PRODUCTS[k].id === pid)]?.credits;
+  if (!credits) return null;
+  const period = prevBilling || data.next_billing_date || "period";
+  return { userId, credits, orderRef: `dodo:sub-renew:${subId}:${period}` };
+}
+
+const initialRenewSkipped = resolveSubRenewedGrant({
+  subscription_id: "sub_0Nggy1a15yxw8PhmYZEhZ",
+  created_at: "2026-06-09T19:10:35.845Z",
+  previous_billing_date: "2026-06-09T19:10:35.845Z",
+  product_id: EXPECTED_PRODUCTS.starter.id,
+  metadata: { user_id: testUserId, credits: "1000" }
+});
+if (initialRenewSkipped === null) {
+  ok("initial subscription.renewed skipped (subscription.active grants first period)");
+} else {
+  fail("initial subscription.renewed should be skipped", JSON.stringify(initialRenewSkipped));
+  errors++;
+}
+
+const monthTwoRenew = resolveSubRenewedGrant({
+  subscription_id: "sub_test_1",
+  created_at: "2026-06-09T19:10:35.845Z",
+  previous_billing_date: "2026-07-09T19:10:35.845Z",
+  product_id: EXPECTED_PRODUCTS.starter.id,
+  metadata: { user_id: testUserId, credits: "1000" }
+});
+if (monthTwoRenew?.credits === 1000) {
+  ok("month-2 subscription.renewed → 1000 credits");
+} else {
+  fail("month-2 subscription.renewed resolver", JSON.stringify(monthTwoRenew));
+  errors++;
+}
+
 // 3. Webhook signature validation
 console.log("\n3. Webhook signature validation");
 if (!webhookKey) {

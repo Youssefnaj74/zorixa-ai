@@ -40,7 +40,11 @@ export function getDodoReturnUrl(): string {
     process.env.DODO_PAYMENTS_RETURN_URL?.trim() ||
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, "") + "/billing/success";
+  if (fromEnv) {
+    const base = fromEnv.replace(/\/$/, "");
+    if (base.endsWith("/billing/success")) return base;
+    return `${base}/billing/success`;
+  }
   return "http://localhost:3000/billing/success";
 }
 
