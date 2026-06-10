@@ -26,14 +26,26 @@ const STUDIO_WORKFLOWS = [
   "Audio to Video"
 ] as const;
 
-function perCreditSavingsPercent(packCredits: number, price: number): number | null {
+function perCreditSavingsPercent(
+  packCredits: number,
+  price: number,
+  billing: "monthly" | "yearly"
+): number | null {
   const starter = CREDIT_PACKS.find((pack) => pack.id === "starter");
-  if (!starter || packCredits <= 0 || price <= 0 || starter.credits <= 0) return null;
+  if (!starter || packCredits <= 0 || price <= 0) return null;
 
-  const starterUnit = starter.monthly / starter.credits;
+  const starterPrice = billing === "monthly" ? starter.monthly : starter.yearly * 12;
+  const starterCredits = billing === "monthly" ? starter.credits : starter.credits * 12;
+  if (starterCredits <= 0) return null;
+
+  const starterUnit = starterPrice / starterCredits;
   const unit = price / packCredits;
   const savings = Math.round((1 - unit / starterUnit) * 100);
   return savings > 0 ? savings : null;
+}
+
+function formatPlanPrice(amount: number): string {
+  return amount.toFixed(2).replace(/\.00$/, "");
 }
 
 function formatPerCreditUsd(price: number, credits: number): string {
@@ -130,8 +142,12 @@ export function PricingView() {
           {/* Credit packs */}
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {CREDIT_PACKS.map((pack) => {
-              const price = billing === "monthly" ? pack.monthly : pack.yearly;
-              const savingsPercent = perCreditSavingsPercent(pack.credits, price);
+              const isYearly = billing === "yearly";
+              const displayPrice = isYearly
+                ? Math.round(pack.yearly * 12 * 100) / 100
+                : pack.monthly;
+              const displayCredits = isYearly ? pack.credits * 12 : pack.credits;
+              const savingsPercent = perCreditSavingsPercent(displayCredits, displayPrice, billing);
               return (
                 <div
                   key={pack.id}
@@ -163,19 +179,19 @@ export function PricingView() {
                   <h2 className="text-base font-bold">{pack.name}</h2>
 
                   <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-4xl font-extrabold">${price}</span>
-                    <span className="text-sm text-white/40">/month</span>
+                    <span className="text-4xl font-extrabold">${formatPlanPrice(displayPrice)}</span>
+                    <span className="text-sm text-white/40">{isYearly ? "/year" : "/month"}</span>
                   </div>
 
                   <div className="mb-4 mt-3 border-b border-white/10 pb-4">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                       <Zap className="size-3.5 text-[#00e5ff]" aria-hidden />
                       <span className="font-semibold text-[#00e5ff]">
-                        {formatInteger(pack.credits)} credits
+                        {formatInteger(displayCredits)} credits
                       </span>
                     </div>
                     <p className="mt-1.5 text-xs font-medium text-white/50">
-                      {packCreditValueLabel(pack.id, price, pack.credits, savingsPercent)}
+                      {packCreditValueLabel(pack.id, displayPrice, displayCredits, savingsPercent)}
                     </p>
                   </div>
 

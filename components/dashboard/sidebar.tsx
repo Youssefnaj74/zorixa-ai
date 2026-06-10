@@ -14,7 +14,7 @@ const nav = [
   { href: "/dashboard", label: "Overview", icon: LayoutGrid },
   { href: "/image", label: "Image", icon: Image },
   { href: "/dashboard/history", label: "History", icon: History },
-  { href: "/pricing", label: "Billing", icon: CreditCard }
+  { href: "/dashboard/billing", label: "Billing", icon: CreditCard }
 ] as const;
 
 function isNavActive(pathname: string, href: string) {
