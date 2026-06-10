@@ -27,7 +27,8 @@ async function processGrant(
   console.info(`[dodo-webhook] ${label}`, {
     orderRef: grant.orderRef,
     credits: grant.credits,
-    duplicate: result.duplicate
+    duplicate: result.duplicate,
+    granted: result.granted
   });
 }
 

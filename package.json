@@ -6,6 +6,8 @@
     "verify:supabase": "node scripts/supabase-verify.mjs",
     "verify:atlas": "node scripts/verify-atlas.mjs",
     "verify:dodo": "node scripts/verify-dodo-payments.mjs",
+    "verify:billing-migration": "node scripts/verify-billing-migration.mjs",
+    "apply:billing-migration": "node scripts/apply-billing-migration.mjs",
     "debug:dodo": "node scripts/debug-dodo-422.mjs",
     "generate:explore-previews": "node scripts/generate-explore-previews.mjs",
     "generate:dashboard-seedance": "node scripts/generate-dashboard-seedance-videos.mjs",

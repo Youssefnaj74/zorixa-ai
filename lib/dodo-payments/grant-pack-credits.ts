@@ -1,5 +1,6 @@
 import { sendPurchaseConfirmationEmail } from "@/lib/support-ticket-email";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { ensureUserProfile } from "@/lib/users/ensure-user-profile";
 
 import { creditsForDodoProductId } from "./config";
 
@@ -140,31 +141,18 @@ export function resolveGrantFromSubscriptionRenewedData(
   return baseGrantFromData(data, `dodo:sub-renew:${subscriptionId}:${period}`);
 }
 
-export async function grantPackCredits(input: GrantInput): Promise<{ duplicate: boolean }> {
+type GrantPurchaseResult = "granted" | "duplicate" | "no_profile" | "invalid" | "error";
+
+function isGrantRpcMissing(error: { code?: string; message?: string } | null): boolean {
+  return error?.code === "PGRST202" || Boolean(error?.message?.includes("grant_purchase_credits"));
+}
+
+async function grantPackCreditsFallback(
+  input: GrantInput
+): Promise<{ duplicate: boolean; granted: boolean }> {
   const { userId, credits, orderRef } = input;
 
-  const { data: existing } = await supabaseAdmin
-    .from("transactions")
-    .select("id")
-    .eq("lemonsqueezy_order_id", orderRef)
-    .maybeSingle();
-
-  if (existing) return { duplicate: true };
-
-  const { data: profile, error: profileErr } = await supabaseAdmin
-    .from("users_profiles")
-    .select("credits_balance")
-    .eq("id", userId)
-    .single();
-
-  if (!profileErr && profile) {
-    await supabaseAdmin
-      .from("users_profiles")
-      .update({ credits_balance: profile.credits_balance + credits })
-      .eq("id", userId);
-  }
-
-  await supabaseAdmin.from("transactions").insert({
+  const { error: insertErr } = await supabaseAdmin.from("transactions").insert({
     user_id: userId,
     type: "purchase",
     credits_amount: credits,
@@ -172,6 +160,97 @@ export async function grantPackCredits(input: GrantInput): Promise<{ duplicate: 
     feature_used: null
   });
 
+  if (insertErr) {
+    if (insertErr.code === "23505") {
+      return { duplicate: true, granted: false };
+    }
+    console.error("[grantPackCredits] fallback insert failed", insertErr);
+    return { duplicate: false, granted: false };
+  }
+
+  const { data: profile, error: profileErr } = await supabaseAdmin
+    .from("users_profiles")
+    .select("credits_balance")
+    .eq("id", userId)
+    .single();
+
+  if (profileErr || !profile) {
+    console.error("[grantPackCredits] fallback profile read failed", { userId, orderRef });
+    return { duplicate: false, granted: false };
+  }
+
+  const { error: updateErr } = await supabaseAdmin
+    .from("users_profiles")
+    .update({ credits_balance: profile.credits_balance + credits })
+    .eq("id", userId);
+
+  if (updateErr) {
+    console.error("[grantPackCredits] fallback balance update failed", updateErr);
+    return { duplicate: false, granted: false };
+  }
+
+  return { duplicate: false, granted: true };
+}
+
+export async function grantPackCredits(
+  input: GrantInput
+): Promise<{ duplicate: boolean; granted: boolean }> {
+  const { userId, credits, orderRef } = input;
+
+  const profileReady = await ensureUserProfile(userId);
+  if (!profileReady.ok) {
+    console.error("[grantPackCredits] ensureUserProfile failed", {
+      userId,
+      orderRef,
+      error: profileReady.error
+    });
+    return { duplicate: false, granted: false };
+  }
+
+  const { data: rpcResult, error: rpcErr } = await supabaseAdmin.rpc("grant_purchase_credits", {
+    p_user_id: userId,
+    p_credits: credits,
+    p_order_ref: orderRef
+  });
+
+  if (rpcErr && isGrantRpcMissing(rpcErr)) {
+    console.warn("[grantPackCredits] RPC missing — using insert-first fallback (apply DB migration)");
+    const fallback = await grantPackCreditsFallback(input);
+    if (fallback.granted) {
+      await sendGrantConfirmationEmail(userId, credits, orderRef);
+    }
+    return fallback;
+  }
+
+  const status = (typeof rpcResult === "string" ? rpcResult : null) as GrantPurchaseResult | null;
+
+  if (rpcErr) {
+    if (rpcErr.code === "23505") {
+      return { duplicate: true, granted: false };
+    }
+    console.error("[grantPackCredits] grant_purchase_credits failed", {
+      userId,
+      orderRef,
+      error: rpcErr.message,
+      code: rpcErr.code
+    });
+    return { duplicate: false, granted: false };
+  }
+
+  if (status === "duplicate") {
+    return { duplicate: true, granted: false };
+  }
+
+  if (status !== "granted") {
+    console.error("[grantPackCredits] unexpected grant status", { userId, orderRef, status });
+    return { duplicate: false, granted: false };
+  }
+
+  await sendGrantConfirmationEmail(userId, credits, orderRef);
+  return { duplicate: false, granted: true };
+}
+
+async function sendGrantConfirmationEmail(userId: string, credits: number, orderRef: string) {
   const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
   const customerEmail = authUser?.user?.email?.trim();
   if (customerEmail) {
@@ -181,6 +260,4 @@ export async function grantPackCredits(input: GrantInput): Promise<{ duplicate: 
       orderId: orderRef
     });
   }
-
-  return { duplicate: false };
 }
