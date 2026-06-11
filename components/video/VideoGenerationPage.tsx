@@ -61,7 +61,7 @@ import {
   videoComposerSupportsReferenceToVideo,
   characterSwapTabSupportsModel,
   videoComposerSupportsVideoEditTab,
-  characterSwapTabUsesDualAssetPipeline,
+  videoToVideoTabUsesDualAssetPipeline,
   videoToVideoTabUsesKlingMotion,
   videoToVideoTabUsesWanCharacterSwap,
   videoToVideoTabUsesViduStartEnd,
@@ -917,13 +917,11 @@ export function VideoGenerationPage() {
         setActionTab("Image to Video");
       }
     }
-    if (actionTab === "Character Swap" && !characterSwapTabSupportsModel(id)) {
-      setActionTab("Image to Video");
-    }
     if (
       actionTab === "Video to Video" &&
       !videoComposerSupportsVideoEditTab(id) &&
-      !videoToVideoTabUsesViduStartEnd(id)
+      !videoToVideoTabUsesViduStartEnd(id) &&
+      !characterSwapTabSupportsModel(id)
     ) {
       setActionTab("Image to Video");
     }
@@ -1078,9 +1076,6 @@ export function VideoGenerationPage() {
     }
     if (actionTab === "Audio to Video" && !isAudioToVideoComposerId(composerModelId)) {
       setComposerModelId(INFINITETALK_COMPOSER_ID);
-    }
-    if (actionTab === "Character Swap" && !characterSwapTabSupportsModel(composerModelId)) {
-      setComposerModelId(KLING_26_MOTION_COMPOSER_ID);
     }
   }, [actionTab, composerModelId]);
 
@@ -1508,55 +1503,51 @@ export function VideoGenerationPage() {
             };
             break;
           }
-          case "Character Swap": {
-            const image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImageUrl);
-            const video_url = await ensureAtlasPublicHttpsMediaUrl(ctx.motionVideoUrl);
-            if (!image_url) {
-              setGenerateError(
-                videoToVideoTabUsesWanCharacterSwap(videoModel)
-                  ? "Add a character portrait for Wan 2.2 Character Swap."
-                  : "Add a character image (Kling 2.6 Motion)."
-              );
-              return;
-            }
-            if (!video_url) {
-              setGenerateError(
-                videoToVideoTabUsesWanCharacterSwap(videoModel)
-                  ? "Add a source video for Wan 2.2 Character Swap."
-                  : "Add a motion reference clip (Kling 2.6 Motion)."
-              );
-              return;
-            }
-            if (!characterSwapTabSupportsModel(videoModel)) {
-              setGenerateError("Select Kling 2.6 Motion or Wan 2.2 Character Swap.");
-              return;
-            }
-            sourceInputForLog = image_url;
-            if (videoToVideoTabUsesKlingMotion(videoModel)) {
-              payload = {
-                prompt: promptForAtlas,
-                action: "motion-control",
-                videoModel,
-                image_url,
-                video_url,
-                character_orientation: ctx.characterOrientation,
-                keep_original_sound: ctx.keepOriginalSound,
-                duration,
-                speed_tier
-              };
-            } else {
-              payload = {
-                prompt: promptForAtlas,
-                action: "motion-control",
-                videoModel,
-                image_url,
-                video_url,
-                speed_tier
-              };
-            }
-            break;
-          }
           case "Video to Video": {
+            if (videoToVideoTabUsesDualAssetPipeline(videoModel)) {
+              const image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImageUrl);
+              const video_url = await ensureAtlasPublicHttpsMediaUrl(ctx.motionVideoUrl);
+              if (!image_url) {
+                setGenerateError(
+                  videoToVideoTabUsesWanCharacterSwap(videoModel)
+                    ? "Add a character portrait for Wan 2.2 Character Swap."
+                    : "Add a character image (Kling 2.6 Motion)."
+                );
+                return;
+              }
+              if (!video_url) {
+                setGenerateError(
+                  videoToVideoTabUsesWanCharacterSwap(videoModel)
+                    ? "Add a source video for Wan 2.2 Character Swap."
+                    : "Add a motion reference clip (Kling 2.6 Motion)."
+                );
+                return;
+              }
+              sourceInputForLog = image_url;
+              if (videoToVideoTabUsesKlingMotion(videoModel)) {
+                payload = {
+                  prompt: promptForAtlas,
+                  action: "motion-control",
+                  videoModel,
+                  image_url,
+                  video_url,
+                  character_orientation: ctx.characterOrientation,
+                  keep_original_sound: ctx.keepOriginalSound,
+                  duration,
+                  speed_tier
+                };
+              } else {
+                payload = {
+                  prompt: promptForAtlas,
+                  action: "motion-control",
+                  videoModel,
+                  image_url,
+                  video_url,
+                  speed_tier
+                };
+              }
+              break;
+            }
             if (videoToVideoTabUsesViduStartEnd(videoModel)) {
               const image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImageUrl);
               const end_image_url = await ensureAtlasPublicHttpsMediaUrl(ctx.promptImage2Url);
@@ -1588,9 +1579,12 @@ export function VideoGenerationPage() {
               setGenerateError("Add a source video for Video to Video.");
               return;
             }
-            if (!videoComposerSupportsVideoEditTab(videoModel)) {
+            if (
+              !videoComposerSupportsVideoEditTab(videoModel) &&
+              !videoToVideoTabUsesDualAssetPipeline(videoModel)
+            ) {
               setGenerateError(
-                "Video to Video requires Wan 2.6/2.7, HappyHorse 1.0, or Vidu Q3-Pro."
+                "Video to Video requires Wan 2.6/2.7, HappyHorse 1.0, Vidu Q3-Pro, Kling 2.6 Motion, or Wan 2.2 Character Swap."
               );
               return;
             }
@@ -1849,8 +1843,8 @@ export function VideoGenerationPage() {
           (generationTab === "Image to Video" ||
             generationTab === "Reference to Video" ||
             ctx.actionTab === "AI Director" ||
-            (generationTab === "Character Swap" &&
-              characterSwapTabUsesDualAssetPipeline(videoModel))) &&
+            (generationTab === "Video to Video" &&
+              videoToVideoTabUsesDualAssetPipeline(videoModel))) &&
           sourceInputForLog
             ? sourceInputForLog
             : `https://picsum.photos/seed/${id.slice(-6)}/96/96`;
@@ -1869,8 +1863,8 @@ export function VideoGenerationPage() {
           promptRaw: promptValue,
           promptImageUrl:
             (ctx.actionTab === "Image to Video" ||
-              (ctx.actionTab === "Character Swap" &&
-                characterSwapTabUsesDualAssetPipeline(videoModel))) &&
+              (ctx.actionTab === "Video to Video" &&
+                videoToVideoTabUsesDualAssetPipeline(videoModel))) &&
             sourceInputForLog
               ? sourceInputForLog
               : ctx.promptImageUrl,
@@ -1878,7 +1872,9 @@ export function VideoGenerationPage() {
           lipsyncAudioUrl:
             ctx.actionTab === "Audio to Video" && sourceInputForLog ? sourceInputForLog : ctx.lipsyncAudioUrl,
           editSourceVideoUrl:
-            ctx.actionTab === "Video to Video" && sourceInputForLog
+            ctx.actionTab === "Video to Video" &&
+            sourceInputForLog &&
+            !videoToVideoTabUsesDualAssetPipeline(videoModel)
               ? sourceInputForLog
               : ctx.editSourceVideoUrl,
           motionVideoUrl: ctx.motionVideoUrl,
@@ -2366,8 +2362,11 @@ export function VideoGenerationPage() {
         );
         if (snap.composerModelId === KLING_30_PRO_MODEL_ID) {
           setActionTab("Text to Video");
-        } else if ((snap.actionTab as string) === "Motion Control") {
-          setActionTab("Character Swap");
+        } else if (
+          (snap.actionTab as string) === "Character Swap" ||
+          (snap.actionTab as string) === "Motion Control"
+        ) {
+          setActionTab("Video to Video");
         } else {
           setActionTab(snap.actionTab);
         }

@@ -19,7 +19,6 @@ const VIDEO_MODES = [
   "Image to Video",
   "Reference to Video",
   "Video to Video",
-  "Character Swap",
   "Audio to Video"
 ] as const;
 

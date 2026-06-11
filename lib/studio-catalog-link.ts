@@ -23,7 +23,6 @@ export const VIDEO_STUDIO_TABS = [
   "Image to Video",
   "Reference to Video",
   "Video to Video",
-  "Character Swap",
   "Audio to Video"
 ] as const;
 
@@ -37,7 +36,7 @@ const VIDEO_TAB_BY_SECTION: Partial<Record<ToolCatalogSectionId, VideoStudioTab>
   "image-to-video": "Image to Video",
   "reference-to-video": "Reference to Video",
   "video-to-video": "Video to Video",
-  "character-swap": "Character Swap"
+  "character-swap": "Video to Video"
 };
 
 function imageTabForSection(sectionId: ToolCatalogSectionId): ImageStudioTab {
@@ -92,12 +91,6 @@ export function buildCatalogStudioHref(
     return `/video?${params.toString()}`;
   }
 
-  if (sectionId === "character-swap") {
-    const params = new URLSearchParams({ tab: "Character Swap", model: composerModelId });
-    appendTools(params);
-    return `/video?${params.toString()}`;
-  }
-
   const videoTab = VIDEO_TAB_BY_SECTION[sectionId];
   if (videoTab) {
     const params = new URLSearchParams({ tab: videoTab, model: composerModelId });
@@ -129,6 +122,7 @@ export function parseVideoActionTab(raw: string | null): VideoStudioTab | null {
   const trimmed = raw.trim();
   if (trimmed === "Lipsyncing") return "Audio to Video";
   if (trimmed === "AI Director") return "AI Director";
+  if (trimmed === "Character Swap") return "Video to Video";
   const t = trimmed as VideoStudioTab;
   return (VIDEO_STUDIO_TABS as readonly string[]).includes(t) ? t : null;
 }
@@ -149,10 +143,10 @@ export function resolveVideoStudioFromQuery(
     modelRaw && isAtlasVideoComposerId(modelRaw.trim()) ? modelRaw.trim() : null;
 
   if (model === KLING_26_MOTION_COMPOSER_ID) {
-    return { tab: "Character Swap", model: KLING_26_MOTION_COMPOSER_ID };
+    return { tab: "Video to Video", model: KLING_26_MOTION_COMPOSER_ID };
   }
   if (model === WAN_22_CHARACTER_SWAP_COMPOSER_ID) {
-    return { tab: "Character Swap", model: WAN_22_CHARACTER_SWAP_COMPOSER_ID };
+    return { tab: "Video to Video", model: WAN_22_CHARACTER_SWAP_COMPOSER_ID };
   }
   if (model === VIDU_Q3_COMPOSER_ID) {
     return { tab: tab ?? "Reference to Video", model: VIDU_Q3_COMPOSER_ID };
@@ -180,9 +174,6 @@ export function resolveVideoStudioFromQuery(
   }
   if (tab === "Reference to Video") {
     return { tab, model: model ?? "seedance-2" };
-  }
-  if (tab === "Character Swap") {
-    return { tab, model: model ?? KLING_26_MOTION_COMPOSER_ID };
   }
   if (tab === "Video to Video") {
     return { tab, model: model ?? "wan-2-6" };

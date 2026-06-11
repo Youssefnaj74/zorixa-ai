@@ -10,7 +10,6 @@ const TABS = [
   "Image to Video",
   "Reference to Video",
   "Video to Video",
-  "Character Swap",
   "Audio to Video"
 ] as const;
 
@@ -28,7 +27,7 @@ export function ActionTabsRow({
   return (
     <div
       className={cn(
-        "grid h-full min-h-0 w-full shrink-0 grid-cols-2 gap-1 rounded-xl border border-white/10 bg-[#0d0d14] p-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7",
+        "grid h-full min-h-0 w-full shrink-0 grid-cols-2 gap-1 rounded-xl border border-white/10 bg-[#0d0d14] p-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6",
         className
       )}
     >

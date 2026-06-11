@@ -65,6 +65,7 @@ import {
   atlasSpeedTierUiLabel,
   characterSwapTabUsesDualAssetPipeline,
   videoComposerUsesCharacterSwapBarLayout,
+  videoToVideoTabUsesDualAssetPipeline,
   videoToVideoTabUsesKlingMotion,
   videoToVideoTabUsesWanCharacterSwap,
   videoToVideoTabUsesViduStartEnd,
@@ -285,8 +286,9 @@ export function VideoBottomBar({
   const applySlot1File = useCallback(
     (file: File) => {
       if (
-        (actionTab === "Character Swap" && characterSwapTabUsesDualAssetPipeline(composerModelId)) ||
-        (actionTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(composerModelId))
+        (actionTab === "Video to Video" &&
+          (videoToVideoTabUsesDualAssetPipeline(composerModelId) ||
+            videoToVideoTabUsesViduStartEnd(composerModelId)))
       ) {
         if (!file.type.startsWith("image/")) return;
       } else if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
@@ -442,7 +444,7 @@ export function VideoBottomBar({
   }, [promptImage2Url]);
 
   useEffect(() => {
-    if (actionTab !== "Character Swap" || !videoToVideoTabUsesKlingMotion(composerModelId)) return;
+    if (actionTab !== "Video to Video" || !videoToVideoTabUsesKlingMotion(composerModelId)) return;
     const max = characterOrientation === "video" ? 30 : 15;
     if (timeSeconds > max) onTimeSecondsChange(max);
   }, [actionTab, characterOrientation, composerModelId, timeSeconds, onTimeSecondsChange]);
@@ -482,16 +484,15 @@ export function VideoBottomBar({
     return () => ro.disconnect();
   }, [onHeightChange, stableDockHeight, useStableDockHeight]);
 
-  const showCharacterSwapLayout = actionTab === "Character Swap";
-  const showWanCharacterSwapLayout =
-    showCharacterSwapLayout && videoToVideoTabUsesWanCharacterSwap(composerModelId);
-  const showMotionControlLayout =
-    showCharacterSwapLayout && videoToVideoTabUsesKlingMotion(composerModelId);
-  const showDualAssetV2vLayout = showMotionControlLayout || showWanCharacterSwapLayout;
   const showViduStartEndLayout =
     actionTab === "Video to Video" && videoToVideoTabUsesViduStartEnd(composerModelId);
+  const showMotionControlLayout =
+    actionTab === "Video to Video" && videoToVideoTabUsesKlingMotion(composerModelId);
+  const showWanCharacterSwapLayout =
+    actionTab === "Video to Video" && videoToVideoTabUsesWanCharacterSwap(composerModelId);
+  const showDualAssetV2vLayout = showMotionControlLayout || showWanCharacterSwapLayout;
   const showWanV2vLayout =
-    actionTab === "Video to Video" && !showViduStartEndLayout;
+    actionTab === "Video to Video" && !showViduStartEndLayout && !showDualAssetV2vLayout;
   const showHappyHorseV2vRefs = happyHorseVideoEditSupportsReferenceImages(
     composerModelId,
     actionTab

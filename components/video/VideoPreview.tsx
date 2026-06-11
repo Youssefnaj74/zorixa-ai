@@ -14,7 +14,6 @@ import type { ActionTab } from "@/components/video/ActionTabsRow";
 import { VideoGenerationProgress } from "@/components/video/VideoGenerationProgress";
 import { DirectorResultBanner } from "@/components/video/DirectorResultBanner";
 import { SeedanceReferenceToVideoTip } from "@/components/video/SeedanceReferenceToVideoTip";
-import { CharacterSwapModelTip } from "@/components/video/CharacterSwapModelTip";
 import { VideoToVideoModelTip } from "@/components/video/VideoToVideoModelTip";
 
 const NAV_H = 56;
@@ -168,9 +167,7 @@ export function VideoPreview({
     !videoUrl &&
     !loading &&
     !errorMessage &&
-    (actionTab === "Video to Video" ||
-      actionTab === "Reference to Video" ||
-      actionTab === "Character Swap");
+    actionTab === "Video to Video" || actionTab === "Reference to Video";
 
   const previewPlaceholderHero = (
     <div className="flex shrink-0 flex-col items-center justify-center gap-4">
@@ -191,9 +188,7 @@ export function VideoPreview({
       <div
         className={cn(
           "zorixa-card-border flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-zorixa-card shadow-glow",
-          (actionTab === "Video to Video" ||
-            actionTab === "Reference to Video" ||
-            actionTab === "Character Swap") &&
+          (actionTab === "Video to Video" || actionTab === "Reference to Video") &&
             "min-h-[min(42vh,320px)]"
         )}
         style={{ maxHeight: cardMaxHeight }}
@@ -265,9 +260,6 @@ export function VideoPreview({
                       composerModelId={composerModelId}
                       className="w-full"
                     />
-                  ) : null}
-                  {actionTab === "Character Swap" ? (
-                    <CharacterSwapModelTip composerModelId={composerModelId} className="w-full" />
                   ) : null}
                 </div>
               ) : videoUrl && !errorMessage ? (

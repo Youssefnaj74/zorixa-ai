@@ -230,7 +230,7 @@ export function videoComposerUsesCharacterSwapBarLayout(
   composerModelId: string,
   actionTab: string
 ): boolean {
-  return actionTab === "Character Swap" && characterSwapTabUsesDualAssetPipeline(composerModelId);
+  return actionTab === "Video to Video" && videoToVideoTabUsesDualAssetPipeline(composerModelId);
 }
 
 export function videoComposerUsesKlingMotionBarLayout(composerModelId: string, actionTab: string): boolean {
@@ -257,9 +257,6 @@ export function bottomBarModelsForActionTab(actionTab: string): BottomBarModel[]
   if (actionTab === "Audio to Video") {
     return AUDIO_TO_VIDEO_BOTTOM_BAR_MODELS;
   }
-  if (actionTab === "Character Swap") {
-    return CHARACTER_SWAP_BOTTOM_BAR_MODELS;
-  }
   if (actionTab === "Reference to Video") {
     const referenceOrder = [
       GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
@@ -276,7 +273,10 @@ export function bottomBarModelsForActionTab(actionTab: string): BottomBarModel[]
   }
   if (actionTab === "Video to Video") {
     return BOTTOM_BAR_MODELS.filter(
-      (m) => videoComposerSupportsVideoEditTab(m.id) || videoComposerSupportsViduStartEnd(m.id)
+      (m) =>
+        videoComposerSupportsVideoEditTab(m.id) ||
+        videoComposerSupportsViduStartEnd(m.id) ||
+        characterSwapTabSupportsModel(m.id)
     );
   }
   const studioOrder =

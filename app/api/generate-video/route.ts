@@ -832,7 +832,7 @@ async function handleGenerateVideoPost(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Character Swap requires Kling 2.6 Motion or Wan 2.2 Character Swap in the model picker."
+            "Video to Video motion control requires Kling 2.6 Motion or Wan 2.2 Character Swap in the model picker."
         },
         { status: 400 }
       );

@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { EXPLORE_PROMPTS_PUBLIC } from "@/lib/site-features";
 import { cn } from "@/lib/utils";
 
 export function NavbarExplorePromptsLink() {
   const pathname = usePathname();
   const active = pathname === "/explore-prompts" || pathname.startsWith("/explore-prompts/");
+
+  if (!EXPLORE_PROMPTS_PUBLIC) return null;
 
   return (
     <Link

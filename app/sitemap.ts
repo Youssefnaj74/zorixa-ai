@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { getPublicSiteUrl } from "@/lib/public-site-url";
+import { EXPLORE_PROMPTS_PUBLIC } from "@/lib/site-features";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = getPublicSiteUrl();
@@ -19,7 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/image",
     "/video",
     "/audio",
-    "/explore-prompts",
+    ...(EXPLORE_PROMPTS_PUBLIC ? ["/explore-prompts"] : []),
     "/support",
     "/helpsupport",
     "/terms",
