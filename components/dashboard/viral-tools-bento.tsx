@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   ArrowUpRight,
   Clapperboard,
-  UserRound,
+  Sparkles,
   Volume2,
   Wand2
 } from "lucide-react";
@@ -314,8 +314,8 @@ function QuickLaunchTools() {
   const referenceToVideo = buildCatalogStudioHref("reference-to-video", "seedance-2", {
     toolName: "Seedance 2.0 Reference to Video"
   });
-  const characterSwap = buildCatalogStudioHref("character-swap", "wan-2-2-character-swap", {
-    toolName: "Character Swap"
+  const gptImage2 = buildCatalogStudioHref("text-to-image", "gpt-image-2", {
+    toolName: "GPT Image 2"
   });
   const audioToVideo = buildCatalogStudioHref("audio-to-video", "infinitetalk", {
     toolName: "InfiniteTalk Audio to Video"
@@ -339,10 +339,10 @@ function QuickLaunchTools() {
       badgeTone: "cyan"
     },
     {
-      href: characterSwap,
-      title: "Character Swap",
-      subtitle: "Swap characters into video scenes",
-      icon: UserRound,
+      href: gptImage2,
+      title: "GPT Image 2",
+      subtitle: "Cinematic portraits and visuals from text prompts",
+      icon: Sparkles,
       badge: "NEW",
       badgeTone: "cyan"
     },
