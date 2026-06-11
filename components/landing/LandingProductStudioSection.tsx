@@ -174,7 +174,7 @@ export function LandingProductStudioSection() {
             body="From AI Director to Character Swap — every video mode lives in the same composer. Model, aspect, duration, and credits upfront."
             href="/video"
             cta="Try video studio"
-            imageSrc="/dashboard-assets/dashboard-video-studio.png"
+            imageSrc="/dashboard-assets/dashboard-video-studio.png?v=20260611"
             imageAlt="ZorixaAI video studio with Text to Video, Image to Video, Character Swap and more"
             modes={VIDEO_MODES}
             accent="cyan"
@@ -186,7 +186,7 @@ export function LandingProductStudioSection() {
             body="Generate from a prompt or edit an existing photo — same clean layout, same model picker, same credit transparency."
             href="/image"
             cta="Try image studio"
-            imageSrc="/dashboard-assets/dashboard-image-studio.png"
+            imageSrc="/dashboard-assets/dashboard-image-studio.png?v=20260611"
             imageAlt="ZorixaAI image studio with Text to Image and Image to Image tabs"
             modes={IMAGE_MODES}
             accent="violet"
