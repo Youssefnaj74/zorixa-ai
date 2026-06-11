@@ -38,15 +38,64 @@ function parseEnvFile(filePath) {
 }
 
 const env = {
-  ...parseEnvFile(path.join(root, ".env.local")),
+  ...process.env,
   ...parseEnvFile(path.join(root, ".env.vercel.pull")),
-  ...process.env
+  ...parseEnvFile(path.join(root, ".env.local"))
 };
 
-const dbUrl = (env.SUPABASE_DB_URL ?? env.DATABASE_URL ?? "").trim();
+function projectRefFromSupabaseUrl(url) {
+  try {
+    return new URL(url).hostname.split(".")[0] ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function buildPoolerUrl(password, ref) {
+  const enc = encodeURIComponent(password);
+  const regions = [
+    "aws-0-eu-central-1",
+    "aws-0-us-east-1",
+    "aws-0-us-west-1",
+    "aws-0-ap-southeast-1",
+    "aws-0-ap-northeast-1"
+  ];
+  return regions.map(
+    (region) =>
+      `postgresql://postgres.${ref}:${enc}@${region}.pooler.supabase.com:6543/postgres`
+  );
+}
+
+let dbUrl = (env.SUPABASE_DB_URL ?? env.DATABASE_URL ?? "").trim();
+const dbPassword = (env.SUPABASE_DB_PASSWORD ?? env.POSTGRES_PASSWORD ?? "").trim();
+const projectRef = projectRefFromSupabaseUrl(env.NEXT_PUBLIC_SUPABASE_URL ?? "");
+
+if (!dbUrl && dbPassword && projectRef) {
+  const candidates = buildPoolerUrl(dbPassword, projectRef);
+  for (const candidate of candidates) {
+    const probe = spawnSync(
+      "npx",
+      [
+        "--yes",
+        "-p",
+        "pg@8.16.0",
+        "node",
+        "--input-type=module",
+        "-e",
+        `import pg from "pg"; const c=new pg.Client({connectionString:${JSON.stringify(candidate)},ssl:{rejectUnauthorized:false}}); await c.connect(); await c.query("select 1"); await c.end();`
+      ],
+      { cwd: root, env: { ...process.env }, stdio: "pipe", shell: true }
+    );
+    if (probe.status === 0) {
+      dbUrl = candidate;
+      console.log("Resolved pooler connection for project", projectRef);
+      break;
+    }
+  }
+}
 
 if (!dbUrl) {
-  console.error("Set SUPABASE_DB_URL to your Supabase Postgres connection string.");
+  console.error("Set SUPABASE_DB_URL or SUPABASE_DB_PASSWORD to apply the migration.");
   console.error(`Or paste ${migrationPath} in Supabase Dashboard → SQL Editor.`);
   process.exit(1);
 }

@@ -30,10 +30,11 @@ function parseEnvFile(filePath) {
   return out;
 }
 
+// .env.local wins (Vercel pull / process.env may contain empty overrides).
 const env = {
-  ...parseEnvFile(path.join(root, ".env.local")),
+  ...process.env,
   ...parseEnvFile(path.join(root, ".env.vercel.pull")),
-  ...process.env
+  ...parseEnvFile(path.join(root, ".env.local"))
 };
 
 const prodBase = (env.PRODUCTION_URL ?? "https://www.zorixaai.com").replace(/\/$/, "");
