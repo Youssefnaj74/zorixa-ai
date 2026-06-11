@@ -36,6 +36,9 @@ export default function Footer() {
           <Link href="/terms" className="text-sm text-white/40 hover:text-white transition-colors">
             Terms of Service
           </Link>
+          <Link href="/acceptable-use" className="text-sm text-white/40 hover:text-white transition-colors">
+            Acceptable Use
+          </Link>
           <Link href="/privacy" className="text-sm text-white/40 hover:text-white transition-colors">
             Privacy Policy
           </Link>

@@ -69,8 +69,12 @@ export default function RefundPage() {
               See also our{" "}
               <Link href="/terms" className="text-[#00e5ff] hover:text-white hover:underline">
                 Terms of Service
-              </Link>{" "}
-              and{" "}
+              </Link>
+              ,{" "}
+              <Link href="/acceptable-use" className="text-[#00e5ff] hover:text-white hover:underline">
+                Acceptable Use Policy
+              </Link>
+              , and{" "}
               <Link href="/privacy" className="text-[#00e5ff] hover:text-white hover:underline">
                 Privacy Policy
               </Link>

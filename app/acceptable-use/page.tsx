@@ -80,6 +80,10 @@ export default function AcceptableUsePage() {
         <p>Last updated: June 11, 2026</p>
         <p className="mt-2">
           Related:{" "}
+          <Link href="/terms" className="text-[#00e5ff] hover:underline">
+            Terms of Service
+          </Link>
+          {" · "}
           <Link href="/privacy" className="text-[#00e5ff] hover:underline">
             Privacy Policy
           </Link>
