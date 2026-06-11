@@ -21,4 +21,7 @@ create index if not exists moderation_blocks_user_id_created_at_idx
 
 alter table public.moderation_blocks enable row level security;
 
--- No client policies: service role inserts; admin review via dashboard/SQL only.
+-- Expose to Data API for service_role inserts + verification probes.
+grant select, insert on public.moderation_blocks to service_role;
+
+-- No client policies: service role only; admin review via dashboard/SQL.
