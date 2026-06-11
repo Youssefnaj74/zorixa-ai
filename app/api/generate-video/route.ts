@@ -145,6 +145,7 @@ import {
   augmentSeedancePromptForAspect,
   seedanceAtlasRequestDimensions
 } from "@/lib/seedance-atlas-dimensions";
+import { enforceContentPolicy, requestIp } from "@/lib/content-moderation";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 
@@ -568,6 +569,23 @@ async function handleGenerateVideoPost(request: Request) {
   }
 
   const action: AtlasVideoRouteAction = (body.action ?? "text") as AtlasVideoRouteAction;
+
+  const videoWorkflow =
+    action === "motion-control"
+      ? ("character_swap" as const)
+      : /\bugc\b/i.test(prompt) || /\bai\s+influencer\b/i.test(prompt)
+        ? ("ugc_generation" as const)
+        : ("video_generation" as const);
+
+  const policyBlock = await enforceContentPolicy({
+    userId: actor.userId,
+    workflow: videoWorkflow,
+    route: "/api/generate-video",
+    texts: [prompt],
+    ip: requestIp(request),
+    metadata: { action, videoModel: body.videoModel ?? null }
+  });
+  if (policyBlock) return policyBlock;
 
   const videoModel =
     typeof body.videoModel === "string" ? body.videoModel.trim() : "";

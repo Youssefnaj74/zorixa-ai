@@ -24,6 +24,7 @@ import {
   extractAtlasImageOutputUrls,
   extractAtlasVideoOutputUrl
 } from "@/lib/extract-atlas-video-output-url";
+import { enforceContentPolicy, requestIp } from "@/lib/content-moderation";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 
@@ -335,6 +336,20 @@ async function handleGenerateImagePost(request: Request) {
   if (!prompt) {
     return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
   }
+
+  const negativePromptEarly =
+    typeof body.negativePrompt === "string" ? body.negativePrompt.trim() : "";
+
+  const actorEarly = await resolveZorixaActor(request);
+  const policyBlock = await enforceContentPolicy({
+    userId: actorEarly?.userId ?? null,
+    workflow: "image_generation",
+    route: "/api/generate-image",
+    texts: [prompt, negativePromptEarly],
+    ip: requestIp(request),
+    metadata: { imageModel: body.imageModel ?? null }
+  });
+  if (policyBlock) return policyBlock;
 
   const imageModel =
     typeof body.imageModel === "string" ? body.imageModel.trim() : "";

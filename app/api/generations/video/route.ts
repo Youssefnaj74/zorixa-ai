@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { AtlasApiError, atlasGenerateVideo } from "@/lib/atlas-api";
+import { enforceContentPolicy, requestIp } from "@/lib/content-moderation";
 import { CREDIT_COSTS } from "@/lib/replicate";
 import { rateLimit } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -74,10 +75,19 @@ export async function POST(request: Request) {
   const aspect_ratio = normalizeAspect(form.get("aspect_ratio"));
   const resolution = normalizeResolution(form.get("resolution"));
   const promptRaw = form.get("prompt");
-  const prompt = buildPrompt(
-    motion_bucket_id,
-    typeof promptRaw === "string" ? promptRaw : undefined
-  );
+  const explicitPrompt = typeof promptRaw === "string" ? promptRaw.trim() : "";
+  if (explicitPrompt) {
+    const policyBlock = await enforceContentPolicy({
+      userId: user.id,
+      workflow: "video_generation",
+      route: "/api/generations/video",
+      texts: [explicitPrompt],
+      ip: requestIp(request)
+    });
+    if (policyBlock) return policyBlock;
+  }
+
+  const prompt = buildPrompt(motion_bucket_id, explicitPrompt || undefined);
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const ext = file.name.split(".").pop()?.toLowerCase() || "png";

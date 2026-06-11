@@ -450,6 +450,9 @@ export function LandingPage() {
                 <Link className="hover:text-white" href="/terms">
                   Terms
                 </Link>
+                <Link className="hover:text-white" href="/acceptable-use">
+                  Acceptable Use
+                </Link>
                 <Link className="hover:text-white" href="/privacy">
                   Privacy
                 </Link>

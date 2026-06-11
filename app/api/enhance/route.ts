@@ -6,6 +6,7 @@ import {
   type EnhanceRouteModel
 } from "@/lib/replicate-payloads";
 import type { AspectRatioId, UpscaleTier } from "@/lib/studio-constants";
+import { enforceContentPolicy, requestIp } from "@/lib/content-moderation";
 import { CREDIT_COSTS } from "@/lib/replicate";
 import { rateLimit } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -56,14 +57,29 @@ export async function POST(request: Request) {
 
   const upscaleTier = (body.upscale === "4x" || body.upscale === "8x" ? body.upscale : "2x") as UpscaleTier;
 
+  const promptText = typeof body.prompt === "string" ? body.prompt.trim() : "";
+  const negativePromptText =
+    typeof body.negative_prompt === "string" ? body.negative_prompt.trim() : "";
+
   if (model === "sdxl") {
-    const p = body.prompt?.trim();
-    if (!p) {
+    if (!promptText) {
       return NextResponse.json(
         { error: "Prompt is required for Stable Diffusion XL creative edits." },
         { status: 400 }
       );
     }
+  }
+
+  if (promptText || negativePromptText) {
+    const policyBlock = await enforceContentPolicy({
+      userId: user.id,
+      workflow: "image_enhance",
+      route: "/api/enhance",
+      texts: [promptText, negativePromptText],
+      ip: requestIp(request),
+      metadata: { model }
+    });
+    if (policyBlock) return policyBlock;
   }
 
   const aspect =

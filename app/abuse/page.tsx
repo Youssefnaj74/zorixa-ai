@@ -36,6 +36,13 @@ export default function AbusePage() {
 
       <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 text-sm text-white/50">
         <p>
+          Read our{" "}
+          <Link href="/acceptable-use" className="text-[#00e5ff] hover:underline">
+            Acceptable Use Policy
+          </Link>{" "}
+          for prohibited content and how prompts are screened.
+        </p>
+        <p className="mt-3">
           General support (bugs, billing, account)? See{" "}
           <Link href="/helpsupport" className="text-[#00e5ff] hover:underline">
             Support

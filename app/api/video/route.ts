@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { AtlasApiError, atlasGenerateVideo } from "@/lib/atlas-api";
+import { enforceContentPolicy, requestIp } from "@/lib/content-moderation";
 import { CREDIT_COSTS } from "@/lib/replicate";
 import { rateLimit } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -37,6 +38,15 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+
+  const policyBlock = await enforceContentPolicy({
+    userId: user.id,
+    workflow: "legacy_video",
+    route: "/api/video",
+    texts: [body.description, body.negative_prompt],
+    ip: requestIp(request)
+  });
+  if (policyBlock) return policyBlock;
 
   const aspect_ratio =
     body.aspect_ratio === "9:16" || body.aspect_ratio === "1:1" || body.aspect_ratio === "16:9"

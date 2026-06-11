@@ -75,7 +75,11 @@ export default function TermsPage() {
               ))}
             </ul>
             <p className="mt-4">
-              To report abuse or illegal content, email{" "}
+              See our{" "}
+              <Link href="/acceptable-use" className="text-[#00e5ff] hover:text-white hover:underline">
+                Acceptable Use Policy
+              </Link>{" "}
+              for prohibited content and enforcement details. To report abuse or illegal content, email{" "}
               <BrandEmailLink email={BRAND_EMAILS.abuse} className="hover:opacity-70" />
               .
             </p>
