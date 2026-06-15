@@ -1,6 +1,7 @@
 import { atlasProviderForModel } from "@/lib/composer-model-label";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { lookupCreditsSpentForAtlasPrediction } from "@/lib/credits-charge";
+import { scheduleMirrorAtlasVideoOutput } from "@/lib/mirror-atlas-video-to-storage";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const PLACEHOLDER_INPUT =
@@ -167,23 +168,37 @@ export async function logAtlasVideoGenerationIfNew(args: {
     return row;
   };
 
-  let { error } = await supabaseAdmin.from("generations").insert(
-    buildInsertRow({ model: true, promptField: true })
-  );
+  let { data: inserted, error } = await supabaseAdmin
+    .from("generations")
+    .insert(buildInsertRow({ model: true, promptField: true }))
+    .select("id")
+    .maybeSingle();
 
   if (error && composer_model_id && isMissingComposerModelColumn(error)) {
-    ({ error } = await supabaseAdmin.from("generations").insert(
-      buildInsertRow({ model: false, promptField: true })
-    ));
+    ({ data: inserted, error } = await supabaseAdmin
+      .from("generations")
+      .insert(buildInsertRow({ model: false, promptField: true }))
+      .select("id")
+      .maybeSingle());
   }
   if (error && prompt && isMissingPromptColumn(error)) {
-    ({ error } = await supabaseAdmin.from("generations").insert(
-      buildInsertRow({ model: true, promptField: false })
-    ));
+    ({ data: inserted, error } = await supabaseAdmin
+      .from("generations")
+      .insert(buildInsertRow({ model: true, promptField: false }))
+      .select("id")
+      .maybeSingle());
   }
 
   if (error && process.env.NODE_ENV === "development") {
     console.error("[atlas-video-generation-log] insert failed", error.message);
+  }
+
+  if (!error && inserted?.id) {
+    scheduleMirrorAtlasVideoOutput({
+      userId: args.userId,
+      generationId: inserted.id,
+      atlasUrl: output_url
+    });
   }
 
   return !error;

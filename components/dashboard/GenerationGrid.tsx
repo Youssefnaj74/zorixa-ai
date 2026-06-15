@@ -154,15 +154,70 @@ function HistoryVideoLightbox({
   const playbackUrl = useProxiedVideoPlaybackUrl(item.videoSrc);
   const downloadUrl = item.videoSrc ?? item.src;
   const [downloadBusy, setDownloadBusy] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [playbackReady, setPlaybackReady] = useState(false);
+
+  useEffect(() => {
+    setPlaybackError(null);
+    setPlaybackReady(false);
+    if (!playbackUrl) {
+      setPlaybackError("No video URL saved for this generation.");
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(playbackUrl, {
+          credentials: "include",
+          cache: "no-store",
+          headers: { Range: "bytes=0-1" }
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          setPlaybackError(
+            res.status === 401
+              ? "Sign in to play videos from your history."
+              : "This video link expired or was removed. Atlas keeps outputs about 1–7 days — download right after each generation."
+          );
+          return;
+        }
+        const ct = (res.headers.get("content-type") ?? "").toLowerCase();
+        if (ct.includes("json") || ct.includes("xml") || ct.includes("text/html")) {
+          setPlaybackError(
+            "This video is no longer available on Atlas CDN. Older history entries may not play — generate again or download new outputs promptly."
+          );
+          return;
+        }
+        setPlaybackReady(true);
+      } catch {
+        if (!cancelled) {
+          setPlaybackError(
+            "Could not load this video. Check your connection, stay signed in, and try Download MP4."
+          );
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [playbackUrl]);
 
   const onDownload = useCallback(async () => {
     const url = downloadUrl?.trim();
     if (!url || downloadBusy) return;
+    setDownloadError(null);
     setDownloadBusy(true);
     try {
       await downloadVideoFile(url, videoDownloadFilename(url, item.title));
     } catch (err) {
-      console.error("[History] video download failed", err);
+      const msg = err instanceof Error ? err.message : "Download failed";
+      setDownloadError(msg);
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[History] video download failed", msg);
+      }
     } finally {
       setDownloadBusy(false);
     }
@@ -213,11 +268,12 @@ function HistoryVideoLightbox({
         </button>
 
         <motion.div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/80">
-          {playbackUrl ? (
+          {playbackReady && playbackUrl ? (
             <video
               key={playbackUrl}
               src={playbackUrl}
               controls
+              autoPlay
               controlsList="nodownload noremoteplayback"
               disablePictureInPicture
               playsInline
@@ -225,11 +281,22 @@ function HistoryVideoLightbox({
               {...domVideoAttrs}
               className="max-h-[78vh] w-full object-contain"
               onContextMenu={(e) => e.preventDefault()}
+              onError={() => {
+                setPlaybackReady(false);
+                setPlaybackError(
+                  "Playback failed — the file may have expired on Atlas CDN. Try Download MP4 or generate again."
+                );
+              }}
             />
+          ) : playbackError ? (
+            <div className="flex max-w-md flex-col items-center gap-3 px-8 py-16 text-center">
+              <Clapperboard className="size-16 text-zorixa-muted opacity-50" aria-hidden />
+              <p className="text-sm leading-relaxed text-zorixa-muted">{playbackError}</p>
+            </div>
           ) : (
             <div className="flex flex-col items-center gap-3 px-8 py-16 text-zorixa-muted">
               <Clapperboard className="size-16 opacity-50" aria-hidden />
-              <p className="text-sm">No preview available</p>
+              <p className="text-sm">Loading preview…</p>
             </div>
           )}
         </motion.div>
@@ -245,6 +312,9 @@ function HistoryVideoLightbox({
               status={item.status}
               className="mt-2"
             />
+            {downloadError ? (
+              <p className="mt-2 text-xs text-red-300">{downloadError}</p>
+            ) : null}
           </div>
           {downloadUrl ? (
             <button

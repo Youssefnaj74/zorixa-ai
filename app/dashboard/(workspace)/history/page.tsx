@@ -108,6 +108,7 @@ export default async function HistoryPage() {
             </h1>
             <p className="mt-2 text-sm text-white/45">
               Your latest AI images, videos, and speech assets. Credits charged per run.
+              Video links from Atlas may expire after about 1–7 days — download new outputs to keep them.
             </p>
           </div>
         </div>
