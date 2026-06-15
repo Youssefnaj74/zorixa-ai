@@ -30,6 +30,7 @@ import {
   WAN27_DURATION_OPTIONS,
   videoComposerUsesAudioToVideoBarLayout,
   videoComposerUses720p1080pOnly,
+  referenceToVideoHide480p,
   videoComposerUsesHappyHorse,
   videoComposerUsesHailuo,
   veo31AspectOptionsForUi,
@@ -533,7 +534,9 @@ export function VideoBottomBar({
     : kling30T2vOrI2v
       ? [...klingV3AspectOptionsForUi()]
       : [...ASPECT_STEP_OPTIONS];
-  const show720p1080pOnlyLayout = videoComposerUses720p1080pOnly(composerModelId);
+  const show720p1080pOnlyLayout =
+    videoComposerUses720p1080pOnly(composerModelId) ||
+    (showReferenceLayout && referenceToVideoHide480p(composerModelId));
   const showAudioToVideoLayout = videoComposerUsesAudioToVideoBarLayout(composerModelId, actionTab);
   /** Kling motion / Wan character swap — hides mode, aspect, resolution. */
   const hideWanOnlyBarControls = showDualAssetV2vLayout;

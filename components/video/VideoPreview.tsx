@@ -3,7 +3,7 @@
 import { Download, Expand, History, Play, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useState, type VideoHTMLAttributes } from "react";
+import { useCallback, useEffect, useRef, useState, type VideoHTMLAttributes } from "react";
 
 import { Button } from "@/components/ui/button";
 import { downloadVideoFile, videoDownloadFilename } from "@/lib/download-video-file";
@@ -122,6 +122,7 @@ export function VideoPreview({
   const [inlinePlaybackError, setInlinePlaybackError] = useState<string | null>(null);
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const downloadInFlightRef = useRef(false);
   const [fileAspectCss, setFileAspectCss] = useState<string | null>(null);
   const frameAspectClass = uiAspectFrameClass(aspectRatio);
   const frameLayoutClass = uiAspectFrameLayoutClass(aspectRatio);
@@ -132,19 +133,23 @@ export function VideoPreview({
     (videoUrl?.startsWith("https://") ? videoUrl : null);
 
   const onDownloadClick = useCallback(async () => {
-    if (!canonicalDownloadUrl || downloadBusy) return;
+    if (!canonicalDownloadUrl || downloadInFlightRef.current) return;
     setDownloadError(null);
+    downloadInFlightRef.current = true;
     setDownloadBusy(true);
     try {
       await downloadVideoFile(canonicalDownloadUrl, videoDownloadFilename(canonicalDownloadUrl));
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Download failed";
       setDownloadError(msg);
-      console.error("[VideoPreview] download failed", e);
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[VideoPreview] download failed", msg);
+      }
     } finally {
+      downloadInFlightRef.current = false;
       setDownloadBusy(false);
     }
-  }, [canonicalDownloadUrl, downloadBusy]);
+  }, [canonicalDownloadUrl]);
 
   useEffect(() => {
     setInlinePlaybackError(null);
@@ -167,7 +172,7 @@ export function VideoPreview({
     !videoUrl &&
     !loading &&
     !errorMessage &&
-    actionTab === "Video to Video" || actionTab === "Reference to Video";
+    (actionTab === "Video to Video" || actionTab === "Reference to Video");
 
   const previewPlaceholderHero = (
     <div className="flex shrink-0 flex-col items-center justify-center gap-4">
@@ -182,6 +187,8 @@ export function VideoPreview({
       <p className="text-sm text-zorixa-muted">Video preview</p>
     </div>
   );
+
+  const showPromptThumb = Boolean(promptThumbUrl && !videoUrl && !loading);
 
   return (
     <div className={cn("flex h-full min-h-0 min-w-0 flex-1 flex-col gap-3 font-body", className)}>
@@ -239,10 +246,10 @@ export function VideoPreview({
         </div>
 
         <div className="relative flex min-h-0 flex-1 flex-col bg-zorixa-preview">
-          {promptThumbUrl ? (
+          {showPromptThumb ? (
             <div className="flex shrink-0 justify-center pt-3">
               <div className="relative size-16 overflow-hidden rounded-lg ring-1 ring-[rgba(131,56,235,0.25)]">
-                <Image src={promptThumbUrl} alt="" fill className="object-cover" unoptimized />
+                <Image src={promptThumbUrl!} alt="" fill className="object-cover" unoptimized />
               </div>
             </div>
           ) : null}

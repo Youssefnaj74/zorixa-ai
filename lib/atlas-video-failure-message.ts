@@ -39,17 +39,26 @@ export function isAtlasRealPersonImageError(error: string | null | undefined): b
   );
 }
 
-function formatRealPersonImageBlockedForUi(): string {
-  return [
-    "This image was blocked: it may show a real person (ByteDance / Seedance policy — not a Zorixa bug).",
+function formatRealPersonImageBlockedForUi(action?: "text" | "image" | "reference"): string {
+  const isReference = action === "reference";
+  const lines = [
+    isReference
+      ? "ByteDance blocked one of your reference images — it may look like a real person (Atlas policy, not a Zorixa bug)."
+      : "This image was blocked: it may show a real person (ByteDance / Seedance policy — not a Zorixa bug).",
     "What to try:",
-    "• Product or object photo with no human faces",
-    "• AI-generated or illustrated image (no recognizable real face)",
-    "• Text to Video (no reference photo)",
-    "• Kling 3.0 Pro — often accepts images Seedance rejects",
+    isReference
+      ? "• Remove reference images — use only a motion clip (@video1) + text prompt"
+      : "• Product or object photo with no human faces",
+    "• Car / product / landscape refs with no people or silhouettes",
+    "• Illustrated or stylized art (not photoreal faces or bodies)",
+    isReference ? "• Text to Video tab (no reference uploads)" : "• Text to Video (no reference photo)",
+    "• Wan 2.7 or Kling 3.0 Pro — often accept refs Seedance rejects",
     "",
-    "الصورة تحتوي على وجه بشري — جرّب صورة منتج بلا أشخاص، أو صورة مولّدة بالذكاء الاصطناعي، أو Text to Video."
-  ].join("\n");
+    isReference
+      ? "Atlas error: input image may contain real person — حتى صور AI سينمائية كيتبلوكاو. جرّب غير @video1 بلا صور، أو Text to Video."
+      : "الصورة تحتوي على وجه بشري — جرّب صورة منتج بلا أشخاص، أو Text to Video."
+  ];
+  return lines.join("\n");
 }
 
 function atlasVideoFailureHint(message: string): string | null {
@@ -81,7 +90,7 @@ export function formatAtlasVideoFailureForUi(
   }
 ): string {
   if (isAtlasRealPersonImageError(error)) {
-    return formatRealPersonImageBlockedForUi();
+    return formatRealPersonImageBlockedForUi(opts?.action);
   }
 
   const parsed = parseAtlasErrorMessage(error);
@@ -89,7 +98,7 @@ export function formatAtlasVideoFailureForUi(
 
   if (parsed.toLowerCase() === "task failed" && imageLikeAction) {
     return [
-      formatRealPersonImageBlockedForUi(),
+      formatRealPersonImageBlockedForUi(opts?.action),
       'Atlas only returned "task failed". Open the eye icon in Request History on atlascloud.ai for the full rejection reason.'
     ].join("\n\n");
   }

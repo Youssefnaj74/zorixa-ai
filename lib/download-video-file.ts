@@ -43,7 +43,11 @@ export async function downloadVideoFile(
   }
 
   const apiUrl = buildVideoDownloadUrl(canonical, window.location.origin);
-  const res = await fetch(apiUrl, { credentials: "include", cache: "no-store" });
+  if (!apiUrl.includes("/api/video-download")) {
+    throw new Error("This video host cannot be downloaded through Zorixa.");
+  }
+  const fetchUrl = `${apiUrl}&mode=buffer`;
+  const res = await fetch(fetchUrl, { credentials: "include", cache: "no-store" });
 
   if (!res.ok) {
     let message = `Download failed (${res.status})`;
@@ -52,6 +56,9 @@ export async function downloadVideoFile(
       if (body.error) message = body.error;
     } catch {
       /* not JSON */
+    }
+    if (res.status === 401) {
+      message = "Sign in to download videos from Zorixa.";
     }
     throw new Error(message);
   }

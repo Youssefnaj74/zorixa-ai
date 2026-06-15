@@ -13,6 +13,7 @@ import {
   VEO_31_REFERENCE_DURATION_SECONDS
 } from "@/lib/atlas-veo31-video";
 import { referenceToVideoMaxImages } from "@/components/video/bottom-bar-models";
+import { buildCatalogStudioHref } from "@/lib/studio-catalog-link";
 
 /** Shown under Video Preview on Reference to Video. */
 export function SeedanceReferenceToVideoTip({
@@ -63,8 +64,9 @@ export function SeedanceReferenceToVideoTip({
             {wan ? "images · videos · voice" : "images · videos · audios"}).{" "}
             {seedance ? (
               <>
-                Tags like <span className="font-medium text-brand">@image1</span> are added to your
-                prompt automatically.
+                Tags like <span className="font-medium text-brand">@image1</span> and{" "}
+                <span className="font-medium text-brand">@video1</span> are added to your prompt
+                automatically when you upload refs.
               </>
             ) : (
               <>
@@ -112,7 +114,17 @@ export function SeedanceReferenceToVideoTip({
       ) : (
         <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
           Need at least one <span className="font-medium text-white/80">image or video</span> ref.
-          Real-camera face photos may be blocked by ByteDance policy.
+          Use <span className="font-medium text-brand">720p</span> or{" "}
+          <span className="font-medium text-brand">1080p</span>. ByteDance may block reference images
+          that look like real people — even AI cinematic shots. Try{" "}
+          <span className="font-medium text-brand">video ref only</span> (@video1, no images) or{" "}
+          <Link
+            href={buildCatalogStudioHref("text-to-video", "seedance-2")}
+            className="font-medium text-brand underline-offset-2 hover:underline"
+          >
+            Text to Video
+          </Link>
+          .
         </p>
       )}
     </div>

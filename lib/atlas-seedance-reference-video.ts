@@ -31,6 +31,12 @@ export function uiAspectToAtlasRatio(aspectRatio: string): string {
   return R2V_RATIOS.has(v) ? v : "9:16";
 }
 
+export function normalizeSeedanceReferenceResolution(raw: string): string {
+  const v = raw.trim().toLowerCase();
+  if (v === "480p") return "720p";
+  return v === "1080p" || v === "720p" ? v : "720p";
+}
+
 export function buildSeedanceReferenceAtlasBody(input: {
   model: string;
   prompt: string;
@@ -45,7 +51,7 @@ export function buildSeedanceReferenceAtlasBody(input: {
     model: input.model,
     prompt: input.prompt,
     duration: normalizeSeedanceReferenceDurationSeconds(input.durationSec),
-    resolution: input.resolution,
+    resolution: normalizeSeedanceReferenceResolution(input.resolution),
     ratio: uiAspectToAtlasRatio(input.aspectRatio)
   };
   const images = input.reference_images.slice(0, SEEDANCE_REFERENCE_TO_VIDEO_MAX_IMAGES);

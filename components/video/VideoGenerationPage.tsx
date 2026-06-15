@@ -134,6 +134,11 @@ import {
 } from "@/lib/atlas-veo31-video";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import {
+  ensurePublicHttpsMediaUrl,
+  humanizeClientFetchError,
+  uploadBlobUrlToPublicStorage
+} from "@/lib/upload-client-media";
+import {
   extractAtlasVideoOutputUrl,
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
@@ -150,6 +155,7 @@ import {
 import { resolveVideoStudioFromQuery } from "@/lib/studio-catalog-link";
 import {
   appendSeedanceReferenceTokenToPrompt,
+  ensureSeedanceReferenceTokensInPrompt,
   removeSeedanceReferenceTokenFromPrompt,
   type SeedanceReferenceMediaKind
 } from "@/lib/seedance-reference-prompt-tokens";
@@ -215,94 +221,26 @@ function pickVideoUrlFromPollBody(data: Record<string, unknown>): string | null 
   return extractAtlasVideoOutputUrl(data as unknown as AtlasLikeVideoPayload);
 }
 
-/** Same-origin playback URL (cookie session) â†’ 302 to CDN; falls back to raw if host not allowlisted. */
+/** Same-origin playback URL (cookie session) → 302 to CDN; falls back to raw if host not allowlisted. */
 function toBrowserVideoSrc(canonicalHttps: string): string {
   if (typeof window === "undefined") return canonicalHttps;
   return buildSameOriginVideoPlaybackUrl(canonicalHttps, window.location.origin);
 }
 
-function extensionForUploadedBlob(blob: Blob): string {
-  const mt = (blob.type || "").toLowerCase();
-  if (mt.includes("jpeg") || mt === "image/jpg") return "jpg";
-  if (mt === "image/png") return "png";
-  if (mt === "image/webp") return "webp";
-  if (mt === "image/gif") return "gif";
-  if (mt.startsWith("audio/")) return "mp3";
-  if (mt.startsWith("video/")) return "mp4";
-  return "png";
-}
+const ensureAtlasPublicHttpsMediaUrl = ensurePublicHttpsMediaUrl;
 
-/** Atlas must fetch the URL from the public internet (not localhost / LAN). */
-function atlasCanFetchUrlDirectly(url: string): boolean {
-  try {
-    const u = new URL(url);
-    const host = u.hostname.toLowerCase();
-    if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".local")) {
-      return false;
-    }
-    if (/^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host)) {
-      return false;
-    }
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Atlas `generateVideo` needs a public https:// URL in `image` / media fields.
- * Uploads blob/data URLs and same-origin showcase paths Atlas cannot reach (localhost).
- */
-async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<string | null> {
-  if (!url) return null;
-  let t = url.trim();
-  if (!t) return null;
-
-  if (t.startsWith("/")) {
-    if (typeof window === "undefined") return null;
-    t = `${window.location.origin}${t}`;
-  }
-
-  const coerced = coerceToPublicHttpsUrl(t);
-  if (coerced && atlasCanFetchUrlDirectly(coerced)) return coerced;
-
-  const needsUpload =
-    t.startsWith("blob:") ||
-    t.startsWith("data:") ||
-    Boolean(coerced && !atlasCanFetchUrlDirectly(coerced));
-  if (!needsUpload) return null;
-
-  const fetchSrc = t.startsWith("blob:") || t.startsWith("data:") ? t : coerced ?? t;
-  const blobRes = await fetch(fetchSrc);
-  if (!blobRes.ok) return null;
-  const blob = await blobRes.blob();
-  const ext = extensionForUploadedBlob(blob);
-  const file = new File([blob], `upload.${ext}`, {
-    type: blob.type || "application/octet-stream"
-  });
-  const form = new FormData();
-  form.set("file", file);
-  const up = await fetch("/api/upload", {
-    method: "POST",
-    body: form,
-    credentials: "include"
-  });
-  if (!up.ok) {
-    let msg = "Upload failed â€” sign in and try again.";
-    try {
-      const j = (await up.json()) as { error?: string };
-      if (j.error) msg = j.error;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(msg);
-  }
-  const data = (await up.json()) as { url: string };
-  const out = coerceToPublicHttpsUrl(data.url);
-  if (!out) {
-    throw new Error("Upload did not return a usable https URL.");
-  }
-  return out;
+function scheduleBlobPublicUpload(
+  blobUrl: string,
+  apply: (https: string) => void,
+  onError?: (message: string) => void
+): void {
+  void uploadBlobUrlToPublicStorage(blobUrl)
+    .then((https) => {
+      apply(https);
+    })
+    .catch((e) => {
+      onError?.(humanizeClientFetchError(e));
+    });
 }
 
 function resizeReferenceImageUrls(
@@ -412,6 +350,7 @@ export function VideoGenerationPage() {
   const directorAutoResolvedStyleRef = useRef<DirectorRouteResult["styleResolved"] | null>(null);
   directorForceModelIdRef.current = directorForceModelId;
   const [prompt, setPrompt] = useState("");
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const [promptImageUrl, setPromptImageUrl] = useState<string | null>(null);
   const [promptImage2Url, setPromptImage2Url] = useState<string | null>(null);
@@ -453,11 +392,27 @@ export function VideoGenerationPage() {
       setReferenceImageUrls((prev) => {
         const next = [...prev];
         const old = next[index];
-        if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
+        if (old?.startsWith("blob:") && old !== url) URL.revokeObjectURL(old);
         next[index] = url;
         return next;
       });
       syncSeedanceRefTokenInPrompt("image", index, url);
+      if (url?.startsWith("blob:")) {
+        const blobUrl = url;
+        scheduleBlobPublicUpload(
+          blobUrl,
+          (https) => {
+            setReferenceImageUrls((prev) => {
+              if (prev[index] !== blobUrl) return prev;
+              const next = [...prev];
+              URL.revokeObjectURL(blobUrl);
+              next[index] = https;
+              return next;
+            });
+          },
+          setGenerateError
+        );
+      }
     },
     [syncSeedanceRefTokenInPrompt]
   );
@@ -467,11 +422,27 @@ export function VideoGenerationPage() {
       setReferenceVideoUrls((prev) => {
         const next = [...prev];
         const old = next[index];
-        if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
+        if (old?.startsWith("blob:") && old !== url) URL.revokeObjectURL(old);
         next[index] = url;
         return next;
       });
       syncSeedanceRefTokenInPrompt("video", index, url);
+      if (url?.startsWith("blob:")) {
+        const blobUrl = url;
+        scheduleBlobPublicUpload(
+          blobUrl,
+          (https) => {
+            setReferenceVideoUrls((prev) => {
+              if (prev[index] !== blobUrl) return prev;
+              const next = [...prev];
+              URL.revokeObjectURL(blobUrl);
+              next[index] = https;
+              return next;
+            });
+          },
+          setGenerateError
+        );
+      }
     },
     [syncSeedanceRefTokenInPrompt]
   );
@@ -481,48 +452,134 @@ export function VideoGenerationPage() {
       setReferenceAudioUrls((prev) => {
         const next = [...prev];
         const old = next[index];
-        if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
+        if (old?.startsWith("blob:") && old !== url) URL.revokeObjectURL(old);
         next[index] = url;
         return next;
       });
       syncSeedanceRefTokenInPrompt("audio", index, url);
+      if (url?.startsWith("blob:")) {
+        const blobUrl = url;
+        scheduleBlobPublicUpload(
+          blobUrl,
+          (https) => {
+            setReferenceAudioUrls((prev) => {
+              if (prev[index] !== blobUrl) return prev;
+              const next = [...prev];
+              URL.revokeObjectURL(blobUrl);
+              next[index] = https;
+              return next;
+            });
+          },
+          setGenerateError
+        );
+      }
     },
     [syncSeedanceRefTokenInPrompt]
   );
 
   const setPromptImageUrlSafe = useCallback((url: string | null) => {
     setPromptImageUrl((prev) => {
-      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      if (prev?.startsWith("blob:") && prev !== url) URL.revokeObjectURL(prev);
       return url;
     });
+    if (url?.startsWith("blob:")) {
+      const blobUrl = url;
+      scheduleBlobPublicUpload(
+        blobUrl,
+        (https) => {
+          setPromptImageUrl((current) => {
+            if (current !== blobUrl) return current;
+            URL.revokeObjectURL(blobUrl);
+            return https;
+          });
+        },
+        setGenerateError
+      );
+    }
   }, []);
 
   const setPromptImage2UrlSafe = useCallback((url: string | null) => {
     setPromptImage2Url((prev) => {
-      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      if (prev?.startsWith("blob:") && prev !== url) URL.revokeObjectURL(prev);
       return url;
     });
+    if (url?.startsWith("blob:")) {
+      const blobUrl = url;
+      scheduleBlobPublicUpload(
+        blobUrl,
+        (https) => {
+          setPromptImage2Url((current) => {
+            if (current !== blobUrl) return current;
+            URL.revokeObjectURL(blobUrl);
+            return https;
+          });
+        },
+        setGenerateError
+      );
+    }
   }, []);
 
   const setLipsyncAudioUrlSafe = useCallback((url: string | null) => {
     setLipsyncAudioUrl((prev) => {
-      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      if (prev?.startsWith("blob:") && prev !== url) URL.revokeObjectURL(prev);
       return url;
     });
+    if (url?.startsWith("blob:")) {
+      const blobUrl = url;
+      scheduleBlobPublicUpload(
+        blobUrl,
+        (https) => {
+          setLipsyncAudioUrl((current) => {
+            if (current !== blobUrl) return current;
+            URL.revokeObjectURL(blobUrl);
+            return https;
+          });
+        },
+        setGenerateError
+      );
+    }
   }, []);
 
   const setEditSourceVideoUrlSafe = useCallback((url: string | null) => {
     setEditSourceVideoUrl((prev) => {
-      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      if (prev?.startsWith("blob:") && prev !== url) URL.revokeObjectURL(prev);
       return url;
     });
+    if (url?.startsWith("blob:")) {
+      const blobUrl = url;
+      scheduleBlobPublicUpload(
+        blobUrl,
+        (https) => {
+          setEditSourceVideoUrl((current) => {
+            if (current !== blobUrl) return current;
+            URL.revokeObjectURL(blobUrl);
+            return https;
+          });
+        },
+        setGenerateError
+      );
+    }
   }, []);
 
   const setMotionVideoUrlSafe = useCallback((url: string | null) => {
     setMotionVideoUrl((prev) => {
-      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      if (prev?.startsWith("blob:") && prev !== url) URL.revokeObjectURL(prev);
       return url;
     });
+    if (url?.startsWith("blob:")) {
+      const blobUrl = url;
+      scheduleBlobPublicUpload(
+        blobUrl,
+        (https) => {
+          setMotionVideoUrl((current) => {
+            if (current !== blobUrl) return current;
+            URL.revokeObjectURL(blobUrl);
+            return https;
+          });
+        },
+        setGenerateError
+      );
+    }
   }, []);
 
   const [loading, setLoading] = useState(false);
@@ -543,7 +600,6 @@ export function VideoGenerationPage() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   /** Raw Atlas/CDN URL for full-file download (playback uses proxied `videoUrl`). */
   const [videoDownloadUrl, setVideoDownloadUrl] = useState<string | null>(null);
-  const [generateError, setGenerateError] = useState<string | null>(null);
   const [hasUserGenerated, setHasUserGenerated] = useState(false);
 
   const [history, setHistory] = useState<VideoHistoryEntry[]>([]);
@@ -938,6 +994,16 @@ export function VideoGenerationPage() {
   }, [actionTab, composerModelId]);
 
   useEffect(() => {
+    if (
+      actionTab === "Reference to Video" &&
+      composerModelId === "seedance-2" &&
+      resolution === "480p"
+    ) {
+      setResolution("720p");
+    }
+  }, [actionTab, composerModelId, resolution]);
+
+  useEffect(() => {
     if (actionTab !== "Reference to Video") return;
     if (
       composerModelId === GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID ||
@@ -1165,6 +1231,7 @@ export function VideoGenerationPage() {
             ? normalizeGeminiOmniFlashReferenceDurationSeconds(t)
             : normalizeSeedanceReferenceDurationSeconds(t)
       );
+      setResolution((r) => (r === "480p" ? "720p" : r));
     }
     if (tab === "Video to Video") {
       setComposerModelId("wan-2-6");
@@ -1188,7 +1255,7 @@ export function VideoGenerationPage() {
 
       // Merge context + React state: avoids empty prompt when Generate runs before the last onChange commits.
       const promptValue = ctx.promptText.trim() || prompt.trim();
-      const promptForAtlas = stripVideoComposerAssetTokens(promptValue);
+      let promptForAtlas = stripVideoComposerAssetTokens(promptValue);
 
       if (ctx.actionTab !== "AI Director" && !isAtlasVideoComposerId(composerModelId)) {
         setGenerateError("Unsupported video model.");
@@ -1468,6 +1535,13 @@ export function VideoGenerationPage() {
             } else if (reference_images.length < 1) {
               setGenerateError("Add at least one reference image for Reference to Video.");
               return;
+            }
+            if (videoModel === "seedance-2") {
+              promptForAtlas = ensureSeedanceReferenceTokensInPrompt(promptForAtlas, {
+                imageCount: reference_images.length,
+                videoCount: reference_videos.length,
+                audioCount: reference_audios.length
+              });
             }
             sourceInputForLog = reference_images[0] ?? reference_videos[0] ?? null;
             const refDuration =
@@ -1807,21 +1881,24 @@ export function VideoGenerationPage() {
               break;
             }
             if (statusNorm === "failed") {
-              console.error("[VideoGenerationPage] Atlas poll failed", {
-                status: pd.status,
-                atlas_error: pd.atlas_error,
-                error: pd.error,
-                prediction_id: pd.prediction_id ?? predictionId
-              });
-              const msg = formatAtlasVideoFailureForUi(pd.atlas_error ?? pd.error, {
+              const rawErr = pd.atlas_error ?? pd.error ?? null;
+              const pollId = pd.prediction_id ?? predictionId;
+              if (process.env.NODE_ENV === "development") {
+                console.warn("[VideoGenerationPage] Atlas poll failed", {
+                  status: pd.status,
+                  atlas_error: rawErr,
+                  prediction_id: pollId
+                });
+              }
+              const msg = formatAtlasVideoFailureForUi(rawErr, {
                 generateAudio: wantGenerateAudio,
                 hostIsProduction:
                   typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
                 action: atlasPollActionForTab(generationTab)
               });
               setGenerateError(
-                pd.prediction_id && !isAtlasRealPersonImageError(pd.atlas_error ?? pd.error)
-                  ? `${msg}\n\n(prediction: ${pd.prediction_id.slice(0, 12)}â€¦)`
+                pollId && !isAtlasRealPersonImageError(rawErr)
+                  ? `${msg}\n\n(prediction: ${pollId.slice(0, 12)}…)`
                   : msg
               );
               return;
@@ -1935,7 +2012,7 @@ export function VideoGenerationPage() {
           return;
         }
         if (!generationUserCancelledRef.current) {
-          setGenerateError(e instanceof Error ? e.message : "Network error. Try again.");
+          setGenerateError(humanizeClientFetchError(e));
         }
       } finally {
         generationAbortRef.current = null;

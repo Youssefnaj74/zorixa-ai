@@ -397,6 +397,8 @@ export async function GET(request: Request) {
       outputs: null,
       output: null,
       error: msg,
+      atlas_error: msg,
+      prediction_id: predictionId,
       poll_interval_ms: CLIENT_POLL_HINT_MS
     });
   }

@@ -524,6 +524,11 @@ export function videoComposerUses720p1080pOnly(composerModelId: string): boolean
   );
 }
 
+/** Seedance R2V is trained for 720p+; hide 480p on Reference to Video. */
+export function referenceToVideoHide480p(composerModelId: string): boolean {
+  return composerModelId === "seedance-2" || videoComposerUses720p1080pOnly(composerModelId);
+}
+
 export const RESOLUTION_STEP_OPTIONS = [
   { id: "1080p" as const, label: "1080p", newBadge: true },
   { id: "720p" as const, label: "720p", newBadge: false },

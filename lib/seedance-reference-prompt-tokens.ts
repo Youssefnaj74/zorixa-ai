@@ -41,3 +41,21 @@ export function removeSeedanceReferenceTokenFromPrompt(
     .replace(/\s{2,}/g, " ")
     .trim();
 }
+
+/** Ensures `@imageN` / `@videoN` / `@audioN` exist for every uploaded ref slot. */
+export function ensureSeedanceReferenceTokensInPrompt(
+  prompt: string,
+  refs: { imageCount: number; videoCount: number; audioCount: number }
+): string {
+  let out = prompt;
+  for (let i = 0; i < refs.imageCount; i++) {
+    out = appendSeedanceReferenceTokenToPrompt(out, "image", i);
+  }
+  for (let i = 0; i < refs.videoCount; i++) {
+    out = appendSeedanceReferenceTokenToPrompt(out, "video", i);
+  }
+  for (let i = 0; i < refs.audioCount; i++) {
+    out = appendSeedanceReferenceTokenToPrompt(out, "audio", i);
+  }
+  return out;
+}
