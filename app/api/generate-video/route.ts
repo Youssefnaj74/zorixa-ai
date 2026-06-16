@@ -10,7 +10,9 @@ import {
 import {
   isKlingMotionControlAtlasModel,
   normalizeKlingMotionCharacterOrientation,
-  normalizeKlingMotionDurationSeconds
+  normalizeKlingMotionDurationSeconds,
+  resolveMotionControlAtlasPrompt,
+  videoComposerUsesOptionalMotionPrompt
 } from "@/lib/atlas-kling-motion-control";
 import {
   buildHappyHorseAtlasBody,
@@ -563,14 +565,24 @@ async function handleGenerateVideoPost(request: Request) {
     return handleVideoUpscalePost(body, actor, apiKey);
   }
 
+  const action: AtlasVideoRouteAction = (body.action ?? "text") as AtlasVideoRouteAction;
+  const videoModelEarly =
+    typeof body.videoModel === "string" ? body.videoModel.trim() : "";
+
   let prompt = stripVideoComposerAssetTokens(
     typeof body.prompt === "string" ? body.prompt.trim() : ""
   );
-  if (!prompt) {
+  const motionPromptOptional =
+    action === "motion-control" &&
+    videoModelEarly &&
+    videoComposerUsesOptionalMotionPrompt(videoModelEarly);
+
+  if (!prompt && !motionPromptOptional) {
     return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
   }
-
-  const action: AtlasVideoRouteAction = (body.action ?? "text") as AtlasVideoRouteAction;
+  if (!prompt && motionPromptOptional) {
+    prompt = resolveMotionControlAtlasPrompt("");
+  }
 
   const videoWorkflow =
     action === "motion-control"

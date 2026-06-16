@@ -55,8 +55,8 @@ export function CharacterSwapModelTip({
       ) : kling ? (
         <p className="mt-2 border-t border-white/10 pt-2 pl-5 text-[11px] leading-relaxed text-brand/95">
           Selected: Kling 2.6 Motion — <span className="font-medium text-white/85">Character</span>,{" "}
-          <span className="font-medium text-white/85">Motion clip</span>, prompt, Framing, Ref audio,
-          Duration, Tier (Pro/Std).
+          <span className="font-medium text-white/85">Motion clip</span>, optional prompt, Framing,
+          Ref audio, Duration, Tier (Pro/Std).
         </p>
       ) : null}
     </div>

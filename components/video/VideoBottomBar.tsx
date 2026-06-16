@@ -1289,7 +1289,7 @@ export function VideoBottomBar({
                     : showWanCharacterSwapLayout
                       ? "Optional: scene notes — motion comes from the source video…"
                       : showMotionControlLayout
-                        ? "Scene style, lighting, background (motion comes from the clip)…"
+                        ? "Optional: scene style, lighting, background (motion comes from the clip)…"
                       : showWanV2vLayout
                         ? "Describe how to transform the source video…"
                         : showTextOnlyPromptLayout

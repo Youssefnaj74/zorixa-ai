@@ -46,7 +46,10 @@ import type {
 import { AiDirectorBottomBar } from "@/components/video/AiDirectorBottomBar";
 import type { ActionTab } from "@/components/video/ActionTabsRow";
 import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
-import type { KlingMotionCharacterOrientation } from "@/lib/atlas-kling-motion-control";
+import {
+  resolveMotionControlAtlasPrompt,
+  type KlingMotionCharacterOrientation
+} from "@/lib/atlas-kling-motion-control";
 import {
   KLING_26_MOTION_COMPOSER_ID,
   KLING_30_PRO_MODEL_ID,
@@ -1257,17 +1260,21 @@ export function VideoGenerationPage() {
       const promptValue = ctx.promptText.trim() || prompt.trim();
       let promptForAtlas = stripVideoComposerAssetTokens(promptValue);
 
+      const motionPromptOptionalEarly =
+        ctx.actionTab === "Video to Video" &&
+        videoToVideoTabUsesDualAssetPipeline(composerModelId);
+
       if (ctx.actionTab !== "AI Director" && !isAtlasVideoComposerId(composerModelId)) {
         setGenerateError("Unsupported video model.");
         return;
       }
 
-      if (!promptValue) {
+      if (!promptValue && !motionPromptOptionalEarly) {
         setGenerateError("Enter a prompt to generate a video.");
         return;
       }
 
-      if (!promptForAtlas) {
+      if (!promptForAtlas && !motionPromptOptionalEarly) {
         setGenerateError("Enter a prompt (not only image placeholders) to generate a video.");
         return;
       }
@@ -1303,6 +1310,13 @@ export function VideoGenerationPage() {
         if (!isAtlasVideoComposerId(videoModel)) {
           setGenerateError("AI Director could not pick a supported model.");
           return;
+        }
+
+        const motionPromptOptional =
+          generationTab === "Video to Video" &&
+          videoToVideoTabUsesDualAssetPipeline(videoModel);
+        if (!promptForAtlas && motionPromptOptional) {
+          promptForAtlas = resolveMotionControlAtlasPrompt("");
         }
 
         const aspectRatio =
@@ -1600,7 +1614,7 @@ export function VideoGenerationPage() {
               sourceInputForLog = image_url;
               if (videoToVideoTabUsesKlingMotion(videoModel)) {
                 payload = {
-                  prompt: promptForAtlas,
+                  prompt: promptForAtlas || resolveMotionControlAtlasPrompt(""),
                   action: "motion-control",
                   videoModel,
                   image_url,
@@ -1612,7 +1626,7 @@ export function VideoGenerationPage() {
                 };
               } else {
                 payload = {
-                  prompt: promptForAtlas,
+                  prompt: promptForAtlas || resolveMotionControlAtlasPrompt(""),
                   action: "motion-control",
                   videoModel,
                   image_url,
