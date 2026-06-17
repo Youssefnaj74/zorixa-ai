@@ -13,6 +13,15 @@ function isSessionOptionalPath(pathname: string): boolean {
   if (pathname === "/" || pathname === "/pricing" || pathname === "/privacy" || pathname === "/terms") {
     return true;
   }
+  if (pathname === "/blog" || pathname.startsWith("/blog/")) {
+    return true;
+  }
+  if (pathname === "/models" || pathname.startsWith("/models/")) {
+    return true;
+  }
+  if (pathname === "/sitemap.xml" || pathname === "/robots.txt") {
+    return true;
+  }
   if (pathname === "/explore-prompts" || pathname.startsWith("/explore-prompts/")) {
     return true;
   }

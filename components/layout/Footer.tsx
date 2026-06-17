@@ -24,6 +24,12 @@ export default function Footer() {
           <Link href="/helpsupport" className="text-sm text-white/40 hover:text-white transition-colors">
             Help
           </Link>
+          <Link href="/blog" className="text-sm text-white/40 hover:text-white transition-colors">
+            Blog
+          </Link>
+          <Link href="/models" className="text-sm text-white/40 hover:text-white transition-colors">
+            Models
+          </Link>
           <Link href="/faq" className="text-sm text-white/40 hover:text-white transition-colors">
             FAQ
           </Link>
