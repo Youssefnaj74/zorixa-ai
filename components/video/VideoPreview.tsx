@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Download, Expand, History, Play, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -7,6 +8,7 @@ import { useCallback, useEffect, useRef, useState, type VideoHTMLAttributes } fr
 
 import { Button } from "@/components/ui/button";
 import { downloadVideoFile, videoDownloadFilename } from "@/lib/download-video-file";
+import { isInsufficientCreditsMessage } from "@/lib/insufficient-credits-message";
 import { extractCanonicalVideoUrlFromProxy } from "@/lib/video-playback-proxy";
 import { cn } from "@/lib/utils";
 
@@ -378,6 +380,14 @@ export function VideoPreview({
                   <p className="whitespace-pre-wrap break-words text-left text-xs leading-relaxed text-red-400/95">
                     {errorMessage}
                   </p>
+                  {isInsufficientCreditsMessage(errorMessage) ? (
+                    <Link
+                      href="/pricing"
+                      className="mt-4 inline-flex rounded-lg bg-[#00e5ff] px-4 py-2 text-xs font-bold text-black transition-opacity hover:opacity-90"
+                    >
+                      View plans
+                    </Link>
+                  ) : null}
                 </div>
               ) : (
                 previewPlaceholderHero

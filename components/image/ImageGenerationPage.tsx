@@ -54,6 +54,7 @@ import {
   formatGenerationCreditsLine
 } from "@/lib/atlas-pricing-catalog";
 import { useCredits } from "@/lib/hooks/use-credits";
+import { insufficientCreditsMessage } from "@/lib/insufficient-credits-message";
 
 const NAV_H = 56;
 const ATLAS_CLIENT_POLL_MS = 3000;
@@ -185,19 +186,6 @@ async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<strin
   }
   const data = (await up.json()) as { url: string };
   return coerceToPublicHttpsUrl(data.url);
-}
-
-function insufficientCreditsMessage(data: {
-  credits_balance?: number;
-  credits_required?: number;
-  error?: string;
-}): string {
-  if (data.error === "INSUFFICIENT_CREDITS") {
-    const need = data.credits_required ?? "?";
-    const have = data.credits_balance ?? 0;
-    return `Not enough credits (need ${need}, you have ${have}). Buy more on the billing page.`;
-  }
-  return data.error ?? "Not enough credits.";
 }
 
 function defaultImageModelForTab(tab: ImageActionTab): string {

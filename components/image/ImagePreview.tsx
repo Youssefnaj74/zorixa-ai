@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { ExternalImage } from "@/components/ui/ExternalImage";
+import { isInsufficientCreditsMessage } from "@/lib/insufficient-credits-message";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import type { UpscaleTier } from "@/lib/studio-constants";
 import { cn } from "@/lib/utils";
@@ -226,7 +227,17 @@ export function ImagePreview({
                   <p className="text-sm text-zorixa-muted">Generating image…</p>
                 </div>
               ) : errorMessage ? (
-                <p className="m-auto max-w-md text-center text-sm text-red-400">{errorMessage}</p>
+                <div className="m-auto max-w-md text-center">
+                  <p className="text-sm text-red-400">{errorMessage}</p>
+                  {isInsufficientCreditsMessage(errorMessage) ? (
+                    <Link
+                      href="/pricing"
+                      className="mt-4 inline-flex rounded-lg bg-[#00e5ff] px-4 py-2 text-xs font-bold text-black transition-opacity hover:opacity-90"
+                    >
+                      View plans
+                    </Link>
+                  ) : null}
+                </div>
               ) : isBatch ? (
                 <div
                   className={cn(

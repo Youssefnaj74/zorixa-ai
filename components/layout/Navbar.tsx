@@ -103,14 +103,15 @@ export function DashboardNavbar({
         {/* Right side */}
         <div className="flex items-center gap-3 shrink-0">
 
-          {/* Credits */}
-          <div
-            className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 sm:flex"
-            title="Credits balance"
+          {/* Credits — visible on all breakpoints; links to pricing on tap */}
+          <Link
+            href="/pricing"
+            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 sm:gap-2 sm:px-3"
+            title="Credits balance — view plans"
           >
-            <span className="text-xs font-medium text-white/50">Credits</span>
-            <span className="text-sm font-bold tabular-nums text-white">{credits}</span>
-          </div>
+            <span className="text-[10px] font-medium text-white/50 sm:text-xs">Credits</span>
+            <span className="text-xs font-bold tabular-nums text-white sm:text-sm">{credits}</span>
+          </Link>
 
           {/* View Plans */}
           <Link

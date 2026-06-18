@@ -181,7 +181,7 @@ async function grantPackCreditsFallback(
 
   const { error: updateErr } = await supabaseAdmin
     .from("users_profiles")
-    .update({ credits_balance: profile.credits_balance + credits })
+    .update({ credits_balance: profile.credits_balance + credits, is_premium: true })
     .eq("id", userId);
 
   if (updateErr) {
@@ -217,6 +217,7 @@ export async function grantPackCredits(
     console.warn("[grantPackCredits] RPC missing — using insert-first fallback (apply DB migration)");
     const fallback = await grantPackCreditsFallback(input);
     if (fallback.granted) {
+      await markUserPremium(userId);
       await sendGrantConfirmationEmail(userId, credits, orderRef);
     }
     return fallback;
@@ -246,8 +247,19 @@ export async function grantPackCredits(
     return { duplicate: false, granted: false };
   }
 
+  await markUserPremium(userId);
   await sendGrantConfirmationEmail(userId, credits, orderRef);
   return { duplicate: false, granted: true };
+}
+
+async function markUserPremium(userId: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("users_profiles")
+    .update({ is_premium: true })
+    .eq("id", userId);
+  if (error) {
+    console.warn("[grantPackCredits] is_premium update failed", { userId, error: error.message });
+  }
 }
 
 async function sendGrantConfirmationEmail(userId: string, credits: number, orderRef: string) {

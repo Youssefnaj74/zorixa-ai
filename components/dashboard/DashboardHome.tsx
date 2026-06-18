@@ -438,7 +438,7 @@ export function DashboardHome({
           </div>
         </motion.div>
 
-        {!isPremium && <UpgradeBanner checkoutHref={upgradeHref} />}
+        {!isPremium && credits <= 0 && <UpgradeBanner checkoutHref={upgradeHref} />}
 
         <NewModelsStrip />
 

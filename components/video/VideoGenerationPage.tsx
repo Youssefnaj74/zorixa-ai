@@ -9,6 +9,7 @@ import {
   formatGenerationCreditsLine
 } from "@/lib/atlas-pricing-catalog";
 import { useCredits } from "@/lib/hooks/use-credits";
+import { insufficientCreditsMessage } from "@/lib/insufficient-credits-message";
 import { composerModelDisplayLabel } from "@/lib/composer-model-label";
 import { getVideoModelShowcase, showcaseVideoAssetUrl } from "@/lib/video-model-showcase";
 import {
@@ -305,19 +306,6 @@ function logAtlasComposerVideoToSupabase(payload: {
   }).catch(() => {});
 }
 
-function insufficientCreditsMessage(data: {
-  credits_balance?: number;
-  credits_required?: number;
-  error?: string;
-}): string {
-  if (data.error === "INSUFFICIENT_CREDITS") {
-    const need = data.credits_required ?? "?";
-    const have = data.credits_balance ?? 0;
-    return `Not enough credits (need ${need}, you have ${have}). Buy more on the billing page.`;
-  }
-  return data.error ?? "Not enough credits.";
-}
-
 export function VideoGenerationPage() {
   const { refresh: refreshCredits } = useCredits();
   const searchParams = useSearchParams();
@@ -333,7 +321,7 @@ export function VideoGenerationPage() {
   const [resolution, setResolution] = useState("1080p");
   const [wan26ShotType, setWan26ShotType] = useState<Wan26ShotType>("single");
   const [klingV3ShotMode, setKlingV3ShotMode] = useState<KlingV3ShotMode>("single");
-  const [actionTab, setActionTab] = useState<ActionTab>("AI Director");
+  const [actionTab, setActionTab] = useState<ActionTab>("Text to Video");
   const [directorStyle, setDirectorStyle] = useState<DirectorStyleInput>("auto");
   const [directorQualityPreset, setDirectorQualityPreset] =
     useState<DirectorQualityPreset>("balanced");
