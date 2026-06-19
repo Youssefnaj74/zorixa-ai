@@ -1,9 +1,13 @@
 import type { DodoPackId } from "@/lib/dodo-payments/config";
+import { trackEvent } from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 
 export async function startDodoCheckout(
   packId: DodoPackId,
   billing: "monthly" | "yearly" = "monthly"
 ): Promise<void> {
+  trackEvent(AnalyticsEvents.CHECKOUT_STARTED, { pack_id: packId, billing });
+
   const res = await fetch("/api/billing/create-checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

@@ -1,10 +1,12 @@
 import Link from "next/link";
 
+import { BillingSuccessTracker } from "@/components/analytics/BillingSuccessTracker";
 import { Button } from "@/components/ui/button";
 
 export default function BillingSuccessPage() {
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
+      <BillingSuccessTracker />
       <h1 className="text-3xl font-semibold tracking-tight">Payment successful</h1>
       <p className="mt-3 text-sm text-zinc-300">
         Your credits will be added automatically in a moment. If your balance does not update within a few
@@ -23,4 +25,3 @@ export default function BillingSuccessPage() {
     </main>
   );
 }
-

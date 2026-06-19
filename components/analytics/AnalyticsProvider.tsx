@@ -1,11 +1,33 @@
 "use client";
 
 import Script from "next/script";
+import { useEffect } from "react";
+
+import { initPostHog, identifyAnalyticsUser } from "@/lib/analytics";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
+const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY?.trim();
 
-/** Loads GA when configured. PostHog works via window.posthog if injected separately. */
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    initPostHog();
+
+    if (!posthogKey) return;
+
+    void (async () => {
+      const supabase = createSupabaseBrowserClient();
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+      if (user?.id) {
+        identifyAnalyticsUser(user.id, {
+          email: user.email ?? undefined
+        });
+      }
+    })();
+  }, []);
+
   return (
     <>
       {gaId ? (

@@ -1,4 +1,5 @@
 import { sendPurchaseConfirmationEmail } from "@/lib/support-ticket-email";
+import { trackPaymentGrantAnalytics } from "@/lib/analytics-server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ensureUserProfile } from "@/lib/users/ensure-user-profile";
 
@@ -189,6 +190,13 @@ async function grantPackCreditsFallback(
     return { duplicate: false, granted: false };
   }
 
+  void trackPaymentGrantAnalytics({
+    userId,
+    credits,
+    orderRef,
+    isPremiumUpdated: true
+  });
+
   return { duplicate: false, granted: true };
 }
 
@@ -217,7 +225,6 @@ export async function grantPackCredits(
     console.warn("[grantPackCredits] RPC missing — using insert-first fallback (apply DB migration)");
     const fallback = await grantPackCreditsFallback(input);
     if (fallback.granted) {
-      await markUserPremium(userId);
       await sendGrantConfirmationEmail(userId, credits, orderRef);
     }
     return fallback;
@@ -247,19 +254,27 @@ export async function grantPackCredits(
     return { duplicate: false, granted: false };
   }
 
-  await markUserPremium(userId);
+  const premiumUpdated = await markUserPremium(userId);
   await sendGrantConfirmationEmail(userId, credits, orderRef);
+  void trackPaymentGrantAnalytics({
+    userId,
+    credits,
+    orderRef,
+    isPremiumUpdated: premiumUpdated
+  });
   return { duplicate: false, granted: true };
 }
 
-async function markUserPremium(userId: string): Promise<void> {
+async function markUserPremium(userId: string): Promise<boolean> {
   const { error } = await supabaseAdmin
     .from("users_profiles")
     .update({ is_premium: true })
     .eq("id", userId);
   if (error) {
     console.warn("[grantPackCredits] is_premium update failed", { userId, error: error.message });
+    return false;
   }
+  return true;
 }
 
 async function sendGrantConfirmationEmail(userId: string, credits: number, orderRef: string) {

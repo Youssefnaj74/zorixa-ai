@@ -1,4 +1,5 @@
 import { trackEvent } from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 
 export type InsufficientCreditsState = {
   open: boolean;
@@ -19,7 +20,7 @@ export function shouldBlockForInsufficientCredits(
   surface: "image" | "video"
 ): boolean {
   if (required <= 0 || balance >= required) return false;
-  trackEvent("insufficient_credits_modal_opened", {
+  trackEvent(AnalyticsEvents.INSUFFICIENT_CREDITS_MODAL_OPENED, {
     surface,
     required,
     balance

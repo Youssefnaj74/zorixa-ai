@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 import { trackEvent } from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 
 const STEPS = [
   "Choose a plan",
@@ -43,7 +44,7 @@ export function OnboardingCard({ checkoutHref = "/pricing" }: { checkoutHref?: s
         </div>
         <Link
           href={checkoutHref}
-          onClick={() => trackEvent("onboarding_card_clicked", { source: "dashboard" })}
+          onClick={() => trackEvent(AnalyticsEvents.ONBOARDING_CARD_CLICKED, { source: "dashboard" })}
           className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#00e5ff] px-6 py-3 text-sm font-bold text-black transition-opacity hover:opacity-90"
         >
           View Plans

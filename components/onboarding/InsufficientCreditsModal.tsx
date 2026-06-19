@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 
 export function InsufficientCreditsModal({
   open,
@@ -40,7 +41,7 @@ export function InsufficientCreditsModal({
           <Link
             href="/pricing"
             className="flex-1"
-            onClick={() => trackEvent("pricing_viewed", { source: "insufficient_credits_modal" })}
+            onClick={() => trackEvent(AnalyticsEvents.PRICING_VIEWED, { source: "insufficient_credits_modal" })}
           >
             <Button className="w-full bg-[#00e5ff] font-semibold text-black hover:bg-[#00e5ff]/90">
               View Plans
