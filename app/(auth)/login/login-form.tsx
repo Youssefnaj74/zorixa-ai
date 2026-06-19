@@ -9,6 +9,7 @@ import { Mail } from "lucide-react";
 import { ZorixaLogo } from "@/components/layout/ZorixaLogo";
 import loginShowcase from "@/data/login-showcase.json";
 import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
+import { completeSignupNavigation } from "@/lib/post-signup-redirect";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
@@ -156,7 +157,7 @@ export function LoginForm() {
       return;
     }
 
-    scheduleNavigation(redirectTo, { refresh: true });
+    await completeSignupNavigation((path, opts) => scheduleNavigation(path, opts));
   }
 
   async function onGoogleLogin() {
@@ -164,10 +165,13 @@ export function LoginForm() {
     setError(null);
 
     const supabase = createSupabaseBrowserClient();
+    const oauthRedirect = isSignup
+      ? `${getPublicSiteUrl()}/auth/callback?signup=1&redirect=${encodeURIComponent(redirectTo)}`
+      : `${getPublicSiteUrl()}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${getPublicSiteUrl()}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`
+        redirectTo: oauthRedirect
       }
     });
 

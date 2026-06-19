@@ -4,12 +4,24 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Navbar } from "@/components/layout/Navbar";
+import { AuthRequiredModal } from "@/components/onboarding/AuthRequiredModal";
+import { InsufficientCreditsModal } from "@/components/onboarding/InsufficientCreditsModal";
 import {
   creditsChargedForVideoModel,
   formatGenerationCreditsLine
 } from "@/lib/atlas-pricing-catalog";
 import { useCredits } from "@/lib/hooks/use-credits";
 import { insufficientCreditsMessage } from "@/lib/insufficient-credits-message";
+import {
+  CLOSED_INSUFFICIENT_CREDITS,
+  shouldBlockForInsufficientCredits,
+  type InsufficientCreditsState
+} from "@/lib/generation-credits-gate";
+import {
+  trackFirstGenerationCompleted,
+  trackFirstGenerationStarted
+} from "@/lib/generation-analytics";
+import { GENERATION_AUTH_MESSAGE } from "@/lib/generation-api-errors";
 import { composerModelDisplayLabel } from "@/lib/composer-model-label";
 import { getVideoModelShowcase, showcaseVideoAssetUrl } from "@/lib/video-model-showcase";
 import {
@@ -307,7 +319,7 @@ function logAtlasComposerVideoToSupabase(payload: {
 }
 
 export function VideoGenerationPage() {
-  const { refresh: refreshCredits } = useCredits();
+  const { credits, refresh: refreshCredits } = useCredits();
   const searchParams = useSearchParams();
   const [bottomBarHeight, setBottomBarHeight] = useState(COMPOSER_DOCK_WITH_TABS_HEIGHT);
 
@@ -342,6 +354,10 @@ export function VideoGenerationPage() {
   directorForceModelIdRef.current = directorForceModelId;
   const [prompt, setPrompt] = useState("");
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [insufficientCredits, setInsufficientCredits] = useState<InsufficientCreditsState>(
+    CLOSED_INSUFFICIENT_CREDITS
+  );
+  const [authRequiredOpen, setAuthRequiredOpen] = useState(false);
 
   const [promptImageUrl, setPromptImageUrl] = useState<string | null>(null);
   const [promptImage2Url, setPromptImage2Url] = useState<string | null>(null);
@@ -1747,6 +1763,20 @@ export function VideoGenerationPage() {
           JSON.stringify(promptValue)
         );
 
+        const requiredCredits = creditsChargedForVideoModel(videoModel, {
+          durationSeconds: atlasDurationForPayload,
+          resolution: atlasResolution,
+          speedTier: videoComposerSupportsSpeedTier(videoModel) ? speed_tier : "standard",
+          generateAudio: wantGenerateAudio,
+          routeAction: videoPricingRouteAction(generationTab)
+        });
+        if (shouldBlockForInsufficientCredits(credits, requiredCredits, "video")) {
+          setInsufficientCredits({ open: true, required: requiredCredits, balance: credits });
+          return;
+        }
+
+        trackFirstGenerationStarted("video");
+
         const res = await fetch("/api/generate-video", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1780,6 +1810,11 @@ export function VideoGenerationPage() {
         }
 
         if (!res.ok) {
+          if (res.status === 401) {
+            setAuthRequiredOpen(true);
+            setGenerateError(GENERATION_AUTH_MESSAGE);
+            return;
+          }
           if (res.status === 402) {
             setGenerateError(insufficientCreditsMessage(data));
             return;
@@ -1985,6 +2020,7 @@ export function VideoGenerationPage() {
           ...prev.filter((h) => h.outputVideoUrl !== finalVideoUrl)
         ]);
         setHasUserGenerated(true);
+        trackFirstGenerationCompleted("video");
 
         logAtlasComposerVideoToSupabase({
           output_url: finalVideoUrl,
@@ -2023,6 +2059,7 @@ export function VideoGenerationPage() {
     },
     [
       aspect,
+      credits,
       composerModelId,
       directorQualityPreset,
       directorDurationSec,
@@ -2227,6 +2264,11 @@ export function VideoGenerationPage() {
       });
       const data = (await res.json()) as Record<string, unknown>;
       if (!res.ok) {
+        if (res.status === 401) {
+          setAuthRequiredOpen(true);
+          setGenerateError(GENERATION_AUTH_MESSAGE);
+          return;
+        }
         if (res.status === 402) {
           setGenerateError(insufficientCreditsMessage(data as Parameters<typeof insufficientCreditsMessage>[0]));
           return;
@@ -2745,6 +2787,13 @@ export function VideoGenerationPage() {
         onHeightChange={handleBottomBarHeight}
       />
       )}
+      <InsufficientCreditsModal
+        open={insufficientCredits.open}
+        required={insufficientCredits.required}
+        balance={insufficientCredits.balance}
+        onClose={() => setInsufficientCredits(CLOSED_INSUFFICIENT_CREDITS)}
+      />
+      <AuthRequiredModal open={authRequiredOpen} onClose={() => setAuthRequiredOpen(false)} />
     </div>
   );
 }

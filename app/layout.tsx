@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Space_Grotesk } from "next/font/google";
 import Footer from "@/components/layout/Footer";
+import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SiteJsonLd } from "@/components/seo/site-json-ld";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
@@ -44,7 +45,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`min-h-dvh bg-zorixa-bg font-body text-white antialiased ${display.variable} ${body.variable}`}>
         <SiteJsonLd />
-        <ThemeProvider>{children}</ThemeProvider>
+        <AnalyticsProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </AnalyticsProvider>
         <Footer />
       </body>
     </html>

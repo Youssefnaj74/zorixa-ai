@@ -7,6 +7,8 @@ import { UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
+import { completeSignupNavigation } from "@/lib/post-signup-redirect";
+import { getPublicSiteUrl } from "@/lib/public-site-url";
 
 export default function SignupPage() {
   const scheduleNavigation = useScheduledAppRouterNavigation();
@@ -25,7 +27,7 @@ export default function SignupPage() {
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent("/dashboard")}`
+        redirectTo: `${getPublicSiteUrl()}/auth/callback?signup=1&redirect=${encodeURIComponent("/dashboard")}`
       }
     });
 
@@ -56,7 +58,7 @@ export default function SignupPage() {
       return;
     }
 
-    scheduleNavigation("/dashboard", { refresh: true });
+    await completeSignupNavigation(scheduleNavigation);
   }
 
   return (

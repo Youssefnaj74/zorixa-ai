@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Check, ChevronDown, Zap } from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
+import { WelcomePricingBanner } from "@/components/onboarding/WelcomePricingBanner";
 import {
   CREDIT_PACKS,
   formatCredits,
@@ -15,6 +17,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { DodoPackId } from "@/lib/dodo-payments/config";
 import { startDodoCheckout } from "@/lib/dodo-payments/start-checkout";
 import { formatInteger } from "@/lib/format-number";
+import { usePricingViewed } from "@/lib/hooks/use-pricing-viewed";
 import { cn } from "@/lib/utils";
 
 const STUDIO_WORKFLOWS = [
@@ -66,6 +69,10 @@ function packCreditValueLabel(
 }
 
 export function PricingView() {
+  const searchParams = useSearchParams();
+  const showWelcome = searchParams.get("welcome") === "1";
+  usePricingViewed(showWelcome ? "signup_welcome" : "pricing_page");
+
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [openSection, setOpenSection] = useState<string>("image");
   const [userId, setUserId] = useState<string | null>(null);
@@ -98,6 +105,7 @@ export function PricingView() {
       <Navbar />
       <div className="min-h-dvh bg-[#080810] pt-20 font-body text-white">
         <div className="mx-auto max-w-7xl px-6 pb-24">
+          {showWelcome ? <WelcomePricingBanner /> : null}
           {/* Header */}
           <div className="mb-12 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#00e5ff]">View Plans</p>

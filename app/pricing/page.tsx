@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { PricingView } from "@/components/pricing/PricingView";
 
 export const metadata = {
@@ -6,5 +8,9 @@ export const metadata = {
 };
 
 export default function PricingPage() {
-  return <PricingView />;
+  return (
+    <Suspense fallback={null}>
+      <PricingView />
+    </Suspense>
+  );
 }

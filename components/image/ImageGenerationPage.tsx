@@ -22,6 +22,8 @@ import {
 import { pollGenerationJob } from "@/components/studio/batch-jobs";
 import { MODEL_OPTIONS } from "@/components/ui/ModelDropdown";
 import { Navbar } from "@/components/layout/Navbar";
+import { AuthRequiredModal } from "@/components/onboarding/AuthRequiredModal";
+import { InsufficientCreditsModal } from "@/components/onboarding/InsufficientCreditsModal";
 import {
   clampImageBatchCount,
   getAtlasImageModelLimits,
@@ -55,6 +57,16 @@ import {
 } from "@/lib/atlas-pricing-catalog";
 import { useCredits } from "@/lib/hooks/use-credits";
 import { insufficientCreditsMessage } from "@/lib/insufficient-credits-message";
+import {
+  CLOSED_INSUFFICIENT_CREDITS,
+  shouldBlockForInsufficientCredits,
+  type InsufficientCreditsState
+} from "@/lib/generation-credits-gate";
+import {
+  trackFirstGenerationCompleted,
+  trackFirstGenerationStarted
+} from "@/lib/generation-analytics";
+import { GENERATION_AUTH_MESSAGE } from "@/lib/generation-api-errors";
 
 const NAV_H = 56;
 const ATLAS_CLIENT_POLL_MS = 3000;
@@ -175,6 +187,9 @@ async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<strin
     credentials: "include"
   });
   if (!up.ok) {
+    if (up.status === 401) {
+      throw new Error("AUTH_REQUIRED");
+    }
     let msg = "Upload failed — sign in and try again.";
     try {
       const j = (await up.json()) as { error?: string };
@@ -209,7 +224,7 @@ function defaultImageSettingsForModel(model: string): {
 }
 
 export function ImageGenerationPage() {
-  const { refresh: refreshCredits } = useCredits();
+  const { credits, refresh: refreshCredits } = useCredits();
   const searchParams = useSearchParams();
   const studioLock = useMemo(() => parseImageStudioLock(searchParams), [searchParams]);
   const [bottomBarHeight, setBottomBarHeight] = useState(COMPOSER_DOCK_WITH_TABS_HEIGHT);
@@ -226,6 +241,10 @@ export function ImageGenerationPage() {
   const [loading, setLoading] = useState(false);
   const [outputUrls, setOutputUrls] = useState<string[]>([]);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [insufficientCredits, setInsufficientCredits] = useState<InsufficientCreditsState>(
+    CLOSED_INSUFFICIENT_CREDITS
+  );
+  const [authRequiredOpen, setAuthRequiredOpen] = useState(false);
   const [hasUserGenerated, setHasUserGenerated] = useState(false);
 
   const [history, setHistory] = useState<ImageHistoryEntry[]>([]);
@@ -441,6 +460,16 @@ export function ImageGenerationPage() {
         return;
       }
 
+      const requiredCredits = creditsChargedForImageModel(modelId, ctx.batchCount, {
+        resolution: ctx.resolution.trim(),
+        isEdit: ctx.actionTab === "Image to Image"
+      });
+      if (shouldBlockForInsufficientCredits(credits, requiredCredits, "image")) {
+        setInsufficientCredits({ open: true, required: requiredCredits, balance: credits });
+        return;
+      }
+
+      trackFirstGenerationStarted("image");
       setLoading(true);
       try {
         const image_urls: string[] = [];
@@ -489,6 +518,11 @@ export function ImageGenerationPage() {
         }
 
         if (!res.ok) {
+          if (res.status === 401) {
+            setAuthRequiredOpen(true);
+            setGenerateError(GENERATION_AUTH_MESSAGE);
+            return;
+          }
           if (res.status === 402) {
             setGenerateError(insufficientCreditsMessage(data));
             return;
@@ -570,6 +604,7 @@ export function ImageGenerationPage() {
 
         setOutputUrls(outputUrls);
         setHasUserGenerated(true);
+        trackFirstGenerationCompleted("image");
         appliedShowcaseForModel.current = modelId;
         const baseTitle = promptForAtlas.slice(0, 42) || modelId;
         setHistory((prev) => {
@@ -584,12 +619,17 @@ export function ImageGenerationPage() {
           return [...newEntries, ...prev.filter((h) => !h.outputImageUrl || !urlSet.has(h.outputImageUrl))];
         });
       } catch (e: unknown) {
+        if (e instanceof Error && e.message === "AUTH_REQUIRED") {
+          setAuthRequiredOpen(true);
+          setGenerateError(GENERATION_AUTH_MESSAGE);
+          return;
+        }
         setGenerateError(e instanceof Error ? e.message : "Network error. Try again.");
       } finally {
         setLoading(false);
       }
     },
-    [aspect, loading, modelId, prompt, refreshCredits, resolution, batchCount]
+    [aspect, credits, loading, modelId, prompt, refreshCredits, resolution, batchCount]
   );
 
   const restoreHistory = useCallback(
@@ -681,6 +721,11 @@ export function ImageGenerationPage() {
           credits_required?: number;
         };
 
+        if (res.status === 401) {
+          setAuthRequiredOpen(true);
+          setGenerateError(GENERATION_AUTH_MESSAGE);
+          return;
+        }
         if (res.status === 402) {
           setGenerateError(insufficientCreditsMessage(data));
           return;
@@ -830,6 +875,16 @@ export function ImageGenerationPage() {
         onGenerate={runGeneration}
         onHeightChange={setBottomBarHeight}
         studioLock={studioLock}
+      />
+      <InsufficientCreditsModal
+        open={insufficientCredits.open}
+        required={insufficientCredits.required}
+        balance={insufficientCredits.balance}
+        onClose={() => setInsufficientCredits(CLOSED_INSUFFICIENT_CREDITS)}
+      />
+      <AuthRequiredModal
+        open={authRequiredOpen}
+        onClose={() => setAuthRequiredOpen(false)}
       />
     </div>
   );

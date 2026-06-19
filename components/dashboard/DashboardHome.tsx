@@ -24,6 +24,7 @@ import { StatsCard } from "./StatsCard";
 import { buildCatalogStudioHref } from "@/lib/studio-catalog-link";
 import { isTtsGenerationRow } from "@/lib/tts-generation-shared";
 import { UpgradeBanner } from "./upgrade-banner";
+import { OnboardingCard } from "./OnboardingCard";
 import { DashboardSeedanceShowcase } from "./dashboard-seedance-showcase";
 import { ViralToolsBento } from "./viral-tools-bento";
 
@@ -337,6 +338,7 @@ export function DashboardHome({
   ).length;
   const splitTotal = imageRuns + videoRuns + speechRuns;
   const firstName = displayName?.trim().split(/\s+/)[0] ?? "there";
+  const showOnboarding = credits <= 0 && total === 0;
 
   const onSignOut = useCallback(async () => {
     const supabase = createSupabaseBrowserClient();
@@ -357,6 +359,8 @@ export function DashboardHome({
       />
 
       <main className="relative z-10 mx-auto max-w-[1500px] space-y-8 px-4 py-8 pt-24 lg:px-8">
+        {showOnboarding ? <OnboardingCard checkoutHref={upgradeHref} /> : null}
+
         <motion.div
           className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]"
           initial={{ opacity: 0, y: 12 }}
