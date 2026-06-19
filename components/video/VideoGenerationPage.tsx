@@ -22,6 +22,8 @@ import {
   trackFirstGenerationStarted
 } from "@/lib/generation-analytics";
 import { GENERATION_AUTH_MESSAGE } from "@/lib/generation-api-errors";
+import { usePageViewEvent } from "@/lib/hooks/use-page-view-event";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 import { composerModelDisplayLabel } from "@/lib/composer-model-label";
 import { getVideoModelShowcase, showcaseVideoAssetUrl } from "@/lib/video-model-showcase";
 import {
@@ -319,6 +321,7 @@ function logAtlasComposerVideoToSupabase(payload: {
 }
 
 export function VideoGenerationPage() {
+  usePageViewEvent(AnalyticsEvents.VIDEO_STUDIO_VIEWED);
   const { credits, refresh: refreshCredits } = useCredits();
   const searchParams = useSearchParams();
   const [bottomBarHeight, setBottomBarHeight] = useState(COMPOSER_DOCK_WITH_TABS_HEIGHT);

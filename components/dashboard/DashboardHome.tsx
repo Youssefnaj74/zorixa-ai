@@ -2,6 +2,8 @@
 
 import { useCallback } from "react";
 import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
+import { usePageViewEvent } from "@/lib/hooks/use-page-view-event";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 import { formatInteger } from "@/lib/format-number";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
@@ -328,6 +330,7 @@ export function DashboardHome({
   welcomeTagline: string;
   generations: GenerationRow[];
 }) {
+  usePageViewEvent(AnalyticsEvents.DASHBOARD_VIEWED);
   const scheduleNavigation = useScheduledAppRouterNavigation();
   const uniqueGenerations = dedupeGenerationsByOutput(generations);
   const total = uniqueGenerations.length;

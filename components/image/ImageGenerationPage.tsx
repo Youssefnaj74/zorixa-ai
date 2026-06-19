@@ -67,6 +67,8 @@ import {
   trackFirstGenerationStarted
 } from "@/lib/generation-analytics";
 import { GENERATION_AUTH_MESSAGE } from "@/lib/generation-api-errors";
+import { usePageViewEvent } from "@/lib/hooks/use-page-view-event";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 
 const NAV_H = 56;
 const ATLAS_CLIENT_POLL_MS = 3000;
@@ -224,6 +226,7 @@ function defaultImageSettingsForModel(model: string): {
 }
 
 export function ImageGenerationPage() {
+  usePageViewEvent(AnalyticsEvents.IMAGE_STUDIO_VIEWED);
   const { credits, refresh: refreshCredits } = useCredits();
   const searchParams = useSearchParams();
   const studioLock = useMemo(() => parseImageStudioLock(searchParams), [searchParams]);

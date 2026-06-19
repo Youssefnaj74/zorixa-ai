@@ -15,6 +15,9 @@ const host = (process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com"
 
 const TEST_EVENTS = [
   "signup_completed",
+  "dashboard_viewed",
+  "video_studio_viewed",
+  "image_studio_viewed",
   "pricing_viewed",
   "checkout_started",
   "payment_completed",

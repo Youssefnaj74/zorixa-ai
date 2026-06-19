@@ -1,6 +1,9 @@
 /** Canonical PostHog / GA event names for the onboarding funnel. */
 export const AnalyticsEvents = {
   SIGNUP_COMPLETED: "signup_completed",
+  DASHBOARD_VIEWED: "dashboard_viewed",
+  VIDEO_STUDIO_VIEWED: "video_studio_viewed",
+  IMAGE_STUDIO_VIEWED: "image_studio_viewed",
   PRICING_VIEWED: "pricing_viewed",
   CHECKOUT_STARTED: "checkout_started",
   PAYMENT_COMPLETED: "payment_completed",
