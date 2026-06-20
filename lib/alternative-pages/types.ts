@@ -2,7 +2,7 @@ import type { BlogSection } from "@/lib/blog/types";
 
 export type AlternativeComparisonRow = {
   feature: string;
-  arcads: string;
+  competitor: string;
   zorixa: string;
 };
 

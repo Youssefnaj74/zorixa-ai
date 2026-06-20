@@ -1,7 +1,8 @@
 import { arcadsAlternativePage } from "@/lib/alternative-pages/arcads-alternative";
+import { heygenAlternativePage } from "@/lib/alternative-pages/heygen-alternative";
 import type { AlternativeSeoPage } from "@/lib/alternative-pages/types";
 
-export const ALTERNATIVE_SEO_PAGES: AlternativeSeoPage[] = [arcadsAlternativePage];
+export const ALTERNATIVE_SEO_PAGES: AlternativeSeoPage[] = [arcadsAlternativePage, heygenAlternativePage];
 
 const PAGE_BY_SLUG = new Map(ALTERNATIVE_SEO_PAGES.map((p) => [p.slug, p]));
 const PAGE_BY_PATH = new Map(ALTERNATIVE_SEO_PAGES.map((p) => [p.path, p]));

@@ -110,7 +110,7 @@ function ComparisonTable({
                 {row.feature}
               </th>
               <td className="px-4 py-3 text-white/65">
-                <InlineRichText text={row.arcads} />
+                <InlineRichText text={row.competitor} />
               </td>
               <td className="px-4 py-3 text-white/65">
                 <InlineRichText text={row.zorixa} />
@@ -126,7 +126,12 @@ function ComparisonTable({
 export function AlternativePageView({ page }: { page: AlternativeSeoPage }) {
   const tocSections = [
     ...page.sections,
-    { id: "comparison-table", title: "Arcads vs ZorixaAI", level: 2 as const, paragraphs: [] },
+    {
+      id: "comparison-table",
+      title: `${page.competitorName} vs ZorixaAI`,
+      level: 2 as const,
+      paragraphs: []
+    },
     { id: "faq", title: "FAQ", level: 2 as const, paragraphs: [] }
   ];
 
@@ -163,11 +168,14 @@ export function AlternativePageView({ page }: { page: AlternativeSeoPage }) {
 
               <section id="comparison-table" aria-labelledby="comparison-table-heading" className="mt-12 scroll-mt-24">
                 <h2 id="comparison-table-heading" className="text-xl font-bold text-white sm:text-2xl">
-                  Arcads vs ZorixaAI comparison table
+                  {page.competitorName} vs ZorixaAI comparison table
                 </h2>
                 <p className="mt-4 text-sm leading-relaxed text-white/70 sm:text-base">
                   Use this table for a quick read on{" "}
-                  <strong className="font-semibold text-white/85">Arcads vs ZorixaAI</strong> — then open the{" "}
+                  <strong className="font-semibold text-white/85">
+                    {page.competitorName} vs ZorixaAI
+                  </strong>{" "}
+                  — then open the{" "}
                   <Link href="/video" className="text-[#00e5ff] hover:underline">
                     video studio
                   </Link>{" "}

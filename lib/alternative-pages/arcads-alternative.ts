@@ -22,52 +22,52 @@ export const arcadsAlternativePage: AlternativeSeoPage = {
   comparisonTable: [
     {
       feature: "Primary focus",
-      arcads: "AI UGC ad videos with virtual actors",
+      competitor: "AI UGC ad videos with virtual actors",
       zorixa: "Multi-model AI video & image studio (UGC, cinematic, product)"
     },
     {
       feature: "Video models",
-      arcads: "Arcads-native UGC pipeline",
+      competitor: "Arcads-native UGC pipeline",
       zorixa: "Seedance 2, Kling 3 Pro, Hailuo 2.3, Vidu Q3, Veo, Wan, Grok & more"
     },
     {
       feature: "Text to Video",
-      arcads: "UGC-script driven generation",
+      competitor: "UGC-script driven generation",
       zorixa: "Full [[text-to-video studio|/video]] with model picker & AI Director"
     },
     {
       feature: "Image to Video",
-      arcads: "Limited / workflow-dependent",
+      competitor: "Limited / workflow-dependent",
       zorixa: "Dedicated I2V tab + product & portrait workflows"
     },
     {
       feature: "Reference / multimodal video",
-      arcads: "Not a core Arcads feature",
+      competitor: "Not a core Arcads feature",
       zorixa: "[[Seedance 2.0|/models/seedance-2]] Reference to Video (@image / @video / @audio)"
     },
     {
       feature: "Pricing model",
-      arcads: "Subscription plans for UGC ad volume",
+      competitor: "Subscription plans for UGC ad volume",
       zorixa: "Credit packs from $9.99/mo — pay only for what you generate"
     },
     {
       feature: "Image generation",
-      arcads: "Not included",
+      competitor: "Not included",
       zorixa: "Flux, GPT Image 2, Seedream, Nano Banana & more on /image"
     },
     {
       feature: "Character / motion tools",
-      arcads: "Built-in AI actors library",
+      competitor: "Built-in AI actors library",
       zorixa: "Character swap, motion control, lipsync (InfiniteTalk, Kling motion)"
     },
     {
       feature: "Free trial / entry",
-      arcads: "Plan signup required",
+      competitor: "Plan signup required",
       zorixa: "Free account; credits purchased when ready ([[pricing|/pricing]])"
     },
     {
       feature: "Best for",
-      arcads: "Teams that want templated UGC ads only",
+      competitor: "Teams that want templated UGC ads only",
       zorixa: "Creators who want model choice, UGC + cinematic, one wallet"
     }
   ],
