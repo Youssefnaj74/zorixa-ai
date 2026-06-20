@@ -19,6 +19,9 @@ function isSessionOptionalPath(pathname: string): boolean {
   if (pathname === "/reviews" || pathname.startsWith("/reviews/")) {
     return true;
   }
+  if (pathname.endsWith("-alternative")) {
+    return true;
+  }
   if (pathname === "/models" || pathname.startsWith("/models/")) {
     return true;
   }

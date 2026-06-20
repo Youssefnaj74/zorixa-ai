@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { getAllAlternativePagePaths } from "@/lib/alternative-pages";
 import { getAllBlogSlugs } from "@/lib/blog";
 import { getAllModelSeoSlugs } from "@/lib/model-seo-catalog";
 import { getAllModelReviewSlugs } from "@/lib/review-pages-catalog";
@@ -39,20 +40,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const modelPaths = getAllModelSeoSlugs().map((slug) => `/models/${slug}`);
   const blogPaths = getAllBlogSlugs().map((slug) => `/blog/${slug}`);
   const reviewPaths = getAllModelReviewSlugs().map((slug) => `/reviews/${slug}`);
+  const alternativePaths = getAllAlternativePagePaths();
 
-  return [...paths, ...modelPaths, ...blogPaths, ...reviewPaths].map((path) => ({
+  return [...paths, ...modelPaths, ...blogPaths, ...reviewPaths, ...alternativePaths].map((path) => ({
     url: `${base}${path}`,
     lastModified: now,
     changeFrequency:
       path === "" ||
       path.startsWith("/models/") ||
       path.startsWith("/blog/") ||
-      path.startsWith("/reviews/")
+      path.startsWith("/reviews/") ||
+      path.endsWith("-alternative")
         ? "weekly"
         : ("monthly" as const),
     priority: path === ""
       ? 1
-      : path.startsWith("/models/") || path.startsWith("/blog/") || path.startsWith("/reviews/")
+      : path.startsWith("/models/") ||
+          path.startsWith("/blog/") ||
+          path.startsWith("/reviews/") ||
+          path.endsWith("-alternative")
         ? 0.85
         : path === "/about" || path === "/faq" || path === "/models" || path === "/blog" || path === "/reviews"
           ? 0.9
