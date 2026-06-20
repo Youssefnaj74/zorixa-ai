@@ -1,12 +1,14 @@
 import { arcadsAlternativePage } from "@/lib/alternative-pages/arcads-alternative";
 import { creatifyAlternativePage } from "@/lib/alternative-pages/creatify-alternative";
 import { heygenAlternativePage } from "@/lib/alternative-pages/heygen-alternative";
+import { runwayAlternativePage } from "@/lib/alternative-pages/runway-alternative";
 import type { AlternativeSeoPage } from "@/lib/alternative-pages/types";
 
 export const ALTERNATIVE_SEO_PAGES: AlternativeSeoPage[] = [
   arcadsAlternativePage,
   heygenAlternativePage,
-  creatifyAlternativePage
+  creatifyAlternativePage,
+  runwayAlternativePage
 ];
 
 const PAGE_BY_SLUG = new Map(ALTERNATIVE_SEO_PAGES.map((p) => [p.slug, p]));
