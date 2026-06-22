@@ -16,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/about",
     "/about/founder",
     "/contact",
+    "/affiliate",
     "/billing",
     "/abuse",
     "/faq",

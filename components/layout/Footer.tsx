@@ -12,6 +12,9 @@ export default function Footer() {
           <Link href="/contact" className="text-sm text-white/40 hover:text-white transition-colors">
             Contact
           </Link>
+          <Link href="/affiliate" className="text-sm text-white/40 hover:text-white transition-colors">
+            Affiliates
+          </Link>
           <a
             href="mailto:support@zorixaai.com"
             className="text-sm text-white/40 hover:text-white transition-colors"

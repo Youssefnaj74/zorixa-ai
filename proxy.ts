@@ -20,6 +20,9 @@ function isSessionOptionalPath(pathname: string): boolean {
   if (pathname === "/" || pathname === "/pricing" || pathname === "/privacy" || pathname === "/terms") {
     return true;
   }
+  if (pathname === "/affiliate" || pathname === "/about" || pathname === "/contact" || pathname === "/faq") {
+    return true;
+  }
   if (pathname === "/blog" || pathname.startsWith("/blog/")) {
     return true;
   }

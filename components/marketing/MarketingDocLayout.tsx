@@ -37,6 +37,10 @@ export function MarketingDocLayout({
               Pricing
             </Link>
             {" · "}
+            <Link href="/affiliate" className="text-[#00e5ff] hover:underline">
+              Affiliates
+            </Link>
+            {" · "}
             <Link href="/helpsupport" className="text-[#00e5ff] hover:underline">
               Help center
             </Link>

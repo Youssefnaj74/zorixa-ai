@@ -446,6 +446,9 @@ export function LandingPage() {
                 <Link className="hover:text-white" href="/pricing">
                   Pricing
                 </Link>
+                <Link className="hover:text-white" href="/affiliate">
+                  Affiliates
+                </Link>
                 <Link className="hover:text-white" href="/dashboard">
                   Dashboard
                 </Link>
