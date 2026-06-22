@@ -1,0 +1,26 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#00d1ff"/>
+        <stop offset="100%" stop-color="#8b5cf6"/>
+      </linearGradient>
+    </defs>
+
+    <!-- Logo wordmark -->
+    <text x="156" y="118" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif" font-size="42" font-weight="700" fill="#ffffff">Zorixa AI</text>
+
+    <!-- Headline -->
+    <text x="80" y="210" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif" font-size="52" font-weight="700" fill="#ffffff">Multi-model AI video</text>
+    <text x="80" y="272" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif" font-size="52" font-weight="700" fill="url(#accent)">&amp; image studio</text>
+
+    <!-- Subhead -->
+    <text x="80" y="330" font-family="DM Sans, Segoe UI, system-ui, sans-serif" font-size="22" font-weight="500" fill="#a1a1aa">Kling 3.0 Pro · Google Veo 3.1 · Seedance 2.0 · Hailuo 2.3 · Flux · GPT Image 2</text>
+
+    <!-- Divider -->
+    <rect x="80" y="368" width="1040" height="1" fill="rgba(255,255,255,0.10)"/>
+
+    <!-- Footer lines -->
+    <text x="80" y="418" font-family="DM Sans, Segoe UI, system-ui, sans-serif" font-size="20" font-weight="600" fill="#ffffff">Credits shown before every generation</text>
+    <text x="80" y="452" font-family="DM Sans, Segoe UI, system-ui, sans-serif" font-size="18" font-weight="500" fill="#a1a1aa">Plans from $9.99/mo · 1,000 credits · 30+ AI models</text>
+    <text x="80" y="548" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif" font-size="24" font-weight="700" fill="#00d1ff">zorixaai.com/video</text>
+  </svg>

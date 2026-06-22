@@ -1,0 +1,27 @@
+<svg width="1500" height="500" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#00d1ff"/>
+        <stop offset="100%" stop-color="#8b5cf6"/>
+      </linearGradient>
+    </defs>
+    <!-- Badge -->
+    <rect x="64" y="56" rx="100" ry="100" width="248" height="34" fill="rgba(0,209,255,0.10)" stroke="rgba(0,209,255,0.35)" stroke-width="1"/>
+    <circle cx="82" cy="73" r="4" fill="#00d1ff"/>
+    <text x="96" y="78" font-family="DM Sans, Segoe UI, system-ui, sans-serif" font-size="13" font-weight="600" fill="#7ee9ff">LIVE ON PRODUCT HUNT</text>
+
+    <!-- Headline -->
+    <text x="64" y="148" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif" font-size="46" font-weight="700" fill="#ffffff">Zorixa AI is here</text>
+    <text x="64" y="198" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif" font-size="46" font-weight="700" fill="url(#accent)">Multi-model AI video</text>
+
+    <!-- Subhead -->
+    <text x="64" y="248" font-family="DM Sans, Segoe UI, system-ui, sans-serif" font-size="18" font-weight="500" fill="#a1a1aa">Kling 3.0 Pro · Google Veo 3.1 · Seedance 2.0 · Hailuo 2.3</text>
+    <text x="64" y="276" font-family="DM Sans, Segoe UI, system-ui, sans-serif" font-size="18" font-weight="500" fill="#a1a1aa">Flux · GPT Image 2 · Credits shown before you generate</text>
+
+    <!-- Price line -->
+    <text x="64" y="322" font-family="DM Sans, Segoe UI, system-ui, sans-serif" font-size="16" font-weight="600" fill="#ffffff">Plans from $9.99/mo · 1,000 credits</text>
+
+    <!-- CTA pill -->
+    <rect x="64" y="352" rx="12" ry="12" width="220" height="48" fill="#00d1ff"/>
+    <text x="174" y="382" text-anchor="middle" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif" font-size="16" font-weight="700" fill="#000000">Open Video Studio →</text>
+  </svg>
