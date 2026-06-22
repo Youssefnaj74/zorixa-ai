@@ -1,11 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { applySecurityHeaders } from "@/lib/security-headers.mjs";
 import { updateSession } from "@/lib/supabase/middleware";
+
+/** Next.js 16 middleware entrypoint (`proxy` replaces the old `middleware` export). */
 
 function copyResponseCookies(from: NextResponse, to: NextResponse) {
   from.cookies.getAll().forEach((cookie) => {
     to.cookies.set(cookie);
   });
+}
+
+function withSecurityHeaders(response: NextResponse): NextResponse {
+  return applySecurityHeaders(response);
 }
 
 /** Routes that must not block on Supabase session refresh (landing, legal, health). */
@@ -41,7 +48,7 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   if (isSessionOptionalPath(pathname)) {
-    return NextResponse.next();
+    return withSecurityHeaders(NextResponse.next());
   }
 
   const { response, user } = await updateSession(request);
@@ -58,11 +65,11 @@ export async function proxy(request: NextRequest) {
       target && target.startsWith("/") && !target.startsWith("//") ? target : "/dashboard";
     const redirect = NextResponse.redirect(new URL(safe, request.url));
     copyResponseCookies(response, redirect);
-    return redirect;
+    return withSecurityHeaders(redirect);
   }
 
   if (!isProtected) {
-    return response;
+    return withSecurityHeaders(response);
   }
 
   if (!user) {
@@ -71,10 +78,10 @@ export async function proxy(request: NextRequest) {
     url.searchParams.set("redirect", pathname);
     const redirect = NextResponse.redirect(url);
     copyResponseCookies(response, redirect);
-    return redirect;
+    return withSecurityHeaders(redirect);
   }
 
-  return response;
+  return withSecurityHeaders(response);
 }
 
 export const config = {

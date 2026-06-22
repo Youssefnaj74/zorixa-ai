@@ -8,6 +8,7 @@ import { LandingGenerationsGallery } from "@/components/landing/LandingGeneratio
 import { LandingPoweredModelsSection } from "@/components/landing/LandingPoweredModelsSection";
 import { LandingProductStudioSection } from "@/components/landing/LandingProductStudioSection";
 import { BrandEmailLink } from "@/components/marketing/BrandEmailLink";
+import { ProductHuntBadge } from "@/components/marketing/ProductHuntBadge";
 import { ZorixaLogo } from "@/components/layout/ZorixaLogo";
 import { BRAND_EMAILS } from "@/lib/site-brand";
 import { cn } from "@/lib/utils";
@@ -157,6 +158,10 @@ export function LandingPage() {
               >
                 View plans
               </Link>
+            </motion.div>
+
+            <motion.div variants={reveal} className="mt-8">
+              <ProductHuntBadge />
             </motion.div>
           </motion.div>
         </section>
