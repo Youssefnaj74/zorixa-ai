@@ -7,6 +7,7 @@
     "verify:atlas": "node scripts/verify-atlas.mjs",
     "verify:dodo": "node scripts/verify-dodo-payments.mjs",
     "verify:billing-migration": "node scripts/verify-billing-migration.mjs",
+    "verify:p0-security": "node scripts/verify-p0-security.mjs",
     "verify:content-moderation": "node scripts/verify-content-moderation.mjs",
     "verify:posthog-events": "node scripts/posthog-verify-events.mjs",
     "posthog:onboarding-dashboard": "node scripts/posthog-onboarding-dashboard.mjs",

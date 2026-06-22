@@ -152,11 +152,34 @@ create policy "profiles_select_own"
 on public.users_profiles for select
 using (auth.uid() = id);
 
+-- Client UPDATE removed (P0): billing columns protected by trigger; server uses service role.
 drop policy if exists "profiles_update_own" on public.users_profiles;
-create policy "profiles_update_own"
-on public.users_profiles for update
-using (auth.uid() = id)
-with check (auth.uid() = id);
+
+create or replace function public.protect_billing_columns()
+returns trigger
+language plpgsql
+as $$
+begin
+  if coalesce(auth.jwt() ->> 'role', '') = 'service_role'
+     or current_user in ('postgres', 'supabase_admin') then
+    return new;
+  end if;
+
+  if new.credits_balance is distinct from old.credits_balance
+     or new.is_premium is distinct from old.is_premium then
+    raise exception 'billing columns are server-only'
+      using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_users_profiles_billing on public.users_profiles;
+create trigger protect_users_profiles_billing
+before update on public.users_profiles
+for each row
+execute function public.protect_billing_columns();
 
 -- transactions: user can read own, inserts allowed via server role (service key) only
 drop policy if exists "transactions_select_own" on public.transactions;

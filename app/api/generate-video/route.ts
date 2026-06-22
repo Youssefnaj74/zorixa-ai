@@ -122,9 +122,11 @@ import {
   normalizeAtlasVideoUpscalerTarget
 } from "@/lib/atlas-video-upscaler";
 import {
+  abortAtlasCharge,
   assertCanAfford,
+  beginAtlasCharge,
+  completeAtlasCharge,
   creditsForVideoModel,
-  deductCreditsForPrediction,
   insufficientCreditsResponse
 } from "@/lib/credits-charge";
 import { env } from "@/lib/env";
@@ -457,6 +459,20 @@ async function handleVideoUpscalePost(
     copyAudio: true
   });
 
+  const chargeBegin = await beginAtlasCharge({
+    userId: actor.userId,
+    amount: creditCost,
+    featureUsed: "video"
+  });
+  if (!chargeBegin.ok) {
+    if (chargeBegin.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(chargeBegin.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Could not deduct credits" }, { status: 500 });
+  }
+
   const createRes = await fetch(`${ATLAS_BASE}/generateVideo`, {
     method: "POST",
     headers: {
@@ -468,6 +484,7 @@ async function handleVideoUpscalePost(
 
   const createJson = (await createRes.json()) as AtlasEnvelope;
   if (!createRes.ok) {
+    await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
     return NextResponse.json(
       {
         error:
@@ -480,23 +497,22 @@ async function handleVideoUpscalePost(
 
   const predictionId = createJson.data?.id;
   if (!predictionId) {
+    await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
     return NextResponse.json({ error: "Atlas did not return a prediction id" }, { status: 502 });
   }
 
-  const charge = await deductCreditsForPrediction({
+  const finalized = await completeAtlasCharge({
     userId: actor.userId,
-    predictionId,
-    amount: creditCost,
-    featureUsed: "video"
+    session: chargeBegin.session,
+    predictionId
   });
-  if (!charge.ok) {
-    if (charge.error === "INSUFFICIENT_CREDITS") {
-      return NextResponse.json(insufficientCreditsResponse(charge.balance, creditCost), {
-        status: 402
-      });
-    }
-    return NextResponse.json({ error: "Could not deduct credits" }, { status: 500 });
+  if (!finalized.ok) {
+    await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
+    return NextResponse.json({ error: "Could not finalize credit charge" }, { status: 500 });
   }
+
+  const creditsSpent = chargeBegin.session.creditsSpent;
+  const balanceAfter = chargeBegin.session.balanceAfter;
 
   const initialStatus = createJson.data?.status;
   if (initialStatus === "completed" || initialStatus === "succeeded") {
@@ -505,8 +521,8 @@ async function handleVideoUpscalePost(
       return NextResponse.json({
         video_url: videoUrl,
         prediction_id: predictionId,
-        credits_spent: charge.creditsSpent,
-        credits_balance: charge.balanceAfter
+        credits_spent: creditsSpent,
+        credits_balance: balanceAfter
       });
     }
     return NextResponse.json(
@@ -535,8 +551,8 @@ async function handleVideoUpscalePost(
     prediction_id: predictionId,
     poll_interval_ms: CLIENT_POLL_HINT_MS,
     atlas_model: ATLAS_VIDEO_UPSCALER_COMPOSER_ID,
-    credits_spent: charge.creditsSpent,
-    credits_balance: charge.balanceAfter
+    credits_spent: creditsSpent,
+    credits_balance: balanceAfter
   });
 }
 
@@ -1392,6 +1408,20 @@ async function handleGenerateVideoPost(request: Request) {
     seedanceDimensions ? `| ${String(atlasBody.width)}x${String(atlasBody.height)}` : `| aspect ${aspectRatio}`
   );
 
+  const chargeBegin = await beginAtlasCharge({
+    userId: actor.userId,
+    amount: creditCost,
+    featureUsed: "video"
+  });
+  if (!chargeBegin.ok) {
+    if (chargeBegin.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(chargeBegin.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Could not deduct credits" }, { status: 500 });
+  }
+
   const createRes = await fetch(`${ATLAS_BASE}/generateVideo`, {
     method: "POST",
     headers: {
@@ -1403,6 +1433,7 @@ async function handleGenerateVideoPost(request: Request) {
 
   const createJson = (await createRes.json()) as AtlasEnvelope;
   if (!createRes.ok) {
+    await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
     console.error("[generate-video POST] Atlas generateVideo HTTP error", {
       httpStatus: createRes.status,
       atlasResponse: JSON.stringify(createJson),
@@ -1429,28 +1460,25 @@ async function handleGenerateVideoPost(request: Request) {
 
   const predictionId = createJson.data?.id;
   if (!predictionId) {
+    await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
     return NextResponse.json(
       { error: "Atlas did not return a prediction id" },
       { status: 502 }
     );
   }
 
-  const charge = await deductCreditsForPrediction({
+  const finalized = await completeAtlasCharge({
     userId: actor.userId,
-    predictionId,
-    amount: creditCost,
-    featureUsed: "video"
+    session: chargeBegin.session,
+    predictionId
   });
-  if (!charge.ok) {
-    if (charge.error === "INSUFFICIENT_CREDITS") {
-      return NextResponse.json(insufficientCreditsResponse(charge.balance, creditCost), {
-        status: 402
-      });
-    }
-    return NextResponse.json({ error: "Could not deduct credits" }, { status: 500 });
+  if (!finalized.ok) {
+    await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
+    return NextResponse.json({ error: "Could not finalize credit charge" }, { status: 500 });
   }
 
-  const creditsSpent = charge.creditsSpent;
+  const creditsSpent = chargeBegin.session.creditsSpent;
+  const balanceAfter = chargeBegin.session.balanceAfter;
 
   const initialStatus = createJson.data?.status;
   if (initialStatus === "completed" || initialStatus === "succeeded") {
@@ -1460,7 +1488,7 @@ async function handleGenerateVideoPost(request: Request) {
         video_url: videoUrl,
         prediction_id: predictionId,
         credits_spent: creditsSpent,
-        credits_balance: charge.balanceAfter
+        credits_balance: balanceAfter
       });
     }
     return NextResponse.json(
@@ -1540,6 +1568,6 @@ async function handleGenerateVideoPost(request: Request) {
     atlas_model: model,
     atlas_request: atlasDebug,
     credits_spent: creditsSpent,
-    credits_balance: charge.balanceAfter
+    credits_balance: balanceAfter
   });
 }
