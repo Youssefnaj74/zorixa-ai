@@ -175,7 +175,7 @@ export function LandingProductStudioSection() {
             href="/video"
             cta="Try video studio"
             imageSrc="/dashboard-assets/dashboard-video-studio.png"
-            imageAlt="ZorixaAI video studio with Text to Video, Image to Video, Character Swap and more"
+            imageAlt="ZorixaAI video studio — AI cinematic video generation, UGC workflows, and professional AI character swap"
             modes={VIDEO_MODES}
             accent="cyan"
             poweredBy={VIDEO_POWERED_MODELS}
@@ -187,7 +187,7 @@ export function LandingProductStudioSection() {
             href="/image"
             cta="Try image studio"
             imageSrc="/dashboard-assets/dashboard-image-studio.png"
-            imageAlt="ZorixaAI image studio with Text to Image and Image to Image tabs"
+            imageAlt="ZorixaAI image studio — professional AI image generation and image-to-image editing"
             modes={IMAGE_MODES}
             accent="violet"
             poweredBy={IMAGE_POWERED_MODELS}

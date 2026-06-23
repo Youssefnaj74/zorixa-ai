@@ -34,8 +34,8 @@ const EXAMPLES: ShowcaseExample[] = [
     afterPoints: ["Natural skin texture", "Facial detail", "Cinematic lighting"],
     beforeUrl: "/landing-gallery/ugc/before.png",
     afterUrl: "/landing-gallery/ugc/after.png",
-    beforeAlt: "Before — generic AI influencer look",
-    afterAlt: "After — UGC creator with cinematic lighting"
+    beforeAlt: "Before UGC AI generation — plain studio input with generic AI look and flat lighting",
+    afterAlt: "UGC AI influencer result — natural skin texture, facial detail, and cinematic lighting"
   },
   {
     id: "enhancement",
@@ -45,8 +45,8 @@ const EXAMPLES: ShowcaseExample[] = [
     afterPoints: ["Sharp detail", "Clean finish", "Professional look"],
     beforeUrl: "/landing-gallery/enhancement/before.png",
     afterUrl: "/landing-gallery/enhancement/after.png",
-    beforeAlt: "Before — soft low-detail portrait",
-    afterAlt: "After — enhanced sharp professional portrait"
+    beforeAlt: "Before AI image enhancement — soft detail, flat contrast, and low polish",
+    afterAlt: "After professional AI image enhancement — sharp detail and clean studio finish"
   },
   {
     id: "consistency",
@@ -56,8 +56,8 @@ const EXAMPLES: ShowcaseExample[] = [
     afterPoints: ["Same person every frame", "Stable identity", "Campaign-ready"],
     beforeUrl: "/landing-gallery/consistency/before.png",
     afterUrl: "/landing-gallery/consistency/after.png",
-    beforeAlt: "Before — identity drift across frames",
-    afterAlt: "After — consistent AI influencer identity"
+    beforeAlt: "Before AI character consistency — identity drift and inconsistent facial features",
+    afterAlt: "After AI character consistency — stable UGC AI influencer identity across every frame"
   },
   {
     id: "character-swap",
@@ -67,8 +67,8 @@ const EXAMPLES: ShowcaseExample[] = [
     afterPoints: ["Swapped character", "Scene preserved", "Natural motion match"],
     beforeUrl: "/landing-gallery/character-swap/before.png",
     afterUrl: "/landing-gallery/character-swap/after.png",
-    beforeAlt: "Before — original UGC subject frame",
-    afterAlt: "After — character swap result"
+    beforeAlt: "Before professional AI character swap — original UGC subject in source frame",
+    afterAlt: "Professional AI character swap result — new face with scene and motion preserved"
   }
 ];
 
@@ -78,6 +78,8 @@ const SHOWCASE_VIDEOS = [
     modelId: "grok-imagine-video-i2v-15",
     label: "UGC Video · Grok Imagine",
     poster: "/video-showcases/i2v/grok-imagine-video-i2v-15-start.png",
+    posterAlt: "UGC AI influencer result preview — Grok Imagine AI video generation",
+    ariaLabel: "UGC AI influencer result — sample AI video generated with Grok Imagine on ZorixaAI",
     src: "/video-showcases/i2v/grok-imagine-video-i2v-15.mp4"
   },
   {
@@ -85,6 +87,8 @@ const SHOWCASE_VIDEOS = [
     modelId: "hailuo-2-3",
     label: "UGC Video · Hailuo 2.3",
     poster: "/video-showcases/i2v/hailuo-2-3-start.png",
+    posterAlt: "UGC AI influencer result preview — Hailuo 2.3 AI video generation",
+    ariaLabel: "UGC AI influencer result — sample AI video generated with Hailuo 2.3 on ZorixaAI",
     src: "/video-showcases/i2v/hailuo-2-3.mp4"
   },
   {
@@ -92,6 +96,8 @@ const SHOWCASE_VIDEOS = [
     modelId: "seedance-2",
     label: "Cinematic · Seedance 2.0",
     poster: "/video-showcases/i2v/seedance-2-start.png",
+    posterAlt: "AI cinematic video generation preview — Seedance 2.0 film-grade output",
+    ariaLabel: "AI cinematic video generation sample created with Seedance 2.0 on ZorixaAI",
     src: "/video-showcases/i2v/seedance-2.mp4"
   },
   {
@@ -99,6 +105,8 @@ const SHOWCASE_VIDEOS = [
     modelId: "vidu-q3-pro",
     label: "Cinematic · Vidu Q3 Pro",
     poster: "/video-showcases/i2v/vidu-q3-pro-start.png",
+    posterAlt: "AI cinematic video generation preview — Vidu Q3 Pro film-grade output",
+    ariaLabel: "AI cinematic video generation sample created with Vidu Q3 Pro on ZorixaAI",
     src: "/video-showcases/i2v/vidu-q3-pro.mp4"
   }
 ] as const;
@@ -206,15 +214,25 @@ export function LandingGenerationsGallery() {
                 className="overflow-hidden rounded-2xl border border-white/[0.10] bg-white/[0.03] shadow-[0_18px_55px_rgba(0,0,0,0.55)]"
               >
                 <div className="relative aspect-[9/16] bg-black">
+                  <Image
+                    src={item.poster}
+                    alt={item.posterAlt}
+                    fill
+                    sizes="(max-width: 640px) 50vw, 25vw"
+                    className="object-cover"
+                    priority={false}
+                    aria-hidden
+                  />
                   <video
                     src={item.src}
                     poster={item.poster}
-                    className="size-full object-cover"
+                    className="absolute inset-0 size-full object-cover"
                     autoPlay
                     muted
                     loop
                     playsInline
                     preload="metadata"
+                    aria-label={item.ariaLabel}
                   />
                 </div>
                 <div className="flex items-center gap-2.5 px-3 py-3 sm:px-4">
