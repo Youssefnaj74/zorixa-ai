@@ -27,17 +27,18 @@ export function SiteJsonLd({ includeFaq = false }: { includeFaq?: boolean }) {
   const software = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: SITE_NAME,
+    name: "ZorixaAI",
     applicationCategory: "MultimediaApplication",
-    operatingSystem: "Web",
+    operatingSystem: "Web-based",
     url: origin,
     description:
-      "AI image and video generation studio with multiple models including Kling, Google Veo, Flux, GPT Image 2, Seedance, and Hailuo.",
+      "Unified AI studio for creators with 30+ high-end models for image and video generation.",
     offers: {
       "@type": "Offer",
       price: "9.99",
       priceCurrency: "USD",
-      description: "Starter plan — monthly, credit-based"
+      description: "Starting at $9.99/month",
+      url: absoluteUrl("/pricing")
     },
     provider: { "@type": "Organization", name: SITE_NAME, url: origin }
   };
