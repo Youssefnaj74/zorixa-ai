@@ -47,7 +47,23 @@ function isSessionOptionalPath(pathname: string): boolean {
   return false;
 }
 
+function redirectToLowercasePath(request: NextRequest): NextResponse | null {
+  const pathname = request.nextUrl.pathname;
+  const normalized = pathname.toLowerCase();
+  if (normalized === pathname || !isSessionOptionalPath(normalized)) {
+    return null;
+  }
+  const url = request.nextUrl.clone();
+  url.pathname = normalized;
+  return withSecurityHeaders(NextResponse.redirect(url, 308));
+}
+
 export async function proxy(request: NextRequest) {
+  const caseRedirect = redirectToLowercasePath(request);
+  if (caseRedirect) {
+    return caseRedirect;
+  }
+
   const pathname = request.nextUrl.pathname;
 
   if (isSessionOptionalPath(pathname)) {
