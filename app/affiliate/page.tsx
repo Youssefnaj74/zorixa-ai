@@ -38,6 +38,7 @@ export default function AffiliatePage() {
       eyebrow="Partners"
       title="Zorixa AI Affiliate Program"
       subtitle="Launch partners earn recurring commission when their audience subscribes — no paid ads required on your side. Perfect for creators covering AI video and image tools."
+      maxWidthClass="max-w-4xl"
     >
       <section className="rounded-2xl border border-[#00e5ff]/20 bg-[#00e5ff]/[0.04] px-5 py-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-[#00e5ff]">Launch offer</p>
@@ -91,12 +92,12 @@ export default function AffiliatePage() {
         </ol>
       </section>
 
-      <section>
+      <section className="text-center">
         <h2 className="text-base font-bold text-white">Apply now</h2>
-        <p className="mt-2 text-sm text-white/50">
+        <p className="mx-auto mt-2 max-w-xl text-sm text-white/50">
           Product Hunt launch partners welcome — mention your PH username or channel in the form.
         </p>
-        <div className="mt-6" id="apply">
+        <div className="mt-8" id="apply">
           <AffiliateApplyForm tallyEmbedUrl={tallyEmbedUrl} formUrl={formUrl} />
         </div>
       </section>
