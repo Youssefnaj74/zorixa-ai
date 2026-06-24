@@ -6,6 +6,7 @@ import { CheckCircle2, ChevronDown, Paperclip, X } from "lucide-react";
 
 import { SUPPORT_TICKET_TYPES } from "@/data/support-issue-types";
 import supportConfig from "@/data/support-config.json";
+import { supportScreenshotAlt } from "@/lib/image-alt-text";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
@@ -352,7 +353,7 @@ export function SupportInquiryForm() {
             ) : (
               <div className="mt-2 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
                 <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border border-white/10">
-                  <Image src={screenshotUrl} alt="" fill className="object-cover" sizes="56px" unoptimized />
+                  <Image src={screenshotUrl} alt={supportScreenshotAlt()} fill className="object-cover" sizes="56px" unoptimized />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-white">{screenshotName}</p>

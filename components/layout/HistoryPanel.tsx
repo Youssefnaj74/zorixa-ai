@@ -1,6 +1,7 @@
 "use client";
 
 import { ExternalImage } from "@/components/ui/ExternalImage";
+import { historyPreviewAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 export type HistoryItem = {
@@ -45,7 +46,7 @@ export function HistoryPanel({
               <div className="relative size-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-white/10">
                 <ExternalImage
                   src={it.thumb}
-                  alt=""
+                  alt={historyPreviewAlt(it.label)}
                   width={56}
                   height={56}
                   className="size-full object-cover"

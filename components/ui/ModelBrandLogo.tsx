@@ -8,6 +8,7 @@ import {
   modelLogoImgClassName,
   resolveModelLogoPath
 } from "@/lib/model-logos";
+import { modelLogoAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 function FallbackLogo({ size }: { size: number }) {
@@ -52,7 +53,7 @@ export function ModelBrandLogo({
       {/* eslint-disable-next-line @next/next/no-img-element -- official brand assets (svg/ico) from /public */}
       <img
         src={src}
-        alt=""
+        alt={modelLogoAlt(composerId)}
         width={size}
         height={size}
         loading="lazy"

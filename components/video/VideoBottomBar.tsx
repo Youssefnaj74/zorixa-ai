@@ -10,6 +10,7 @@ import {
   VIDEO_SEEDANCE_R2V_DOCK_HEIGHT,
   VIDEO_WAN_R2V_DOCK_HEIGHT
 } from "@/lib/composer-dock-height";
+import { studioReferenceImageAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 import type { KlingMotionCharacterOrientation } from "@/lib/atlas-kling-motion-control";
@@ -802,7 +803,7 @@ export function VideoBottomBar({
                       >
                         {promptImageUrl ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={promptImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+                          <img src={promptImageUrl} alt={studioReferenceImageAlt("video")} className="absolute inset-0 size-full object-cover" />
                         ) : (
                           <>
                             <Upload className="size-5 opacity-60" />
@@ -905,7 +906,7 @@ export function VideoBottomBar({
                       >
                         {promptImageUrl ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={promptImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+                          <img src={promptImageUrl} alt={studioReferenceImageAlt("video")} className="absolute inset-0 size-full object-cover" />
                         ) : (
                           <>
                             <Upload className="size-5 opacity-60" />
@@ -1013,7 +1014,7 @@ export function VideoBottomBar({
                       >
                         {promptImageUrl ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={promptImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+                          <img src={promptImageUrl} alt={studioReferenceImageAlt("video")} className="absolute inset-0 size-full object-cover" />
                         ) : (
                           <>
                             <Upload className="size-5 opacity-60" />
@@ -1053,7 +1054,7 @@ export function VideoBottomBar({
                       >
                         {promptImage2Url ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={promptImage2Url} alt="" className="absolute inset-0 size-full object-cover" />
+                          <img src={promptImage2Url} alt={studioReferenceImageAlt("video")} className="absolute inset-0 size-full object-cover" />
                         ) : (
                           <>
                             <Upload className="size-5 opacity-60" />
@@ -1188,7 +1189,7 @@ export function VideoBottomBar({
                       >
                         {promptImageUrl ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={promptImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+                          <img src={promptImageUrl} alt={studioReferenceImageAlt("video")} className="absolute inset-0 size-full object-cover" />
                         ) : (
                           <>
                             <Upload className="size-5 opacity-60" />
@@ -1230,7 +1231,7 @@ export function VideoBottomBar({
                       >
                         {promptImage2Url ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={promptImage2Url} alt="" className="absolute inset-0 size-full object-cover" />
+                          <img src={promptImage2Url} alt={studioReferenceImageAlt("video")} className="absolute inset-0 size-full object-cover" />
                         ) : (
                           <>
                             <Upload className="size-5 opacity-60" />

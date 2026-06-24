@@ -13,6 +13,7 @@ import {
   modelSeoStudioHref,
   type ModelSeoPage
 } from "@/lib/model-seo-catalog";
+import { modelSeoHeroAlt } from "@/lib/image-alt-text";
 import { getVideoModelShowcase } from "@/lib/video-model-showcase";
 import { resolveModelLogoPath } from "@/lib/model-logos";
 
@@ -55,7 +56,7 @@ export function ModelSeoLanding({ page }: { page: ModelSeoPage }) {
             {logoPath ? (
               <Image
                 src={logoPath}
-                alt=""
+                alt={modelSeoHeroAlt(page.name)}
                 width={48}
                 height={48}
                 className="size-12 rounded-xl bg-white/5 object-contain p-1.5"

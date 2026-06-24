@@ -12,6 +12,7 @@ import { buildCatalogStudioHref } from "@/lib/studio-catalog-link";
 import { resolveModelLogoPath } from "@/lib/model-logos";
 import { getModelReviewPage, type ModelReviewPage } from "@/lib/review-pages-catalog";
 import { getVideoModelShowcase } from "@/lib/video-model-showcase";
+import { reviewHeroAlt } from "@/lib/image-alt-text";
 
 const NAV_H = 56;
 
@@ -49,7 +50,7 @@ export function ReviewPageView({ page }: { page: ModelReviewPage }) {
             {logoPath ? (
               <Image
                 src={logoPath}
-                alt=""
+                alt={reviewHeroAlt(page.name)}
                 width={48}
                 height={48}
                 className="size-12 rounded-xl bg-white/5 object-contain p-1.5"

@@ -15,6 +15,7 @@ import {
   historyCreditsLabel
 } from "@/lib/history-credits-label";
 import type { GenerationTile } from "@/lib/generation-tile";
+import { dashboardFeatureAlt, generationThumbnailAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 export type { GenerationTile } from "@/lib/generation-tile";
@@ -399,7 +400,7 @@ function GridMedia({ item }: { item: GenerationTile }) {
         <>
           <ExternalImage
             src={item.src}
-            alt=""
+            alt={item.title ? dashboardFeatureAlt(item.title) : generationThumbnailAlt("video")}
             className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
           <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/25">

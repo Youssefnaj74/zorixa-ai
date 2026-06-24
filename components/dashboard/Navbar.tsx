@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { userAvatarAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 export type DashboardNavbarProps = {
@@ -71,7 +72,7 @@ export function DashboardNavbar({ credits, userEmail, displayName, avatarUrl }: 
           >
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- external Supabase avatar URL
-              <img src={avatarUrl} alt="" className="size-full object-cover" />
+              <img src={avatarUrl} alt={userAvatarAlt()} className="size-full object-cover" />
             ) : (
               <span aria-hidden>{initial}</span>
             )}

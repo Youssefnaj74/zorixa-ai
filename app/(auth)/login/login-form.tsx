@@ -8,6 +8,7 @@ import { Mail } from "lucide-react";
 
 import { ZorixaLogo } from "@/components/layout/ZorixaLogo";
 import loginShowcase from "@/data/login-showcase.json";
+import { dashboardFeatureAlt } from "@/lib/image-alt-text";
 import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
 import { completeSignupNavigation } from "@/lib/post-signup-redirect";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
@@ -33,7 +34,7 @@ function LoginShowcase() {
       <Image
         key={slide.image}
         src={slide.image}
-        alt=""
+        alt={dashboardFeatureAlt(slide.title, slide.badge)}
         fill
         priority
         className="object-cover transition-opacity duration-700"

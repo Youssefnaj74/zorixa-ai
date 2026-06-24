@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { zorixaLogoAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 type ZorixaLogoProps = {
@@ -22,7 +23,7 @@ export function ZorixaLogo({
     <>
       <Image
         src="/zorixa-z-letter.png"
-        alt=""
+        alt={zorixaLogoAlt()}
         width={30}
         height={30}
         className={cn("h-[30px] w-auto shrink-0", iconClassName)}

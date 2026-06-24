@@ -15,6 +15,7 @@ import {
   EXPLORE_PROMPT_UI_ASPECT_CLASS,
   type ExplorePromptEntry
 } from "@/lib/explore-prompts-catalog";
+import { explorePromptPreviewAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 function ExplorePreviewImage({
@@ -43,7 +44,7 @@ function ExplorePreviewImage({
     <ExternalImage
       key={`${entry.id}-${src}`}
       src={src}
-      alt=""
+      alt={explorePromptPreviewAlt(entry.title)}
       onLoad={() => onReadyChangeRef.current?.(true, src)}
       onError={() => {
         if (index + 1 < candidates.length) {

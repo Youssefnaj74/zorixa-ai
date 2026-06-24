@@ -19,6 +19,7 @@ import type { DirectorExample, DirectorQualityPreset, DirectorStyleInput } from 
 import { videoComposerSupportsGenerateAudio } from "@/lib/atlas-video-generate-audio";
 import { videoComposerSupportsSpeedTier } from "@/lib/atlas-video-model-ids";
 import { formatGenerationCreditsLine } from "@/lib/atlas-pricing-catalog";
+import { studioReferenceImageAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 export type AiDirectorBottomBarProps = {
@@ -199,7 +200,7 @@ export function AiDirectorBottomBar({
               >
                 {promptImageUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={promptImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+                  <img src={promptImageUrl} alt={studioReferenceImageAlt("video")} className="absolute inset-0 size-full object-cover" />
                 ) : (
                   <>
                     <Upload className="size-5 opacity-60" />

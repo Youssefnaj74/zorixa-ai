@@ -24,6 +24,7 @@ import {
 import { DashboardNavbar } from "@/components/layout/Navbar";
 import { StatsCard } from "./StatsCard";
 import { buildCatalogStudioHref } from "@/lib/studio-catalog-link";
+import { dashboardFeatureAlt } from "@/lib/image-alt-text";
 import { isTtsGenerationRow } from "@/lib/tts-generation-shared";
 import { UpgradeBanner } from "./upgrade-banner";
 import { OnboardingCard } from "./OnboardingCard";
@@ -173,7 +174,7 @@ function StudioCard({
     >
       <Image
         src={src}
-        alt=""
+        alt={dashboardFeatureAlt(title, badge)}
         fill
         className="object-cover opacity-80 transition duration-700 group-hover:scale-105 group-hover:opacity-100"
         sizes="(max-width: 1024px) 100vw, 50vw"
@@ -288,7 +289,7 @@ function FeaturedModelStrip() {
             <div className="relative aspect-[16/10] overflow-hidden">
               <Image
                 src={model.src}
-                alt=""
+                alt={dashboardFeatureAlt(model.title, model.badge)}
                 fill
                 className="object-cover transition duration-500 group-hover:scale-105"
                 sizes="(max-width: 1024px) 50vw, 25vw"

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { downloadVideoFile, videoDownloadFilename } from "@/lib/download-video-file";
 import { isInsufficientCreditsMessage } from "@/lib/insufficient-credits-message";
 import { extractCanonicalVideoUrlFromProxy } from "@/lib/video-playback-proxy";
+import { studioReferenceImageAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 import type { ActionTab } from "@/components/video/ActionTabsRow";
@@ -251,7 +252,7 @@ export function VideoPreview({
           {showPromptThumb ? (
             <div className="flex shrink-0 justify-center pt-3">
               <div className="relative size-16 overflow-hidden rounded-lg ring-1 ring-[rgba(131,56,235,0.25)]">
-                <Image src={promptThumbUrl!} alt="" fill className="object-cover" unoptimized />
+                <Image src={promptThumbUrl!} alt={studioReferenceImageAlt("video")} fill className="object-cover" unoptimized />
               </div>
             </div>
           ) : null}

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 
 import { ExternalImage } from "@/components/ui/ExternalImage";
+import { historyPreviewAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 export type ImageHistoryEntry = {
@@ -48,7 +49,7 @@ export function ImageHistory({
             <div className="relative size-16 shrink-0 overflow-hidden rounded-lg ring-1 ring-white/10">
               <ExternalImage
                 src={item.thumb}
-                alt=""
+                alt={historyPreviewAlt(item.title)}
                 width={64}
                 height={64}
                 className="size-full object-cover"

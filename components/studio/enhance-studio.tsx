@@ -35,6 +35,7 @@ import {
   type UpscaleTier
 } from "@/lib/studio-constants";
 import { CREDIT_COSTS } from "@/lib/replicate";
+import { studioFrameAlt, studioReferenceImageAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 const CREDIT_EACH = CREDIT_COSTS.enhance;
@@ -284,7 +285,7 @@ export function EnhanceStudio() {
                       <div className="relative size-full min-h-[100px] w-full">
                         <img
                           src={frame1.previewUrl}
-                          alt="Image 1"
+                          alt={studioReferenceImageAlt("enhance")}
                           className="size-full rounded-lg object-cover"
                         />
                         <button
@@ -326,7 +327,7 @@ export function EnhanceStudio() {
                       <div className="relative size-full min-h-[100px] w-full">
                         <img
                           src={frame2.previewUrl}
-                          alt="Image 2"
+                          alt={studioReferenceImageAlt("enhance")}
                           className="size-full rounded-lg object-cover"
                         />
                         <button
@@ -629,7 +630,7 @@ function ResultCard({
           <div className="relative">
             <img
               src={previewUrl}
-              alt=""
+              alt={studioReferenceImageAlt("enhance")}
               className="max-h-[280px] w-full object-contain opacity-85"
             />
             <p className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent py-4 text-center font-body text-xs text-white/50">

@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { beforeAfterAlt } from "@/lib/image-alt-text";
+
 export function BeforeAfterSlider({
   beforeUrl,
   afterUrl
@@ -14,10 +16,10 @@ export function BeforeAfterSlider({
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black">
-      <img src={beforeUrl} alt="Before" className="block h-auto w-full" />
+      <img src={beforeUrl} alt={beforeAfterAlt("before")} className="block h-auto w-full" />
       <img
         src={afterUrl}
-        alt="After"
+        alt={beforeAfterAlt("after")}
         className="absolute inset-0 h-full w-full object-cover"
         style={{ clipPath: clip }}
       />

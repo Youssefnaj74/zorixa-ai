@@ -13,6 +13,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { buildCatalogStudioHref } from "@/lib/studio-catalog-link";
+import { viralToolCardAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 type BentoTileProps = {
@@ -81,7 +82,7 @@ function BentoTile({
       >
         <Image
           src={src}
-          alt=""
+          alt={viralToolCardAlt(title, headline)}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           sizes={
@@ -372,7 +373,7 @@ function QuickLaunchTools() {
         >
           <Image
             src="/dashboard-assets/dashboard-seedance-cinema.png"
-            alt=""
+            alt={viralToolCardAlt("Seedance Cinema", "Seedance 2.0 Cinematic AI")}
             fill
             className="object-cover opacity-60 transition duration-700 group-hover:scale-105 group-hover:opacity-75"
             sizes="(max-width: 1024px) 100vw, 40vw"

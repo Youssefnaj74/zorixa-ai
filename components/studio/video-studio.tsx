@@ -28,6 +28,7 @@ import {
   type VideoModelId
 } from "@/lib/studio-constants";
 import { CREDIT_COSTS } from "@/lib/replicate";
+import { studioFrameAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 type FrameState = {
@@ -197,7 +198,7 @@ export function VideoStudio() {
                     <div className="relative size-full min-h-[100px]">
                       <img
                         src={startFrame.previewUrl}
-                        alt="Start"
+                        alt={studioFrameAlt("start")}
                         className="size-full rounded-lg object-cover"
                       />
                       <button
@@ -387,7 +388,7 @@ export function VideoStudio() {
                   <div className="mx-auto max-w-md overflow-hidden rounded-lg border border-studio-line">
                     <img
                       src={startFrame.previewUrl}
-                      alt="Start"
+                      alt={studioFrameAlt("start")}
                       className="aspect-video w-full object-cover"
                     />
                   </div>

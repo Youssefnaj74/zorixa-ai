@@ -4,6 +4,7 @@ import { Upload, X } from "lucide-react";
 import { useCallback, useRef } from "react";
 
 import { seedanceReferencePromptToken } from "@/lib/seedance-reference-prompt-tokens";
+import { studioReferenceImageAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 type ReferenceImageUploadStripProps = {
@@ -115,7 +116,7 @@ export function ReferenceImageUploadStrip({
                 )}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className="absolute inset-0 size-full object-cover" />
+                <img src={url} alt={studioReferenceImageAlt("video")} className="absolute inset-0 size-full object-cover" />
                 {tokenKind ? (
                   <span className="absolute left-1 top-1 max-w-[calc(100%-8px)] truncate rounded bg-brand/90 px-1 py-0.5 text-[8px] font-bold text-white">
                     {seedanceReferencePromptToken(tokenKind, index)}

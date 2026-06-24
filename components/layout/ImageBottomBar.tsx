@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MODEL_OPTIONS, type ModelOption } from "@/components/ui/ModelDropdown";
 import { Toggle } from "@/components/ui/Toggle";
 import { getAtlasImageModelLimits } from "@/lib/atlas-image-model-ids";
+import { studioReferenceImageAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 const CAMERA_STYLES = ["None", "iPhone Selfie", "Mirror Selfie", "Top Down View", "Full Bodyshot"] as const;
@@ -218,7 +219,7 @@ export function ImageBottomBar({
               <div key={url} className="relative">
                 <div className="relative flex size-[60px] items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#0a0a12]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt="" className="absolute inset-0 size-full object-cover" />
+                  <img src={url} alt={studioReferenceImageAlt("image")} className="absolute inset-0 size-full object-cover" />
                 </div>
                 <button
                   type="button"

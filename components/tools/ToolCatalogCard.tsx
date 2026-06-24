@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/Badge";
+import { toolCatalogPreviewAlt } from "@/lib/image-alt-text";
 import type { ToolCatalogItem, ToolCatalogSectionId } from "@/lib/tools-catalog";
 import { cn } from "@/lib/utils";
 
@@ -52,7 +53,7 @@ export function ToolCatalogCard({
             {/* eslint-disable-next-line @next/next/no-img-element -- previews can be user-generated Supabase URLs */}
             <img
               src={previewSrc}
-              alt=""
+              alt={toolCatalogPreviewAlt(item)}
               className="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
             />

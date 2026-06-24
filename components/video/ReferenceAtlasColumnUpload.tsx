@@ -4,6 +4,7 @@ import { Film, ImageIcon, Music2, Upload, X } from "lucide-react";
 import { useCallback, useRef } from "react";
 
 import { seedanceReferencePromptToken } from "@/lib/seedance-reference-prompt-tokens";
+import { studioReferenceImageAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 export type ReferenceAtlasColumnKind = "image" | "video" | "audio";
@@ -135,7 +136,7 @@ export function ReferenceAtlasColumnUpload({
                   <div className="relative size-9 overflow-hidden rounded-md border border-white/10 bg-black/50">
                     {kind === "image" ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={url} alt="" className="size-full object-cover" />
+                      <img src={url} alt={studioReferenceImageAlt("video")} className="size-full object-cover" />
                     ) : kind === "video" ? (
                       <video
                         src={url}

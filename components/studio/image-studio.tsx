@@ -26,6 +26,7 @@ import {
   type UpscaleTier
 } from "@/lib/studio-constants";
 import { CREDIT_COSTS } from "@/lib/replicate";
+import { studioFrameAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 const CREDIT_EACH = CREDIT_COSTS.enhance;
@@ -212,7 +213,7 @@ export function ImageStudio() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={frame.previewUrl}
-                      alt="Source"
+                      alt={studioFrameAlt("source")}
                       className="size-full rounded-xl object-cover"
                     />
                     <button
@@ -400,7 +401,7 @@ export function ImageStudio() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={outputUrl}
-                      alt="Result"
+                      alt={studioFrameAlt("result")}
                       className="max-h-full max-w-full rounded-xl object-contain"
                     />
                   </div>
@@ -430,7 +431,7 @@ export function ImageStudio() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={frame.previewUrl}
-                    alt="Preview"
+                    alt={studioFrameAlt("source")}
                     className="max-h-[min(55vh,480px)] max-w-full rounded-xl object-contain opacity-90"
                   />
                   <p className="mt-6 font-body text-sm text-white/50">

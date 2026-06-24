@@ -18,6 +18,7 @@ import { ModelBrandLogo } from "@/components/ui/ModelBrandLogo";
 import { getAtlasImageModelLimits, getImageBatchOptions, imageComposerSupportedOnActionTab } from "@/lib/atlas-image-model-ids";
 import { getImageI2iUploadSlots } from "@/lib/image-i2i-model-slots";
 import { IMAGE_I2I_DOCK_HEIGHT } from "@/lib/composer-dock-height";
+import { studioReferenceImageAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
 export type ImageGenerateContext = {
@@ -352,7 +353,7 @@ export function ImageBottomBar({
                     >
                       {url ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={url} alt="" className="absolute inset-0 size-full object-cover" />
+                        <img src={url} alt={studioReferenceImageAlt("image")} className="absolute inset-0 size-full object-cover" />
                       ) : (
                         <>
                           <Upload className="size-5 opacity-60" />
