@@ -1,7 +1,7 @@
-import type { AlternativeSeoPage } from "@/lib/alternative-pages/types";
+import type { VersusSeoPage } from "@/lib/comparison-pages/types";
 import { absoluteUrl, SITE_NAME } from "@/lib/site-brand";
 
-export function AlternativePageJsonLd({ page }: { page: AlternativeSeoPage }) {
+export function VersusPageJsonLd({ page }: { page: VersusSeoPage }) {
   const url = absoluteUrl(page.path);
 
   const article = {
@@ -37,34 +37,14 @@ export function AlternativePageJsonLd({ page }: { page: AlternativeSeoPage }) {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: SITE_NAME, item: absoluteUrl("/") },
-      { "@type": "ListItem", position: 2, name: `${page.competitorName} Alternative`, item: url }
+      { "@type": "ListItem", position: 2, name: page.h1, item: url }
     ]
   };
-
-  const softwareApplication = page.includeSoftwareApplication
-    ? {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        name: SITE_NAME,
-        applicationCategory: "MultimediaApplication",
-        operatingSystem: "Web",
-        url: absoluteUrl("/"),
-        description: page.description,
-        offers: {
-          "@type": "Offer",
-          price: "9.99",
-          priceCurrency: "USD",
-          description: "Starter credit pack — pay-as-you-go AI image and video generation"
-        }
-      }
-    : null;
-
-  const graph = [article, faqPage, breadcrumb, softwareApplication].filter(Boolean);
 
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(graph) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify([article, faqPage, breadcrumb]) }}
     />
   );
 }

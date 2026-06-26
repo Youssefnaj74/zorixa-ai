@@ -1,19 +1,8 @@
 import type { BlogSection } from "@/lib/blog/types";
+import type { AlternativeComparisonRow, AlternativeFaqItem } from "@/lib/alternative-pages/types";
 
-export type AlternativeComparisonRow = {
-  feature: string;
-  competitor: string;
-  zorixa: string;
-};
-
-export type AlternativeFaqItem = {
-  question: string;
-  answer: string;
-};
-
-export type AlternativeSeoPage = {
+export type VersusSeoPage = {
   slug: string;
-  /** Public path without trailing slash, e.g. /arcads-alternative */
   path: string;
   title: string;
   h1: string;
@@ -23,8 +12,11 @@ export type AlternativeSeoPage = {
   readingTimeMinutes: number;
   competitorName: string;
   eyebrow: string;
-  sections: BlogSection[];
+  quickVerdict: string[];
   comparisonTable: AlternativeComparisonRow[];
+  sections: BlogSection[];
+  whoCompetitor: { title: string; paragraphs: string[]; bullets?: string[] };
+  whoZorixa: { title: string; paragraphs: string[]; bullets?: string[] };
   faq: AlternativeFaqItem[];
   ctaTitle: string;
   ctaBody: string;
@@ -32,6 +24,4 @@ export type AlternativeSeoPage = {
   ctaLabel: string;
   secondaryCtaHref: string;
   secondaryCtaLabel: string;
-  /** When true, JSON-LD includes SoftwareApplication alongside FAQ and breadcrumbs. */
-  includeSoftwareApplication?: boolean;
 };

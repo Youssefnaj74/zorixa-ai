@@ -123,6 +123,16 @@ export default function AffiliatePage() {
             </Link>
           </li>
           <li>
+            <Link href="/kling-ai-alternative" className="text-[#00e5ff] hover:underline">
+              Kling AI alternative
+            </Link>
+          </li>
+          <li>
+            <Link href="/kling-vs-zorixaai" className="text-[#00e5ff] hover:underline">
+              Kling vs ZorixaAI
+            </Link>
+          </li>
+          <li>
             <span className="text-white/40">Homepage: </span>
             <span className="text-white/60">{absoluteUrl("/")}</span>
           </li>
