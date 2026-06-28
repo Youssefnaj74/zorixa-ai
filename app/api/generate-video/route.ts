@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { AtlasApiError, fetchAtlasPrediction } from "@/lib/atlas-api";
+import { decodeBytePlusPredictionId, fetchBytePlusVideoTask } from "@/lib/byteplus-api";
+import {
+  buildBytePlusSeedanceBody,
+  shouldUseBytePlusForSeedance,
+  submitBytePlusSeedanceTask
+} from "@/lib/byteplus-seedance";
 import {
   applyAtlasNativeAudioFields,
   atlasModelSupportsGenerateAudio,
@@ -150,6 +156,10 @@ import {
   seedanceAtlasRequestDimensions
 } from "@/lib/seedance-atlas-dimensions";
 import { enforceContentPolicy, requestIp } from "@/lib/content-moderation";
+import {
+  finalizeGenerationEconomicsStatus,
+  scheduleGenerationEconomics
+} from "@/lib/generation-economics";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 
@@ -348,6 +358,66 @@ export async function GET(request: Request) {
     );
   }
 
+  const bytePlusTaskId = decodeBytePlusPredictionId(predictionId);
+  if (bytePlusTaskId) {
+    try {
+      const poll = await fetchBytePlusVideoTask(bytePlusTaskId);
+      const statusNorm = poll.status.toLowerCase();
+
+      if (statusNorm === "failed") {
+        console.error("[generate-video GET] BytePlus task failed", {
+          predictionId,
+          bytePlusError: poll.error,
+          generateAudio: pollGenerateAudio
+        });
+        void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
+      } else if (poll.outputUrl || statusNorm === "succeeded") {
+        void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
+      }
+
+      return NextResponse.json({
+        status: poll.status,
+        video_url: poll.outputUrl,
+        outputs: null,
+        output: null,
+        error:
+          statusNorm === "failed"
+            ? formatAtlasVideoFailureForUi(poll.error, {
+                generateAudio: pollGenerateAudio,
+                hostIsProduction: process.env.VERCEL_ENV === "production",
+                action: pollAction
+              })
+            : null,
+        atlas_error: statusNorm === "failed" ? poll.error : null,
+        prediction_id: predictionId,
+        poll_interval_ms: CLIENT_POLL_HINT_MS
+      });
+    } catch (e) {
+      const msg =
+        e instanceof Error ? e.message : "BytePlus prediction poll failed";
+
+      if (msg.includes("BYTEPLUS_API_KEY") || msg.includes("Missing BYTEPLUS")) {
+        return NextResponse.json(
+          { error: "Server missing BYTEPLUS_API_KEY in environment" },
+          { status: 503 }
+        );
+      }
+
+      console.error("[generate-video GET] BytePlus poll error", { predictionId, msg });
+
+      return NextResponse.json({
+        status: "failed",
+        video_url: null,
+        outputs: null,
+        output: null,
+        error: msg,
+        atlas_error: msg,
+        prediction_id: predictionId,
+        poll_interval_ms: CLIENT_POLL_HINT_MS
+      });
+    }
+  }
+
   try {
     const poll = await fetchAtlasPrediction(predictionId);
     const statusNorm = poll.status.toLowerCase();
@@ -358,6 +428,9 @@ export async function GET(request: Request) {
         atlasError: poll.error,
         generateAudio: pollGenerateAudio
       });
+      void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
+    } else if (poll.outputUrl || statusNorm === "succeeded" || statusNorm === "completed") {
+      void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
     }
 
     return NextResponse.json({
@@ -1422,6 +1495,133 @@ async function handleGenerateVideoPost(request: Request) {
     return NextResponse.json({ error: "Could not deduct credits" }, { status: 500 });
   }
 
+  const seedanceBytePlusEligible =
+    shouldUseBytePlusForSeedance(videoModel, speedTier) &&
+    (action === "text" ||
+      action === "image" ||
+      action === "reference" ||
+      action === "edit");
+
+  let bytePlusFallbackReason: string | null = null;
+
+  const economicsBase = {
+    userId: actor.userId,
+    composerModelId: videoModel,
+    speedTier,
+    routeAction: action,
+    creditsCharged: creditCost,
+    resolution,
+    aspectRatio,
+    durationSec,
+    generateAudio,
+    referenceImageCount: reference_images.length,
+    referenceVideoCount: reference_videos.length,
+    hasSourceVideo: Boolean(video_url)
+  };
+
+  if (seedanceBytePlusEligible) {
+    try {
+      const bytePlusBody = buildBytePlusSeedanceBody({
+        action,
+        prompt,
+        aspectRatio,
+        resolution,
+        durationSec,
+        generateAudio,
+        imageUrl: image_url || undefined,
+        lastImageUrl: last_image_url || undefined,
+        videoUrl: video_url || undefined,
+        referenceImages: reference_images,
+        referenceVideos: reference_videos,
+        referenceAudios: reference_audios
+      });
+
+      console.log(
+        "[generate-video] BytePlus Seedance create — videoModel:",
+        videoModel,
+        "action:",
+        action,
+        "ratio:",
+        bytePlusBody.ratio,
+        "resolution:",
+        bytePlusBody.resolution
+      );
+
+      const bytePlusResult = await submitBytePlusSeedanceTask(bytePlusBody);
+      if (bytePlusResult.ok) {
+        const predictionId = bytePlusResult.predictionId;
+        const initialStatus = bytePlusResult.status.toLowerCase();
+
+        if (bytePlusResult.outputUrl) {
+          const finalized = await completeAtlasCharge({
+            userId: actor.userId,
+            session: chargeBegin.session,
+            predictionId
+          });
+          if (!finalized.ok) {
+            await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
+            return NextResponse.json({ error: "Could not finalize credit charge" }, { status: 500 });
+          }
+          scheduleGenerationEconomics({
+            ...economicsBase,
+            predictionId,
+            providerUsed: "byteplus",
+            status: "success"
+          });
+          return NextResponse.json({
+            video_url: bytePlusResult.outputUrl,
+            prediction_id: predictionId,
+            credits_spent: chargeBegin.session.creditsSpent,
+            credits_balance: chargeBegin.session.balanceAfter
+          });
+        }
+
+        if (initialStatus !== "failed") {
+          const finalized = await completeAtlasCharge({
+            userId: actor.userId,
+            session: chargeBegin.session,
+            predictionId
+          });
+          if (!finalized.ok) {
+            await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
+            return NextResponse.json({ error: "Could not finalize credit charge" }, { status: 500 });
+          }
+          scheduleGenerationEconomics({
+            ...economicsBase,
+            predictionId,
+            providerUsed: "byteplus",
+            status: "pending"
+          });
+          return NextResponse.json({
+            pending: true,
+            prediction_id: predictionId,
+            poll_interval_ms: CLIENT_POLL_HINT_MS,
+            atlas_model: model,
+            provider: "byteplus",
+            credits_spent: chargeBegin.session.creditsSpent,
+            credits_balance: chargeBegin.session.balanceAfter
+          });
+        }
+
+        console.warn(
+          "[generate-video] BytePlus immediate failure, falling back to Atlas",
+          { predictionId }
+        );
+        bytePlusFallbackReason = `BytePlus immediate status: ${initialStatus}`;
+      } else {
+        console.warn("[generate-video] BytePlus create failed, falling back to Atlas", {
+          error: bytePlusResult.error,
+          videoModel,
+          action
+        });
+        bytePlusFallbackReason = bytePlusResult.error;
+      }
+    } catch (e) {
+      console.warn("[generate-video] BytePlus path error, falling back to Atlas", e);
+      bytePlusFallbackReason = e instanceof Error ? e.message : "BytePlus path error";
+    }
+  }
+
   const createRes = await fetch(`${ATLAS_BASE}/generateVideo`, {
     method: "POST",
     headers: {
@@ -1480,10 +1680,22 @@ async function handleGenerateVideoPost(request: Request) {
   const creditsSpent = chargeBegin.session.creditsSpent;
   const balanceAfter = chargeBegin.session.balanceAfter;
 
+  scheduleGenerationEconomics({
+    ...economicsBase,
+    predictionId,
+    providerUsed: "atlas",
+    providerAttempted: bytePlusFallbackReason ? "byteplus" : null,
+    fallbackUsed: Boolean(bytePlusFallbackReason),
+    fallbackReason: bytePlusFallbackReason,
+    status: bytePlusFallbackReason ? "fallback_to_atlas" : "pending",
+    creditsCharged: creditsSpent
+  });
+
   const initialStatus = createJson.data?.status;
   if (initialStatus === "completed" || initialStatus === "succeeded") {
     const videoUrl = extractAtlasVideoOutputUrl(createJson.data);
     if (videoUrl) {
+      void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
       return NextResponse.json({
         video_url: videoUrl,
         prediction_id: predictionId,
@@ -1513,6 +1725,7 @@ async function handleGenerateVideoPost(request: Request) {
       action:
         action === "image" ? "image" : action === "reference" ? "reference" : "text"
     });
+    void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
     return NextResponse.json(
       { error: err, atlas_error: atlasRaw, atlas_model: model, prediction_id: predictionId },
       { status: 502 }

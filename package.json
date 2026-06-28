@@ -11,7 +11,7 @@
     "verify:content-moderation": "node scripts/verify-content-moderation.mjs",
     "verify:posthog-events": "node scripts/posthog-verify-events.mjs",
     "posthog:onboarding-dashboard": "node scripts/posthog-onboarding-dashboard.mjs",
-  "posthog:kpi-dashboard": "node scripts/posthog-kpi-dashboard.mjs",
+    "posthog:kpi-dashboard": "node scripts/posthog-kpi-dashboard.mjs",
     "verify:moderation-production": "node scripts/verify-moderation-production.mjs",
     "apply:billing-migration": "node scripts/apply-billing-migration.mjs",
     "apply:moderation-migration": "node scripts/apply-moderation-migration.mjs",

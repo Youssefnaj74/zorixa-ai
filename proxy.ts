@@ -32,6 +32,9 @@ function isSessionOptionalPath(pathname: string): boolean {
   if (pathname.endsWith("-alternative")) {
     return true;
   }
+  if (pathname.endsWith("-vs-zorixaai")) {
+    return true;
+  }
   if (pathname === "/models" || pathname.startsWith("/models/")) {
     return true;
   }

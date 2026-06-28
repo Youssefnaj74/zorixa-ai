@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 
 import { logAtlasVideoGenerationIfNew } from "@/lib/atlas-video-generation-log";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
+import {
+  finalizeGenerationEconomicsStatus
+} from "@/lib/generation-economics";
 import { rateLimit } from "@/lib/rate-limit";
 import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 
@@ -72,6 +75,10 @@ export async function POST(request: Request) {
 
   if (!ok) {
     return NextResponse.json({ error: "Failed to save generation" }, { status: 500 });
+  }
+
+  if (prediction_id) {
+    void finalizeGenerationEconomicsStatus({ predictionId: prediction_id, status: "success" });
   }
 
   return NextResponse.json({ ok: true });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { decodeBytePlusPredictionId, fetchBytePlusVideoTask } from "@/lib/byteplus-api";
 import { fetchAtlasPrediction } from "@/lib/atlas-api";
 import { extractFirstUrl, getPrediction } from "@/lib/replicate-api";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -44,6 +45,31 @@ export async function GET(
       }
     } catch {
       // If polling fails transiently, return current state; client will retry.
+    }
+  }
+
+  if (gen.status === "pending" && gen.provider_prediction_id) {
+    const bytePlusTaskId = decodeBytePlusPredictionId(gen.provider_prediction_id);
+    if (bytePlusTaskId) {
+      try {
+        const poll = await fetchBytePlusVideoTask(bytePlusTaskId);
+        if (poll.status === "succeeded" || poll.status === "completed") {
+          const outUrl = poll.outputUrl;
+          if (outUrl) {
+            await supabaseAdmin
+              .from("generations")
+              .update({ status: "completed", output_url: outUrl })
+              .eq("id", gen.id);
+            gen.status = "completed";
+            gen.output_url = outUrl;
+          }
+        } else if (poll.status === "failed") {
+          await supabaseAdmin.from("generations").update({ status: "failed" }).eq("id", gen.id);
+          gen.status = "failed";
+        }
+      } catch {
+        // If polling fails transiently, return current state; client will retry.
+      }
     }
   }
 

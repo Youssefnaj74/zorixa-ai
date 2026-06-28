@@ -10,6 +10,11 @@ function envTrim(name: string): string {
   return process.env[name]?.trim() ?? "";
 }
 
+function envBool(name: string): boolean {
+  const v = process.env[name]?.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
 /**
  * Atlas Cloud REST API key (`https://api.atlascloud.ai`).
  * **Only** `ATLASCLOUD_API_KEY` is read — no `ATLAS_API_KEY` / `ATLAS_CLOUD_*` fallbacks (matches Vercel naming).
@@ -41,6 +46,12 @@ export const env = {
   appUrl: getPublicSiteUrl(),
   /** Trimmed `ATLASCLOUD_API_KEY` (empty string if unset). Prefer `requireAtlasCloudApiKey()` when the key is required. */
   atlasCloudApiKey: envTrim("ATLASCLOUD_API_KEY"),
+  /** BytePlus ModelArk API key for Dreamina Seedance 2.0 (standard tier). */
+  bytePlusApiKey: envTrim("BYTEPLUS_API_KEY"),
+  /** BytePlus region ID — default `ap-southeast-1` (Johor). */
+  bytePlusRegion: envTrim("BYTEPLUS_REGION") || "ap-southeast-1",
+  /** When true, Seedance 2.0 standard tier uses BytePlus first with Atlas fallback. */
+  bytePlusSeedanceEnabled: envBool("BYTEPLUS_SEEDANCE_ENABLED"),
   /** Shared secret for Cursor MCP → Zorixa API (see zorixa-mcp/). */
   zorixaMcpApiKey: envTrim("ZORIXA_MCP_API_KEY"),
   /** Trimmed `ELEVENLABS_API_KEY` (empty if unset). Prefer `requireElevenLabsApiKey()` when required. */

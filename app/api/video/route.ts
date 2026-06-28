@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { AtlasApiError, atlasGenerateVideo } from "@/lib/atlas-api";
+import { AtlasApiError } from "@/lib/atlas-api";
+import { seedanceGenerateVideo } from "@/lib/seedance-video-generate";
 import { enforceContentPolicy, requestIp } from "@/lib/content-moderation";
 import { CREDIT_COSTS } from "@/lib/replicate";
 import { rateLimit } from "@/lib/rate-limit";
@@ -109,7 +110,7 @@ export async function POST(request: Request) {
 
   let atlasResult;
   try {
-    atlasResult = await atlasGenerateVideo({
+    atlasResult = await seedanceGenerateVideo({
       image_url: body.input_url,
       prompt: body.description.trim(),
       duration,
