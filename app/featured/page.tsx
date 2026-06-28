@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { LaunchBuffBadge } from "@/components/marketing/LaunchBuffBadge";
 import { MarketingDocLayout } from "@/components/marketing/MarketingDocLayout";
 import { absoluteUrl } from "@/lib/site-brand";
 
@@ -34,7 +33,14 @@ export default function FeaturedPage() {
         </p>
         <ul className="mt-8 flex flex-wrap items-center gap-8 sm:gap-10">
           <li>
-            <LaunchBuffBadge />
+            <a href="https://launchbuff.com" target="_blank" rel="noopener noreferrer" title="Featured on LaunchBuff">
+              <img
+                src="https://launchbuff.com/badge-featured-dark.svg"
+                alt="Featured on LaunchBuff"
+                width={256}
+                height={80}
+              />
+            </a>
           </li>
         </ul>
       </section>
