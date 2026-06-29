@@ -31,6 +31,110 @@ export function isBytePlusSeedanceEnabled(): boolean {
   return env.bytePlusSeedanceEnabled && env.bytePlusApiKey.length > 0;
 }
 
+const BYTEPLUS_ROUTE_ACTIONS = new Set<AtlasVideoRouteAction>([
+  "text",
+  "image",
+  "reference",
+  "edit"
+]);
+
+function bytePlusSeedanceEnabledEnvRaw(): string {
+  const raw = process.env.BYTEPLUS_SEEDANCE_ENABLED;
+  if (raw === undefined) return "(unset)";
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : "(empty)";
+}
+
+export type BytePlusSeedanceRoutingDiagnostic = {
+  request: {
+    videoModel: string;
+    speed_tier: unknown;
+    action: AtlasVideoRouteAction;
+  };
+  speedTierNormalized: AtlasVideoSpeedTier;
+  isBytePlusSeedanceEnabled: boolean;
+  env: {
+    BYTEPLUS_SEEDANCE_ENABLED: string;
+    BYTEPLUS_SEEDANCE_ENABLED_parsed: boolean;
+    BYTEPLUS_API_KEY_exists: boolean;
+    BYTEPLUS_REGION: string;
+  };
+  shouldUseBytePlusForSeedance: boolean;
+  actionSupportedForBytePlus: boolean;
+  seedanceBytePlusEligible: boolean;
+  shouldUseBytePlusSkipReasons: string[];
+  atlasSkipReasons: string[];
+};
+
+/** Production routing trace — logs safe env snapshot and exact skip reasons. */
+export function diagnoseBytePlusSeedanceRouting(input: {
+  videoModel: string;
+  speedTier: AtlasVideoSpeedTier;
+  action: AtlasVideoRouteAction;
+  speedTierRaw: unknown;
+}): BytePlusSeedanceRoutingDiagnostic {
+  const shouldUseBytePlusSkipReasons: string[] = [];
+  if (input.videoModel !== "seedance-2") {
+    shouldUseBytePlusSkipReasons.push(
+      `wrong model: "${input.videoModel}" (expected "seedance-2")`
+    );
+  }
+  if (input.speedTier !== "standard") {
+    shouldUseBytePlusSkipReasons.push(
+      `speed tier is "${input.speedTier}" (expected "standard")`
+    );
+  }
+  if (!env.bytePlusSeedanceEnabled) {
+    shouldUseBytePlusSkipReasons.push(
+      `env disabled: BYTEPLUS_SEEDANCE_ENABLED=${bytePlusSeedanceEnabledEnvRaw()}`
+    );
+  }
+  if (env.bytePlusApiKey.length === 0) {
+    shouldUseBytePlusSkipReasons.push("missing api key: BYTEPLUS_API_KEY is empty or unset");
+  }
+
+  const shouldUse = shouldUseBytePlusForSeedance(input.videoModel, input.speedTier);
+  const actionSupported = BYTEPLUS_ROUTE_ACTIONS.has(input.action);
+  const eligible = shouldUse && actionSupported;
+
+  const atlasSkipReasons = [...shouldUseBytePlusSkipReasons];
+  if (shouldUse && !actionSupported) {
+    atlasSkipReasons.push(`unsupported action: "${input.action}"`);
+  }
+
+  return {
+    request: {
+      videoModel: input.videoModel,
+      speed_tier: input.speedTierRaw,
+      action: input.action
+    },
+    speedTierNormalized: input.speedTier,
+    isBytePlusSeedanceEnabled: isBytePlusSeedanceEnabled(),
+    env: {
+      BYTEPLUS_SEEDANCE_ENABLED: bytePlusSeedanceEnabledEnvRaw(),
+      BYTEPLUS_SEEDANCE_ENABLED_parsed: env.bytePlusSeedanceEnabled,
+      BYTEPLUS_API_KEY_exists: env.bytePlusApiKey.length > 0,
+      BYTEPLUS_REGION: env.bytePlusRegion
+    },
+    shouldUseBytePlusForSeedance: shouldUse,
+    actionSupportedForBytePlus: actionSupported,
+    seedanceBytePlusEligible: eligible,
+    shouldUseBytePlusSkipReasons,
+    atlasSkipReasons
+  };
+}
+
+export function logBytePlusSeedanceRoutingDiagnostic(
+  label: string,
+  diagnostic: BytePlusSeedanceRoutingDiagnostic,
+  extra?: Record<string, unknown>
+): void {
+  console.log(`[generate-video][byteplus-routing] ${label}`, {
+    ...diagnostic,
+    ...extra
+  });
+}
+
 /**
  * BytePlus is primary for Seedance 2.0 standard tier only.
  * Fast tier stays on Atlas Cloud per product requirements.

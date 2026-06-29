@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 
 import { AtlasApiError, fetchAtlasPrediction } from "@/lib/atlas-api";
-import { decodeBytePlusPredictionId, fetchBytePlusVideoTask } from "@/lib/byteplus-api";
+import {
+  bytePlusApiBaseUrl,
+  decodeBytePlusPredictionId,
+  fetchBytePlusVideoTask
+} from "@/lib/byteplus-api";
 import {
   buildBytePlusSeedanceBody,
-  shouldUseBytePlusForSeedance,
+  diagnoseBytePlusSeedanceRouting,
+  logBytePlusSeedanceRoutingDiagnostic,
   submitBytePlusSeedanceTask
 } from "@/lib/byteplus-seedance";
 import {
@@ -1495,12 +1500,15 @@ async function handleGenerateVideoPost(request: Request) {
     return NextResponse.json({ error: "Could not deduct credits" }, { status: 500 });
   }
 
-  const seedanceBytePlusEligible =
-    shouldUseBytePlusForSeedance(videoModel, speedTier) &&
-    (action === "text" ||
-      action === "image" ||
-      action === "reference" ||
-      action === "edit");
+  const bytePlusRoutingDiagnostic = diagnoseBytePlusSeedanceRouting({
+    videoModel,
+    speedTier,
+    action,
+    speedTierRaw: body.speed_tier ?? body.speedTier ?? null
+  });
+  logBytePlusSeedanceRoutingDiagnostic("request + gate", bytePlusRoutingDiagnostic);
+
+  const seedanceBytePlusEligible = bytePlusRoutingDiagnostic.seedanceBytePlusEligible;
 
   let bytePlusFallbackReason: string | null = null;
 
@@ -1536,6 +1544,7 @@ async function handleGenerateVideoPost(request: Request) {
         referenceAudios: reference_audios
       });
 
+      const bytePlusCreateUrl = `${bytePlusApiBaseUrl()}/contents/generations/tasks`;
       console.log(
         "[generate-video] BytePlus Seedance create — videoModel:",
         videoModel,
@@ -1546,6 +1555,9 @@ async function handleGenerateVideoPost(request: Request) {
         "resolution:",
         bytePlusBody.resolution
       );
+      logBytePlusSeedanceRoutingDiagnostic("attempting BytePlus", bytePlusRoutingDiagnostic, {
+        bytePlusCreateUrl
+      });
 
       const bytePlusResult = await submitBytePlusSeedanceTask(bytePlusBody);
       if (bytePlusResult.ok) {
@@ -1620,6 +1632,17 @@ async function handleGenerateVideoPost(request: Request) {
       console.warn("[generate-video] BytePlus path error, falling back to Atlas", e);
       bytePlusFallbackReason = e instanceof Error ? e.message : "BytePlus path error";
     }
+  } else {
+    logBytePlusSeedanceRoutingDiagnostic("skipped BytePlus → using Atlas", bytePlusRoutingDiagnostic, {
+      atlasReason: "seedanceBytePlusEligible=false",
+      skipReasons: bytePlusRoutingDiagnostic.atlasSkipReasons
+    });
+  }
+
+  if (bytePlusFallbackReason) {
+    logBytePlusSeedanceRoutingDiagnostic("BytePlus failed → Atlas fallback", bytePlusRoutingDiagnostic, {
+      bytePlusFallbackReason
+    });
   }
 
   const createRes = await fetch(`${ATLAS_BASE}/generateVideo`, {
