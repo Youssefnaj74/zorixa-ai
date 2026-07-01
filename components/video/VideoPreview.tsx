@@ -74,6 +74,7 @@ export function VideoPreview({
   onResetDefaults,
   onExtendVideo,
   onUpscaleVideo,
+  onPlaybackConfirmed,
   className
 }: {
   actionTab: ActionTab;
@@ -119,6 +120,8 @@ export function VideoPreview({
   onResetDefaults?: () => void;
   onExtendVideo?: () => void;
   onUpscaleVideo?: () => void;
+  /** Fired once inline playback metadata loads — triggers deferred Atlas CDN mirror. */
+  onPlaybackConfirmed?: () => void;
   className?: string;
 }) {
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${bottomBarHeight}px)`;
@@ -126,6 +129,7 @@ export function VideoPreview({
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const downloadInFlightRef = useRef(false);
+  const playbackConfirmedRef = useRef(false);
   const [fileAspectCss, setFileAspectCss] = useState<string | null>(null);
   const frameAspectClass = uiAspectFrameClass(aspectRatio);
   const frameLayoutClass = uiAspectFrameLayoutClass(aspectRatio);
@@ -158,6 +162,7 @@ export function VideoPreview({
     setInlinePlaybackError(null);
     setDownloadError(null);
     setFileAspectCss(null);
+    playbackConfirmedRef.current = false;
   }, [videoUrl]);
 
   useEffect(() => {
@@ -305,6 +310,14 @@ export function VideoPreview({
                               hint:
                                 "File orientation differs from UI — preview frame follows your aspect setting."
                             });
+                          }
+                          if (
+                            !playbackConfirmedRef.current &&
+                            Number.isFinite(el.duration) &&
+                            el.duration > 0
+                          ) {
+                            playbackConfirmedRef.current = true;
+                            onPlaybackConfirmed?.();
                           }
                         }
                         console.log("[VideoPreview] <video> loadedmetadata", {

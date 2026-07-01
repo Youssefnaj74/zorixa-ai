@@ -58,17 +58,45 @@ export async function mirrorAtlasVideoToSupabaseStorage(input: {
   return coerceToPublicHttpsUrl(data.publicUrl);
 }
 
-export function scheduleMirrorAtlasVideoOutput(input: {
+/** Mirror after the browser has played the signed URL — avoids single-use CDN race. */
+export async function mirrorAtlasVideoAfterPlaybackConfirmed(input: {
   userId: string;
   generationId: number;
-  atlasUrl: string;
-}): void {
-  void mirrorAtlasVideoToSupabaseStorage(input).then(async (mirrored) => {
-    if (!mirrored || mirrored === input.atlasUrl) return;
-    await supabaseAdmin
-      .from("generations")
-      .update({ output_url: mirrored })
-      .eq("id", input.generationId)
-      .eq("user_id", input.userId);
+}): Promise<boolean> {
+  const { data: row, error: fetchErr } = await supabaseAdmin
+    .from("generations")
+    .select("id, output_url")
+    .eq("id", input.generationId)
+    .eq("user_id", input.userId)
+    .eq("feature_type", "video")
+    .maybeSingle();
+
+  if (fetchErr || !row?.output_url) return false;
+
+  const atlasUrl = coerceToPublicHttpsUrl(String(row.output_url).trim());
+  if (!atlasUrl) return false;
+
+  let host: string;
+  try {
+    host = new URL(atlasUrl).hostname;
+  } catch {
+    return false;
+  }
+  if (!isAllowedVideoPlaybackHost(host)) return false;
+  if (host.endsWith(".supabase.co") || host.endsWith(".supabase.in")) return true;
+
+  const mirrored = await mirrorAtlasVideoToSupabaseStorage({
+    userId: input.userId,
+    generationId: input.generationId,
+    atlasUrl
   });
+  if (!mirrored || mirrored === atlasUrl) return false;
+
+  const { error: updateErr } = await supabaseAdmin
+    .from("generations")
+    .update({ output_url: mirrored })
+    .eq("id", input.generationId)
+    .eq("user_id", input.userId);
+
+  return !updateErr;
 }

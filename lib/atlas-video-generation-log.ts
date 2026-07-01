@@ -1,7 +1,6 @@
 import { atlasProviderForModel } from "@/lib/composer-model-label";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import { lookupCreditsSpentForAtlasPrediction } from "@/lib/credits-charge";
-import { scheduleMirrorAtlasVideoOutput } from "@/lib/mirror-atlas-video-to-storage";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const PLACEHOLDER_INPUT =
@@ -88,9 +87,9 @@ export async function logAtlasVideoGenerationIfNew(args: {
   composerModelId?: string | null;
   prompt?: string | null;
   creditsSpent?: number;
-}): Promise<boolean> {
+}): Promise<{ ok: boolean; generationId: number | null }> {
   const output_url = coerceToPublicHttpsUrl(args.outputUrl.trim());
-  if (!output_url) return false;
+  if (!output_url) return { ok: false, generationId: null };
 
   const prediction_id =
     typeof args.predictionId === "string" && args.predictionId.trim().length > 0
@@ -125,7 +124,7 @@ export async function logAtlasVideoGenerationIfNew(args: {
         await patchGenerationPrompt(existing.id, prompt);
       }
       await patchGenerationCreditsSpent(existing.id, credits_spent);
-      return true;
+      return { ok: true, generationId: existing.id };
     }
   }
 
@@ -143,7 +142,7 @@ export async function logAtlasVideoGenerationIfNew(args: {
       await patchGenerationPrompt(existingByOutput.id, prompt);
     }
     await patchGenerationCreditsSpent(existingByOutput.id, credits_spent);
-    return true;
+    return { ok: true, generationId: existingByOutput.id };
   }
 
   const inputRaw = args.inputUrl?.trim() ?? "";
@@ -193,13 +192,5 @@ export async function logAtlasVideoGenerationIfNew(args: {
     console.error("[atlas-video-generation-log] insert failed", error.message);
   }
 
-  if (!error && inserted?.id) {
-    scheduleMirrorAtlasVideoOutput({
-      userId: args.userId,
-      generationId: inserted.id,
-      atlasUrl: output_url
-    });
-  }
-
-  return !error;
+  return { ok: !error, generationId: inserted?.id ?? null };
 }

@@ -190,6 +190,7 @@ import {
   VIDEO_WAN_R2V_DOCK_HEIGHT
 } from "@/lib/composer-dock-height";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
+import { isAtlasVideoTerminalSuccessStatus } from "@/lib/atlas-video-terminal-status";
 import { VideoBottomBar } from "@/components/video/VideoBottomBar";
 import { VideoHistory } from "@/components/video/VideoHistory";
 import { VideoPreview } from "@/components/video/VideoPreview";
@@ -198,11 +199,6 @@ const NAV_H = 56;
 
 const ATLAS_CLIENT_POLL_MS = 3000;
 const ATLAS_CLIENT_MAX_WAIT_MS = 15 * 60 * 1000;
-
-function atlasTerminalSuccessStatus(status: string | undefined): boolean {
-  const s = (status ?? "").toLowerCase();
-  return s === "succeeded" || s === "completed";
-}
 
 function atlasPollActionForTab(
   tab: ActionTab
@@ -305,8 +301,8 @@ function logAtlasComposerVideoToSupabase(payload: {
   prediction_id?: string | null;
   video_model?: string | null;
   credits_spent?: number;
-}) {
-  void fetch("/api/generations/atlas-video-log", {
+}): Promise<number | null> {
+  return fetch("/api/generations/atlas-video-log", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -317,7 +313,13 @@ function logAtlasComposerVideoToSupabase(payload: {
       video_model: payload.video_model ?? null,
       credits_spent: payload.credits_spent ?? 0
     })
-  }).catch(() => {});
+  })
+    .then(async (res) => {
+      if (!res.ok) return null;
+      const data = (await res.json()) as { generation_id?: number | null };
+      return typeof data.generation_id === "number" ? data.generation_id : null;
+    })
+    .catch(() => null);
 }
 
 export function VideoGenerationPage() {
@@ -607,6 +609,7 @@ export function VideoGenerationPage() {
   } | null>(null);
   const generationAbortRef = useRef<AbortController | null>(null);
   const generationUserCancelledRef = useRef(false);
+  const pendingMirrorGenerationIdRef = useRef<number | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   /** Raw Atlas/CDN URL for full-file download (playback uses proxied `videoUrl`). */
   const [videoDownloadUrl, setVideoDownloadUrl] = useState<string | null>(null);
@@ -1904,12 +1907,12 @@ export function VideoGenerationPage() {
             const polledUrl = pickVideoUrlFromPollBody(pd as Record<string, unknown>);
             const statusNorm = (pd.status ?? "").toLowerCase();
 
-            if (polledUrl) {
+            if (polledUrl && isAtlasVideoTerminalSuccessStatus(pd.status)) {
               const rawOut = polledUrl;
               finalVideoUrl = normalizeAtlasVideoUrlForPlayback(rawOut);
               console.log("[VideoGenerationPage] Atlas video URL â†’ player (after poll)", {
                 status: pd.status,
-                terminalOk: atlasTerminalSuccessStatus(pd.status),
+                terminalOk: isAtlasVideoTerminalSuccessStatus(pd.status),
                 rawLength: rawOut.length,
                 resolvedLength: finalVideoUrl.length,
                 looksLikeMp4Path: videoUrlLooksLikeMp4Path(finalVideoUrl),
@@ -1941,6 +1944,10 @@ export function VideoGenerationPage() {
                   ? `${msg}\n\n(prediction: ${pollId.slice(0, 12)}…)`
                   : msg
               );
+              return;
+            }
+            if (isAtlasVideoTerminalSuccessStatus(pd.status) && !polledUrl) {
+              setGenerateError("Generation finished but no video URL was returned.");
               return;
             }
           }
@@ -2031,6 +2038,8 @@ export function VideoGenerationPage() {
           prediction_id: predictionIdForLog,
           video_model: videoModel,
           credits_spent: creditsSpent
+        }).then((generationId) => {
+          pendingMirrorGenerationIdRef.current = generationId;
         });
 
         if (directorRoute) {
@@ -2324,7 +2333,8 @@ export function VideoGenerationPage() {
           return;
         }
         const polledUrl = pickVideoUrlFromPollBody(pd);
-        if (polledUrl) {
+        const pollStatus = typeof pd.status === "string" ? pd.status : "";
+        if (polledUrl && isAtlasVideoTerminalSuccessStatus(pollStatus)) {
           const normalized = normalizeAtlasVideoUrlForPlayback(polledUrl);
           setVideoDownloadUrl(normalized);
           setVideoUrl(toBrowserVideoSrc(normalized));
@@ -2333,7 +2343,7 @@ export function VideoGenerationPage() {
           void refreshCredits();
           return;
         }
-        const status = typeof pd.status === "string" ? pd.status : "";
+        const status = pollStatus.toLowerCase();
         if (status === "failed") {
           setGenerateError(
             formatAtlasVideoFailureForUi(String(pd.error ?? pd.atlas_error ?? ""), {
@@ -2342,6 +2352,10 @@ export function VideoGenerationPage() {
                 typeof window !== "undefined" && !window.location.hostname.includes("localhost")
             }) || "Video upscale failed."
           );
+          return;
+        }
+        if (isAtlasVideoTerminalSuccessStatus(pollStatus) && !polledUrl) {
+          setGenerateError("Upscale finished but no video URL was returned.");
           return;
         }
       }
@@ -2439,6 +2453,18 @@ export function VideoGenerationPage() {
     generationUserCancelledRef.current = true;
     setGenerateError(VIDEO_GENERATION_CANCEL_MESSAGE);
     generationAbortRef.current?.abort();
+  }, []);
+
+  const handleVideoPlaybackConfirmed = useCallback(() => {
+    const generationId = pendingMirrorGenerationIdRef.current;
+    if (!generationId) return;
+    pendingMirrorGenerationIdRef.current = null;
+    void fetch("/api/generations/mirror-atlas-video", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ generation_id: generationId })
+    }).catch(() => {});
   }, []);
 
   const handleDirectorSlowTryAnother = useCallback(() => {
@@ -2663,6 +2689,7 @@ export function VideoGenerationPage() {
               onResetDefaults={resetCurrentTabDefaults}
               onExtendVideo={() => void handleExtendVideo()}
               onUpscaleVideo={() => void runVideoUpscale()}
+              onPlaybackConfirmed={handleVideoPlaybackConfirmed}
               className="scrollbar-hide h-full min-h-0 w-full min-w-0 flex-1"
             />
           </div>

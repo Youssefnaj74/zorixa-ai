@@ -166,6 +166,7 @@ import {
   scheduleGenerationEconomics
 } from "@/lib/generation-economics";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
+import { isAtlasVideoTerminalSuccessStatus } from "@/lib/atlas-video-terminal-status";
 import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
@@ -368,6 +369,7 @@ export async function GET(request: Request) {
     try {
       const poll = await fetchBytePlusVideoTask(bytePlusTaskId);
       const statusNorm = poll.status.toLowerCase();
+      const terminalSuccess = isAtlasVideoTerminalSuccessStatus(poll.status);
 
       if (statusNorm === "failed") {
         console.error("[generate-video GET] BytePlus task failed", {
@@ -376,13 +378,13 @@ export async function GET(request: Request) {
           generateAudio: pollGenerateAudio
         });
         void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
-      } else if (poll.outputUrl || statusNorm === "succeeded") {
+      } else if (terminalSuccess && poll.outputUrl) {
         void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
       }
 
       return NextResponse.json({
         status: poll.status,
-        video_url: poll.outputUrl,
+        video_url: terminalSuccess ? poll.outputUrl : null,
         outputs: null,
         output: null,
         error:
@@ -426,6 +428,7 @@ export async function GET(request: Request) {
   try {
     const poll = await fetchAtlasPrediction(predictionId);
     const statusNorm = poll.status.toLowerCase();
+    const terminalSuccess = isAtlasVideoTerminalSuccessStatus(poll.status);
 
     if (statusNorm === "failed") {
       console.error("[generate-video GET] Atlas task failed", {
@@ -434,13 +437,13 @@ export async function GET(request: Request) {
         generateAudio: pollGenerateAudio
       });
       void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
-    } else if (poll.outputUrl || statusNorm === "succeeded" || statusNorm === "completed") {
+    } else if (terminalSuccess && poll.outputUrl) {
       void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
     }
 
     return NextResponse.json({
       status: poll.status,
-      video_url: poll.outputUrl,
+      video_url: terminalSuccess ? poll.outputUrl : null,
       outputs: null,
       output: null,
       error:
@@ -1564,7 +1567,7 @@ async function handleGenerateVideoPost(request: Request) {
         const predictionId = bytePlusResult.predictionId;
         const initialStatus = bytePlusResult.status.toLowerCase();
 
-        if (bytePlusResult.outputUrl) {
+        if (bytePlusResult.outputUrl && initialStatus === "succeeded") {
           const finalized = await completeAtlasCharge({
             userId: actor.userId,
             session: chargeBegin.session,

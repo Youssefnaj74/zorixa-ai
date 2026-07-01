@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       ? Math.max(0, Math.round(body.credits_spent))
       : undefined;
 
-  const ok = await logAtlasVideoGenerationIfNew({
+  const logged = await logAtlasVideoGenerationIfNew({
     userId: actor.userId,
     outputUrl: output_url,
     inputUrl: inputRaw || null,
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     creditsSpent
   });
 
-  if (!ok) {
+  if (!logged.ok) {
     return NextResponse.json({ error: "Failed to save generation" }, { status: 500 });
   }
 
@@ -81,5 +81,5 @@ export async function POST(request: Request) {
     void finalizeGenerationEconomicsStatus({ predictionId: prediction_id, status: "success" });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, generation_id: logged.generationId });
 }

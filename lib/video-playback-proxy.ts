@@ -24,7 +24,9 @@ export function isAllowedVideoPlaybackHost(hostname: string): boolean {
     h.endsWith(".blob.vercel-storage.com") ||
     h.endsWith(".googleusercontent.com") ||
     /** Atlas / ByteDance outputs often land on Aliyun OSS */
-    h.endsWith(".aliyuncs.com")
+    h.endsWith(".aliyuncs.com") ||
+    /** BytePlus Seedance outputs (Volcengine TOS) */
+    h.endsWith(".volces.com")
   );
 }
 
