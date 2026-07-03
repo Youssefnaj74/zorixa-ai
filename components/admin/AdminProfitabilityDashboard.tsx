@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { ProviderWalletCard, type ProviderWalletData } from "@/components/admin/ProviderWalletCard";
+
 type Summary = {
   totalGenerations: number;
   successCount: number;
@@ -77,8 +79,36 @@ function auditBadge(answer: AuditAnswer["answer"]): string {
 export function AdminProfitabilityDashboard() {
   const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10));
   const [data, setData] = useState<DashboardPayload | null>(null);
+  const [wallet, setWallet] = useState<ProviderWalletData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [walletError, setWalletError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [walletLoading, setWalletLoading] = useState(true);
+
+  const loadWallet = useCallback(async () => {
+    setWalletLoading(true);
+    setWalletError(null);
+    try {
+      const res = await fetch("/api/admin/provider-wallets?provider=byteplus", { cache: "no-store" });
+      if (res.status === 403) {
+        setWalletError("Access denied.");
+        setWallet(null);
+        return;
+      }
+      if (!res.ok) {
+        const j = (await res.json()) as { error?: string };
+        setWalletError(j.error ?? `Wallet load failed (${res.status})`);
+        setWallet(null);
+        return;
+      }
+      const j = (await res.json()) as { wallet: ProviderWalletData };
+      setWallet(j.wallet);
+    } catch (e) {
+      setWalletError(e instanceof Error ? e.message : "Wallet load failed");
+    } finally {
+      setWalletLoading(false);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -108,7 +138,8 @@ export function AdminProfitabilityDashboard() {
 
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadWallet();
+  }, [load, loadWallet]);
 
   const s = data?.summary;
 
@@ -130,7 +161,10 @@ export function AdminProfitabilityDashboard() {
           />
           <button
             type="button"
-            onClick={() => void load()}
+            onClick={() => {
+              void load();
+              void loadWallet();
+            }}
             className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500"
           >
             Refresh
@@ -147,6 +181,8 @@ export function AdminProfitabilityDashboard() {
       {loading && !data ? (
         <p className="text-white/50">Loading…</p>
       ) : null}
+
+      <ProviderWalletCard wallet={wallet} loading={walletLoading} error={walletError} />
 
       {s ? (
         <>
