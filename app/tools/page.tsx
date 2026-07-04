@@ -1,8 +1,10 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { ToolsCatalogView } from "@/components/tools/ToolsCatalogView";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
-  title: "Tools — Zorixa AI"
+  title: "Tools — Zorixa AI",
+  ...siteCanonical("/tools")
 };
 
 const NAV_H = 56;

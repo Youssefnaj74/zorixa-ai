@@ -3,11 +3,13 @@ import Link from "next/link";
 import { SupportInquiryForm } from "@/app/support/support-inquiry-form";
 import { MarketingDocLayout } from "@/components/marketing/MarketingDocLayout";
 import { BRAND_EMAILS } from "@/lib/site-brand";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
   title: "Help center",
   description:
-    "Zorixa AI help center — credits, image and video generation, FAQs, and troubleshooting."
+    "Zorixa AI help center — credits, image and video generation, FAQs, and troubleshooting.",
+  ...siteCanonical("/helpsupport")
 };
 
 export default function HelpSupportPage() {

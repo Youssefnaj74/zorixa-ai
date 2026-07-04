@@ -2,11 +2,13 @@ import Link from "next/link";
 
 import { MarketingDocLayout } from "@/components/marketing/MarketingDocLayout";
 import { absoluteUrl } from "@/lib/site-brand";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
   title: "About",
   description:
-    "Learn what Zorixa AI is, which AI models it offers, and how it helps creators generate images and videos in one studio."
+    "Learn what Zorixa AI is, which AI models it offers, and how it helps creators generate images and videos in one studio.",
+  ...siteCanonical("/about")
 };
 
 export default function AboutPage() {

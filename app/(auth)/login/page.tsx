@@ -1,6 +1,12 @@
 import { Suspense } from "react";
 
+import type { Metadata } from "next";
+
+import { siteCanonical } from "@/lib/site-metadata";
+
 import { LoginForm } from "./login-form";
+
+export const metadata: Metadata = siteCanonical("/login");
 
 function LoginFallback() {
   return (

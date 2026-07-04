@@ -8,11 +8,13 @@ import {
   getAffiliateTallyEmbedUrl
 } from "@/lib/affiliate-config";
 import { absoluteUrl } from "@/lib/site-brand";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
   title: "Affiliate Program",
   description:
-    "Earn recurring commission promoting Zorixa AI — AI image, video, and speech studio for creators. Apply for launch partner access."
+    "Earn recurring commission promoting Zorixa AI — AI image, video, and speech studio for creators. Apply for launch partner access.",
+  ...siteCanonical("/affiliate")
 };
 
 const STEPS = [

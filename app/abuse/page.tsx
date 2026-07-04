@@ -3,11 +3,13 @@ import Link from "next/link";
 import { ContactEmailCard, ContactForm } from "@/app/contact/contact-form";
 import { MarketingDocLayout } from "@/components/marketing/MarketingDocLayout";
 import { BRAND_EMAILS } from "@/lib/site-brand";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
   title: "Report abuse",
   description:
-    "Report illegal content, Terms violations, or abuse on Zorixa AI."
+    "Report illegal content, Terms violations, or abuse on Zorixa AI.",
+  ...siteCanonical("/abuse")
 };
 
 export default function AbusePage() {

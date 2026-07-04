@@ -2,10 +2,12 @@ import Link from "next/link";
 
 import { BrandEmailLink } from "@/components/marketing/BrandEmailLink";
 import { BRAND_EMAILS } from "@/lib/site-brand";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
   title: "Refund Policy · Zorixa AI",
-  description: "Refund and billing policy for Zorixa AI credits and subscriptions."
+  description: "Refund and billing policy for Zorixa AI credits and subscriptions.",
+  ...siteCanonical("/refund")
 };
 
 export default function RefundPage() {

@@ -3,10 +3,12 @@ import Link from "next/link";
 import { ContactEmailCard, ContactForm } from "@/app/contact/contact-form";
 import { MarketingDocLayout } from "@/components/marketing/MarketingDocLayout";
 import { BRAND_EMAILS } from "@/lib/site-brand";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
   title: "Support",
-  description: "Contact Zorixa AI support — account, generation, and platform help."
+  description: "Contact Zorixa AI support — account, generation, and platform help.",
+  ...siteCanonical("/support")
 };
 
 export default function SupportPage() {

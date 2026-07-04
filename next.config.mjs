@@ -13,6 +13,12 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "zorixaai.com" }],
+        destination: "https://www.zorixaai.com/:path*",
+        permanent: true
+      },
       { source: "/support@zorixaai.com", destination: "/support", permanent: true },
       { source: "/billing@zorixaai.com", destination: "/billing", permanent: true },
       { source: "/hello@zorixaai.com", destination: "/contact", permanent: true },

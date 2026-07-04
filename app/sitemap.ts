@@ -5,11 +5,11 @@ import { getAllVersusPagePaths } from "@/lib/comparison-pages";
 import { getAllBlogSlugs } from "@/lib/blog";
 import { getAllModelSeoSlugs } from "@/lib/model-seo-catalog";
 import { getAllModelReviewSlugs } from "@/lib/review-pages-catalog";
-import { getPublicSiteUrl } from "@/lib/public-site-url";
+import { CANONICAL_SITE_ORIGIN, getPublicSiteUrl } from "@/lib/public-site-url";
 import { EXPLORE_PROMPTS_PUBLIC } from "@/lib/site-features";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = getPublicSiteUrl();
+  const base = process.env.NODE_ENV === "production" ? CANONICAL_SITE_ORIGIN : getPublicSiteUrl();
   const now = new Date();
 
   const paths = [

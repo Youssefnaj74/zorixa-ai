@@ -1,9 +1,11 @@
 import { BrandEmailLink } from "@/components/marketing/BrandEmailLink";
 import { BRAND_EMAILS } from "@/lib/site-brand";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
   title: "Privacy Policy · Zorixa AI",
   description: "Privacy Policy for Zorixa AI platform.",
+  ...siteCanonical("/privacy")
 };
 
 export default function PrivacyPage() {

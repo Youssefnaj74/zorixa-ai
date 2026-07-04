@@ -3,11 +3,13 @@ import Link from "next/link";
 import { ContactEmailCard, ContactForm } from "@/app/contact/contact-form";
 import { MarketingDocLayout } from "@/components/marketing/MarketingDocLayout";
 import { BRAND_EMAILS } from "@/lib/site-brand";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
   title: "Billing",
   description:
-    "Billing and payments help for Zorixa AI — refunds, Dodo Payments charges, credits, and invoices."
+    "Billing and payments help for Zorixa AI — refunds, Dodo Payments charges, credits, and invoices.",
+  ...siteCanonical("/billing")
 };
 
 export default function BillingPage() {

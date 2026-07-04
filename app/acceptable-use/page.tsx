@@ -3,11 +3,13 @@ import Link from "next/link";
 import { BrandEmailLink } from "@/components/marketing/BrandEmailLink";
 import { MarketingDocLayout } from "@/components/marketing/MarketingDocLayout";
 import { BRAND_EMAILS } from "@/lib/site-brand";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
   title: "Acceptable Use Policy · Zorixa AI",
   description:
-    "Acceptable Use Policy for Zorixa AI — prohibited content, moderation, and enforcement."
+    "Acceptable Use Policy for Zorixa AI — prohibited content, moderation, and enforcement.",
+  ...siteCanonical("/acceptable-use")
 };
 
 const PROHIBITED = [

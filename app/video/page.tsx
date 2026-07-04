@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 
 import { VideoGenerationPage } from "@/components/video/VideoGenerationPage";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
-  title: "Video generation"
+  title: "Video generation",
+  ...siteCanonical("/video")
 };
 
 export default function VideoPage() {

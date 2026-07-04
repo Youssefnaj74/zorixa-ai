@@ -2,10 +2,12 @@ import Link from "next/link";
 
 import { BrandEmailLink } from "@/components/marketing/BrandEmailLink";
 import { BRAND_EMAILS } from "@/lib/site-brand";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
   title: "Terms of Service · Zorixa AI",
   description: "Terms of Service for Zorixa AI platform.",
+  ...siteCanonical("/terms")
 };
 
 export default function TermsPage() {

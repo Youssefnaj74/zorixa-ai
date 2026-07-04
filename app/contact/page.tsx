@@ -3,11 +3,13 @@ import Link from "next/link";
 import { ContactEmailCard, ContactForm } from "@/app/contact/contact-form";
 import { MarketingDocLayout } from "@/components/marketing/MarketingDocLayout";
 import { BRAND_EMAILS } from "@/lib/site-brand";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
   title: "Contact",
   description:
-    "Contact Zorixa AI by email or send a message — partnerships, press, and general inquiries."
+    "Contact Zorixa AI by email or send a message — partnerships, press, and general inquiries.",
+  ...siteCanonical("/contact")
 };
 
 export default function ContactPage() {

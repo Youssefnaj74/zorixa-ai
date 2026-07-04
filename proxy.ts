@@ -1,9 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { applySecurityHeaders } from "@/lib/security-headers.mjs";
+import { CANONICAL_SITE_ORIGIN } from "@/lib/public-site-url";
 import { updateSession } from "@/lib/supabase/middleware";
 
 /** Next.js 16 middleware entrypoint (`proxy` replaces the old `middleware` export). */
+
+function redirectToCanonicalHost(request: NextRequest): NextResponse | null {
+  const host = request.headers.get("host")?.split(":")[0]?.toLowerCase();
+  if (host !== "zorixaai.com") {
+    return null;
+  }
+
+  const destination = request.nextUrl.clone();
+  destination.protocol = "https:";
+  destination.host = new URL(CANONICAL_SITE_ORIGIN).host;
+  return withSecurityHeaders(NextResponse.redirect(destination, 301));
+}
 
 function copyResponseCookies(from: NextResponse, to: NextResponse) {
   from.cookies.getAll().forEach((cookie) => {
@@ -68,6 +81,11 @@ function redirectToLowercasePath(request: NextRequest): NextResponse | null {
 }
 
 export async function proxy(request: NextRequest) {
+  const hostRedirect = redirectToCanonicalHost(request);
+  if (hostRedirect) {
+    return hostRedirect;
+  }
+
   const caseRedirect = redirectToLowercasePath(request);
   if (caseRedirect) {
     return caseRedirect;

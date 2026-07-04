@@ -3,10 +3,12 @@ import Link from "next/link";
 import { MarketingDocLayout } from "@/components/marketing/MarketingDocLayout";
 import { BrandEmailLink } from "@/components/marketing/BrandEmailLink";
 import { FOUNDER_LINKEDIN_URL, FOUNDER_NAME, SUPPORT_EMAIL } from "@/lib/site-brand";
+import { siteCanonical } from "@/lib/site-metadata";
 
 export const metadata = {
   title: "Founder",
-  description: "Why Zorixa AI was built and who is behind the platform."
+  description: "Why Zorixa AI was built and who is behind the platform.",
+  ...siteCanonical("/about/founder")
 };
 
 export default function FounderPage() {
