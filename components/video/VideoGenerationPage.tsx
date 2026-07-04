@@ -171,7 +171,7 @@ import {
   formatAtlasVideoFailureForUi,
   isAtlasRealPersonImageError
 } from "@/lib/atlas-video-failure-message";
-import { resolveVideoStudioFromQuery } from "@/lib/studio-catalog-link";
+import { parseVideoResolutionFromQuery, resolveVideoStudioFromQuery } from "@/lib/studio-catalog-link";
 import {
   appendSeedanceReferenceTokenToPrompt,
   ensureSeedanceReferenceTokensInPrompt,
@@ -888,6 +888,13 @@ export function VideoGenerationPage() {
           setReferenceImageUrls(Array.from({ length: referenceToVideoMaxImages(nextModelId) }, () => null));
         }
       }
+
+      const urlResolution = parseVideoResolutionFromQuery(searchParams.get("resolution"));
+      if (urlResolution) {
+        setResolution(
+          urlResolution === "4k" && !videoComposerSupports4k(nextModelId) ? "1080p" : urlResolution
+        );
+      }
     },
     [hasUserGenerated, searchParams, setPromptImage2UrlSafe, setPromptImageUrlSafe]
   );
@@ -1189,6 +1196,13 @@ export function VideoGenerationPage() {
         setLipsyncAudioUrlSafe(coerced);
         setPromptImageUrlSafe(null);
       }
+    }
+
+    const urlResolution = parseVideoResolutionFromQuery(searchParams.get("resolution"));
+    if (urlResolution) {
+      setResolution(
+        urlResolution === "4k" && !videoComposerSupports4k(resolved.model) ? "1080p" : urlResolution
+      );
     }
   }, [searchParams, setLipsyncAudioUrlSafe, setPromptImageUrlSafe]);
 

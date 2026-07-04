@@ -64,16 +64,30 @@ export type ImageStudioLock = {
   toolTitle?: string;
 };
 
+const VIDEO_RESOLUTION_QUERY = new Set(["480p", "720p", "1080p", "4k"]);
+
+/** ?resolution= from studio deep links (e.g. announcement → Seedance 4K). */
+export function parseVideoResolutionFromQuery(raw: string | null): string | null {
+  const v = raw?.trim().toLowerCase();
+  if (v === "2160p") return "4k";
+  return v && VIDEO_RESOLUTION_QUERY.has(v) ? v : null;
+}
+
 /** Deep link from /tools card → /video or /image with tab + model. */
 export function buildCatalogStudioHref(
   sectionId: ToolCatalogSectionId,
   composerModelId: string,
-  opts?: { toolName?: string }
+  opts?: { toolName?: string; resolution?: string }
 ): string {
   const appendTools = (params: URLSearchParams) => {
     params.set("from", STUDIO_FROM_TOOLS);
     const name = opts?.toolName?.trim();
     if (name) params.set("name", name);
+  };
+
+  const appendResolution = (params: URLSearchParams) => {
+    const resolution = parseVideoResolutionFromQuery(opts?.resolution ?? null);
+    if (resolution) params.set("resolution", resolution);
   };
 
   if (composerModelId === "studio-lipsync") {
@@ -95,6 +109,7 @@ export function buildCatalogStudioHref(
   if (videoTab) {
     const params = new URLSearchParams({ tab: videoTab, model: composerModelId });
     appendTools(params);
+    appendResolution(params);
     return `/video?${params.toString()}`;
   }
 
