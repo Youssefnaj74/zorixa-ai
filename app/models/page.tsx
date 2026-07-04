@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   alternates: { canonical: absoluteUrl("/models") }
 };
 
-const NAV_H = 56;
+import { NAV_H } from "@/lib/nav-chrome";
 
 export default function ModelsIndexPage() {
   const videoModels = MODEL_SEO_PAGES.filter((p) => p.category === "video");
@@ -20,7 +20,7 @@ export default function ModelsIndexPage() {
   return (
     <div className="min-h-dvh bg-[#080810] font-body text-white">
       <Navbar />
-      <main className="min-h-[calc(100dvh-56px)]" style={{ paddingTop: NAV_H }}>
+      <main className="min-h-dvh" style={{ paddingTop: NAV_H, minHeight: `calc(100dvh - ${NAV_H}px)` }}>
         <div className="mx-auto max-w-4xl px-6 py-14 sm:py-20">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#00e5ff]">Model catalog</p>
           <h1 className="mt-3 text-4xl font-extrabold tracking-tight">AI models on Zorixa</h1>

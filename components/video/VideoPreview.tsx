@@ -19,7 +19,7 @@ import { DirectorResultBanner } from "@/components/video/DirectorResultBanner";
 import { SeedanceReferenceToVideoTip } from "@/components/video/SeedanceReferenceToVideoTip";
 import { VideoToVideoModelTip } from "@/components/video/VideoToVideoModelTip";
 
-const NAV_H = 56;
+import { NAV_H } from "@/lib/nav-chrome";
 
 /** Size constraints for the preview frame inside the card. */
 function uiAspectFrameLayoutClass(aspect: string): string {

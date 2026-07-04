@@ -8,7 +8,7 @@ import { splitBlogInlineLinks } from "@/lib/blog";
 import type { BlogSection } from "@/lib/blog/types";
 import type { AlternativeComparisonRow, AlternativeSeoPage } from "@/lib/alternative-pages/types";
 
-const NAV_H = 56;
+import { NAV_H } from "@/lib/nav-chrome";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -139,7 +139,7 @@ export function AlternativePageView({ page }: { page: AlternativeSeoPage }) {
     <div className="min-h-dvh bg-[#080810] font-body text-white">
       <AlternativePageJsonLd page={page} />
       <Navbar />
-      <main className="min-h-[calc(100dvh-56px)]" style={{ paddingTop: NAV_H }}>
+      <main className="min-h-dvh" style={{ paddingTop: NAV_H, minHeight: `calc(100dvh - ${NAV_H}px)` }}>
         <div className="mx-auto max-w-6xl px-6 py-14 sm:py-20">
           <nav className="text-xs text-white/45" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-white/70">

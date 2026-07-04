@@ -16,7 +16,7 @@ import { ELEVENLABS_DEFAULT_VOICES, ELEVENLABS_TTS_MAX_CHARS } from "@/lib/eleve
 import { buildAudioToVideoWithAudioHref } from "@/lib/studio-catalog-link";
 import { cn } from "@/lib/utils";
 
-const NAV_H = 56;
+import { NAV_H } from "@/lib/nav-chrome";
 
 type TtsHistoryEntry = {
   id: string;

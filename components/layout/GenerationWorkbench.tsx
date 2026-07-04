@@ -8,6 +8,7 @@ import {
   type ImageGenerateContext
 } from "@/components/layout/ImageBottomBar";
 import { Navbar } from "@/components/layout/Navbar";
+import { NAV_H } from "@/lib/nav-chrome";
 import { PromptBar } from "@/components/layout/PromptBar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { OutputPreview } from "@/components/ui/OutputPreview";
@@ -389,7 +390,7 @@ export function GenerationWorkbench({ mode }: { mode: "image" | "video" }) {
         style={
           mode === "image"
             ? {
-                height: "calc(100vh - 56px)",
+                height: `calc(100vh - ${NAV_H}px)`,
                 paddingBottom: 100
               }
             : undefined

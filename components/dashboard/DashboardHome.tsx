@@ -22,6 +22,7 @@ import {
   Wand2
 } from "lucide-react";
 import { DashboardNavbar } from "@/components/layout/Navbar";
+import { NAV_H } from "@/lib/nav-chrome";
 import { StatsCard } from "./StatsCard";
 import { buildCatalogStudioHref } from "@/lib/studio-catalog-link";
 import { dashboardFeatureAlt } from "@/lib/image-alt-text";
@@ -362,7 +363,10 @@ export function DashboardHome({
         onSignOut={onSignOut}
       />
 
-      <main className="relative z-10 mx-auto max-w-[1500px] space-y-8 px-4 py-8 pt-24 lg:px-8">
+      <main
+        className="relative z-10 mx-auto max-w-[1500px] space-y-8 px-4 py-8 lg:px-8"
+        style={{ paddingTop: NAV_H + 32 }}
+      >
         {showOnboarding ? <OnboardingCard checkoutHref={upgradeHref} /> : null}
 
         <motion.div

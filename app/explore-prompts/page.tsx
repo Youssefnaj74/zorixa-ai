@@ -11,7 +11,7 @@ export const metadata = {
   ...siteCanonical("/explore-prompts")
 };
 
-const NAV_H = 56;
+import { NAV_H } from "@/lib/nav-chrome";
 
 export default function ExplorePromptsPage() {
   if (!EXPLORE_PROMPTS_PUBLIC) {
@@ -21,7 +21,10 @@ export default function ExplorePromptsPage() {
   return (
     <div className="min-h-dvh bg-black font-body">
       <Navbar />
-      <main className="min-h-[calc(100dvh-56px)] bg-black" style={{ paddingTop: NAV_H }}>
+      <main
+        className="min-h-dvh bg-black"
+        style={{ paddingTop: NAV_H, minHeight: `calc(100dvh - ${NAV_H}px)` }}
+      >
         <Suspense fallback={<div className="min-h-[40vh]" />}>
           <ExplorePromptsView />
         </Suspense>

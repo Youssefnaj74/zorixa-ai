@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Check, ChevronDown, Zap } from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
+import { NAV_H } from "@/lib/nav-chrome";
 import { WelcomePricingBanner } from "@/components/onboarding/WelcomePricingBanner";
 import {
   CREDIT_PACKS,
@@ -103,7 +104,7 @@ export function PricingView() {
   return (
     <>
       <Navbar />
-      <div className="min-h-dvh bg-[#080810] pt-20 font-body text-white">
+      <div className="min-h-dvh bg-[#080810] font-body text-white" style={{ paddingTop: NAV_H + 24 }}>
         <div className="mx-auto max-w-7xl px-6 pb-24">
           {showWelcome ? <WelcomePricingBanner /> : null}
           {/* Header */}

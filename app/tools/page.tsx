@@ -7,13 +7,13 @@ export const metadata = {
   ...siteCanonical("/tools")
 };
 
-const NAV_H = 56;
+import { NAV_H } from "@/lib/nav-chrome";
 
 export default function ToolsPage() {
   return (
     <div className="min-h-dvh bg-zorixa-bg font-body">
       <Navbar />
-      <main className="min-h-[calc(100dvh-56px)]" style={{ paddingTop: NAV_H }}>
+      <main className="min-h-dvh" style={{ paddingTop: NAV_H, minHeight: `calc(100dvh - ${NAV_H}px)` }}>
         <ToolsCatalogView />
       </main>
     </div>

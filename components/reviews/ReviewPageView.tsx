@@ -14,7 +14,7 @@ import { getModelReviewPage, type ModelReviewPage } from "@/lib/review-pages-cat
 import { getVideoModelShowcase } from "@/lib/video-model-showcase";
 import { reviewHeroAlt } from "@/lib/image-alt-text";
 
-const NAV_H = 56;
+import { NAV_H } from "@/lib/nav-chrome";
 
 function showcaseTab(page: ModelReviewPage): "Text to Video" | "Image to Video" {
   return page.studioSectionId === "reference-to-video" ? "Text to Video" : "Text to Video";
@@ -32,7 +32,7 @@ export function ReviewPageView({ page }: { page: ModelReviewPage }) {
     <div className="min-h-dvh bg-[#080810] font-body text-white">
       <ReviewPageJsonLd page={page} />
       <Navbar />
-      <main className="min-h-[calc(100dvh-56px)]" style={{ paddingTop: NAV_H }}>
+      <main className="min-h-dvh" style={{ paddingTop: NAV_H, minHeight: `calc(100dvh - ${NAV_H}px)` }}>
         <div className="mx-auto max-w-4xl px-6 py-14 sm:py-20">
           <nav className="text-xs text-white/45" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-white/70">

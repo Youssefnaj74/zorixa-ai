@@ -10,7 +10,7 @@ import { BlogArticleJsonLd } from "@/components/seo/blog-article-json-ld";
 import { getDefaultBlogAuthor, getRelatedBlogPosts } from "@/lib/blog";
 import type { BlogPost } from "@/lib/blog/types";
 
-const NAV_H = 56;
+import { NAV_H } from "@/lib/nav-chrome";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -28,7 +28,7 @@ export function BlogArticleView({ post }: { post: BlogPost }) {
     <div className="min-h-dvh bg-[#080810] font-body text-white">
       <BlogArticleJsonLd post={post} authorName={author.name} />
       <Navbar />
-      <main className="min-h-[calc(100dvh-56px)]" style={{ paddingTop: NAV_H }}>
+      <main className="min-h-dvh" style={{ paddingTop: NAV_H, minHeight: `calc(100dvh - ${NAV_H}px)` }}>
         <div className="mx-auto max-w-6xl px-6 py-14 sm:py-20">
           <nav className="text-xs text-white/45" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-white/70">

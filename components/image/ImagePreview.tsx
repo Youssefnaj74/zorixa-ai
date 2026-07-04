@@ -18,7 +18,7 @@ import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import type { UpscaleTier } from "@/lib/studio-constants";
 import { cn } from "@/lib/utils";
 
-const NAV_H = 56;
+import { NAV_H } from "@/lib/nav-chrome";
 
 function BatchPreviewTile({
   url,
