@@ -38,8 +38,8 @@ export const BYTEPLUS_SEEDANCE_FEATURE_AUDIT: FeatureAuditRow[] = [
   {
     option: "Resolution",
     value: "4k",
-    level: "native",
-    notes: "BytePlus API supports 4k; exposed in studio for Seedance 2.0 T2V, I2V, and R2V."
+    level: "atlas_fallback",
+    notes: "4K always routes to Atlas Cloud (Seedance pixel presets). BytePlus serves 720p/1080p on Standard tier."
   },
   {
     option: "Aspect Ratio",
@@ -175,7 +175,7 @@ export function buildBytePlusProductionAuditReport(): ProductionAuditAnswer[] {
       question: "Are Resolution options fully supported by BytePlus?",
       answer: "partial",
       detail:
-        "720p and 1080p are native. 480p is converted to 720p before submission. 4k is native and available in the studio for Seedance 2.0."
+        "720p and 1080p are native on BytePlus Standard tier. 480p is converted to 720p. 4K is Atlas-only in production routing."
     },
     {
       question: "Are Aspect Ratios fully supported?",

@@ -1509,7 +1509,8 @@ async function handleGenerateVideoPost(request: Request) {
     videoModel,
     speedTier,
     action,
-    speedTierRaw: body.speed_tier ?? body.speedTier ?? null
+    speedTierRaw: body.speed_tier ?? body.speedTier ?? null,
+    resolution
   });
   logBytePlusSeedanceRoutingDiagnostic("request + gate", bytePlusRoutingDiagnostic);
 

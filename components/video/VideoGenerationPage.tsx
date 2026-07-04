@@ -1203,6 +1203,10 @@ export function VideoGenerationPage() {
       setResolution(
         urlResolution === "4k" && !videoComposerSupports4k(resolved.model) ? "1080p" : urlResolution
       );
+      setVideoUrl(null);
+      setVideoDownloadUrl(null);
+      setHasUserGenerated(false);
+      appliedShowcaseForModel.current = null;
     }
   }, [searchParams, setLipsyncAudioUrlSafe, setPromptImageUrlSafe]);
 

@@ -319,6 +319,10 @@ export function VideoPreview({
                             playbackConfirmedRef.current = true;
                             onPlaybackConfirmed?.();
                           }
+                        } else {
+                          setInlinePlaybackError(
+                            "This video file looks empty or unreadable (0×0). Try Generate again at 4K, or download if the link still works."
+                          );
                         }
                         console.log("[VideoPreview] <video> loadedmetadata", {
                           duration: el.duration,
@@ -341,6 +345,10 @@ export function VideoPreview({
                         if (code === 4) {
                           setInlinePlaybackError(
                             "This output uses a format or codec your browser can't play inline (common with some Atlas / OSS files). Open in a new tab or download."
+                          );
+                        } else if (code != null) {
+                          setInlinePlaybackError(
+                            "Video playback failed in the browser. Try Download, or regenerate at 4K (Atlas Cloud)."
                           );
                         }
                       }}

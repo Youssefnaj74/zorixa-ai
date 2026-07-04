@@ -72,6 +72,7 @@ export function diagnoseBytePlusSeedanceRouting(input: {
   speedTier: AtlasVideoSpeedTier;
   action: AtlasVideoRouteAction;
   speedTierRaw: unknown;
+  resolution?: string;
 }): BytePlusSeedanceRoutingDiagnostic {
   const shouldUseBytePlusSkipReasons: string[] = [];
   if (input.videoModel !== "seedance-2") {
@@ -93,9 +94,18 @@ export function diagnoseBytePlusSeedanceRouting(input: {
     shouldUseBytePlusSkipReasons.push("missing api key: BYTEPLUS_API_KEY is empty or unset");
   }
 
-  const shouldUse = shouldUseBytePlusForSeedance(input.videoModel, input.speedTier);
+  const shouldUse = shouldUseBytePlusForSeedance(
+    input.videoModel,
+    input.speedTier,
+    input.resolution
+  );
   const actionSupported = BYTEPLUS_ROUTE_ACTIONS.has(input.action);
   const eligible = shouldUse && actionSupported;
+  const resolutionNorm = normalizeBytePlusSeedanceResolution(input.resolution ?? "720p");
+
+  if (resolutionNorm === "4k") {
+    shouldUseBytePlusSkipReasons.push("4k uses Atlas Cloud (explicit Seedance pixel presets)");
+  }
 
   const atlasSkipReasons = [...shouldUseBytePlusSkipReasons];
   if (shouldUse && !actionSupported) {
@@ -136,13 +146,16 @@ export function logBytePlusSeedanceRoutingDiagnostic(
 }
 
 /**
- * BytePlus is primary for Seedance 2.0 standard tier only.
+ * BytePlus is primary for Seedance 2.0 standard tier only (720p / 1080p).
+ * 4K uses Atlas Cloud — width/height presets and fewer blank-output reports at 2160p.
  * Fast tier stays on Atlas Cloud per product requirements.
  */
 export function shouldUseBytePlusForSeedance(
   composerModelId: string,
-  speedTier: AtlasVideoSpeedTier
+  speedTier: AtlasVideoSpeedTier,
+  resolution?: string
 ): boolean {
+  if (normalizeBytePlusSeedanceResolution(resolution ?? "720p") === "4k") return false;
   return composerModelId === "seedance-2" && speedTier === "standard" && isBytePlusSeedanceEnabled();
 }
 
