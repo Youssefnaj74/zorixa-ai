@@ -51,14 +51,14 @@ export const MODEL_SEO_PAGES: ModelSeoPage[] = [
     provider: "ByteDance",
     tagline: "Multimodal cinematic video generation",
     description:
-      "Generate cinematic AI videos with Seedance 2.0 on Zorixa AI. Text-to-video, image-to-video, and reference-to-video with up to 15s clips and 720p–1080p output.",
+      "Generate cinematic AI videos with Seedance 2.0 on Zorixa AI. Text-to-video, image-to-video, and reference-to-video with up to 15s clips and 720p–4K output.",
     heroSubtitle:
       "ByteDance’s flagship multimodal video model — strong motion, reference clips, and creator-friendly controls in one studio.",
     category: "video",
     capabilities: ["text-to-video", "image-to-video", "reference-to-video"],
     features: [
       "Text, image, and reference video inputs in one workflow",
-      "Up to 15 seconds per generation with 720p and 1080p tiers",
+      "Up to 15 seconds per generation with 720p, 1080p, and 4K tiers",
       "Reference to Video with @image / @video / @audio tokens",
       "Standard and Fast speed tiers for cost vs. latency trade-offs",
       "Built into AI Director for cinematic and anime styles"

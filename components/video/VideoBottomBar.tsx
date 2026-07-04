@@ -72,6 +72,8 @@ import {
   videoToVideoTabUsesWanCharacterSwap,
   videoToVideoTabUsesViduStartEnd,
   RESOLUTION_STEP_OPTIONS,
+  seedance20ResolutionOptionsForTab,
+  isSeedance20ComposerId,
   STANDARD_DURATION_OPTIONS,
   TIME_SECONDS_OPTIONS,
   type BottomBarModel
@@ -553,6 +555,8 @@ export function VideoBottomBar({
     ? [...GEMINI_OMNI_FLASH_RESOLUTION_OPTIONS]
     : showAudioToVideoLayout
     ? [...AUDIO_TO_VIDEO_RESOLUTION_OPTIONS]
+    : isSeedance20ComposerId(composerModelId)
+    ? seedance20ResolutionOptionsForTab(actionTab)
     : show720p1080pOnlyLayout
       ? RESOLUTION_STEP_OPTIONS.filter((r) => r.id !== "480p")
       : RESOLUTION_STEP_OPTIONS;
@@ -680,23 +684,23 @@ export function VideoBottomBar({
       style={useStableDockHeight ? { minHeight: stableDockHeight } : undefined}
       className={cn(
         "fixed inset-x-0 bottom-0 z-50 flex flex-col border-t border-[rgba(131,56,235,0.15)] bg-[#0d0d14]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-[12px]",
-        "px-5 py-3 font-body",
+        "px-4 py-2 font-body",
         useStableDockHeight && "overflow-hidden"
       )}
     >
-      <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-3">
+      <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-2">
         <div className="shrink-0">
           <ActionTabsRow
             active={actionTab}
             onChange={onActionTabChange}
-            className="h-11 min-h-[44px] w-full"
+            className="h-10 min-h-[40px] w-full"
           />
         </div>
 
         {/* ROW 1 — uploads + prompt */}
         <div
           className={cn(
-            "flex min-h-0 gap-3",
+            "flex min-h-0 gap-2",
             useStableDockHeight && "items-stretch",
             showReferenceMediaPanel
               ? "flex-row items-stretch"
@@ -1279,7 +1283,7 @@ export function VideoBottomBar({
               suppressHydrationWarning
               value={prompt}
               onChange={(e) => onPromptChange(e.target.value)}
-              rows={showReferenceMediaPanel ? 4 : showTextOnlyPromptLayout ? 3 : 2}
+              rows={showReferenceMediaPanel ? 3 : showTextOnlyPromptLayout ? 3 : 2}
               placeholder={
                 showAudioToVideoLayout
                   ? "Optional: expression, posture, scene style…"
@@ -1298,9 +1302,9 @@ export function VideoBottomBar({
                           : "Describe your image..."
               }
               className={cn(
-                "w-full rounded-lg bg-[#0a0a0a] px-3 py-2.5 text-sm leading-relaxed text-white outline-none transition-shadow placeholder:text-zorixa-muted",
+                "w-full rounded-lg bg-[#0a0a0a] px-3 py-2 text-sm leading-snug text-white outline-none transition-shadow placeholder:text-zorixa-muted",
                 "focus-visible:ring-2 focus-visible:ring-brand",
-                showReferenceMediaPanel ? "min-h-[120px] resize-none" : "resize-y"
+                showReferenceMediaPanel ? "min-h-[88px] resize-none" : "resize-y"
               )}
             />
           </div>
@@ -1308,8 +1312,8 @@ export function VideoBottomBar({
         </div>
 
         {/* ROW 2 — controls (always visible at bottom of dock) */}
-        <div className={cn("flex shrink-0 items-end gap-3", useStableDockHeight && "border-t border-white/5 pt-2")}>
-          <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">
+        <div className={cn("flex shrink-0 items-end gap-2", useStableDockHeight && "border-t border-white/5 pt-1.5")}>
+          <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2">
           {/* MODEL */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Model</span>

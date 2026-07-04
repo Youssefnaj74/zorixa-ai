@@ -529,6 +529,28 @@ export function referenceToVideoHide480p(composerModelId: string): boolean {
   return composerModelId === "seedance-2" || videoComposerUses720p1080pOnly(composerModelId);
 }
 
+export function isSeedance20ComposerId(composerModelId: string): boolean {
+  return composerModelId === "seedance-2";
+}
+
+export function videoComposerSupports4k(composerModelId: string): boolean {
+  return isGeminiOmniFlashComposerId(composerModelId) || isSeedance20ComposerId(composerModelId);
+}
+
+export const SEEDANCE_20_RESOLUTION_OPTIONS = [
+  { id: "4k" as const, label: "4K", newBadge: true },
+  { id: "1080p" as const, label: "1080p", newBadge: false },
+  { id: "720p" as const, label: "720p", newBadge: false },
+  { id: "480p" as const, label: "480p", newBadge: false }
+] as const;
+
+export function seedance20ResolutionOptionsForTab(actionTab: string): typeof SEEDANCE_20_RESOLUTION_OPTIONS[number][] {
+  if (actionTab === "Reference to Video") {
+    return SEEDANCE_20_RESOLUTION_OPTIONS.filter((r) => r.id !== "480p");
+  }
+  return [...SEEDANCE_20_RESOLUTION_OPTIONS];
+}
+
 export const RESOLUTION_STEP_OPTIONS = [
   { id: "1080p" as const, label: "1080p", newBadge: true },
   { id: "720p" as const, label: "720p", newBadge: false },

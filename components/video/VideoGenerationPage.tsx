@@ -77,6 +77,7 @@ import {
   wan27VideoEditSupportsReferenceImages,
   videoComposerSupportsEndFrame,
   videoComposerSupportsReferenceToVideo,
+  videoComposerSupports4k,
   characterSwapTabSupportsModel,
   videoComposerSupportsVideoEditTab,
   videoToVideoTabUsesDualAssetPipeline,
@@ -907,7 +908,7 @@ export function VideoGenerationPage() {
     if (!videoComposerSupportsSpeedTier(id)) {
       setDurationStandard("Standard");
     }
-    if (!isGeminiOmniFlashComposerId(id) && resolution === "4k") {
+    if (!videoComposerSupports4k(id) && resolution === "4k") {
       setResolution("1080p");
     }
     if (isGrokImagineVideoComposerId(id)) {

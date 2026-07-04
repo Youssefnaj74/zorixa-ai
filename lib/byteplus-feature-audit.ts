@@ -39,7 +39,7 @@ export const BYTEPLUS_SEEDANCE_FEATURE_AUDIT: FeatureAuditRow[] = [
     option: "Resolution",
     value: "4k",
     level: "native",
-    notes: "BytePlus API supports 4k; studio UI may not expose 4k for Seedance."
+    notes: "BytePlus API supports 4k; exposed in studio for Seedance 2.0 T2V, I2V, and R2V."
   },
   {
     option: "Aspect Ratio",
@@ -175,7 +175,7 @@ export function buildBytePlusProductionAuditReport(): ProductionAuditAnswer[] {
       question: "Are Resolution options fully supported by BytePlus?",
       answer: "partial",
       detail:
-        "720p and 1080p are native. 480p is converted to 720p before submission. 4k is API-native but may not appear in the studio UI."
+        "720p and 1080p are native. 480p is converted to 720p before submission. 4k is native and available in the studio for Seedance 2.0."
     },
     {
       question: "Are Aspect Ratios fully supported?",

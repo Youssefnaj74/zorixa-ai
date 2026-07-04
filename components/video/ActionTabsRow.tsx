@@ -39,7 +39,7 @@ export function ActionTabsRow({
             type="button"
             onClick={() => onChange(tab)}
             className={cn(
-              "relative z-10 rounded-lg px-2 py-2.5 text-center text-xs font-medium transition-colors sm:text-sm",
+              "relative z-10 rounded-lg px-2 py-2 text-center text-xs font-medium transition-colors sm:text-sm",
               isActive ? "text-white" : "text-zorixa-muted hover:text-white"
             )}
           >

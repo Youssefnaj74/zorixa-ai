@@ -268,6 +268,8 @@ function isSeedanceImageToVideoModel(model: string): boolean {
 /** Short-side pixel size from UI resolution tier (matches Seedance model page examples). */
 function resolutionShortSidePx(resolution: string): number {
   switch (resolution) {
+    case "4k":
+      return 2160;
     case "1080p":
       return 1080;
     case "720p":

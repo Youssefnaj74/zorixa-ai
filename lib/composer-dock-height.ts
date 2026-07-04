@@ -1,12 +1,12 @@
 /** Reserved height for the fixed bottom composer — keeps preview from jumping. */
 
 /** Action tabs row (Text to Video / Image to Image, etc.) — pinned on the dock. */
-export const STUDIO_ACTION_TABS_HEIGHT = 52;
+export const STUDIO_ACTION_TABS_HEIGHT = 48;
 
-export const COMPOSER_DOCK_DEFAULT_HEIGHT = 130;
+export const COMPOSER_DOCK_DEFAULT_HEIGHT = 120;
 
 /** Video · Seedance 2.0 Reference to Video body (uploads + prompt + controls). */
-export const VIDEO_SEEDANCE_R2V_BODY_HEIGHT = 268;
+export const VIDEO_SEEDANCE_R2V_BODY_HEIGHT = 240;
 
 /** Full video dock including tabs when Seedance R2V is active. */
 export const VIDEO_SEEDANCE_R2V_DOCK_HEIGHT =

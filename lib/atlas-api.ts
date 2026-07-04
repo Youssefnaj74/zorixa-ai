@@ -38,7 +38,7 @@ function getAtlasApiKey(): string {
 }
 
 const ALLOWED_ASPECTS = new Set(["16:9", "9:16", "1:1", "4:3"]);
-const ALLOWED_RESOLUTIONS = new Set(["480p", "720p", "1080p"]);
+const ALLOWED_RESOLUTIONS = new Set(["480p", "720p", "1080p", "4k"]);
 
 function normalizeAspectRatio(raw: string): string {
   const v = raw.trim();
@@ -52,6 +52,8 @@ function normalizeResolutionTier(raw: string): string {
 
 function resolutionShortSidePx(resolution: string): number {
   switch (resolution) {
+    case "4k":
+      return 2160;
     case "1080p":
       return 1080;
     case "720p":

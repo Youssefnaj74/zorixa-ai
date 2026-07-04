@@ -9,28 +9,33 @@ const SEEDANCE_PRESETS: Record<string, Record<string, { width: number; height: n
   "9:16": {
     "480p": { width: 480, height: 864 },
     "720p": { width: 720, height: 1280 },
-    "1080p": { width: 1080, height: 1920 }
+    "1080p": { width: 1080, height: 1920 },
+    "4k": { width: 2160, height: 3840 }
   },
   "16:9": {
     "480p": { width: 864, height: 480 },
     "720p": { width: 1280, height: 720 },
-    "1080p": { width: 1920, height: 1080 }
+    "1080p": { width: 1920, height: 1080 },
+    "4k": { width: 3840, height: 2160 }
   },
   "1:1": {
     "480p": { width: 480, height: 480 },
     "720p": { width: 720, height: 720 },
-    "1080p": { width: 1080, height: 1080 }
+    "1080p": { width: 1080, height: 1080 },
+    "4k": { width: 2160, height: 2160 }
   },
   "4:3": {
     "480p": { width: 640, height: 480 },
     "720p": { width: 960, height: 720 },
-    "1080p": { width: 1440, height: 1080 }
+    "1080p": { width: 1440, height: 1080 },
+    "4k": { width: 2880, height: 2160 }
   },
   "3:4": {
     "480p": { width: 480, height: 640 },
     "720p": { width: 720, height: 960 },
     "750p": { width: 752, height: 1000 },
-    "1080p": { width: 1080, height: 1440 }
+    "1080p": { width: 1080, height: 1440 },
+    "4k": { width: 2160, height: 2880 }
   }
 };
 

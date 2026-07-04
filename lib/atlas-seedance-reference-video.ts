@@ -34,6 +34,7 @@ export function uiAspectToAtlasRatio(aspectRatio: string): string {
 export function normalizeSeedanceReferenceResolution(raw: string): string {
   const v = raw.trim().toLowerCase();
   if (v === "480p") return "720p";
+  if (v === "4k" || v === "2160p") return "4k";
   return v === "1080p" || v === "720p" ? v : "720p";
 }
 

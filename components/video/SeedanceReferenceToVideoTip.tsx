@@ -114,8 +114,9 @@ export function SeedanceReferenceToVideoTip({
       ) : (
         <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
           Need at least one <span className="font-medium text-white/80">image or video</span> ref.
-          Use <span className="font-medium text-brand">720p</span> or{" "}
-          <span className="font-medium text-brand">1080p</span>. ByteDance may block reference images
+          Use <span className="font-medium text-brand">720p</span>,{" "}
+          <span className="font-medium text-brand">1080p</span>, or{" "}
+          <span className="font-medium text-brand">4K</span>. ByteDance may block reference images
           that look like real people — even AI cinematic shots. Try{" "}
           <span className="font-medium text-brand">video ref only</span> (@video1, no images) or{" "}
           <Link

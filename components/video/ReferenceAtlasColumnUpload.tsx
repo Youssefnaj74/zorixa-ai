@@ -71,8 +71,8 @@ export function ReferenceAtlasColumnUpload({
   }, []);
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-col rounded-lg border border-white/[0.08] bg-[#0c0c14]/80 p-2">
-      <div className="mb-1.5 flex items-start justify-between gap-2">
+    <div className="flex min-h-0 min-w-0 flex-col rounded-lg border border-white/[0.08] bg-[#0c0c14]/80 p-1.5">
+      <div className="mb-1 flex items-start justify-between gap-1.5">
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-[11px] font-semibold text-white/92">
             <Icon className="size-3 shrink-0 text-brand" aria-hidden />
@@ -102,7 +102,7 @@ export function ReferenceAtlasColumnUpload({
 
       <div
         className={cn(
-          "min-h-[56px] rounded-lg border border-dashed border-white/20 bg-black/35 p-1 transition-colors",
+          "min-h-[48px] rounded-lg border border-dashed border-white/20 bg-black/35 p-1 transition-colors",
           canAddMore && "hover:border-brand/35 hover:bg-black/45"
         )}
         onDragEnter={canAddMore ? stopDrag : undefined}
@@ -120,7 +120,7 @@ export function ReferenceAtlasColumnUpload({
           <button
             type="button"
             onClick={openPicker}
-            className="flex h-[52px] w-full flex-col items-center justify-center gap-0.5 text-zorixa-muted"
+            className="flex h-[44px] w-full flex-col items-center justify-center gap-0.5 text-zorixa-muted"
           >
             <Upload className="size-4 opacity-70" aria-hidden />
             <span className="text-[10px] font-medium text-white/75">Add</span>
@@ -133,7 +133,7 @@ export function ReferenceAtlasColumnUpload({
             {urls.map((url, index) =>
               url ? (
                 <div key={`${kind}-${index}`} className="relative">
-                  <div className="relative size-9 overflow-hidden rounded-md border border-white/10 bg-black/50">
+                  <div className="relative size-8 overflow-hidden rounded-md border border-white/10 bg-black/50">
                     {kind === "image" ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={url} alt={studioReferenceImageAlt("video")} className="size-full object-cover" />
@@ -169,7 +169,7 @@ export function ReferenceAtlasColumnUpload({
               <button
                 type="button"
                 onClick={openPicker}
-                className="flex size-9 shrink-0 flex-col items-center justify-center rounded-md border border-dashed border-white/20 bg-black/25 text-zorixa-muted transition-colors hover:border-brand/40 hover:text-white/80"
+                className="flex size-8 shrink-0 flex-col items-center justify-center rounded-md border border-dashed border-white/20 bg-black/25 text-zorixa-muted transition-colors hover:border-brand/40 hover:text-white/80"
                 aria-label={`Add ${title}`}
               >
                 <Upload className="size-3.5 opacity-80" aria-hidden />
