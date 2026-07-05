@@ -20,7 +20,8 @@ export function VoiceLibraryPicker({
   onSelectVoice,
   loading,
   warning,
-  className
+  className,
+  variant = "page"
 }: {
   voices: TtsVoice[];
   facets: {
@@ -33,6 +34,8 @@ export function VoiceLibraryPicker({
   loading?: boolean;
   warning?: string;
   className?: string;
+  /** `modal` hides the page-level header (shown in VoiceLibraryModal instead). */
+  variant?: "page" | "modal";
 }) {
   const [search, setSearch] = useState("");
   const [language, setLanguage] = useState("all");
@@ -74,17 +77,23 @@ export function VoiceLibraryPicker({
 
   return (
     <div className={cn("space-y-4", className)}>
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-semibold text-white">Voice Library</h2>
-          <p className="mt-0.5 text-xs text-zorixa-muted">
-            Browse MiniMax voices by language, gender, and style.
+      {variant === "page" ? (
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Voice Library</h2>
+            <p className="mt-0.5 text-xs text-zorixa-muted">
+              Browse MiniMax voices by language, gender, and style.
+            </p>
+          </div>
+          <p className="text-xs tabular-nums text-zorixa-muted">
+            {loading ? "Loading voices…" : `${filteredVoices.length} of ${voices.length} voices`}
           </p>
         </div>
+      ) : (
         <p className="text-xs tabular-nums text-zorixa-muted">
           {loading ? "Loading voices…" : `${filteredVoices.length} of ${voices.length} voices`}
         </p>
-      </div>
+      )}
 
       {warning ? (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">

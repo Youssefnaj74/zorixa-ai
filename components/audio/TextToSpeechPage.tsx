@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Mic, Play, Square, Video } from "lucide-react";
 
-import { VoiceLibraryPicker } from "@/components/audio/VoiceLibraryPicker";
+import { SelectedVoiceSummary } from "@/components/audio/SelectedVoiceSummary";
+import { VoiceLibraryModal } from "@/components/audio/VoiceLibraryModal";
+import { useVoicePreviewController } from "@/components/audio/VoiceCard";
+import { useComposerActionsPin } from "@/components/audio/useComposerActionsPin";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { formatGenerationCreditsLine } from "@/lib/atlas-pricing-catalog";
@@ -33,6 +36,7 @@ export function TextToSpeechPage() {
   const { voices, facets, warning, isLoading: loadingVoices } = useTtsVoices();
   const [text, setText] = useState("");
   const [voiceId, setVoiceId] = useState("");
+  const [voiceLibraryOpen, setVoiceLibraryOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -42,6 +46,15 @@ export function TextToSpeechPage() {
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const scriptAreaRef = useRef<HTMLDivElement | null>(null);
+  const pinComposerActions = useComposerActionsPin(scriptAreaRef);
+
+  const {
+    previewVoiceId,
+    loadingVoiceId,
+    togglePreview,
+    stopPreview
+  } = useVoicePreviewController();
 
   const playbackSrc = useMemo(() => {
     if (!audioUrl?.trim()) return null;
@@ -207,12 +220,20 @@ export function TextToSpeechPage() {
     previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [audioUrl]);
 
+  const handleSelectedVoicePreview = useCallback(() => {
+    if (!selectedVoice) return;
+    void togglePreview(selectedVoice);
+  }, [selectedVoice, togglePreview]);
+
+  useEffect(() => {
+    if (voiceLibraryOpen) stopPreview();
+  }, [voiceLibraryOpen, stopPreview]);
+
   const previewSection =
     audioUrl ? (
       <section
         ref={previewRef}
-        className="zorixa-card-border sticky z-20 space-y-4 rounded-2xl border-[#00e5ff]/20 bg-zorixa-card p-4 shadow-glow sm:p-6"
-        style={{ top: `calc(${NAV_H}px + 0.75rem)` }}
+        className="zorixa-card-border space-y-4 rounded-2xl border-[#00e5ff]/20 bg-zorixa-card p-4 shadow-glow sm:p-5"
       >
         <h2 className="font-display text-sm font-semibold text-white">Preview</h2>
         <audio
@@ -269,7 +290,7 @@ export function TextToSpeechPage() {
     <div className="min-h-dvh bg-zorixa-bg font-body">
       <Navbar />
       <div
-        className="mx-auto flex max-w-5xl flex-col gap-6 px-4 pb-10 pt-[calc(var(--nav-h,56px)+1.5rem)] lg:px-8"
+        className="mx-auto flex max-w-3xl flex-col gap-5 px-4 pb-8 pt-[calc(var(--nav-h,56px)+1rem)] lg:px-6"
         style={{ ["--nav-h" as string]: `${NAV_H}px` }}
       >
         <header className="space-y-1">
@@ -279,57 +300,63 @@ export function TextToSpeechPage() {
           </div>
           <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">Text to Speech</h1>
           <p className="text-sm text-zorixa-muted">
-            Turn text into natural speech, then use it in Audio to Video.
+            Write your script, pick a voice, and generate natural speech in seconds.
           </p>
         </header>
 
-        {previewSection}
-
-        <section className="zorixa-card-border space-y-4 rounded-2xl bg-zorixa-card p-4 shadow-glow sm:p-6">
-          <div className="space-y-2">
+        <section className="zorixa-card-border flex flex-col overflow-hidden rounded-2xl bg-zorixa-card shadow-glow">
+          <div ref={scriptAreaRef} className="space-y-3 p-4 sm:p-5">
             <label htmlFor="tts-text" className="text-sm font-semibold text-white">
-              Text
+              Script
             </label>
             <textarea
               id="tts-text"
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, TTS_MAX_CHARS))}
               placeholder="Write what you want the voice to say…"
-              rows={6}
-              className="w-full resize-y rounded-xl border border-white/10 bg-zorixa-preview px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-[#8338eb]/50 focus:outline-none focus:ring-1 focus:ring-[#8338eb]/40"
+              rows={7}
+              className="min-h-[168px] w-full resize-y rounded-xl border border-white/10 bg-zorixa-preview px-3 py-3 text-sm leading-relaxed text-white placeholder:text-white/30 focus:border-[#8338eb]/50 focus:outline-none focus:ring-1 focus:ring-[#8338eb]/40"
             />
-            <p className="text-right text-xs text-zorixa-muted">
+            <p className="text-right text-xs tabular-nums text-zorixa-muted">
               {charCount} / {TTS_MAX_CHARS}
             </p>
           </div>
 
-          <div className="space-y-2">
-            <VoiceLibraryPicker
-              voices={voices}
-              facets={facets}
-              selectedVoiceId={voiceId}
-              onSelectVoice={setVoiceId}
-              loading={loadingVoices}
-              warning={warning}
-            />
-          </div>
-
-          {error ? (
-            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-              {error}
-            </p>
-          ) : null}
-
-          <Button
-            type="button"
-            onClick={() => void handleGenerate()}
-            disabled={generating || !text.trim() || !voiceId}
-            className="h-11 w-full rounded-xl bg-gradient-to-r from-[#8338eb] to-[#00e5ff] font-semibold text-black hover:opacity-90 disabled:opacity-40"
+          <div
+            className={cn(
+              "space-y-3 border-t border-white/10 bg-zorixa-card p-4 sm:p-5",
+              pinComposerActions &&
+                "sticky bottom-0 z-10 border-t-white/15 bg-zorixa-card/95 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md"
+            )}
           >
-            {generating ? "Generating…" : "Generate speech"}
-          </Button>
-          <p className="text-center text-xs tabular-nums text-zorixa-muted">{ttsCreditsLine}</p>
+            <SelectedVoiceSummary
+              voice={selectedVoice}
+              loading={loadingVoices}
+              previewing={selectedVoice ? previewVoiceId === selectedVoice.voice_id : false}
+              previewLoading={selectedVoice ? loadingVoiceId === selectedVoice.voice_id : false}
+              onChangeVoice={() => setVoiceLibraryOpen(true)}
+              onPreview={selectedVoice ? handleSelectedVoicePreview : undefined}
+            />
+
+            {error ? (
+              <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                {error}
+              </p>
+            ) : null}
+
+            <Button
+              type="button"
+              onClick={() => void handleGenerate()}
+              disabled={generating || !text.trim() || !voiceId}
+              className="h-11 w-full rounded-xl bg-gradient-to-r from-[#8338eb] to-[#00e5ff] font-semibold text-black hover:opacity-90 disabled:opacity-40"
+            >
+              {generating ? "Generating…" : "Generate speech"}
+            </Button>
+            <p className="text-center text-xs tabular-nums text-zorixa-muted">{ttsCreditsLine}</p>
+          </div>
         </section>
+
+        {previewSection}
 
         {history.length > 0 ? (
           <section className="space-y-3">
@@ -375,6 +402,17 @@ export function TextToSpeechPage() {
           </section>
         ) : null}
       </div>
+
+      <VoiceLibraryModal
+        open={voiceLibraryOpen}
+        onClose={() => setVoiceLibraryOpen(false)}
+        voices={voices}
+        facets={facets}
+        selectedVoiceId={voiceId}
+        onSelectVoice={setVoiceId}
+        loading={loadingVoices}
+        warning={warning}
+      />
     </div>
   );
 }
