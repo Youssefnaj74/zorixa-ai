@@ -14,6 +14,7 @@ import { useCredits } from "@/lib/hooks/use-credits";
 import type { TtsVoice } from "@/lib/tts/types";
 import { TTS_DEFAULT_VOICES, TTS_MAX_CHARS } from "@/lib/tts/constants";
 import { buildAudioToVideoWithAudioHref } from "@/lib/studio-catalog-link";
+import { buildSameOriginAudioPlaybackUrl } from "@/lib/audio-playback-proxy";
 import { cn } from "@/lib/utils";
 
 import { NAV_H } from "@/lib/nav-chrome";
@@ -37,7 +38,14 @@ export function TextToSpeechPage() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [history, setHistory] = useState<TtsHistoryEntry[]>([]);
   const [playing, setPlaying] = useState(false);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playbackSrc = useMemo(() => {
+    if (!audioUrl?.trim()) return null;
+    if (typeof window === "undefined") return audioUrl;
+    return buildSameOriginAudioPlaybackUrl(audioUrl, window.location.origin);
+  }, [audioUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,22 +136,12 @@ export function TextToSpeechPage() {
   }, [text, voiceId, selectedVoice?.name, refreshCredits]);
 
   useEffect(() => {
-    const el = audioRef.current;
-    if (!el) return;
-    if (!audioUrl) {
-      el.removeAttribute("src");
-      el.load();
-      setPlaying(false);
-      return;
-    }
-    el.pause();
     setPlaying(false);
-    el.src = audioUrl;
-    el.load();
-  }, [audioUrl]);
+    setPlaybackError(null);
+  }, [playbackSrc]);
 
-  const togglePlay = useCallback(() => {
-    if (!audioUrl) return;
+  const togglePlay = useCallback(async () => {
+    if (!playbackSrc) return;
     const el = audioRef.current;
     if (!el) return;
     if (playing) {
@@ -151,21 +149,52 @@ export function TextToSpeechPage() {
       setPlaying(false);
       return;
     }
-    void el.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
-  }, [audioUrl, playing]);
+    setPlaybackError(null);
+    try {
+      if (el.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
+        await new Promise<void>((resolve, reject) => {
+          const onReady = () => {
+            cleanup();
+            resolve();
+          };
+          const onError = () => {
+            cleanup();
+            reject(new Error("Could not load audio"));
+          };
+          const cleanup = () => {
+            el.removeEventListener("canplay", onReady);
+            el.removeEventListener("error", onError);
+          };
+          el.addEventListener("canplay", onReady, { once: true });
+          el.addEventListener("error", onError, { once: true });
+        });
+      }
+      await el.play();
+      setPlaying(true);
+    } catch {
+      setPlaying(false);
+      setPlaybackError("Could not play audio. Try downloading the file or generate again.");
+    }
+  }, [playbackSrc, playing]);
 
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
     const onEnded = () => setPlaying(false);
     const onPause = () => setPlaying(false);
+    const onError = () => {
+      setPlaying(false);
+      setPlaybackError("Could not load audio preview.");
+    };
     el.addEventListener("ended", onEnded);
     el.addEventListener("pause", onPause);
+    el.addEventListener("error", onError);
     return () => {
       el.removeEventListener("ended", onEnded);
       el.removeEventListener("pause", onPause);
+      el.removeEventListener("error", onError);
     };
-  }, [audioUrl]);
+  }, [playbackSrc]);
 
   const charCount = text.length;
   const useInVideoHref = audioUrl ? buildAudioToVideoWithAudioHref(audioUrl) : null;
@@ -184,6 +213,13 @@ export function TextToSpeechPage() {
         style={{ top: `calc(${NAV_H}px + 0.75rem)` }}
       >
         <h2 className="font-display text-sm font-semibold text-white">Preview</h2>
+        <audio
+          ref={audioRef}
+          src={playbackSrc ?? undefined}
+          controls
+          preload="auto"
+          className="w-full rounded-xl border border-white/10 bg-black/20"
+        />
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
@@ -212,12 +248,16 @@ export function TextToSpeechPage() {
             </Link>
           ) : null}
         </div>
+        {playbackError ? (
+          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+            {playbackError}
+          </p>
+        ) : null}
       </section>
     ) : null;
 
   return (
     <div className="min-h-dvh bg-zorixa-bg font-body">
-      <audio ref={audioRef} className="hidden" preload="metadata" />
       <Navbar />
       <div
         className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-10 pt-[calc(var(--nav-h,56px)+1.5rem)] lg:px-8"
@@ -316,6 +356,7 @@ export function TextToSpeechPage() {
                         onClick={() => {
                           setAudioUrl(entry.audioUrl);
                           setPlaying(false);
+                          setPlaybackError(null);
                         }}
                         className={cn(
                           "rounded-lg px-2.5 py-1 text-xs font-semibold text-white/70 hover:bg-white/10 hover:text-white"

@@ -10,6 +10,7 @@ import { downloadImageFile, imageDownloadFilename } from "@/lib/download-image-f
 import { downloadVideoFile, videoDownloadFilename } from "@/lib/download-video-file";
 import { normalizeAtlasVideoUrlForPlayback } from "@/lib/resolve-video-playback-url";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
+import { buildSameOriginAudioPlaybackUrl } from "@/lib/audio-playback-proxy";
 import {
   historyCreditsBadgeClass,
   historyCreditsLabel
@@ -56,6 +57,14 @@ function useProxiedVideoPlaybackUrl(raw: string | undefined): string | null {
   }, [raw]);
 }
 
+function useProxiedAudioPlaybackUrl(raw: string | undefined): string | null {
+  return useMemo(() => {
+    if (!raw?.trim()) return null;
+    if (typeof window === "undefined") return raw;
+    return buildSameOriginAudioPlaybackUrl(raw, window.location.origin);
+  }, [raw]);
+}
+
 function HistoryAudioLightbox({
   item,
   onClose
@@ -64,6 +73,41 @@ function HistoryAudioLightbox({
   onClose: () => void;
 }) {
   const openUrl = item.audioSrc ?? item.src;
+  const playbackUrl = useProxiedAudioPlaybackUrl(item.audioSrc);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPlaybackError(null);
+    if (!playbackUrl) {
+      setPlaybackError("No audio URL saved for this generation.");
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(playbackUrl, {
+          credentials: "include",
+          cache: "no-store",
+          headers: { Range: "bytes=0-1" }
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          setPlaybackError(
+            res.status === 401
+              ? "Sign in again to play this audio."
+              : `Audio preview unavailable (${res.status}).`
+          );
+        }
+      } catch {
+        if (!cancelled) setPlaybackError("Could not reach audio preview.");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [playbackUrl]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -112,16 +156,18 @@ function HistoryAudioLightbox({
           <span className="grid size-16 place-items-center rounded-2xl bg-[#00e5ff]/10 text-[#00e5ff]">
             <Mic className="size-8" aria-hidden />
           </span>
-          {item.audioSrc ? (
+          {playbackUrl && !playbackError ? (
             <audio
-              src={item.audioSrc}
+              src={playbackUrl}
               controls
               autoPlay
               preload="auto"
               className="w-full"
             />
           ) : (
-            <p className="text-sm text-zorixa-muted">No audio preview</p>
+            <p className="text-sm text-zorixa-muted">
+              {playbackError ?? "No audio preview"}
+            </p>
           )}
         </motion.div>
 

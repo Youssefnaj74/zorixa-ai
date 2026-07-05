@@ -17,13 +17,16 @@ type T2aResponse = {
 };
 
 function hexToArrayBuffer(hex: string): ArrayBuffer {
-  const normalized = hex.trim();
+  const normalized = hex.trim().replace(/^0x/i, "").replace(/\s+/g, "");
   if (normalized.length === 0) throw new Error("MiniMax returned empty audio");
-  const bytes = new Uint8Array(normalized.length / 2);
-  for (let i = 0; i < normalized.length; i += 2) {
-    bytes[i / 2] = Number.parseInt(normalized.slice(i, i + 2), 16);
+  if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+    throw new Error("MiniMax returned a URL instead of hex audio");
   }
-  return bytes.buffer;
+  if (normalized.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(normalized)) {
+    throw new Error("MiniMax returned invalid audio data");
+  }
+  const bytes = Buffer.from(normalized, "hex");
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 }
 
 /** Synchronous MiniMax TTS over HTTP (non-streaming). */
