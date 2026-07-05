@@ -8,6 +8,9 @@ export type { TtsVoice, TtsSynthesizeInput, TtsSynthesizeResult } from "@/lib/tt
 export { TTS_DEFAULT_VOICES, TTS_MAX_CHARS } from "@/lib/tts/constants";
 export { calculateTtsEconomicsSnapshot, creditsChargedForTts, minimaxTtsProviderCostUsd } from "@/lib/tts/pricing";
 export type { TtsEconomicsSnapshot, TtsPricingOptions } from "@/lib/tts/pricing";
+export { enrichVoiceMetadata, sortVoicesForLibrary } from "@/lib/tts/voice-library/metadata";
+export { buildVoiceLibraryFacets, filterVoices, groupVoicesByLanguage } from "@/lib/tts/voice-library/filters";
+export type { VoiceLibraryFacet, VoiceLibraryFilterState, VoiceLibraryGroup } from "@/lib/tts/voice-library/filters";
 export {
   ACTIVE_TTS_PROVIDER_ID,
   activeTtsVoiceCategories,

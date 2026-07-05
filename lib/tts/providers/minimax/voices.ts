@@ -1,6 +1,7 @@
 import { TTS_DEFAULT_VOICES } from "@/lib/tts/constants";
 import type { TtsVoice } from "@/lib/tts/types";
 import type { TtsVoiceCategory } from "@/lib/tts/providers/types";
+import { enrichVoiceMetadata, sortVoicesForLibrary } from "@/lib/tts/voice-library/metadata";
 import { assertMinimaxBaseResp, minimaxPostJson } from "@/lib/tts/providers/minimax/client";
 
 type MinimaxSystemVoice = {
@@ -33,33 +34,34 @@ function mapSystemVoice(v: MinimaxSystemVoice): TtsVoice | null {
   const voice_id = v.voice_id?.trim();
   const name = v.voice_name?.trim() || voice_id;
   if (!voice_id || !name) return null;
-  return {
-    voice_id,
-    name,
-    labels: { accent: inferAccent(voice_id) ?? "multilingual" },
-    category: "system"
-  };
+  return enrichVoiceMetadata(
+    {
+      voice_id,
+      name,
+      labels: { accent: inferAccent(voice_id) ?? "multilingual" },
+      category: "system"
+    },
+    { description: v.description }
+  );
 }
 
 function mapAccountVoice(v: MinimaxVoiceEntry, category: "cloned" | "designed"): TtsVoice | null {
   const voice_id = v.voice_id?.trim();
   if (!voice_id) return null;
   const desc = v.description?.find((line) => line.trim().length > 0)?.trim();
-  return {
-    voice_id,
-    name: desc || voice_id,
-    labels: { accent: inferAccent(voice_id) ?? "custom" },
-    category
-  };
+  return enrichVoiceMetadata(
+    {
+      voice_id,
+      name: desc || voice_id,
+      labels: { accent: inferAccent(voice_id) ?? "custom" },
+      category
+    },
+    { description: v.description }
+  );
 }
 
 function sortVoicesForSelector(voices: TtsVoice[]): TtsVoice[] {
-  return [...voices].sort((a, b) => {
-    const aEnglish = a.labels?.accent === "english" ? 0 : 1;
-    const bEnglish = b.labels?.accent === "english" ? 0 : 1;
-    if (aEnglish !== bEnglish) return aEnglish - bEnglish;
-    return a.name.localeCompare(b.name);
-  });
+  return sortVoicesForLibrary(voices);
 }
 
 function categoriesToVoiceType(categories: TtsVoiceCategory[]): "system" | "voice_cloning" | "voice_generation" | "all" {

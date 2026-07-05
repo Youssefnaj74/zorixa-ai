@@ -4,14 +4,15 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Mic, Play, Square, Video } from "lucide-react";
 
+import { VoiceLibraryPicker } from "@/components/audio/VoiceLibraryPicker";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { formatGenerationCreditsLine } from "@/lib/atlas-pricing-catalog";
+import { useTtsVoices } from "@/lib/hooks/use-tts-voices";
 import { creditsChargedForTts } from "@/lib/tts/pricing";
 import { MINIMAX_TTS_MODEL_ID } from "@/lib/tts/providers/minimax/constants";
 import { useCredits } from "@/lib/hooks/use-credits";
-import type { TtsVoice } from "@/lib/tts/types";
-import { TTS_DEFAULT_VOICES, TTS_MAX_CHARS } from "@/lib/tts/constants";
+import { TTS_MAX_CHARS } from "@/lib/tts/constants";
 import { buildAudioToVideoWithAudioHref } from "@/lib/studio-catalog-link";
 import { buildSameOriginAudioPlaybackUrl } from "@/lib/audio-playback-proxy";
 import { audioDownloadFilename, downloadAudioFile } from "@/lib/download-audio-file";
@@ -29,10 +30,9 @@ type TtsHistoryEntry = {
 
 export function TextToSpeechPage() {
   const { refresh: refreshCredits } = useCredits();
+  const { voices, facets, warning, isLoading: loadingVoices } = useTtsVoices();
   const [text, setText] = useState("");
-  const [voices, setVoices] = useState<TtsVoice[]>(TTS_DEFAULT_VOICES);
-  const [voiceId, setVoiceId] = useState(TTS_DEFAULT_VOICES[0]?.voice_id ?? "");
-  const [loadingVoices, setLoadingVoices] = useState(true);
+  const [voiceId, setVoiceId] = useState("");
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -50,26 +50,10 @@ export function TextToSpeechPage() {
   }, [audioUrl]);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch("/api/tts/voices");
-        const data = (await res.json()) as { voices?: TtsVoice[] };
-        if (cancelled) return;
-        if (Array.isArray(data.voices) && data.voices.length > 0) {
-          setVoices(data.voices);
-          setVoiceId((prev) => prev || data.voices![0].voice_id);
-        }
-      } catch {
-        /* keep defaults */
-      } finally {
-        if (!cancelled) setLoadingVoices(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (!voiceId && voices.length > 0) {
+      setVoiceId(voices[0].voice_id);
+    }
+  }, [voiceId, voices]);
 
   const selectedVoice = voices.find((v) => v.voice_id === voiceId);
 
@@ -285,7 +269,7 @@ export function TextToSpeechPage() {
     <div className="min-h-dvh bg-zorixa-bg font-body">
       <Navbar />
       <div
-        className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-10 pt-[calc(var(--nav-h,56px)+1.5rem)] lg:px-8"
+        className="mx-auto flex max-w-5xl flex-col gap-6 px-4 pb-10 pt-[calc(var(--nav-h,56px)+1.5rem)] lg:px-8"
         style={{ ["--nav-h" as string]: `${NAV_H}px` }}
       >
         <header className="space-y-1">
@@ -320,26 +304,14 @@ export function TextToSpeechPage() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="tts-voice" className="text-sm font-semibold text-white">
-              Voice
-            </label>
-            <select
-              id="tts-voice"
-              value={voiceId}
-              onChange={(e) => setVoiceId(e.target.value)}
-              disabled={loadingVoices}
-              className="w-full rounded-xl border border-white/10 bg-zorixa-preview px-3 py-2.5 text-sm text-white focus:border-[#8338eb]/50 focus:outline-none focus:ring-1 focus:ring-[#8338eb]/40 disabled:opacity-50"
-            >
-              {voices.map((v) => (
-                <option key={v.voice_id} value={v.voice_id} className="bg-zorixa-card">
-                  {v.name}
-                  {v.labels?.accent ? ` · ${v.labels.accent}` : ""}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-zorixa-muted">
-              MiniMax system voices. Voice clone and custom design are coming soon.
-            </p>
+            <VoiceLibraryPicker
+              voices={voices}
+              facets={facets}
+              selectedVoiceId={voiceId}
+              onSelectVoice={setVoiceId}
+              loading={loadingVoices}
+              warning={warning}
+            />
           </div>
 
           {error ? (
@@ -351,7 +323,7 @@ export function TextToSpeechPage() {
           <Button
             type="button"
             onClick={() => void handleGenerate()}
-            disabled={generating || !text.trim()}
+            disabled={generating || !text.trim() || !voiceId}
             className="h-11 w-full rounded-xl bg-gradient-to-r from-[#8338eb] to-[#00e5ff] font-semibold text-black hover:opacity-90 disabled:opacity-40"
           >
             {generating ? "Generating…" : "Generate speech"}
