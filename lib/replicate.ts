@@ -12,13 +12,15 @@ import {
   creditsForVideoModel,
   isCreditsBillingEnabled
 } from "@/lib/credits-charge";
+import { MINIMAX_TTS_MODEL_ID } from "@/lib/tts/providers/minimax/constants";
 
 export const CREDIT_COSTS = {
   /** Atlas image default (Flux Dev tier) with markup — override per model in /api/generate-image. */
   enhance: creditsForImageModel("flux-dev"),
   /** Atlas video default (Seedance 2.0 tier) with markup. */
   video: creditsForVideoModel("seedance-2"),
-  tts: creditsForTts()
+  /** TTS default for ~100 chars at current MiniMax HD rates — use creditsForTts({ characterCount }) at runtime. */
+  tts: creditsForTts({ characterCount: 100, modelId: MINIMAX_TTS_MODEL_ID })
 } as const;
 
 /** Re-export for UI that shows test-mode vs live billing. */

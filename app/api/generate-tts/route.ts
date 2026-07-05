@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       ? body.model_id.trim()
       : MINIMAX_TTS_MODEL_ID;
 
-  const creditCost = creditsForTts();
+  const creditCost = creditsForTts({ characterCount: text.length, modelId });
   const afford = await assertCanAfford(actor.userId, creditCost);
   if (!afford.ok) {
     if (afford.error === "INSUFFICIENT_CREDITS") {

@@ -1,10 +1,10 @@
 import {
   creditsChargedForImageModel,
-  creditsChargedForTts,
   creditsChargedForVideoModel,
   type ImagePricingOptions,
   type VideoPricingOptions
 } from "@/lib/atlas-pricing-catalog";
+import { creditsChargedForTts, type TtsPricingOptions } from "@/lib/tts/pricing";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export function isCreditsBillingEnabled(): boolean {
@@ -29,9 +29,9 @@ export function creditsForVideoModel(
   return creditsChargedForVideoModel(composerModelId, opts);
 }
 
-export function creditsForTts(): number {
+export function creditsForTts(opts: TtsPricingOptions): number {
   if (!isCreditsBillingEnabled()) return 0;
-  return creditsChargedForTts();
+  return creditsChargedForTts(opts);
 }
 
 export async function getCreditsBalance(userId: string): Promise<number | null> {

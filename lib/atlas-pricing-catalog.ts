@@ -54,6 +54,8 @@ export const ZORIXA_IMAGE_PREMIUM_GROSS_MARGIN = 0.68;
 export const ZORIXA_VIDEO_DEFAULT_GROSS_MARGIN = 0.65;
 export const ZORIXA_VIDEO_PREMIUM_GROSS_MARGIN = 0.55;
 export const ZORIXA_VIDEO_EXPENSIVE_GROSS_MARGIN = 0.5;
+/** Target gross margin on MiniMax Text-to-Speech (character-metered). */
+export const ZORIXA_TTS_GROSS_MARGIN = 0.7;
 export const ZORIXA_FAILURE_BUFFER_MULTIPLIER = 1.05;
 
 /** Optional native soundtrack is not always itemized by Atlas; keep a small buffer when enabled. */
@@ -318,7 +320,6 @@ export function atlasVideoUsdForOptions(
 
 const DEFAULT_IMAGE_USD = 0.025;
 const DEFAULT_VIDEO_USD = 0.22;
-const TTS_USD = 0.015;
 
 export type ImageResolutionTier = "1K" | "2K" | "3K" | "4K";
 
@@ -418,10 +419,6 @@ export function creditsChargedForVideoModel(
   const usd = atlasVideoUsdForOptions(composerModelId, opts);
   const margin = videoMarginForModel(composerModelId, usd);
   return atlasUsdToCreditsForGrossMargin(usd * ZORIXA_FAILURE_BUFFER_MULTIPLIER, margin);
-}
-
-export function creditsChargedForTts(): number {
-  return atlasUsdToCreditsCharged(TTS_USD);
 }
 
 export function formatGenerationCreditsLine(credits: number): string {

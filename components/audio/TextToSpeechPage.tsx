@@ -6,10 +6,9 @@ import { Download, Mic, Play, Square, Video } from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
-import {
-  creditsChargedForTts,
-  formatGenerationCreditsLine
-} from "@/lib/atlas-pricing-catalog";
+import { formatGenerationCreditsLine } from "@/lib/atlas-pricing-catalog";
+import { creditsChargedForTts } from "@/lib/tts/pricing";
+import { MINIMAX_TTS_MODEL_ID } from "@/lib/tts/providers/minimax/constants";
 import { useCredits } from "@/lib/hooks/use-credits";
 import type { TtsVoice } from "@/lib/tts/types";
 import { TTS_DEFAULT_VOICES, TTS_MAX_CHARS } from "@/lib/tts/constants";
@@ -74,10 +73,13 @@ export function TextToSpeechPage() {
 
   const selectedVoice = voices.find((v) => v.voice_id === voiceId);
 
-  const ttsCreditsLine = useMemo(
-    () => formatGenerationCreditsLine(creditsChargedForTts()),
-    []
-  );
+  const ttsCreditsLine = useMemo(() => {
+    const chars = text.trim().length;
+    if (chars === 0) return "Credits scale with text length";
+    return formatGenerationCreditsLine(
+      creditsChargedForTts({ characterCount: chars, modelId: MINIMAX_TTS_MODEL_ID })
+    );
+  }, [text]);
 
   const handleGenerate = useCallback(async () => {
     const trimmed = text.trim();

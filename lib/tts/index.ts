@@ -6,6 +6,8 @@
  */
 export type { TtsVoice, TtsSynthesizeInput, TtsSynthesizeResult } from "@/lib/tts/types";
 export { TTS_DEFAULT_VOICES, TTS_MAX_CHARS } from "@/lib/tts/constants";
+export { calculateTtsEconomicsSnapshot, creditsChargedForTts, minimaxTtsProviderCostUsd } from "@/lib/tts/pricing";
+export type { TtsEconomicsSnapshot, TtsPricingOptions } from "@/lib/tts/pricing";
 export {
   ACTIVE_TTS_PROVIDER_ID,
   activeTtsVoiceCategories,
