@@ -15,6 +15,7 @@ import type { TtsVoice } from "@/lib/tts/types";
 import { TTS_DEFAULT_VOICES, TTS_MAX_CHARS } from "@/lib/tts/constants";
 import { buildAudioToVideoWithAudioHref } from "@/lib/studio-catalog-link";
 import { buildSameOriginAudioPlaybackUrl } from "@/lib/audio-playback-proxy";
+import { audioDownloadFilename, downloadAudioFile } from "@/lib/download-audio-file";
 import { cn } from "@/lib/utils";
 
 import { NAV_H } from "@/lib/nav-chrome";
@@ -39,6 +40,8 @@ export function TextToSpeechPage() {
   const [history, setHistory] = useState<TtsHistoryEntry[]>([]);
   const [playing, setPlaying] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [downloadBusy, setDownloadBusy] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const playbackSrc = useMemo(() => {
@@ -177,6 +180,19 @@ export function TextToSpeechPage() {
     }
   }, [playbackSrc, playing]);
 
+  const handleDownload = useCallback(async () => {
+    if (!audioUrl?.trim() || downloadBusy) return;
+    setDownloadError(null);
+    setDownloadBusy(true);
+    try {
+      await downloadAudioFile(audioUrl, audioDownloadFilename(audioUrl));
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : "Download failed");
+    } finally {
+      setDownloadBusy(false);
+    }
+  }, [audioUrl, downloadBusy]);
+
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
@@ -230,14 +246,16 @@ export function TextToSpeechPage() {
             {playing ? <Square className="mr-2 size-4" /> : <Play className="mr-2 size-4" />}
             {playing ? "Stop" : "Play"}
           </Button>
-          <a
-            href={audioUrl}
-            download="zorixa-speech.mp3"
-            className="inline-flex h-10 items-center rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white hover:bg-white/10"
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => void handleDownload()}
+            disabled={downloadBusy}
+            className="h-10 rounded-xl border border-white/10 bg-white/5 px-4 text-white hover:bg-white/10 disabled:opacity-50"
           >
             <Download className="mr-2 size-4" />
-            Download MP3
-          </a>
+            {downloadBusy ? "Downloading…" : "Download MP3"}
+          </Button>
           {useInVideoHref ? (
             <Link
               href={useInVideoHref}
@@ -251,6 +269,11 @@ export function TextToSpeechPage() {
         {playbackError ? (
           <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
             {playbackError}
+          </p>
+        ) : null}
+        {downloadError ? (
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+            {downloadError}
           </p>
         ) : null}
       </section>

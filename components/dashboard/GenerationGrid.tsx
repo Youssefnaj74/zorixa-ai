@@ -8,6 +8,7 @@ import { ExternalImage } from "@/components/ui/ExternalImage";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { downloadImageFile, imageDownloadFilename } from "@/lib/download-image-file";
 import { downloadVideoFile, videoDownloadFilename } from "@/lib/download-video-file";
+import { downloadAudioFile, audioDownloadFilename } from "@/lib/download-audio-file";
 import { normalizeAtlasVideoUrlForPlayback } from "@/lib/resolve-video-playback-url";
 import { buildSameOriginVideoPlaybackUrl } from "@/lib/video-playback-proxy";
 import { buildSameOriginAudioPlaybackUrl } from "@/lib/audio-playback-proxy";
@@ -75,6 +76,22 @@ function HistoryAudioLightbox({
   const openUrl = item.audioSrc ?? item.src;
   const playbackUrl = useProxiedAudioPlaybackUrl(item.audioSrc);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [downloadBusy, setDownloadBusy] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  const onDownload = useCallback(async () => {
+    const url = openUrl?.trim();
+    if (!url || downloadBusy) return;
+    setDownloadError(null);
+    setDownloadBusy(true);
+    try {
+      await downloadAudioFile(url, audioDownloadFilename(url, item.title));
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : "Download failed");
+    } finally {
+      setDownloadBusy(false);
+    }
+  }, [downloadBusy, item.title, openUrl]);
 
   useEffect(() => {
     setPlaybackError(null);
@@ -176,14 +193,17 @@ function HistoryAudioLightbox({
           <p className="text-xs text-white/60">{category}</p>
           <HistoryCreditsBadge creditsSpent={item.creditsSpent} status={item.status} className="mt-2" />
           {openUrl ? (
-            <a
-              href={openUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex pt-2 text-sm font-medium text-[#00e5ff] hover:opacity-80"
+            <button
+              type="button"
+              onClick={() => void onDownload()}
+              disabled={downloadBusy}
+              className="inline-flex pt-2 text-sm font-medium text-[#00e5ff] hover:opacity-80 disabled:opacity-50"
             >
-              Download MP3
-            </a>
+              {downloadBusy ? "Downloading…" : "Download MP3"}
+            </button>
+          ) : null}
+          {downloadError ? (
+            <p className="pt-2 text-xs text-red-300">{downloadError}</p>
           ) : null}
         </div>
       </motion.div>

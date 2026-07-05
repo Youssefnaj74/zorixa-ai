@@ -20,6 +20,21 @@ export function buildSameOriginAudioPlaybackUrl(raw: string, origin: string): st
   return `${base}/api/audio-playback?url=${encodeURIComponent(t)}`;
 }
 
+/** Full-file download through our API (same-origin attachment). */
+export function buildAudioDownloadUrl(raw: string, origin: string): string {
+  const t = raw.trim();
+  if (!t.startsWith("https://")) return t;
+  let u: URL;
+  try {
+    u = new URL(t);
+  } catch {
+    return t;
+  }
+  if (!isAllowedAudioPlaybackHost(u.hostname)) return t;
+  const base = origin.replace(/\/$/, "");
+  return `${base}/api/audio-download?url=${encodeURIComponent(t)}`;
+}
+
 /** Extract canonical URL from `/api/audio-playback?url=`. */
 export function extractCanonicalAudioUrlFromProxy(playbackUrl: string): string | null {
   try {
