@@ -127,6 +127,21 @@ export function TextToSpeechPage() {
     }
   }, [text, voiceId, selectedVoice?.name, refreshCredits]);
 
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (!audioUrl) {
+      el.removeAttribute("src");
+      el.load();
+      setPlaying(false);
+      return;
+    }
+    el.pause();
+    setPlaying(false);
+    el.src = audioUrl;
+    el.load();
+  }, [audioUrl]);
+
   const togglePlay = useCallback(() => {
     if (!audioUrl) return;
     const el = audioRef.current;
@@ -136,7 +151,6 @@ export function TextToSpeechPage() {
       setPlaying(false);
       return;
     }
-    el.src = audioUrl;
     void el.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
   }, [audioUrl, playing]);
 
@@ -151,7 +165,7 @@ export function TextToSpeechPage() {
       el.removeEventListener("ended", onEnded);
       el.removeEventListener("pause", onPause);
     };
-  }, []);
+  }, [audioUrl]);
 
   const charCount = text.length;
   const useInVideoHref = audioUrl ? buildAudioToVideoWithAudioHref(audioUrl) : null;
@@ -170,7 +184,6 @@ export function TextToSpeechPage() {
         style={{ top: `calc(${NAV_H}px + 0.75rem)` }}
       >
         <h2 className="font-display text-sm font-semibold text-white">Preview</h2>
-        <audio ref={audioRef} className="hidden" preload="metadata" />
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
@@ -204,6 +217,7 @@ export function TextToSpeechPage() {
 
   return (
     <div className="min-h-dvh bg-zorixa-bg font-body">
+      <audio ref={audioRef} className="hidden" preload="metadata" />
       <Navbar />
       <div
         className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-10 pt-[calc(var(--nav-h,56px)+1.5rem)] lg:px-8"
