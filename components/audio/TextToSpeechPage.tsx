@@ -11,8 +11,8 @@ import {
   formatGenerationCreditsLine
 } from "@/lib/atlas-pricing-catalog";
 import { useCredits } from "@/lib/hooks/use-credits";
-import type { ElevenLabsVoice } from "@/lib/elevenlabs-client";
-import { ELEVENLABS_DEFAULT_VOICES, ELEVENLABS_TTS_MAX_CHARS } from "@/lib/elevenlabs-client";
+import type { TtsVoice } from "@/lib/tts/types";
+import { TTS_DEFAULT_VOICES, TTS_MAX_CHARS } from "@/lib/tts/constants";
 import { buildAudioToVideoWithAudioHref } from "@/lib/studio-catalog-link";
 import { cn } from "@/lib/utils";
 
@@ -29,8 +29,8 @@ type TtsHistoryEntry = {
 export function TextToSpeechPage() {
   const { refresh: refreshCredits } = useCredits();
   const [text, setText] = useState("");
-  const [voices, setVoices] = useState<ElevenLabsVoice[]>(ELEVENLABS_DEFAULT_VOICES);
-  const [voiceId, setVoiceId] = useState(ELEVENLABS_DEFAULT_VOICES[0]?.voice_id ?? "");
+  const [voices, setVoices] = useState<TtsVoice[]>(TTS_DEFAULT_VOICES);
+  const [voiceId, setVoiceId] = useState(TTS_DEFAULT_VOICES[0]?.voice_id ?? "");
   const [loadingVoices, setLoadingVoices] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +43,8 @@ export function TextToSpeechPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch("/api/elevenlabs/voices");
-        const data = (await res.json()) as { voices?: ElevenLabsVoice[] };
+        const res = await fetch("/api/tts/voices");
+        const data = (await res.json()) as { voices?: TtsVoice[] };
         if (cancelled) return;
         if (Array.isArray(data.voices) && data.voices.length > 0) {
           setVoices(data.voices);
@@ -230,13 +230,13 @@ export function TextToSpeechPage() {
             <textarea
               id="tts-text"
               value={text}
-              onChange={(e) => setText(e.target.value.slice(0, ELEVENLABS_TTS_MAX_CHARS))}
+              onChange={(e) => setText(e.target.value.slice(0, TTS_MAX_CHARS))}
               placeholder="Write what you want the voice to say…"
               rows={6}
               className="w-full resize-y rounded-xl border border-white/10 bg-zorixa-preview px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-[#8338eb]/50 focus:outline-none focus:ring-1 focus:ring-[#8338eb]/40"
             />
             <p className="text-right text-xs text-zorixa-muted">
-              {charCount} / {ELEVENLABS_TTS_MAX_CHARS}
+              {charCount} / {TTS_MAX_CHARS}
             </p>
           </div>
 
@@ -259,8 +259,7 @@ export function TextToSpeechPage() {
               ))}
             </select>
             <p className="text-xs text-zorixa-muted">
-              Free ElevenLabs plan: use default voices (Rachel, Adam, Eric…). Voice Library
-              (e.g. Ghizlane) needs a paid subscription.
+              MiniMax system voices. Voice clone and custom design are coming soon.
             </p>
           </div>
 

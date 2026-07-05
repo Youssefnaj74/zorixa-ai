@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
 
 import {
-  ELEVENLABS_DEFAULT_VOICES,
-  ELEVENLABS_TTS_MAX_CHARS,
-  synthesizeElevenLabsSpeech
-} from "@/lib/elevenlabs-client";
-import {
   assertCanAfford,
   creditsForTts,
   deductCredits,
   insufficientCreditsResponse
 } from "@/lib/credits-charge";
-import { env, requireElevenLabsApiKey } from "@/lib/env";
+import { env, requireMinimaxApiKey } from "@/lib/env";
 import { rateLimit } from "@/lib/rate-limit";
+import { TTS_DEFAULT_VOICES, TTS_MAX_CHARS } from "@/lib/tts/constants";
+import { scheduleTtsGenerationEconomics } from "@/lib/tts/economics";
+import { MINIMAX_TTS_MODEL_ID } from "@/lib/tts/providers/minimax/constants";
+import { getActiveTtsProvider } from "@/lib/tts/providers/registry";
 import { logTtsGenerationIfNew } from "@/lib/tts-generation-log";
 import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -22,11 +21,10 @@ type ClientBody = {
   voice_id?: string;
   voiceId?: string;
   model_id?: string;
-  stability?: number;
-  similarity_boost?: number;
+  speed?: number;
 };
 
-const DEFAULT_VOICE_ID = ELEVENLABS_DEFAULT_VOICES[0]?.voice_id ?? "21m00Tcm4TlvDq8ikWAM";
+const DEFAULT_VOICE_ID = TTS_DEFAULT_VOICES[0]?.voice_id ?? "English_expressive_narrator";
 
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
@@ -38,9 +36,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Sign in to generate speech" }, { status: 401 });
   }
 
-  if (!env.elevenLabsApiKey) {
+  if (!env.minimaxApiKey) {
     return NextResponse.json(
-      { error: "Speech generation is not configured (missing ELEVENLABS_API_KEY)" },
+      { error: "Speech generation is not configured (missing MINIMAX_API_KEY)" },
       { status: 503 }
     );
   }
@@ -56,9 +54,9 @@ export async function POST(request: Request) {
   if (!text) {
     return NextResponse.json({ error: "Missing text" }, { status: 400 });
   }
-  if (text.length > ELEVENLABS_TTS_MAX_CHARS) {
+  if (text.length > TTS_MAX_CHARS) {
     return NextResponse.json(
-      { error: `Text exceeds ${ELEVENLABS_TTS_MAX_CHARS} characters` },
+      { error: `Text exceeds ${TTS_MAX_CHARS} characters` },
       { status: 400 }
     );
   }
@@ -67,6 +65,10 @@ export async function POST(request: Request) {
     (typeof body.voice_id === "string" ? body.voice_id : "") ||
     (typeof body.voiceId === "string" ? body.voiceId : "");
   const voiceId = voiceIdRaw.trim() || DEFAULT_VOICE_ID;
+  const modelId =
+    typeof body.model_id === "string" && body.model_id.trim().length > 0
+      ? body.model_id.trim()
+      : MINIMAX_TTS_MODEL_ID;
 
   const creditCost = creditsForTts();
   const afford = await assertCanAfford(actor.userId, creditCost);
@@ -79,30 +81,38 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
-  let audioBuffer: ArrayBuffer;
+  const provider = getActiveTtsProvider();
+  let synthResult;
   try {
-    audioBuffer = await synthesizeElevenLabsSpeech(
+    synthResult = await provider.synthesize(
       {
         text,
         voiceId,
-        modelId: typeof body.model_id === "string" ? body.model_id.trim() : undefined,
-        stability: typeof body.stability === "number" ? body.stability : undefined,
-        similarityBoost:
-          typeof body.similarity_boost === "number" ? body.similarity_boost : undefined
+        modelId,
+        speed: typeof body.speed === "number" ? body.speed : undefined
       },
-      requireElevenLabsApiKey()
+      { apiKey: requireMinimaxApiKey() }
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Speech generation failed";
+    scheduleTtsGenerationEconomics({
+      userId: actor.userId,
+      traceId: null,
+      modelId,
+      voiceId,
+      creditsCharged: 0,
+      usageCharacters: text.length,
+      status: "failed"
+    });
     return NextResponse.json({ error: message }, { status: 502 });
   }
 
   const path = `${actor.userId}/${crypto.randomUUID()}.mp3`;
   const chargeRef = `tts:${path}`;
 
-  const bytes = new Uint8Array(audioBuffer);
+  const bytes = new Uint8Array(synthResult.audio);
   const { error: uploadErr } = await supabaseAdmin.storage.from("uploads").upload(path, bytes, {
-    contentType: "audio/mpeg",
+    contentType: synthResult.contentType,
     upsert: false
   });
 
@@ -140,6 +150,16 @@ export async function POST(request: Request) {
     text,
     voiceId,
     creditsSpent: charge.creditsSpent
+  });
+
+  scheduleTtsGenerationEconomics({
+    userId: actor.userId,
+    traceId: synthResult.traceId ?? null,
+    modelId,
+    voiceId,
+    creditsCharged: charge.creditsSpent,
+    usageCharacters: synthResult.usageCharacters,
+    status: "success"
   });
 
   return NextResponse.json({

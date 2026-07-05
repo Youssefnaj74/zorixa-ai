@@ -78,7 +78,7 @@ export const TOOLS_MENU_COLUMNS: ToolMenuItem[][] = [
     {
       id: "text-to-speech",
       title: "Text to Speech",
-      subtitle: "ElevenLabs voices · MP3 export",
+      subtitle: "MiniMax voices · MP3 export",
       icon: "🗣️",
       href: "/audio",
       isNew: true,

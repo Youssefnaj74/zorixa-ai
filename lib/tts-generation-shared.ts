@@ -1,7 +1,8 @@
 /** Client-safe TTS generation helpers (no Supabase admin). */
 
 export function isTtsGenerationProvider(provider: string | null | undefined): boolean {
-  return (provider?.trim().toLowerCase() ?? "").startsWith("elevenlabs-tts");
+  const normalized = provider?.trim().toLowerCase() ?? "";
+  return normalized.startsWith("minimax-tts") || normalized.startsWith("elevenlabs-tts");
 }
 
 export function isLikelyAudioOutputUrl(url: string | null | undefined): boolean {

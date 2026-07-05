@@ -17,7 +17,7 @@ function normalizeStoredPrompt(raw: string | null | undefined): string | null {
 
 /**
  * Persists a completed TTS output for dashboard history.
- * Uses feature_type "video" with provider "elevenlabs-tts" (no DB migration required).
+ * Uses feature_type "video" with provider "minimax-tts" (no DB migration required).
  */
 export async function logTtsGenerationIfNew(args: {
   userId: string;
@@ -49,7 +49,7 @@ export async function logTtsGenerationIfNew(args: {
     feature_type: "video",
     input_url: PLACEHOLDER_INPUT,
     output_url,
-    provider: voiceId ? `elevenlabs-tts:${voiceId}` : "elevenlabs-tts",
+    provider: voiceId ? `minimax-tts:${voiceId}` : "minimax-tts",
     credits_spent: args.creditsSpent ?? 0,
     status: "completed"
   };

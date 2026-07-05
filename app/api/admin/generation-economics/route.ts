@@ -55,8 +55,10 @@ export async function GET(request: Request) {
 
   const byteplusCount = list.filter((r) => r.provider_used === "byteplus").length;
   const atlasCount = list.filter((r) => r.provider_used === "atlas").length;
+  const minimaxCount = list.filter((r) => r.provider_used === "minimax").length;
   const byteplusUsagePct = totalGenerations > 0 ? (byteplusCount / totalGenerations) * 100 : 0;
   const atlasUsagePct = totalGenerations > 0 ? (atlasCount / totalGenerations) * 100 : 0;
+  const minimaxUsagePct = totalGenerations > 0 ? (minimaxCount / totalGenerations) * 100 : 0;
 
   const costByProvider = {
     byteplus: list
@@ -64,6 +66,9 @@ export async function GET(request: Request) {
       .reduce((s, r) => s + Number(r.provider_cost_usd ?? 0), 0),
     atlas: list
       .filter((r) => r.provider_used === "atlas")
+      .reduce((s, r) => s + Number(r.provider_cost_usd ?? 0), 0),
+    minimax: list
+      .filter((r) => r.provider_used === "minimax")
       .reduce((s, r) => s + Number(r.provider_cost_usd ?? 0), 0)
   };
 
@@ -97,9 +102,11 @@ export async function GET(request: Request) {
       profitMarginPct: round2(profitMarginPct),
       byteplusUsagePct: round2(byteplusUsagePct),
       atlasUsagePct: round2(atlasUsagePct),
+      minimaxUsagePct: round2(minimaxUsagePct),
       costByProvider: {
         byteplus: round2(costByProvider.byteplus),
-        atlas: round2(costByProvider.atlas)
+        atlas: round2(costByProvider.atlas),
+        minimax: round2(costByProvider.minimax)
       }
     },
     topWorkflows,
