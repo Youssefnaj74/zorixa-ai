@@ -2,23 +2,28 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Download, Mic, Play, Square, Video } from "lucide-react";
 
 import { SelectedVoiceSummary } from "@/components/audio/SelectedVoiceSummary";
 import { VoiceLibraryModal } from "@/components/audio/VoiceLibraryModal";
 import { useVoicePreviewController } from "@/components/audio/VoiceCard";
-import { useComposerActionsPin } from "@/components/audio/useComposerActionsPin";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
-import { formatGenerationCreditsLine } from "@/lib/atlas-pricing-catalog";
-import { useTtsVoices } from "@/lib/hooks/use-tts-voices";
-import { creditsChargedForTts } from "@/lib/tts/pricing";
-import { MINIMAX_TTS_MODEL_ID } from "@/lib/tts/providers/minimax/constants";
+import { formatTtsCreditsEstimate } from "@/lib/tts/pricing";
+import {
+  MINIMAX_TTS_MODEL_ID,
+  type TtsSpeechModelId
+} from "@/lib/tts/providers/minimax/constants";
 import { useCredits } from "@/lib/hooks/use-credits";
-import { TTS_MAX_CHARS } from "@/lib/tts/constants";
+import { useClonedVoices } from "@/lib/hooks/use-cloned-voices";
+import { useTtsVoices } from "@/lib/hooks/use-tts-voices";
+import { TTS_MAX_CHARS, TTS_SPEED_DEFAULT } from "@/lib/tts/constants";
 import { buildAudioToVideoWithAudioHref } from "@/lib/studio-catalog-link";
 import { buildSameOriginAudioPlaybackUrl } from "@/lib/audio-playback-proxy";
 import { audioDownloadFilename, downloadAudioFile } from "@/lib/download-audio-file";
+import { sampleTextForVoice } from "@/lib/tts/voice-library/sample-text";
+import { enrichVoiceMetadata, sortVoicesForLibrary } from "@/lib/tts/voice-library/metadata";
 import { cn } from "@/lib/utils";
 
 import { NAV_H } from "@/lib/nav-chrome";
@@ -32,10 +37,41 @@ type TtsHistoryEntry = {
 };
 
 export function TextToSpeechPage() {
+  const searchParams = useSearchParams();
   const { refresh: refreshCredits } = useCredits();
-  const { voices, facets, warning, isLoading: loadingVoices } = useTtsVoices();
+  const { voices: clonedVoices } = useClonedVoices();
+  const { voices: rawVoices, facets, warning, isLoading: loadingVoices } = useTtsVoices();
+
+  const voices = useMemo(() => {
+    const byId = new Map(rawVoices.map((v) => [v.voice_id, v]));
+
+    for (const clone of clonedVoices) {
+      const existing = byId.get(clone.voice_id);
+      if (existing) {
+        byId.set(clone.voice_id, {
+          ...existing,
+          name: clone.display_name,
+          category: "cloned"
+        });
+      } else {
+        byId.set(
+          clone.voice_id,
+          enrichVoiceMetadata({
+            voice_id: clone.voice_id,
+            name: clone.display_name,
+            category: "cloned",
+            labels: { accent: "custom" }
+          })
+        );
+      }
+    }
+
+    return sortVoicesForLibrary([...byId.values()]);
+  }, [rawVoices, clonedVoices]);
   const [text, setText] = useState("");
   const [voiceId, setVoiceId] = useState("");
+  const [modelId, setModelId] = useState<TtsSpeechModelId>(MINIMAX_TTS_MODEL_ID);
+  const [speed, setSpeed] = useState(TTS_SPEED_DEFAULT);
   const [voiceLibraryOpen, setVoiceLibraryOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,15 +82,22 @@ export function TextToSpeechPage() {
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const scriptAreaRef = useRef<HTMLDivElement | null>(null);
-  const pinComposerActions = useComposerActionsPin(scriptAreaRef);
+
+  const applyVoiceSelection = useCallback((nextVoiceId: string) => {
+    setVoiceId(nextVoiceId);
+    setText((current) => (current.trim() ? current : sampleTextForVoice(nextVoiceId)));
+  }, []);
 
   const {
     previewVoiceId,
     loadingVoiceId,
     togglePreview,
     stopPreview
-  } = useVoicePreviewController();
+  } = useVoicePreviewController(modelId, speed);
+
+  useEffect(() => {
+    stopPreview();
+  }, [modelId, speed, stopPreview]);
 
   const playbackSrc = useMemo(() => {
     if (!audioUrl?.trim()) return null;
@@ -64,19 +107,20 @@ export function TextToSpeechPage() {
 
   useEffect(() => {
     if (!voiceId && voices.length > 0) {
-      setVoiceId(voices[0].voice_id);
+      applyVoiceSelection(voices[0].voice_id);
     }
-  }, [voiceId, voices]);
+  }, [voiceId, voices, applyVoiceSelection]);
+
+  useEffect(() => {
+    const fromUrl = searchParams.get("voice_id")?.trim();
+    if (fromUrl) applyVoiceSelection(fromUrl);
+  }, [searchParams, applyVoiceSelection]);
 
   const selectedVoice = voices.find((v) => v.voice_id === voiceId);
 
   const ttsCreditsLine = useMemo(() => {
-    const chars = text.trim().length;
-    if (chars === 0) return "Credits scale with text length";
-    return formatGenerationCreditsLine(
-      creditsChargedForTts({ characterCount: chars, modelId: MINIMAX_TTS_MODEL_ID })
-    );
-  }, [text]);
+    return formatTtsCreditsEstimate(text.trim().length, modelId);
+  }, [text, modelId]);
 
   const handleGenerate = useCallback(async () => {
     const trimmed = text.trim();
@@ -97,7 +141,12 @@ export function TextToSpeechPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ text: trimmed, voice_id: voiceId })
+        body: JSON.stringify({
+          text: trimmed,
+          voice_id: voiceId,
+          model_id: modelId,
+          speed
+        })
       });
       const data = (await res.json()) as {
         audio_url?: string;
@@ -135,7 +184,7 @@ export function TextToSpeechPage() {
     } finally {
       setGenerating(false);
     }
-  }, [text, voiceId, selectedVoice?.name, refreshCredits]);
+  }, [text, voiceId, modelId, speed, selectedVoice?.name, refreshCredits]);
 
   useEffect(() => {
     setPlaying(false);
@@ -212,6 +261,8 @@ export function TextToSpeechPage() {
   }, [playbackSrc]);
 
   const charCount = text.length;
+  const canGenerate = Boolean(text.trim() && voiceId);
+
   const useInVideoHref = audioUrl ? buildAudioToVideoWithAudioHref(audioUrl) : null;
   const previewRef = useRef<HTMLElement | null>(null);
 
@@ -233,24 +284,24 @@ export function TextToSpeechPage() {
     audioUrl ? (
       <section
         ref={previewRef}
-        className="zorixa-card-border space-y-4 rounded-2xl border-[#00e5ff]/20 bg-zorixa-card p-4 shadow-glow sm:p-5"
+        className="space-y-3 rounded-xl bg-zorixa-card/40 p-3.5 2xl:rounded-none 2xl:bg-transparent 2xl:p-0"
       >
-        <h2 className="font-display text-sm font-semibold text-white">Preview</h2>
+        <h2 className="font-display text-xs font-semibold text-white/70">Preview</h2>
         <audio
           ref={audioRef}
           src={playbackSrc ?? undefined}
           controls
           preload="auto"
-          className="w-full rounded-xl border border-white/10 bg-black/20"
+          className="h-9 w-full rounded-lg border border-white/[0.06] bg-black/20"
         />
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <Button
             type="button"
             variant="ghost"
             onClick={togglePlay}
-            className="h-10 rounded-xl border border-white/10 bg-white/5 px-4 text-white hover:bg-white/10"
+            className="h-8 rounded-lg bg-white/[0.04] px-2.5 text-xs text-white hover:bg-white/[0.07]"
           >
-            {playing ? <Square className="mr-2 size-4" /> : <Play className="mr-2 size-4" />}
+            {playing ? <Square className="mr-1 size-3" /> : <Play className="mr-1 size-3" />}
             {playing ? "Stop" : "Play"}
           </Button>
           <Button
@@ -258,18 +309,18 @@ export function TextToSpeechPage() {
             variant="ghost"
             onClick={() => void handleDownload()}
             disabled={downloadBusy}
-            className="h-10 rounded-xl border border-white/10 bg-white/5 px-4 text-white hover:bg-white/10 disabled:opacity-50"
+            className="h-8 rounded-lg bg-white/[0.04] px-2.5 text-xs text-white hover:bg-white/[0.07] disabled:opacity-50"
           >
-            <Download className="mr-2 size-4" />
-            {downloadBusy ? "Downloading…" : "Download MP3"}
+            <Download className="mr-1 size-3" />
+            {downloadBusy ? "…" : "MP3"}
           </Button>
           {useInVideoHref ? (
             <Link
               href={useInVideoHref}
-              className="inline-flex h-10 items-center rounded-xl border border-[#00e5ff]/30 bg-[#00e5ff]/10 px-4 text-sm font-semibold text-[#00e5ff] hover:bg-[#00e5ff]/20"
+              className="inline-flex h-8 items-center rounded-lg bg-[#00e5ff]/10 px-2.5 text-xs font-semibold text-[#00e5ff] hover:bg-[#00e5ff]/15"
             >
-              <Video className="mr-2 size-4" />
-              Use in Video
+              <Video className="mr-1 size-3" />
+              Video
             </Link>
           ) : null}
         </div>
@@ -290,76 +341,78 @@ export function TextToSpeechPage() {
     <div className="min-h-dvh bg-zorixa-bg font-body">
       <Navbar />
       <div
-        className="mx-auto flex max-w-3xl flex-col gap-5 px-4 pb-8 pt-[calc(var(--nav-h,56px)+1rem)] lg:px-6"
+        className="mx-auto w-full max-w-[68rem] px-6 pb-12 pt-[calc(var(--nav-h,56px)+1.5rem)] 2xl:max-w-[90rem] 2xl:px-10"
         style={{ ["--nav-h" as string]: `${NAV_H}px` }}
       >
-        <header className="space-y-1">
-          <div className="flex items-center gap-2 text-[#00e5ff]">
-            <Mic className="size-5" />
-            <span className="text-xs font-bold uppercase tracking-wider">Voice</span>
+        <header className="mb-5 flex flex-wrap items-start justify-between gap-3 2xl:mb-5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-[#00e5ff]">
+              <Mic className="size-4" />
+              <span className="text-[11px] font-bold uppercase tracking-wider">Speech Studio</span>
+            </div>
+            <h1 className="font-display text-2xl font-bold text-white 2xl:text-3xl">Text to Speech</h1>
           </div>
-          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">Text to Speech</h1>
-          <p className="text-sm text-zorixa-muted">
-            Write your script, pick a voice, and generate natural speech in seconds.
-          </p>
+          <Link
+            href="/audio/clones"
+            className="inline-flex h-9 items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-semibold text-white hover:bg-white/[0.07]"
+          >
+            Voice Clone
+          </Link>
         </header>
 
-        <section className="zorixa-card-border flex flex-col overflow-hidden rounded-2xl bg-zorixa-card shadow-glow">
-          <div ref={scriptAreaRef} className="space-y-3 p-4 sm:p-5">
-            <label htmlFor="tts-text" className="text-sm font-semibold text-white">
-              Script
-            </label>
-            <textarea
-              id="tts-text"
-              value={text}
-              onChange={(e) => setText(e.target.value.slice(0, TTS_MAX_CHARS))}
-              placeholder="Write what you want the voice to say…"
-              rows={7}
-              className="min-h-[168px] w-full resize-y rounded-xl border border-white/10 bg-zorixa-preview px-3 py-3 text-sm leading-relaxed text-white placeholder:text-white/30 focus:border-[#8338eb]/50 focus:outline-none focus:ring-1 focus:ring-[#8338eb]/40"
-            />
-            <p className="text-right text-xs tabular-nums text-zorixa-muted">
-              {charCount} / {TTS_MAX_CHARS}
-            </p>
-          </div>
+        <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-stretch 2xl:gap-10">
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col rounded-xl bg-zorixa-card/40 px-4 py-4 2xl:rounded-2xl 2xl:px-6 2xl:py-5">
+            <div className="flex flex-col gap-3">
+              <label htmlFor="tts-text" className="text-sm font-semibold text-white">
+                Script
+              </label>
+              <textarea
+                id="tts-text"
+                value={text}
+                onChange={(e) => setText(e.target.value.slice(0, TTS_MAX_CHARS))}
+                placeholder="Write what you want the voice to say…"
+                rows={5}
+                className="min-h-[9.5rem] w-full resize-y rounded-xl border border-white/[0.06] bg-zorixa-preview/80 px-4 py-3 text-[15px] leading-relaxed text-white placeholder:text-white/30 focus:border-[#8338eb]/40 focus:outline-none focus:ring-1 focus:ring-[#8338eb]/30 2xl:min-h-[calc(100dvh-var(--nav-h)-11rem)] 2xl:text-base"
+              />
+              <p className="text-right text-xs tabular-nums text-zorixa-muted">
+                {charCount} / {TTS_MAX_CHARS}
+              </p>
+            </div>
+          </section>
 
-          <div
-            className={cn(
-              "space-y-3 border-t border-white/10 bg-zorixa-card p-4 sm:p-5",
-              pinComposerActions &&
-                "sticky bottom-0 z-10 border-t-white/15 bg-zorixa-card/95 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md"
-            )}
-          >
-            <SelectedVoiceSummary
-              voice={selectedVoice}
-              loading={loadingVoices}
-              previewing={selectedVoice ? previewVoiceId === selectedVoice.voice_id : false}
-              previewLoading={selectedVoice ? loadingVoiceId === selectedVoice.voice_id : false}
-              onChangeVoice={() => setVoiceLibraryOpen(true)}
-              onPreview={selectedVoice ? handleSelectedVoicePreview : undefined}
-            />
+          <aside className="flex w-full flex-col gap-3 2xl:w-[22rem] 2xl:shrink-0 2xl:gap-4 2xl:rounded-2xl 2xl:bg-zorixa-card/30 2xl:px-5 2xl:py-5">
+            {previewSection}
+
+            <div className="rounded-xl bg-zorixa-card/30 px-4 py-3.5 2xl:rounded-none 2xl:bg-transparent 2xl:p-0">
+              <SelectedVoiceSummary
+                voice={selectedVoice}
+                loading={loadingVoices}
+                modelId={modelId}
+                characterCount={text.trim().length}
+                onModelChange={setModelId}
+                speed={speed}
+                onSpeedChange={setSpeed}
+                creditsLine={ttsCreditsLine}
+                previewing={selectedVoice ? previewVoiceId === selectedVoice.voice_id : false}
+                previewLoading={selectedVoice ? loadingVoiceId === selectedVoice.voice_id : false}
+                generating={generating}
+                canGenerate={canGenerate}
+                onChangeVoice={() => setVoiceLibraryOpen(true)}
+                onPreview={selectedVoice ? handleSelectedVoicePreview : undefined}
+                onGenerate={() => void handleGenerate()}
+              />
+            </div>
 
             {error ? (
               <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
                 {error}
               </p>
             ) : null}
-
-            <Button
-              type="button"
-              onClick={() => void handleGenerate()}
-              disabled={generating || !text.trim() || !voiceId}
-              className="h-11 w-full rounded-xl bg-gradient-to-r from-[#8338eb] to-[#00e5ff] font-semibold text-black hover:opacity-90 disabled:opacity-40"
-            >
-              {generating ? "Generating…" : "Generate speech"}
-            </Button>
-            <p className="text-center text-xs tabular-nums text-zorixa-muted">{ttsCreditsLine}</p>
-          </div>
-        </section>
-
-        {previewSection}
+          </aside>
+        </div>
 
         {history.length > 0 ? (
-          <section className="space-y-3">
+          <section className="mt-8 space-y-3 2xl:mt-10">
             <h2 className="font-display text-sm font-semibold text-white">Recent</h2>
             <ul className="space-y-2">
               {history.map((entry) => (
@@ -409,7 +462,7 @@ export function TextToSpeechPage() {
         voices={voices}
         facets={facets}
         selectedVoiceId={voiceId}
-        onSelectVoice={setVoiceId}
+        onSelectVoice={applyVoiceSelection}
         loading={loadingVoices}
         warning={warning}
       />

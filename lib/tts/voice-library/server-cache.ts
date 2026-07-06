@@ -3,13 +3,13 @@ import type { TtsVoiceCategory } from "@/lib/tts/providers/types";
 import { TTS_DEFAULT_VOICES } from "@/lib/tts/constants";
 import { fetchMinimaxVoiceLibrary } from "@/lib/tts/providers/minimax/voice-library";
 import { enrichVoiceMetadata, sortVoicesForLibrary } from "@/lib/tts/voice-library/metadata";
+import { TTS_VOICE_LIBRARY_CATEGORIES } from "@/lib/tts/voice-library/categories";
 import { buildVoiceLibraryFacets } from "@/lib/tts/voice-library/filters";
 
 const VOICE_LIST_CACHE_TTL_MS = 15 * 60 * 1000;
 
 type CachedVoiceLibrary = {
   voices: TtsVoice[];
-  categories: TtsVoiceCategory[];
   facets: ReturnType<typeof buildVoiceLibraryFacets>;
   fetchedAt: number;
 };
@@ -26,7 +26,6 @@ export function clearTtsVoiceListCache(): void {
 
 export async function getCachedTtsVoiceLibrary(options: {
   apiKey?: string;
-  categories?: TtsVoiceCategory[];
   forceRefresh?: boolean;
 }): Promise<{
   voices: TtsVoice[];
@@ -42,7 +41,7 @@ export async function getCachedTtsVoiceLibrary(options: {
   ) {
     return {
       voices: voiceListCache.voices,
-      categories: voiceListCache.categories,
+      categories: TTS_VOICE_LIBRARY_CATEGORIES,
       facets: voiceListCache.facets,
       cached: true
     };
@@ -54,13 +53,13 @@ export async function getCachedTtsVoiceLibrary(options: {
     return { voices, categories: ["system"], facets, cached: false };
   }
 
-  const { voices: raw, categories } = await fetchMinimaxVoiceLibrary({
+  const { voices: raw } = await fetchMinimaxVoiceLibrary({
     apiKey: options.apiKey,
-    categories: options.categories
+    categories: TTS_VOICE_LIBRARY_CATEGORIES
   });
   const voices = enrichAll(raw);
   const facets = buildVoiceLibraryFacets(voices);
 
-  voiceListCache = { voices, categories, facets, fetchedAt: now };
-  return { voices, categories, facets, cached: false };
+  voiceListCache = { voices, facets, fetchedAt: now };
+  return { voices, categories: TTS_VOICE_LIBRARY_CATEGORIES, facets, cached: false };
 }

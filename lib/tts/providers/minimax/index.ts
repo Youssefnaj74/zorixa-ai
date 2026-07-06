@@ -6,7 +6,7 @@ import { synthesizeMinimaxSpeech } from "@/lib/tts/providers/minimax/synthesize"
 export const MINIMAX_TTS_CAPABILITIES: TtsProviderCapabilities = {
   textToSpeech: true,
   streaming: true,
-  voiceClone: false,
+  voiceClone: true,
   voiceDesign: false,
   voiceLibrary: true
 };
@@ -24,5 +24,7 @@ export const minimaxTtsProvider: TtsProvider = {
   }
 };
 
+export { cloneMinimaxVoice, generateZorixaCloneVoiceId } from "@/lib/tts/providers/minimax/voice-clone";
+export { minimaxUploadFile } from "@/lib/tts/providers/minimax/upload-file";
 export { fetchMinimaxVoices } from "@/lib/tts/providers/minimax/voices";
 export { synthesizeMinimaxSpeech } from "@/lib/tts/providers/minimax/synthesize";

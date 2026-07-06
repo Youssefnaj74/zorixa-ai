@@ -21,19 +21,21 @@ export type DashboardNavbarProps = {
   onSignOut?: () => void;
 };
 
+function isNavLinkActive(pathname: string, href: string): boolean {
+  if (href === "/dashboard") return pathname === "/dashboard";
+  if (href === "/audio") return pathname === "/audio";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 const navLinks = [
   { href: "/dashboard", label: "Dashboard", badge: null },
   { href: "/image", label: "Image", badge: null },
   { href: "/video", label: "Video", badge: null },
   { href: "/audio", label: "Speech", badge: "NEW" },
+  { href: "/audio/clones", label: "Clone", badge: null },
   { href: "/dashboard/history", label: "History", badge: null },
   { href: "/helpsupport", label: "Help", badge: null }
 ] as const;
-
-function isNavLinkActive(pathname: string, href: string): boolean {
-  if (href === "/dashboard") return pathname === "/dashboard";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
 
 const dropdownItems = [
   { label: "Subscription", href: "/pricing", icon: CreditCard },

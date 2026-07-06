@@ -9,10 +9,37 @@ import { ACTIVE_TTS_PROVIDER_ID } from "@/lib/tts/providers/registry";
 import { MINIMAX_TTS_MODEL_ID } from "@/lib/tts/providers/minimax/constants";
 
 export function languageMetaFromVoiceId(voiceId: string): TtsVoiceLanguageMeta {
-  const prefix = voiceId.split("_")[0]?.trim().toLowerCase().replace(/[()]/g, "") ?? "";
-  if (prefix && TTS_LANGUAGE_BY_PREFIX[prefix]) {
-    return TTS_LANGUAGE_BY_PREFIX[prefix];
+  const normalized = voiceId.toLowerCase();
+
+  if (normalized.includes("cantonese") || normalized.includes("(yue)")) {
+    return TTS_LANGUAGE_BY_PREFIX.cantonese;
   }
+  if (normalized.startsWith("chinese") || normalized.includes("mandarin")) {
+    return TTS_LANGUAGE_BY_PREFIX.chinese;
+  }
+
+  const firstSegment = voiceId.split("_")[0]?.trim().toLowerCase() ?? "";
+  const prefixKey = firstSegment.replace(/[()]/g, "").replace(/\s+/g, " ").trim();
+
+  if (prefixKey && TTS_LANGUAGE_BY_PREFIX[prefixKey]) {
+    return TTS_LANGUAGE_BY_PREFIX[prefixKey];
+  }
+
+  if (firstSegment.startsWith("english") || normalized.startsWith("english_")) {
+    return TTS_LANGUAGE_BY_PREFIX.english;
+  }
+
+  for (const key of Object.keys(TTS_LANGUAGE_BY_PREFIX).sort((a, b) => b.length - a.length)) {
+    if (
+      firstSegment === key ||
+      firstSegment.startsWith(`${key} `) ||
+      firstSegment.startsWith(`${key}(`) ||
+      normalized.startsWith(`${key}_`)
+    ) {
+      return TTS_LANGUAGE_BY_PREFIX[key]!;
+    }
+  }
+
   return { id: "multilingual", label: "Multilingual", flag: "🌐", code: "multi" };
 }
 

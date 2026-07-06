@@ -1,4 +1,3 @@
-import { TTS_DEFAULT_VOICES } from "@/lib/tts/constants";
 import type { TtsVoice } from "@/lib/tts/types";
 import type { TtsVoiceCategory } from "@/lib/tts/providers/types";
 import { enrichVoiceMetadata, sortVoicesForLibrary } from "@/lib/tts/voice-library/metadata";
@@ -77,6 +76,7 @@ export async function fetchMinimaxVoices(
   apiKey?: string,
   categories: TtsVoiceCategory[] = ["system"]
 ): Promise<TtsVoice[]> {
+  // MiniMax `POST /v1/get_voice` returns the full list in one response (no pagination).
   const { json } = await minimaxPostJson<GetVoiceResponse>(
     "/v1/get_voice",
     { voice_type: categoriesToVoiceType(categories) },
@@ -105,8 +105,5 @@ export async function fetchMinimaxVoices(
       : mapped;
 
   const sorted = sortVoicesForSelector(filtered);
-  if (sorted.length > 0) return sorted;
-
-  const englishDefaults = TTS_DEFAULT_VOICES.filter((v) => v.labels?.accent === "english");
-  return englishDefaults.length > 0 ? englishDefaults : TTS_DEFAULT_VOICES;
+  return sorted;
 }

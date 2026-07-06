@@ -30,3 +30,17 @@ export type Generation = {
   created_at: string;
 };
 
+export type UserClonedVoice = {
+  id: string;
+  user_id: string;
+  voice_id: string;
+  display_name: string;
+  source_audio_url: string | null;
+  demo_audio_url: string | null;
+  provider: string;
+  model_id: string | null;
+  status: "pending" | "active" | "failed";
+  activated_at: string | null;
+  created_at: string;
+};
+

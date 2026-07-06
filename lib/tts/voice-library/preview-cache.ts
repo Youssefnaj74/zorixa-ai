@@ -1,10 +1,7 @@
 import { synthesizeMinimaxSpeech } from "@/lib/tts/providers/minimax/synthesize";
+import { clampTtsSpeed, TTS_SPEED_DEFAULT } from "@/lib/tts/constants";
 import { MINIMAX_TTS_MODEL_ID } from "@/lib/tts/providers/minimax/constants";
-import {
-  TTS_DEFAULT_PREVIEW_TEXT,
-  TTS_PREVIEW_TEXT_BY_LANGUAGE
-} from "@/lib/tts/voice-library/constants";
-import { languageMetaFromVoiceId } from "@/lib/tts/voice-library/metadata";
+import { sampleTextForVoice } from "@/lib/tts/voice-library/sample-text";
 
 const PREVIEW_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -16,31 +13,28 @@ type PreviewEntry = {
 
 const previewCache = new Map<string, PreviewEntry>();
 
-function previewCacheKey(voiceId: string, modelId: string): string {
-  return `${modelId}:${voiceId}`;
-}
-
-export function previewTextForVoice(voiceId: string): string {
-  const language = languageMetaFromVoiceId(voiceId);
-  return TTS_PREVIEW_TEXT_BY_LANGUAGE[language.id] ?? TTS_DEFAULT_PREVIEW_TEXT;
+function previewCacheKey(voiceId: string, modelId: string, speed: number): string {
+  return `${modelId}:${voiceId}:${speed}`;
 }
 
 export async function getCachedVoicePreview(args: {
   voiceId: string;
   apiKey: string;
   modelId?: string;
+  speed?: number;
 }): Promise<{ audio: ArrayBuffer; contentType: string; cached: boolean }> {
   const modelId = args.modelId?.trim() || MINIMAX_TTS_MODEL_ID;
-  const key = previewCacheKey(args.voiceId, modelId);
+  const speed = clampTtsSpeed(args.speed ?? TTS_SPEED_DEFAULT);
+  const key = previewCacheKey(args.voiceId, modelId, speed);
   const now = Date.now();
   const hit = previewCache.get(key);
   if (hit && now - hit.fetchedAt < PREVIEW_CACHE_TTL_MS) {
     return { audio: hit.audio, contentType: hit.contentType, cached: true };
   }
 
-  const text = previewTextForVoice(args.voiceId);
+  const text = sampleTextForVoice(args.voiceId);
   const result = await synthesizeMinimaxSpeech(
-    { text, voiceId: args.voiceId, modelId },
+    { text, voiceId: args.voiceId, modelId, speed },
     args.apiKey
   );
 

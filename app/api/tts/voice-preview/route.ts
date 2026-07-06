@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { env, requireMinimaxApiKey } from "@/lib/env";
 import { rateLimit } from "@/lib/rate-limit";
 import { getCachedVoicePreview } from "@/lib/tts/voice-library/preview-cache";
+import { clampTtsSpeed, TTS_SPEED_DEFAULT } from "@/lib/tts/constants";
 import { MINIMAX_TTS_MODEL_ID } from "@/lib/tts/providers/minimax/constants";
 
 export async function GET(request: Request) {
@@ -21,12 +22,18 @@ export async function GET(request: Request) {
   }
 
   const modelId = url.searchParams.get("model_id")?.trim() || MINIMAX_TTS_MODEL_ID;
+  const speedRaw = url.searchParams.get("speed");
+  const speed =
+    speedRaw != null && speedRaw.trim() !== ""
+      ? clampTtsSpeed(Number(speedRaw))
+      : TTS_SPEED_DEFAULT;
 
   try {
     const { audio, contentType, cached } = await getCachedVoicePreview({
       voiceId,
       apiKey: requireMinimaxApiKey(),
-      modelId
+      modelId,
+      speed
     });
 
     return new NextResponse(audio, {

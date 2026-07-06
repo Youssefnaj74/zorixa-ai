@@ -5,6 +5,7 @@ node_modules
 .next
 out
 .tmp
+.tmp-runtime
 
 # misc
 .DS_Store

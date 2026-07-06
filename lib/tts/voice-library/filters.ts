@@ -1,6 +1,9 @@
 import type { TtsVoice } from "@/lib/tts/types";
+import type { TtsVoiceCategory } from "@/lib/tts/providers/types";
 import type { TtsVoiceGender } from "@/lib/tts/voice-library/constants";
 import { genderLabel } from "@/lib/tts/voice-library/metadata";
+
+export type VoiceLibraryCategoryTab = "all" | TtsVoiceCategory;
 
 export type VoiceLibraryFilterState = {
   search: string;
@@ -55,6 +58,14 @@ export function voiceMatchesFilters(voice: TtsVoice, filters: VoiceLibraryFilter
 
 export function filterVoices(voices: TtsVoice[], filters: VoiceLibraryFilterState): TtsVoice[] {
   return voices.filter((v) => voiceMatchesFilters(v, filters));
+}
+
+export function filterVoicesByCategory(
+  voices: TtsVoice[],
+  category: VoiceLibraryCategoryTab
+): TtsVoice[] {
+  if (category === "all") return voices;
+  return voices.filter((v) => v.category === category);
 }
 
 export function groupVoicesByLanguage(voices: TtsVoice[]): VoiceLibraryGroup[] {

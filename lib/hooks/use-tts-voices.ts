@@ -1,6 +1,7 @@
 import useSWR from "swr";
 
 import type { TtsVoice } from "@/lib/tts/types";
+import type { TtsVoiceCategory } from "@/lib/tts/providers/types";
 import type { VoiceLibraryFacet } from "@/lib/tts/voice-library/filters";
 import { TTS_DEFAULT_VOICES } from "@/lib/tts/constants";
 import { enrichVoiceMetadata, sortVoicesForLibrary } from "@/lib/tts/voice-library/metadata";
@@ -13,6 +14,8 @@ export type TtsVoicesApiResponse = {
     genders: VoiceLibraryFacet[];
     styles: VoiceLibraryFacet[];
   };
+  counts?: Record<TtsVoiceCategory, number>;
+  source?: "minimax" | "fallback";
   warning?: string;
   cached?: boolean;
   provider?: string;
@@ -21,11 +24,20 @@ export type TtsVoicesApiResponse = {
 const FALLBACK_VOICES = sortVoicesForLibrary(TTS_DEFAULT_VOICES.map((v) => enrichVoiceMetadata(v)));
 const FALLBACK_FACETS = buildVoiceLibraryFacets(FALLBACK_VOICES);
 
-async function fetchTtsVoices(url: string): Promise<Required<Pick<TtsVoicesApiResponse, "voices" | "facets">> & TtsVoicesApiResponse> {
+async function fetchTtsVoices(url: string): Promise<
+  Required<Pick<TtsVoicesApiResponse, "voices" | "facets">> & TtsVoicesApiResponse
+> {
   const res = await fetch(url);
   const data = (await res.json()) as TtsVoicesApiResponse;
-  const voices =
-    Array.isArray(data.voices) && data.voices.length > 0 ? data.voices : FALLBACK_VOICES;
+
+  if (data.source === "fallback") {
+    const voices =
+      Array.isArray(data.voices) && data.voices.length > 0 ? data.voices : FALLBACK_VOICES;
+    const facets = data.facets ?? buildVoiceLibraryFacets(voices);
+    return { ...data, voices, facets };
+  }
+
+  const voices = Array.isArray(data.voices) ? data.voices : [];
   const facets = data.facets ?? buildVoiceLibraryFacets(voices);
   return { ...data, voices, facets };
 }
@@ -36,9 +48,13 @@ export function useTtsVoices() {
     dedupingInterval: 60_000
   });
 
+  const isFallback = data?.source === "fallback";
+
   return {
-    voices: data?.voices ?? FALLBACK_VOICES,
-    facets: data?.facets ?? FALLBACK_FACETS,
+    voices: isLoading ? [] : isFallback ? (data?.voices ?? FALLBACK_VOICES) : (data?.voices ?? []),
+    facets: data?.facets ?? (isFallback ? FALLBACK_FACETS : buildVoiceLibraryFacets([])),
+    counts: data?.counts,
+    source: data?.source,
     warning: data?.warning,
     cached: data?.cached,
     provider: data?.provider,

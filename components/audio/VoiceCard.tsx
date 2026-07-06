@@ -5,8 +5,19 @@ import { Check, Loader2, Pause, Play, Star } from "lucide-react";
 
 import { Badge } from "@/components/ui/Badge";
 import type { TtsVoice } from "@/lib/tts/types";
+import { MINIMAX_TTS_MODEL_ID } from "@/lib/tts/providers/minimax/constants";
+import { TTS_SPEED_DEFAULT } from "@/lib/tts/constants";
 import { genderLabel } from "@/lib/tts/voice-library/metadata";
 import { cn } from "@/lib/utils";
+
+function buildVoicePreviewUrl(voiceId: string, modelId: string, speed: number = TTS_SPEED_DEFAULT): string {
+  const params = new URLSearchParams({
+    voice_id: voiceId,
+    model_id: modelId,
+    speed: String(speed)
+  });
+  return `/api/tts/voice-preview?${params.toString()}`;
+}
 
 function ProviderBadge() {
   return (
@@ -147,7 +158,10 @@ export function VoiceCard({
 }
 
 /** Manages one-at-a-time voice preview playback across cards. */
-export function useVoicePreviewController() {
+export function useVoicePreviewController(
+  modelId: string = MINIMAX_TTS_MODEL_ID,
+  speed: number = TTS_SPEED_DEFAULT
+) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [previewVoiceId, setPreviewVoiceId] = useState<string | null>(null);
   const [loadingVoiceId, setLoadingVoiceId] = useState<string | null>(null);
@@ -177,7 +191,7 @@ export function useVoicePreviewController() {
       setLoadingVoiceId(voice.voice_id);
 
       try {
-        const previewUrl = voice.preview_url ?? `/api/tts/voice-preview?voice_id=${encodeURIComponent(voice.voice_id)}`;
+        const previewUrl = buildVoicePreviewUrl(voice.voice_id, modelId, speed);
         const res = await fetch(previewUrl);
         if (!res.ok) throw new Error("Preview failed");
 
@@ -198,7 +212,7 @@ export function useVoicePreviewController() {
         setLoadingVoiceId(null);
       }
     },
-    [previewVoiceId, stopPreview]
+    [previewVoiceId, stopPreview, modelId, speed]
   );
 
   return {

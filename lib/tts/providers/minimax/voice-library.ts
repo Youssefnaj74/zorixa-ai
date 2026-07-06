@@ -1,4 +1,5 @@
 import type { TtsVoiceCategory } from "@/lib/tts/providers/types";
+import { TTS_VOICE_LIBRARY_CATEGORIES } from "@/lib/tts/voice-library/categories";
 import { fetchMinimaxVoices } from "@/lib/tts/providers/minimax/voices";
 
 export type MinimaxVoiceLibraryOptions = {
@@ -16,7 +17,7 @@ export async function fetchMinimaxVoiceLibrary(
   voices: Awaited<ReturnType<typeof fetchMinimaxVoices>>;
   categories: TtsVoiceCategory[];
 }> {
-  const categories = options.categories ?? ["system"];
+  const categories = options.categories ?? TTS_VOICE_LIBRARY_CATEGORIES;
   const voices = await fetchMinimaxVoices(options.apiKey, categories);
   return { voices, categories };
 }
