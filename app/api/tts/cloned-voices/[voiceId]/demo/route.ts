@@ -32,7 +32,7 @@ export async function GET(request: Request, context: RouteContext) {
 
     const { bytes, contentType } = await loadDemoAudioBytes(voice.demo_audio_url);
 
-    return new NextResponse(bytes, {
+    return new NextResponse(Buffer.from(bytes), {
       status: 200,
       headers: {
         "Content-Type": contentType,

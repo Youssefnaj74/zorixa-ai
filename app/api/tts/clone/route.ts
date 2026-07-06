@@ -16,7 +16,7 @@ import {
   TTS_CLONE_MAX_DURATION_SEC,
   TTS_CLONE_MIN_DURATION_SEC
 } from "@/lib/tts/constants";
-import { scheduleTtsGenerationEconomics, scheduleVoiceCloneEconomics } from "@/lib/tts/economics";
+import { scheduleVoiceCloneEconomics } from "@/lib/tts/economics";
 import { creditsChargedForVoiceClone } from "@/lib/tts/pricing";
 import { MINIMAX_TTS_MODEL_ID } from "@/lib/tts/providers/minimax/constants";
 import {
@@ -25,6 +25,10 @@ import {
 } from "@/lib/tts/providers/minimax/voice-clone";
 import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+
+function formStringValue(value: FormDataEntryValue | null): string {
+  return typeof value === "string" ? value.trim() : "";
+}
 
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
@@ -51,11 +55,8 @@ export async function POST(request: Request) {
   }
 
   const file = form.get("file");
-  const displayName = typeof form.get("name") === "string" ? form.get("name")!.trim() : "";
-  const modelId =
-    typeof form.get("model_id") === "string" && form.get("model_id")!.trim()
-      ? form.get("model_id")!.trim()
-      : MINIMAX_TTS_MODEL_ID;
+  const displayName = formStringValue(form.get("name"));
+  const modelId = formStringValue(form.get("model_id")) || MINIMAX_TTS_MODEL_ID;
   const durationRaw = form.get("duration_sec");
   const durationSec =
     typeof durationRaw === "string" && durationRaw.trim()
