@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
-const TABS = ["Text to Image", "Image to Image"] as const;
+const TABS = ["Text to Image", "Image to Image", "Image Upscaler"] as const;
 
 export type ImageActionTab = (typeof TABS)[number];
 
@@ -20,7 +20,7 @@ export function ImageActionTabsRow({
   return (
     <div
       className={cn(
-        "grid h-full min-h-0 w-full shrink-0 grid-cols-2 gap-1 rounded-xl border border-white/10 bg-[#0d0d14] p-1",
+        "grid h-full min-h-0 w-full shrink-0 grid-cols-3 gap-1 rounded-xl border border-white/10 bg-[#0d0d14] p-1",
         className
       )}
     >

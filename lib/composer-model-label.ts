@@ -16,7 +16,8 @@ const IMAGE_COMPOSER_LABELS: Record<string, string> = {
   "flux-kontext-dev-lora": "Flux Kontext Dev LoRA",
   "wan-image-2-7": "Wan 2.7",
   "wan-image-2-7-pro": "Wan 2.7 Pro",
-  "wan-image-2-6": "Wan 2.6"
+  "wan-image-2-6": "Wan 2.6",
+  "atlas-image-upscaler": "Image Upscaler"
 };
 
 const VIDEO_COMPOSER_LABELS: Record<string, string> = {

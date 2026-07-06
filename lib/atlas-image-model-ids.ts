@@ -176,8 +176,9 @@ export function imageComposerVisibleInToolsSection(
 
 export function imageComposerSupportedOnActionTab(
   composerId: string,
-  actionTab: "Text to Image" | "Image to Image"
+  actionTab: "Text to Image" | "Image to Image" | "Image Upscaler"
 ): boolean {
+  if (actionTab === "Image Upscaler") return false;
   if (FLUX_T2I_SET.has(composerId)) return actionTab === "Text to Image";
   if (FLUX_I2I_SET.has(composerId)) return actionTab === "Image to Image";
   return true;

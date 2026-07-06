@@ -1,0 +1,17 @@
+{
+  "source": {
+    "model": "google/nano-banana-2/text-to-image",
+    "prompt": "Close-up UGC influencer mirror selfie, young woman with dark wavy hair and light green eyes holding a silver iPhone in front of her face, natural skin with visible pores and freckles, soft bathroom mirror lighting, authentic TikTok creator aesthetic, vertical portrait 3:4, photorealistic, unretouched.",
+    "resolution": "2k",
+    "aspect_ratio": "3:4"
+  },
+  "before": {
+    "maxWidth": 360,
+    "blurSigma": 0.6
+  },
+  "upscale": {
+    "model": "atlascloud/image-upscaler",
+    "outscale": 4,
+    "output_format": "png"
+  }
+}

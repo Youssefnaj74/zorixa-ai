@@ -2,12 +2,13 @@
 
 import { cn } from "@/lib/utils";
 
-type ExternalImageProps = {
+export type ExternalImageProps = {
   src: string;
   alt: string;
   width?: number;
   height?: number;
   className?: string;
+  style?: React.CSSProperties;
   onLoad?: React.ReactEventHandler<HTMLImageElement>;
   onError?: React.ReactEventHandler<HTMLImageElement>;
 };
@@ -22,6 +23,7 @@ export function ExternalImage({
   width,
   height,
   className,
+  style,
   onLoad,
   onError
 }: ExternalImageProps) {
@@ -31,6 +33,7 @@ export function ExternalImage({
       alt={alt}
       width={width}
       height={height}
+      style={style}
       className={cn(className)}
       loading="lazy"
       decoding="async"

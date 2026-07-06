@@ -149,6 +149,14 @@ export function beforeAfterAlt(kind: "before" | "after"): string {
   return "After AI enhancement result in ZorixaAI Video Studio";
 }
 
+/** Image Upscaler before/after slider (studio demo + user compare). */
+export function imageUpscalerCompareAlt(kind: "before" | "after"): string {
+  if (kind === "before") {
+    return "Original image before upscale";
+  }
+  return "Upscaled image result";
+}
+
 export function studioFrameAlt(kind: "source" | "start" | "result"): string {
   if (kind === "result") {
     return "AI generation result in ZorixaAI Video Studio";

@@ -213,6 +213,15 @@ export const TOOLS_MENU_COLUMNS: ToolMenuItem[][] = [
       categories: ["image"]
     },
     {
+      id: "image-upscaler",
+      title: "Image Upscaler",
+      subtitle: "Atlas RealESRGAN — up to 4× resolution",
+      icon: "🔍",
+      href: "/image?tab=Image+Upscaler",
+      isNew: true,
+      categories: ["image", "ai-tools"]
+    },
+    {
       id: "photo-resizer",
       title: "Photo Resizer",
       subtitle: "Smart resize & crop",

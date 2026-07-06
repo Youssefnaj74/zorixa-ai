@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 import { Download, Expand, History, ImageIcon, RotateCcw } from "lucide-react";
 
+import { BeforeAfterSlider } from "@/components/dashboard/before-after-slider";
 import type { ImageActionTab } from "@/components/image/ImageActionTabsRow";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,6 +81,10 @@ export function ImagePreview({
   referenceThumbUrl,
   isExample = false,
   actionTab = "Text to Image",
+  upscalerBeforeUrl = null,
+  showUpscalerDemo = false,
+  upscalerDemoBeforeUrl = null,
+  upscalerDemoAfterUrl = null,
   bottomBarHeight = 130,
   canPostProcessImage = false,
   canRunVariations = false,
@@ -100,6 +105,12 @@ export function ImagePreview({
   /** Studio demo output (not a user generation). */
   isExample?: boolean;
   actionTab?: ImageActionTab;
+  /** Original image URL for upscaler before/after compare after user runs upscale. */
+  upscalerBeforeUrl?: string | null;
+  /** Studio demo slider (UGC face before/after). */
+  showUpscalerDemo?: boolean;
+  upscalerDemoBeforeUrl?: string | null;
+  upscalerDemoAfterUrl?: string | null;
   bottomBarHeight?: number;
   /** User output available for upscale / variations. */
   canPostProcessImage?: boolean;
@@ -123,6 +134,14 @@ export function ImagePreview({
   ).filter((u) => typeof u === "string" && u.trim().length > 0);
   const refLabels = ["Reference", "Style"] as const;
 
+  const isUpscalerTab = actionTab === "Image Upscaler";
+  const isUpscalerDemo = Boolean(
+    isUpscalerTab &&
+      showUpscalerDemo &&
+      upscalerDemoBeforeUrl &&
+      upscalerDemoAfterUrl
+  );
+
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${bottomBarHeight}px)`;
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [lightboxTitle, setLightboxTitle] = useState("Image preview");
@@ -144,7 +163,7 @@ export function ImagePreview({
       >
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2.5 sm:px-4">
           <h2 className="font-display text-sm font-semibold text-white">
-            Image Preview
+            {isUpscalerTab ? "Image Upscaler" : "Image Preview"}
             {isExample ? (
               <span className="ml-2 rounded-md bg-brand/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-light">
                 Example
@@ -157,6 +176,8 @@ export function ImagePreview({
             ) : null}
           </h2>
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            {!isUpscalerTab ? (
+              <>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -192,11 +213,13 @@ export function ImagePreview({
             >
               Variations
             </Button>
-            {!isBatch ? (
+              </>
+            ) : null}
+            {!isBatch && !isUpscalerDemo && primaryUrl ? (
               <button
                 type="button"
-                disabled={!primaryUrl || loading}
-                onClick={() => primaryUrl && openLightbox(primaryUrl, "Image preview")}
+                disabled={loading}
+                onClick={() => openLightbox(primaryUrl, isUpscalerTab ? "Upscaled image" : "Image preview")}
                 className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/10 text-zorixa-muted hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Expand preview"
               >
@@ -218,13 +241,17 @@ export function ImagePreview({
             <div
               className={cn(
                 "flex min-h-0 flex-1 flex-col",
-                isBatch ? "overflow-y-auto p-3" : "items-center justify-center p-4"
+                isBatch
+                  ? "overflow-y-auto p-3"
+                  : "items-center justify-center p-4"
               )}
             >
               {loading ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-3">
                   <div className="size-12 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />
-                  <p className="text-sm text-zorixa-muted">Generating image…</p>
+                  <p className="text-sm text-zorixa-muted">
+                    {isUpscalerTab ? "Upscaling image…" : "Generating image…"}
+                  </p>
                 </div>
               ) : errorMessage ? (
                 <div className="m-auto max-w-md text-center">
@@ -237,6 +264,16 @@ export function ImagePreview({
                       View plans
                     </Link>
                   ) : null}
+                </div>
+              ) : isUpscalerDemo && upscalerDemoBeforeUrl && upscalerDemoAfterUrl ? (
+                <div className="mx-auto flex w-full max-w-3xl flex-col items-center px-2">
+                  <BeforeAfterSlider
+                    beforeUrl={upscalerDemoBeforeUrl}
+                    afterUrl={upscalerDemoAfterUrl}
+                  />
+                  <p className="mt-3 text-center text-xs text-zorixa-muted">
+                    Example — drag the slider to see 4× upscale on a UGC face
+                  </p>
                 </div>
               ) : isBatch ? (
                 <div
@@ -257,13 +294,33 @@ export function ImagePreview({
               ) : primaryUrl ? (
                 <button
                   type="button"
-                  onClick={() => openLightbox(primaryUrl, "Image preview")}
+                  onClick={() =>
+                    openLightbox(
+                      primaryUrl,
+                      isUpscalerTab ? "Upscaled image" : "Image preview"
+                    )
+                  }
                   className="group relative max-h-full max-w-full cursor-zoom-in rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-                  aria-label="Enlarge image preview"
+                  aria-label={isUpscalerTab ? "Enlarge upscaled image" : "Enlarge image preview"}
                 >
                   <ExternalImage
                     src={primaryUrl}
-                    alt="Generated output"
+                    alt={isUpscalerTab ? "Upscaled image result" : "Generated output"}
+                    width={1024}
+                    height={1024}
+                    className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)] transition-transform group-hover:scale-[1.01]"
+                  />
+                </button>
+              ) : isUpscalerTab && upscalerBeforeUrl ? (
+                <button
+                  type="button"
+                  onClick={() => openLightbox(upscalerBeforeUrl, "Source image")}
+                  className="group relative max-h-full max-w-full cursor-zoom-in rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                  aria-label="Enlarge source image"
+                >
+                  <ExternalImage
+                    src={upscalerBeforeUrl}
+                    alt="Source image before upscale"
                     width={1024}
                     height={1024}
                     className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)] transition-transform group-hover:scale-[1.01]"

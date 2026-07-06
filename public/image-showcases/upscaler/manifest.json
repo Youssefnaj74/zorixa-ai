@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-07-06T10:52:23.656Z",
+  "beforePath": "/image-showcases/upscaler/before.png",
+  "afterPath": "/image-showcases/upscaler/after.png",
+  "sourcePath": "/image-showcases/upscaler/source.png",
+  "sourceAtlasUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/images/20260706-54c3d8a315a7afff8f1792d5dd2a3a1e-0.jpg",
+  "beforeAtlasUrl": "https://waymetztsgalesimauzg.supabase.co/storage/v1/object/public/uploads/image-upscaler-showcase/cd85ad05-3c14-4d81-a38f-87264e05c0d7.png",
+  "afterAtlasUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/output/06c19ce94c4f4f1498180f8629bcd824_r5d76_r5d76.png",
+  "sourceModel": "google/nano-banana-2/text-to-image",
+  "upscaleModel": "atlascloud/image-upscaler",
+  "outscale": 4,
+  "beforeMaxWidth": 360
+}

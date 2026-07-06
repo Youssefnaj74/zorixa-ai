@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ImageActionTab } from "@/components/image/ImageActionTabsRow";
 import type { ImageGenerateContext } from "@/components/image/ImageBottomBar";
 import { ImageBottomBar } from "@/components/image/ImageBottomBar";
+import { ImageUpscalerBottomBar } from "@/components/image/ImageUpscalerBottomBar";
 import type { ImageHistoryEntry } from "@/components/image/ImageHistory";
 import { ImageHistory } from "@/components/image/ImageHistory";
 import { ImagePreview } from "@/components/image/ImagePreview";
@@ -30,13 +31,21 @@ import {
   imageComposerSupportedOnActionTab,
   isAtlasImageComposerId
 } from "@/lib/atlas-image-model-ids";
-import type { UpscaleTier } from "@/lib/studio-constants";
-import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
+import {
+  ATLAS_IMAGE_UPSCALER_COMPOSER_ID,
+  type AtlasImageUpscalerOutscale
+} from "@/lib/atlas-image-upscaler";
+import { IMAGE_UPSCALER_SHOWCASE } from "@/lib/image-upscaler-showcase";
 import {
   extractAtlasImageOutputUrls,
   extractAtlasVideoOutputUrl,
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
+import {
+  ensurePublicHttpsMediaUrl,
+  humanizeClientFetchError,
+  uploadFileToPublicStorage
+} from "@/lib/upload-client-media";
 import { EXPLORE_PROMPT_DEFAULT_ASPECT } from "@/lib/explore-prompts-catalog";
 import {
   parseImageStudioLock,
@@ -55,6 +64,7 @@ import {
   creditsChargedForImageModel,
   formatGenerationCreditsLine
 } from "@/lib/atlas-pricing-catalog";
+import type { UpscaleTier } from "@/lib/studio-constants";
 import { useCredits } from "@/lib/hooks/use-credits";
 import { insufficientCreditsMessage } from "@/lib/insufficient-credits-message";
 import {
@@ -112,10 +122,16 @@ async function pollAtlasImagePrediction(
 ): Promise<string[]> {
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, interval));
-    const pr = await fetch(
-      `/api/generate-image?predictionId=${encodeURIComponent(predictionId)}&imageModel=${encodeURIComponent(modelId)}`,
-      { cache: "no-store", credentials: "include" }
-    );
+    let pr: Response;
+    try {
+      pr = await fetch(
+        `/api/generate-image?predictionId=${encodeURIComponent(predictionId)}&imageModel=${encodeURIComponent(modelId)}`,
+        { cache: "no-store", credentials: "include" }
+      );
+    } catch (e) {
+      console.warn("[image] poll network error, retrying…", e);
+      continue;
+    }
     let pd: Record<string, unknown> = {};
     try {
       pd = (await pr.json()) as Record<string, unknown>;
@@ -159,53 +175,21 @@ function pickImageUrlsFromPollBody(data: Record<string, unknown>): string[] {
   return one ? [one] : [];
 }
 
-function extensionForUploadedBlob(blob: Blob): string {
-  const mt = (blob.type || "").toLowerCase();
-  if (mt.includes("jpeg") || mt === "image/jpg") return "jpg";
-  if (mt === "image/png") return "png";
-  if (mt === "image/webp") return "webp";
-  if (mt === "image/gif") return "gif";
-  return "png";
-}
-
 async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<string | null> {
   if (!url) return null;
-  const t = url.trim();
-  const direct = coerceToPublicHttpsUrl(t);
-  if (direct) return direct;
-  if (!t.startsWith("blob:") && !t.startsWith("data:")) return null;
-
-  const blobRes = await fetch(t);
-  const blob = await blobRes.blob();
-  const ext = extensionForUploadedBlob(blob);
-  const file = new File([blob], `upload.${ext}`, {
-    type: blob.type || "application/octet-stream"
-  });
-  const form = new FormData();
-  form.set("file", file);
-  const up = await fetch("/api/upload", {
-    method: "POST",
-    body: form,
-    credentials: "include"
-  });
-  if (!up.ok) {
-    if (up.status === 401) {
+  try {
+    return await ensurePublicHttpsMediaUrl(url);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (/sign in|unauthorized/i.test(msg)) {
       throw new Error("AUTH_REQUIRED");
     }
-    let msg = "Upload failed — sign in and try again.";
-    try {
-      const j = (await up.json()) as { error?: string };
-      if (j.error) msg = j.error;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(msg);
+    throw new Error(humanizeClientFetchError(e));
   }
-  const data = (await up.json()) as { url: string };
-  return coerceToPublicHttpsUrl(data.url);
 }
 
 function defaultImageModelForTab(tab: ImageActionTab): string {
+  if (tab === "Image Upscaler") return ATLAS_IMAGE_UPSCALER_COMPOSER_ID;
   const models = MODEL_OPTIONS.filter((m) => imageComposerSupportedOnActionTab(m.id, tab));
   return models[0]?.id ?? "nano-banana-2";
 }
@@ -240,6 +224,11 @@ export function ImageGenerationPage() {
   const [resolution, setResolution] = useState("2K");
   const [aspect, setAspect] = useState("Auto");
   const [batchCount, setBatchCount] = useState(1);
+  const [upscaleInputUrl, setUpscaleInputUrl] = useState<string | null>(null);
+  const [upscaleInputFile, setUpscaleInputFile] = useState<File | null>(null);
+  const upscalePreviewBlobRef = useRef<string | null>(null);
+  const [upscaleBeforeUrl, setUpscaleBeforeUrl] = useState<string | null>(null);
+  const [outscale, setOutscale] = useState<AtlasImageUpscalerOutscale>(4);
 
   const [loading, setLoading] = useState(false);
   const [outputUrls, setOutputUrls] = useState<string[]>([]);
@@ -257,8 +246,16 @@ export function ImageGenerationPage() {
     () => getImageModelShowcase(modelId, actionTab),
     [actionTab, modelId]
   );
+  const showingUpscalerShowcase = Boolean(
+    actionTab === "Image Upscaler" &&
+      !hasUserGenerated &&
+      !loading &&
+      outputUrls.length === 0 &&
+      !studioLock
+  );
   const showingModelShowcase = Boolean(
-    modelShowcase &&
+    actionTab !== "Image Upscaler" &&
+      modelShowcase &&
       outputUrls.length === 0 &&
       !loading &&
       !hasUserGenerated &&
@@ -268,6 +265,16 @@ export function ImageGenerationPage() {
     showingModelShowcase && modelShowcase ? [modelShowcase.imageUrl] : outputUrls;
 
   const historyItems = useMemo(() => {
+    if (showingUpscalerShowcase) {
+      const exampleEntry: ImageHistoryEntry = {
+        id: "upscaler-showcase-ugc",
+        thumb: IMAGE_UPSCALER_SHOWCASE.afterPath,
+        title: IMAGE_UPSCALER_SHOWCASE.historyTitle,
+        subtitle: IMAGE_UPSCALER_SHOWCASE.historySubtitle,
+        outputImageUrl: IMAGE_UPSCALER_SHOWCASE.afterPath
+      };
+      return [exampleEntry, ...history];
+    }
     if (!showingModelShowcase || !modelShowcase) return history;
     const exampleEntry: ImageHistoryEntry = {
       id: `showcase-${modelShowcase.modelId}`,
@@ -277,18 +284,21 @@ export function ImageGenerationPage() {
       outputImageUrl: modelShowcase.imageUrl
     };
     return [exampleEntry, ...history];
-  }, [history, modelShowcase, showingModelShowcase]);
+  }, [history, modelShowcase, showingModelShowcase, showingUpscalerShowcase]);
 
-  const creditsLine = useMemo(
-    () =>
-      formatGenerationCreditsLine(
-        creditsChargedForImageModel(modelId, batchCount, {
-          resolution,
-          isEdit: actionTab === "Image to Image"
-        })
-      ),
-    [actionTab, batchCount, modelId, resolution]
-  );
+  const creditsLine = useMemo(() => {
+    if (actionTab === "Image Upscaler") {
+      return formatGenerationCreditsLine(
+        creditsChargedForImageModel(ATLAS_IMAGE_UPSCALER_COMPOSER_ID, 1)
+      );
+    }
+    return formatGenerationCreditsLine(
+      creditsChargedForImageModel(modelId, batchCount, {
+        resolution,
+        isEdit: actionTab === "Image to Image"
+      })
+    );
+  }, [actionTab, batchCount, modelId, resolution]);
 
   useEffect(() => {
     setBatchCount((c) => clampImageBatchCount(modelId, c));
@@ -434,6 +444,7 @@ export function ImageGenerationPage() {
   );
 
   useEffect(() => {
+    if (actionTab === "Image Upscaler") return;
     applyModelShowcase(modelId, actionTab);
   }, [actionTab, applyModelShowcase, modelId]);
 
@@ -637,12 +648,15 @@ export function ImageGenerationPage() {
 
   const restoreHistory = useCallback(
     (item: ImageHistoryEntry) => {
-      if (item.id.startsWith("showcase-")) {
+      if (item.id.startsWith("showcase-") || item.id.startsWith("upscaler-showcase-")) {
         setGenerateError(null);
         setOutputUrls([]);
+        setUpscaleBeforeUrl(null);
         setHasUserGenerated(false);
         appliedShowcaseForModel.current = null;
-        applyModelShowcase(modelId, actionTab);
+        if (item.id.startsWith("showcase-")) {
+          applyModelShowcase(modelId, actionTab);
+        }
         return;
       }
       const url = item.outputImageUrl ?? item.thumb;
@@ -671,8 +685,33 @@ export function ImageGenerationPage() {
   const canPostProcessImage = hasUserGenerated && outputUrls.length > 0 && !showingModelShowcase;
   const canRunVariations = getAtlasImageModelLimits(modelId).maxBatch >= 2;
 
+  const setUpscaleInput = useCallback((previewUrl: string | null, file: File | null = null) => {
+    const prevBlob = upscalePreviewBlobRef.current;
+    if (prevBlob && prevBlob !== previewUrl) {
+      URL.revokeObjectURL(prevBlob);
+    }
+    upscalePreviewBlobRef.current =
+      previewUrl?.startsWith("blob:") ? previewUrl : null;
+    setUpscaleInputUrl(previewUrl);
+    setUpscaleInputFile(file);
+    setUpscaleBeforeUrl(null);
+    setOutputUrls([]);
+    setGenerateError(null);
+    setHasUserGenerated(false);
+  }, []);
+
+  const resetUpscalerTab = useCallback(() => {
+    setUpscaleInput(null, null);
+    setOutscale(4);
+    setGenerateError(null);
+  }, [setUpscaleInput]);
+
   const resetImageTabDefaults = useCallback(() => {
     setGenerateError(null);
+    if (actionTab === "Image Upscaler") {
+      resetUpscalerTab();
+      return;
+    }
     setPrompt("");
     setCameraStyle("None");
     setBatchCount(1);
@@ -685,7 +724,128 @@ export function ImageGenerationPage() {
     setAspect(defaults.aspect);
     appliedShowcaseForModel.current = null;
     applyModelShowcase(defaultModel, actionTab);
-  }, [actionTab, applyModelShowcase, setReferenceUrlsSafe, studioLock?.modelId]);
+  }, [actionTab, applyModelShowcase, resetUpscalerTab, setReferenceUrlsSafe, studioLock?.modelId]);
+
+  const runAtlasImageUpscale = useCallback(async () => {
+    if ((!upscaleInputUrl && !upscaleInputFile) || loading) {
+      setGenerateError("Add an image to upscale first.");
+      return;
+    }
+
+    setGenerateError(null);
+    setLoading(true);
+    try {
+      let inputUrl: string | null;
+      if (upscaleInputFile) {
+        try {
+          inputUrl = await uploadFileToPublicStorage(upscaleInputFile);
+        } catch (e) {
+          if (e instanceof Error && /sign in|unauthorized/i.test(e.message)) {
+            throw new Error("AUTH_REQUIRED");
+          }
+          throw new Error(humanizeClientFetchError(e));
+        }
+      } else {
+        inputUrl = await ensureAtlasPublicHttpsMediaUrl(upscaleInputUrl);
+      }
+      if (!inputUrl) {
+        setGenerateError("Could not prepare your image for upscale. Try again in a moment.");
+        return;
+      }
+
+      let res: Response;
+      try {
+        res = await fetch("/api/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "upscale",
+            image_url: inputUrl,
+            outscale
+          }),
+          credentials: "include"
+        });
+      } catch (e) {
+        throw new Error(humanizeClientFetchError(e));
+      }
+
+      let data: {
+        pending?: boolean;
+        prediction_id?: string;
+        image_url?: string;
+        error?: string;
+        credits_balance?: number;
+        credits_required?: number;
+      };
+      try {
+        data = (await res.json()) as typeof data;
+      } catch {
+        throw new Error(
+          res.ok
+            ? "Upscale returned an invalid response. Try again."
+            : `Upscale failed (${res.status}). Try again.`
+        );
+      }
+
+      if (res.status === 401) {
+        setAuthRequiredOpen(true);
+        setGenerateError(GENERATION_AUTH_MESSAGE);
+        return;
+      }
+      if (res.status === 402) {
+        setGenerateError(insufficientCreditsMessage(data));
+        return;
+      }
+      if (!res.ok) {
+        setGenerateError(data.error ?? `Upscale failed (${res.status})`);
+        return;
+      }
+
+      setUpscaleBeforeUrl(inputUrl);
+      void refreshCredits();
+
+      let resultUrl: string | null = data.image_url ?? null;
+      if (!resultUrl && data.prediction_id) {
+        const polled = await pollAtlasImagePrediction(
+          data.prediction_id,
+          ATLAS_IMAGE_UPSCALER_COMPOSER_ID,
+          ATLAS_CLIENT_POLL_MS,
+          Date.now() + ATLAS_CLIENT_MAX_WAIT_MS
+        );
+        resultUrl = polled[0] ?? null;
+      }
+
+      if (!resultUrl) {
+        setGenerateError("Upscale finished without an output URL.");
+        return;
+      }
+
+      setOutputUrls([resultUrl]);
+      setHasUserGenerated(true);
+      setHistory((prev) => [
+        {
+          id: `upscale-${Date.now()}`,
+          thumb: resultUrl,
+          title: `Upscale ${outscale}×`,
+          subtitle: "Image Upscaler",
+          outputImageUrl: resultUrl
+        },
+        ...prev
+      ]);
+      void refreshCredits();
+    } catch (e) {
+      if (e instanceof Error && e.message === "AUTH_REQUIRED") {
+        setAuthRequiredOpen(true);
+        setGenerateError(GENERATION_AUTH_MESSAGE);
+        return;
+      }
+      setGenerateError(
+        e instanceof Error ? e.message : "Upscale network error."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, outscale, refreshCredits, upscaleInputFile, upscaleInputUrl]);
 
   const runImageUpscale = useCallback(
     async (tier: UpscaleTier) => {
@@ -823,12 +983,22 @@ export function ImageGenerationPage() {
               imageUrls={previewUrls}
               loading={loading}
               errorMessage={generateError}
-              referenceThumbUrls={referenceUrls}
-              isExample={showingModelShowcase}
+              referenceThumbUrls={
+                actionTab === "Image Upscaler"
+                  ? upscaleInputUrl
+                    ? [upscaleInputUrl]
+                    : []
+                  : referenceUrls
+              }
+              isExample={showingModelShowcase || showingUpscalerShowcase}
               actionTab={actionTab}
+              upscalerBeforeUrl={upscaleBeforeUrl}
+              showUpscalerDemo={showingUpscalerShowcase}
+              upscalerDemoBeforeUrl={IMAGE_UPSCALER_SHOWCASE.beforePath}
+              upscalerDemoAfterUrl={IMAGE_UPSCALER_SHOWCASE.afterPath}
               bottomBarHeight={bottomBarHeight}
-              canPostProcessImage={canPostProcessImage}
-              canRunVariations={canRunVariations}
+              canPostProcessImage={canPostProcessImage && actionTab !== "Image Upscaler"}
+              canRunVariations={canRunVariations && actionTab !== "Image Upscaler"}
               postProcessBusy={loading}
               onResetDefaults={resetImageTabDefaults}
               onUpscaleImage={(tier) => void runImageUpscale(tier)}
@@ -845,40 +1015,60 @@ export function ImageGenerationPage() {
         </div>
       </div>
 
-      <ImageBottomBar
-        prompt={prompt}
-        onPromptChange={(v) => {
-          setGenerateError(null);
-          setPrompt(v);
-        }}
-        actionTab={actionTab}
-        onActionTabChange={(tab) => {
-          setActionTab(tab);
-          setGenerateError(null);
-          appliedShowcaseForModel.current = null;
-        }}
-        referenceUrls={referenceUrls}
-        onReferenceUrlsChange={setReferenceUrlsSafe}
-        modelId={modelId}
-        onModelChange={(id) => {
-          setModelId(id);
-          setGenerateError(null);
-          appliedShowcaseForModel.current = null;
-        }}
-        cameraStyle={cameraStyle}
-        onCameraStyleChange={setCameraStyle}
-        resolution={resolution}
-        onResolutionChange={setResolution}
-        aspect={aspect}
-        onAspectChange={setAspect}
-        batchCount={batchCount}
-        onBatchCountChange={setBatchCount}
-        creditsLine={creditsLine}
-        loadingGenerate={loading}
-        onGenerate={runGeneration}
-        onHeightChange={setBottomBarHeight}
-        studioLock={studioLock}
-      />
+      {actionTab === "Image Upscaler" ? (
+        <ImageUpscalerBottomBar
+          actionTab={actionTab}
+          onActionTabChange={(tab) => {
+            setActionTab(tab);
+            setGenerateError(null);
+            appliedShowcaseForModel.current = null;
+          }}
+          inputUrl={upscaleInputUrl}
+          onInputChange={setUpscaleInput}
+          outscale={outscale}
+          onOutscaleChange={setOutscale}
+          creditsLine={creditsLine}
+          loading={loading}
+          onUpscale={runAtlasImageUpscale}
+          onReset={resetUpscalerTab}
+          onHeightChange={setBottomBarHeight}
+        />
+      ) : (
+        <ImageBottomBar
+          prompt={prompt}
+          onPromptChange={(v) => {
+            setGenerateError(null);
+            setPrompt(v);
+          }}
+          actionTab={actionTab}
+          onActionTabChange={(tab) => {
+            setActionTab(tab);
+            setGenerateError(null);
+            appliedShowcaseForModel.current = null;
+          }}
+          referenceUrls={referenceUrls}
+          onReferenceUrlsChange={setReferenceUrlsSafe}
+          modelId={modelId}
+          onModelChange={(id) => {
+            setModelId(id);
+            setGenerateError(null);
+            appliedShowcaseForModel.current = null;
+          }}
+          cameraStyle={cameraStyle}
+          onCameraStyleChange={setCameraStyle}
+          resolution={resolution}
+          onResolutionChange={setResolution}
+          aspect={aspect}
+          onAspectChange={setAspect}
+          batchCount={batchCount}
+          onBatchCountChange={setBatchCount}
+          creditsLine={creditsLine}
+          loadingGenerate={loading}
+          onGenerate={runGeneration}
+          onHeightChange={setBottomBarHeight}
+          studioLock={studioLock}
+        />
+      )}
       <InsufficientCreditsModal
         open={insufficientCredits.open}
         required={insufficientCredits.required}

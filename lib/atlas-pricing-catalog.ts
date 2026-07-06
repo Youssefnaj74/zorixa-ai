@@ -14,6 +14,7 @@ import {
   GEMINI_OMNI_FLASH_R2V_COMPOSER_ID,
   GEMINI_OMNI_FLASH_T2V_COMPOSER_ID
 } from "@/lib/atlas-gemini-omni-video";
+import { ZORIXA_IMAGE_UPSCALER_CREDITS_CHARGED } from "@/lib/atlas-image-upscaler";
 import {
   HAILUO_23_COMPOSER_ID,
   hailuo23AtlasUsdForOptions
@@ -51,6 +52,8 @@ export const ZORIXA_VIDEO_GROSS_MARGIN = 0.6;
 export const ZORIXA_IMAGE_DEFAULT_GROSS_MARGIN = 0.68;
 export const ZORIXA_IMAGE_CHEAP_GROSS_MARGIN = 0.69;
 export const ZORIXA_IMAGE_PREMIUM_GROSS_MARGIN = 0.68;
+/** Image Upscaler tab — dedicated margin target. */
+export const ZORIXA_IMAGE_UPSCALER_GROSS_MARGIN = 0.7;
 export const ZORIXA_VIDEO_DEFAULT_GROSS_MARGIN = 0.65;
 export const ZORIXA_VIDEO_PREMIUM_GROSS_MARGIN = 0.55;
 export const ZORIXA_VIDEO_EXPENSIVE_GROSS_MARGIN = 0.5;
@@ -110,6 +113,7 @@ export const ATLAS_MODEL_PRICING: Record<string, AtlasModelPrice> = {
   "wan-image-2-7": { usd: 0.03, unit: "per image" },
   "wan-image-2-7-pro": { usd: 0.075, unit: "per image", note: "Pro / 4K-ready" },
   "wan-image-2-6": { usd: 0.025, unit: "per image" },
+  "atlas-image-upscaler": { usd: 0.01, unit: "per image", note: "RealESRGAN upscale" },
 
   "seedance-2": { usd: 0.22, unit: "per 5s video (720p)", note: "T2V / I2V / Reference" },
   "seedance-1-5": { usd: 0.18, unit: "per 5s video (720p)" },
@@ -147,6 +151,7 @@ export function atlasUsdToCreditsForGrossMargin(
 }
 
 function imageMarginForModel(composerModelId: string, atlasUsd: number): number {
+  if (composerModelId === "atlas-image-upscaler") return ZORIXA_IMAGE_UPSCALER_GROSS_MARGIN;
   if (composerModelId === "flux-schnell") return ZORIXA_IMAGE_CHEAP_GROSS_MARGIN;
   if (atlasUsd <= 0.02) return ZORIXA_IMAGE_CHEAP_GROSS_MARGIN;
   if (atlasUsd >= 0.06) return ZORIXA_IMAGE_PREMIUM_GROSS_MARGIN;
@@ -403,6 +408,9 @@ export function creditsChargedForImageModel(
   quantity = 1,
   opts: ImagePricingOptions = {}
 ): number {
+  if (composerModelId === "atlas-image-upscaler") {
+    return ZORIXA_IMAGE_UPSCALER_CREDITS_CHARGED * Math.max(1, quantity);
+  }
   const usd = atlasImageUsdForOptions(composerModelId, opts);
   const margin = imageMarginForModel(composerModelId, usd);
   const perImage = atlasUsdToCreditsForGrossMargin(

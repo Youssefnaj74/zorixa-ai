@@ -14,6 +14,7 @@ import {
   isFluxImageToImageComposerId,
   isFluxTextToImageComposerId
 } from "@/lib/atlas-image-model-ids";
+import { ATLAS_IMAGE_UPSCALER_COMPOSER_ID } from "@/lib/atlas-image-upscaler";
 import { isAtlasVideoComposerId } from "@/lib/atlas-video-model-ids";
 import type { ToolCatalogSectionId } from "@/lib/tools-catalog";
 
@@ -28,7 +29,7 @@ export const VIDEO_STUDIO_TABS = [
 
 export type VideoStudioTab = (typeof VIDEO_STUDIO_TABS)[number];
 
-const IMAGE_ACTION_TABS = ["Text to Image", "Image to Image"] as const;
+const IMAGE_ACTION_TABS = ["Text to Image", "Image to Image", "Image Upscaler"] as const;
 export type ImageStudioTab = (typeof IMAGE_ACTION_TABS)[number];
 
 const VIDEO_TAB_BY_SECTION: Partial<Record<ToolCatalogSectionId, VideoStudioTab>> = {
@@ -213,6 +214,9 @@ export function resolveImageStudioFromQuery(
   modelRaw: string | null
 ): { tab: ImageStudioTab; model: string } | null {
   const tab = parseImageActionTab(tabRaw) ?? "Text to Image";
+  if (tab === "Image Upscaler") {
+    return { tab, model: ATLAS_IMAGE_UPSCALER_COMPOSER_ID };
+  }
   const model =
     modelRaw && isAtlasImageComposerId(modelRaw.trim()) ? modelRaw.trim() : null;
   if (!model) return null;

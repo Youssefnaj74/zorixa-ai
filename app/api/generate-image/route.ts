@@ -4,6 +4,12 @@ import {
   atlasGenerateImageErrorMessage,
   buildAtlasImageBody
 } from "@/lib/build-atlas-image-body";
+import {
+  ATLAS_IMAGE_UPSCALER_COMPOSER_ID,
+  buildAtlasImageUpscalerBody,
+  isAtlasImageUpscalerComposerId,
+  normalizeAtlasImageUpscalerOutscale
+} from "@/lib/atlas-image-upscaler";
 import { logAtlasImageGenerationIfNew } from "@/lib/atlas-image-generation-log";
 import {
   getAtlasImageModelLimits,
@@ -32,8 +38,13 @@ import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
 const CLIENT_POLL_HINT_MS = 3000;
+/** Vercel hobby default is 10s — allow Atlas create + credit finalize. */
+export const maxDuration = 60;
+
+const ATLAS_UPSCALE_CREATE_TIMEOUT_MS = 55_000;
 
 type ClientBody = {
+  action?: string;
   prompt?: string;
   negativePrompt?: string;
   /** Zorixa composer row id (e.g. nano-banana-2). */
@@ -42,6 +53,9 @@ type ClientBody = {
   resolution?: string;
   image_urls?: string[];
   num_images?: number;
+  /** Image upscaler — public https image URL. */
+  image_url?: string;
+  outscale?: number;
 };
 
 const ALLOWED_ASPECT_RATIOS = new Set([
@@ -110,7 +124,10 @@ export async function GET(request: Request) {
   const predictionId = (searchParams.get("predictionId") ?? searchParams.get("prediction_id"))?.trim();
   const imageModelParam = searchParams.get("imageModel")?.trim() ?? "";
   const composerModelId =
-    imageModelParam && isAtlasImageComposerId(imageModelParam) ? imageModelParam : null;
+    imageModelParam &&
+    (isAtlasImageComposerId(imageModelParam) || isAtlasImageUpscalerComposerId(imageModelParam))
+      ? imageModelParam
+      : null;
   const pollPrompt = searchParams.get("prompt")?.trim() || null;
   if (!predictionId) {
     return NextResponse.json(
@@ -173,7 +190,18 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    return await handleGenerateImagePost(request);
+    let body: ClientBody;
+    try {
+      body = (await request.json()) as ClientBody;
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+
+    if (body.action === "upscale") {
+      return await handleImageUpscalePost(body, request);
+    }
+
+    return await handleGenerateImagePost(request, body);
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Image generation failed";
     if (process.env.NODE_ENV === "development") {
@@ -181,6 +209,147 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+async function handleImageUpscalePost(body: ClientBody, request: Request) {
+  const apiKey = env.atlasCloudApiKey;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "Server missing ATLASCLOUD_API_KEY" },
+      { status: 500 }
+    );
+  }
+
+  const rawImage = typeof body.image_url === "string" ? body.image_url.trim() : "";
+  const imageUrl = coerceToPublicHttpsUrl(rawImage);
+  if (!imageUrl) {
+    return NextResponse.json(
+      { error: "Missing public https:// image URL to upscale." },
+      { status: 400 }
+    );
+  }
+
+  const outscale = normalizeAtlasImageUpscalerOutscale(body.outscale);
+  const actor = await resolveZorixaActor(request);
+  if (!actor) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const creditCost = creditsForImageModel(ATLAS_IMAGE_UPSCALER_COMPOSER_ID, 1);
+  const afford = await assertCanAfford(actor.userId, creditCost);
+  if (!afford.ok) {
+    if (afford.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(afford.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
+
+  const atlasBody = buildAtlasImageUpscalerBody({ imageUrl, outscale });
+
+  const chargeBegin = await beginAtlasCharge({
+    userId: actor.userId,
+    amount: creditCost,
+    featureUsed: "enhance"
+  });
+  if (!chargeBegin.ok) {
+    if (chargeBegin.error === "INSUFFICIENT_CREDITS") {
+      return NextResponse.json(insufficientCreditsResponse(chargeBegin.balance, creditCost), {
+        status: 402
+      });
+    }
+    return NextResponse.json({ error: "Could not deduct credits" }, { status: 500 });
+  }
+
+  let createRes: Response;
+  try {
+    createRes = await fetch(`${ATLAS_BASE}/generateImage`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify(atlasBody),
+      signal: AbortSignal.timeout(ATLAS_UPSCALE_CREATE_TIMEOUT_MS)
+    });
+  } catch (e) {
+    await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
+    const timedOut = e instanceof Error && e.name === "TimeoutError";
+    return NextResponse.json(
+      {
+        error: timedOut
+          ? "Atlas image upscaler timed out. Try again in a moment."
+          : "Could not reach Atlas image upscaler. Try again."
+      },
+      { status: 504 }
+    );
+  }
+
+  const createJson = (await createRes.json()) as AtlasEnvelope;
+  if (!createRes.ok) {
+    await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
+    return NextResponse.json(
+      {
+        error:
+          createJson.message ?? `Atlas image upscaler failed (${createRes.status})`,
+        atlas_error: createJson.data?.error ?? createJson.message ?? null
+      },
+      { status: createRes.status >= 400 ? createRes.status : 502 }
+    );
+  }
+
+  const predictionId = createJson.data?.id;
+  if (!predictionId) {
+    await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
+    return NextResponse.json({ error: "Atlas did not return a prediction id" }, { status: 502 });
+  }
+
+  const finalized = await completeAtlasCharge({
+    userId: actor.userId,
+    session: chargeBegin.session,
+    predictionId
+  });
+  if (!finalized.ok) {
+    await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
+    return NextResponse.json({ error: "Could not finalize credit charge" }, { status: 500 });
+  }
+
+  const creditsSpent = chargeBegin.session.creditsSpent;
+  const balanceAfter = chargeBegin.session.balanceAfter;
+  const initialStatus = createJson.data?.status;
+  const statusNorm = String(initialStatus ?? "").toLowerCase();
+
+  if (statusNorm === "completed" || statusNorm === "succeeded") {
+    const urls = extractAtlasImageOutputUrls(createJson.data);
+    const imageOut = urls[0] ?? extractAtlasVideoOutputUrl(createJson.data);
+    if (imageOut) {
+      return NextResponse.json({
+        image_url: imageOut,
+        prediction_id: predictionId,
+        credits_spent: creditsSpent,
+        credits_balance: balanceAfter
+      });
+    }
+    return NextResponse.json(
+      { error: "Atlas returned completed without an output URL" },
+      { status: 502 }
+    );
+  }
+
+  if (statusNorm === "failed") {
+    const err =
+      createJson.data?.error ?? createJson.message ?? "Atlas image upscaler failed";
+    return NextResponse.json({ error: err }, { status: 502 });
+  }
+
+  return NextResponse.json({
+    pending: true,
+    prediction_id: predictionId,
+    poll_interval_ms: CLIENT_POLL_HINT_MS,
+    credits_spent: creditsSpent,
+    credits_balance: balanceAfter
+  });
 }
 
 async function handleParallelImageBatchPost(args: {
@@ -327,20 +496,13 @@ async function handleParallelImageBatchPost(args: {
   });
 }
 
-async function handleGenerateImagePost(request: Request) {
+async function handleGenerateImagePost(request: Request, body: ClientBody) {
   const apiKey = env.atlasCloudApiKey;
   if (!apiKey) {
     return NextResponse.json(
       { error: "Server missing ATLASCLOUD_API_KEY" },
       { status: 500 }
     );
-  }
-
-  let body: ClientBody;
-  try {
-    body = (await request.json()) as ClientBody;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   const prompt = stripVideoComposerAssetTokens(
