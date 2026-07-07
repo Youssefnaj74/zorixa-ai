@@ -28,7 +28,7 @@ export type AiDirectorBottomBarProps = {
   actionTab: ActionTab;
   onActionTabChange: (tab: ActionTab) => void;
   promptImageUrl: string | null;
-  onPromptImageChange: (url: string | null) => void;
+  onPromptImageChange: (url: string | null, file?: File | null) => void;
   directorStyle: DirectorStyleInput;
   onDirectorStyleChange: (style: DirectorStyleInput) => void;
   qualityPreset: DirectorQualityPreset;
@@ -108,7 +108,7 @@ export function AiDirectorBottomBar({
       const file = e.target.files?.[0];
       e.target.value = "";
       if (!file) return;
-      onPromptImageChange(URL.createObjectURL(file));
+      onPromptImageChange(URL.createObjectURL(file), file);
     },
     [onPromptImageChange]
   );

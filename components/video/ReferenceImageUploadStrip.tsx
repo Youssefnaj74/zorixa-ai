@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 type ReferenceImageUploadStripProps = {
   referenceImageUrls: (string | null)[];
   maxImages: number;
-  onReferenceImageChange?: (index: number, url: string | null) => void;
+  onReferenceImageChange?: (index: number, url: string | null, file?: File | null) => void;
   /** Show @imageN badge on thumbnails (Seedance R2V). */
   tokenKind?: "image";
   /** Hide outer title when wrapped in SeedanceReferenceUploadPanel. */
@@ -51,7 +51,7 @@ export function ReferenceImageUploadStrip({
         if (!file.type.startsWith("image/")) continue;
         while (slot < maxImages && referenceImageUrls[slot]) slot++;
         if (slot >= maxImages) break;
-        onReferenceImageChange(slot, URL.createObjectURL(file));
+        onReferenceImageChange(slot, URL.createObjectURL(file), file);
         slot++;
       }
     },

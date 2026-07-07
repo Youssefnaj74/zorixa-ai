@@ -42,8 +42,10 @@ import {
   type AtlasLikeVideoPayload
 } from "@/lib/extract-atlas-video-output-url";
 import {
-  ensurePublicHttpsMediaUrl,
+  clearClientMediaBlob,
   humanizeClientFetchError,
+  resolvePublicHttpsMediaUrl,
+  scheduleClientMediaPublicUpload,
   uploadFileToPublicStorage
 } from "@/lib/upload-client-media";
 import { EXPLORE_PROMPT_DEFAULT_ASPECT } from "@/lib/explore-prompts-catalog";
@@ -178,7 +180,7 @@ function pickImageUrlsFromPollBody(data: Record<string, unknown>): string[] {
 async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<string | null> {
   if (!url) return null;
   try {
-    return await ensurePublicHttpsMediaUrl(url);
+    return await resolvePublicHttpsMediaUrl(url);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     if (/sign in|unauthorized/i.test(msg)) {
@@ -689,6 +691,7 @@ export function ImageGenerationPage() {
     const prevBlob = upscalePreviewBlobRef.current;
     if (prevBlob && prevBlob !== previewUrl) {
       URL.revokeObjectURL(prevBlob);
+      clearClientMediaBlob(prevBlob);
     }
     upscalePreviewBlobRef.current =
       previewUrl?.startsWith("blob:") ? previewUrl : null;
@@ -698,6 +701,18 @@ export function ImageGenerationPage() {
     setOutputUrls([]);
     setGenerateError(null);
     setHasUserGenerated(false);
+    if (previewUrl?.startsWith("blob:") && file) {
+      const blobUrl = previewUrl;
+      scheduleClientMediaPublicUpload(
+        blobUrl,
+        file,
+        (https) => {
+          setUpscaleInputUrl((current) => (current === blobUrl ? https : current));
+          setUpscaleInputFile((currentFile) => (currentFile === file ? null : currentFile));
+        },
+        (message) => setGenerateError(message)
+      );
+    }
   }, []);
 
   const resetUpscalerTab = useCallback(() => {

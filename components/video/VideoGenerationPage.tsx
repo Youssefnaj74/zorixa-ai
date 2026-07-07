@@ -153,9 +153,10 @@ import {
 } from "@/lib/atlas-veo31-video";
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 import {
-  ensurePublicHttpsMediaUrl,
+  clearClientMediaBlob,
   humanizeClientFetchError,
-  uploadBlobUrlToPublicStorage
+  resolvePublicHttpsMediaUrl,
+  scheduleClientMediaPublicUpload
 } from "@/lib/upload-client-media";
 import {
   extractAtlasVideoOutputUrl,
@@ -242,20 +243,15 @@ function toBrowserVideoSrc(canonicalHttps: string): string {
   return buildSameOriginVideoPlaybackUrl(canonicalHttps, window.location.origin);
 }
 
-const ensureAtlasPublicHttpsMediaUrl = ensurePublicHttpsMediaUrl;
+const ensureAtlasPublicHttpsMediaUrl = resolvePublicHttpsMediaUrl;
 
 function scheduleBlobPublicUpload(
   blobUrl: string,
+  file: File,
   apply: (https: string) => void,
   onError?: (message: string) => void
 ): void {
-  void uploadBlobUrlToPublicStorage(blobUrl)
-    .then((https) => {
-      apply(https);
-    })
-    .catch((e) => {
-      onError?.(humanizeClientFetchError(e));
-    });
+  scheduleClientMediaPublicUpload(blobUrl, file, apply, onError);
 }
 
 function resizeReferenceImageUrls(
@@ -264,7 +260,10 @@ function resizeReferenceImageUrls(
 ): (string | null)[] {
   for (let i = max; i < prev.length; i++) {
     const url = prev[i];
-    if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+    if (url?.startsWith("blob:")) {
+      URL.revokeObjectURL(url);
+      clearClientMediaBlob(url);
+    }
   }
   const next = prev.slice(0, max);
   while (next.length < max) next.push(null);
@@ -401,24 +400,27 @@ export function VideoGenerationPage() {
   );
 
   const setReferenceImageAt = useCallback(
-    (index: number, url: string | null) => {
+    (index: number, url: string | null, file?: File | null) => {
       setReferenceImageUrls((prev) => {
         const next = [...prev];
         const old = next[index];
-        if (old?.startsWith("blob:") && old !== url) URL.revokeObjectURL(old);
+        if (old?.startsWith("blob:") && old !== url) {
+          URL.revokeObjectURL(old);
+          clearClientMediaBlob(old);
+        }
         next[index] = url;
         return next;
       });
       syncSeedanceRefTokenInPrompt("image", index, url);
-      if (url?.startsWith("blob:")) {
+      if (url?.startsWith("blob:") && file) {
         const blobUrl = url;
         scheduleBlobPublicUpload(
           blobUrl,
+          file,
           (https) => {
             setReferenceImageUrls((prev) => {
               if (prev[index] !== blobUrl) return prev;
               const next = [...prev];
-              URL.revokeObjectURL(blobUrl);
               next[index] = https;
               return next;
             });
@@ -431,24 +433,27 @@ export function VideoGenerationPage() {
   );
 
   const setReferenceVideoAt = useCallback(
-    (index: number, url: string | null) => {
+    (index: number, url: string | null, file?: File | null) => {
       setReferenceVideoUrls((prev) => {
         const next = [...prev];
         const old = next[index];
-        if (old?.startsWith("blob:") && old !== url) URL.revokeObjectURL(old);
+        if (old?.startsWith("blob:") && old !== url) {
+          URL.revokeObjectURL(old);
+          clearClientMediaBlob(old);
+        }
         next[index] = url;
         return next;
       });
       syncSeedanceRefTokenInPrompt("video", index, url);
-      if (url?.startsWith("blob:")) {
+      if (url?.startsWith("blob:") && file) {
         const blobUrl = url;
         scheduleBlobPublicUpload(
           blobUrl,
+          file,
           (https) => {
             setReferenceVideoUrls((prev) => {
               if (prev[index] !== blobUrl) return prev;
               const next = [...prev];
-              URL.revokeObjectURL(blobUrl);
               next[index] = https;
               return next;
             });
@@ -461,24 +466,27 @@ export function VideoGenerationPage() {
   );
 
   const setReferenceAudioAt = useCallback(
-    (index: number, url: string | null) => {
+    (index: number, url: string | null, file?: File | null) => {
       setReferenceAudioUrls((prev) => {
         const next = [...prev];
         const old = next[index];
-        if (old?.startsWith("blob:") && old !== url) URL.revokeObjectURL(old);
+        if (old?.startsWith("blob:") && old !== url) {
+          URL.revokeObjectURL(old);
+          clearClientMediaBlob(old);
+        }
         next[index] = url;
         return next;
       });
       syncSeedanceRefTokenInPrompt("audio", index, url);
-      if (url?.startsWith("blob:")) {
+      if (url?.startsWith("blob:") && file) {
         const blobUrl = url;
         scheduleBlobPublicUpload(
           blobUrl,
+          file,
           (https) => {
             setReferenceAudioUrls((prev) => {
               if (prev[index] !== blobUrl) return prev;
               const next = [...prev];
-              URL.revokeObjectURL(blobUrl);
               next[index] = https;
               return next;
             });
@@ -490,19 +498,22 @@ export function VideoGenerationPage() {
     [syncSeedanceRefTokenInPrompt]
   );
 
-  const setPromptImageUrlSafe = useCallback((url: string | null) => {
+  const setPromptImageUrlSafe = useCallback((url: string | null, file?: File | null) => {
     setPromptImageUrl((prev) => {
-      if (prev?.startsWith("blob:") && prev !== url) URL.revokeObjectURL(prev);
+      if (prev?.startsWith("blob:") && prev !== url) {
+        URL.revokeObjectURL(prev);
+        clearClientMediaBlob(prev);
+      }
       return url;
     });
-    if (url?.startsWith("blob:")) {
+    if (url?.startsWith("blob:") && file) {
       const blobUrl = url;
       scheduleBlobPublicUpload(
         blobUrl,
+        file,
         (https) => {
           setPromptImageUrl((current) => {
             if (current !== blobUrl) return current;
-            URL.revokeObjectURL(blobUrl);
             return https;
           });
         },
@@ -511,19 +522,22 @@ export function VideoGenerationPage() {
     }
   }, []);
 
-  const setPromptImage2UrlSafe = useCallback((url: string | null) => {
+  const setPromptImage2UrlSafe = useCallback((url: string | null, file?: File | null) => {
     setPromptImage2Url((prev) => {
-      if (prev?.startsWith("blob:") && prev !== url) URL.revokeObjectURL(prev);
+      if (prev?.startsWith("blob:") && prev !== url) {
+        URL.revokeObjectURL(prev);
+        clearClientMediaBlob(prev);
+      }
       return url;
     });
-    if (url?.startsWith("blob:")) {
+    if (url?.startsWith("blob:") && file) {
       const blobUrl = url;
       scheduleBlobPublicUpload(
         blobUrl,
+        file,
         (https) => {
           setPromptImage2Url((current) => {
             if (current !== blobUrl) return current;
-            URL.revokeObjectURL(blobUrl);
             return https;
           });
         },
@@ -532,19 +546,22 @@ export function VideoGenerationPage() {
     }
   }, []);
 
-  const setLipsyncAudioUrlSafe = useCallback((url: string | null) => {
+  const setLipsyncAudioUrlSafe = useCallback((url: string | null, file?: File | null) => {
     setLipsyncAudioUrl((prev) => {
-      if (prev?.startsWith("blob:") && prev !== url) URL.revokeObjectURL(prev);
+      if (prev?.startsWith("blob:") && prev !== url) {
+        URL.revokeObjectURL(prev);
+        clearClientMediaBlob(prev);
+      }
       return url;
     });
-    if (url?.startsWith("blob:")) {
+    if (url?.startsWith("blob:") && file) {
       const blobUrl = url;
       scheduleBlobPublicUpload(
         blobUrl,
+        file,
         (https) => {
           setLipsyncAudioUrl((current) => {
             if (current !== blobUrl) return current;
-            URL.revokeObjectURL(blobUrl);
             return https;
           });
         },
@@ -553,19 +570,22 @@ export function VideoGenerationPage() {
     }
   }, []);
 
-  const setEditSourceVideoUrlSafe = useCallback((url: string | null) => {
+  const setEditSourceVideoUrlSafe = useCallback((url: string | null, file?: File | null) => {
     setEditSourceVideoUrl((prev) => {
-      if (prev?.startsWith("blob:") && prev !== url) URL.revokeObjectURL(prev);
+      if (prev?.startsWith("blob:") && prev !== url) {
+        URL.revokeObjectURL(prev);
+        clearClientMediaBlob(prev);
+      }
       return url;
     });
-    if (url?.startsWith("blob:")) {
+    if (url?.startsWith("blob:") && file) {
       const blobUrl = url;
       scheduleBlobPublicUpload(
         blobUrl,
+        file,
         (https) => {
           setEditSourceVideoUrl((current) => {
             if (current !== blobUrl) return current;
-            URL.revokeObjectURL(blobUrl);
             return https;
           });
         },
@@ -574,19 +594,22 @@ export function VideoGenerationPage() {
     }
   }, []);
 
-  const setMotionVideoUrlSafe = useCallback((url: string | null) => {
+  const setMotionVideoUrlSafe = useCallback((url: string | null, file?: File | null) => {
     setMotionVideoUrl((prev) => {
-      if (prev?.startsWith("blob:") && prev !== url) URL.revokeObjectURL(prev);
+      if (prev?.startsWith("blob:") && prev !== url) {
+        URL.revokeObjectURL(prev);
+        clearClientMediaBlob(prev);
+      }
       return url;
     });
-    if (url?.startsWith("blob:")) {
+    if (url?.startsWith("blob:") && file) {
       const blobUrl = url;
       scheduleBlobPublicUpload(
         blobUrl,
+        file,
         (https) => {
           setMotionVideoUrl((current) => {
             if (current !== blobUrl) return current;
-            URL.revokeObjectURL(blobUrl);
             return https;
           });
         },

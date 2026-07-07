@@ -1,8 +1,9 @@
 "use client";
 
-import { ChevronUp, CircleHelp, Film, Sparkles, Upload, X } from "lucide-react";
+import { Check, ChevronUp, CircleHelp, Film, Sparkles, Upload, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { Badge } from "@/components/ui/Badge";
 import { ModelBrandLogo } from "@/components/ui/ModelBrandLogo";
@@ -134,27 +135,27 @@ export type VideoBottomBarProps = {
   actionTab: ActionTab;
   onActionTabChange: (tab: ActionTab) => void;
   promptImageUrl: string | null;
-  onPromptImageChange: (url: string | null) => void;
+  onPromptImageChange: (url: string | null, file?: File | null) => void;
   promptImage2Url?: string | null;
-  onPromptImage2Change?: (url: string | null) => void;
+  onPromptImage2Change?: (url: string | null, file?: File | null) => void;
   lipsyncAudioUrl: string | null;
-  onLipsyncAudioUrlChange: (url: string | null) => void;
+  onLipsyncAudioUrlChange: (url: string | null, file?: File | null) => void;
   editSourceVideoUrl: string | null;
-  onEditSourceVideoUrlChange: (url: string | null) => void;
+  onEditSourceVideoUrlChange: (url: string | null, file?: File | null) => void;
   motionVideoUrl?: string | null;
-  onMotionVideoUrlChange?: (url: string | null) => void;
+  onMotionVideoUrlChange?: (url: string | null, file?: File | null) => void;
   characterOrientation?: KlingMotionCharacterOrientation;
   onCharacterOrientationChange?: (v: KlingMotionCharacterOrientation) => void;
   keepOriginalSound?: boolean;
   onKeepOriginalSoundChange?: (v: boolean) => void;
   referenceImageUrls?: (string | null)[];
-  onReferenceImageChange?: (index: number, url: string | null) => void;
+  onReferenceImageChange?: (index: number, url: string | null, file?: File | null) => void;
   /** Seedance 2.0 R2V — up to 3 reference videos. */
   referenceVideoUrls?: (string | null)[];
-  onReferenceVideoChange?: (index: number, url: string | null) => void;
+  onReferenceVideoChange?: (index: number, url: string | null, file?: File | null) => void;
   /** Seedance 2.0 R2V — up to 3 reference audios. */
   referenceAudioUrls?: (string | null)[];
-  onReferenceAudioChange?: (index: number, url: string | null) => void;
+  onReferenceAudioChange?: (index: number, url: string | null, file?: File | null) => void;
   /** Bottom bar model (dropup). */
   composerModelId: string;
   onComposerModelChange: (id: string) => void;
@@ -187,7 +188,10 @@ export type VideoBottomBarProps = {
 type OpenPanel = "model" | "mode" | "standard" | "time" | "aspect" | "resolution" | null;
 
 const dropupPanelClass =
-  "absolute bottom-[calc(100%+8px)] z-[100] overflow-hidden rounded-xl border border-[rgba(131,56,235,0.2)] bg-[#1a1a24] shadow-glow-lg";
+  "absolute bottom-[calc(100%+8px)] z-[100] overflow-hidden rounded-xl border border-[rgba(131,56,235,0.2)] bg-zorixa-dropdown shadow-glow-lg ring-1 ring-white/5";
+
+const modelMenuPanelClass =
+  "fixed z-[250] overflow-y-auto studio-scrollbar rounded-xl border border-[rgba(131,56,235,0.2)] bg-zorixa-dropdown py-1 shadow-glow-lg ring-1 ring-white/5";
 
 const triggerClass =
   "inline-flex h-9 min-h-[36px] shrink-0 items-center gap-1.5 rounded-lg border border-[rgba(131,56,235,0.2)] bg-[#1a1a24] px-3 text-xs font-medium text-white outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand";
@@ -263,6 +267,10 @@ export function VideoBottomBar({
 }: VideoBottomBarProps) {
   const [open, setOpen] = useState<OpenPanel>(null);
   const bottomBarRef = useRef<HTMLElement>(null);
+  const modelTriggerRef = useRef<HTMLButtonElement>(null);
+  const modelMenuRef = useRef<HTMLDivElement>(null);
+  const [modelMenuStyle, setModelMenuStyle] = useState<React.CSSProperties | null>(null);
+  const [modelMenuMounted, setModelMenuMounted] = useState(false);
   const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
   /** Mirrors latest `prompt` prop every render — survives stale closures if Generate fires before React commits the last keystroke. */
   const promptMirrorRef = useRef(prompt);
@@ -276,8 +284,14 @@ export function VideoBottomBar({
   const [file2Name, setFile2Name] = useState<string | null>(null);
 
   useEffect(() => {
+    setModelMenuMounted(true);
+  }, []);
+
+  useEffect(() => {
     function onDoc(e: MouseEvent) {
-      if (!bottomBarRef.current?.contains(e.target as Node)) setOpen(null);
+      const target = e.target as Node;
+      if (modelMenuRef.current?.contains(target)) return;
+      if (!bottomBarRef.current?.contains(target)) setOpen(null);
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -299,7 +313,7 @@ export function VideoBottomBar({
         return;
       }
       const url = URL.createObjectURL(file);
-      onPromptImageChange(url);
+      onPromptImageChange(url, file);
       setFile1Name(file.name);
     },
     [actionTab, composerModelId, onPromptImageChange]
@@ -310,7 +324,7 @@ export function VideoBottomBar({
       if (!onPromptImage2Change) return;
       if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) return;
       const url = URL.createObjectURL(file);
-      onPromptImage2Change(url);
+      onPromptImage2Change(url, file);
       setFile2Name(file.name);
     },
     [onPromptImage2Change]
@@ -361,7 +375,7 @@ export function VideoBottomBar({
     (file: File) => {
       if (!file.type.startsWith("audio/")) return;
       const url = URL.createObjectURL(file);
-      onLipsyncAudioUrlChange(url);
+      onLipsyncAudioUrlChange(url, file);
     },
     [onLipsyncAudioUrlChange]
   );
@@ -370,7 +384,7 @@ export function VideoBottomBar({
     (file: File) => {
       if (!file.type.startsWith("video/")) return;
       const url = URL.createObjectURL(file);
-      onEditSourceVideoUrlChange(url);
+      onEditSourceVideoUrlChange(url, file);
     },
     [onEditSourceVideoUrlChange]
   );
@@ -380,7 +394,7 @@ export function VideoBottomBar({
       if (!onMotionVideoUrlChange) return;
       if (!file.type.startsWith("video/")) return;
       const url = URL.createObjectURL(file);
-      onMotionVideoUrlChange(url);
+      onMotionVideoUrlChange(url, file);
     },
     [onMotionVideoUrlChange]
   );
@@ -565,6 +579,35 @@ export function VideoBottomBar({
   const pickerModels = bottomBarModelsForActionTab(actionTab);
   const selectedModel =
     pickerModels.find((m) => m.id === composerModelId) ?? pickerModels[0] ?? pickerModels[0];
+
+  const updateModelMenuPosition = useCallback(() => {
+    const trigger = modelTriggerRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    const gap = 8;
+    const viewportPadding = 12;
+    setModelMenuStyle({
+      left: rect.left,
+      bottom: window.innerHeight - rect.top + gap,
+      minWidth: Math.max(rect.width, 260),
+      maxHeight: Math.max(200, rect.top - gap - viewportPadding)
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (open !== "model") {
+      setModelMenuStyle(null);
+      return;
+    }
+    updateModelMenuPosition();
+    window.addEventListener("resize", updateModelMenuPosition);
+    window.addEventListener("scroll", updateModelMenuPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateModelMenuPosition);
+      window.removeEventListener("scroll", updateModelMenuPosition, true);
+    };
+  }, [open, updateModelMenuPosition, pickerModels.length, actionTab]);
+
   const nativeAudioSupported = videoComposerSupportsGenerateAudio(composerModelId);
   const showGenerateAudioControl =
     nativeAudioSupported &&
@@ -684,8 +727,7 @@ export function VideoBottomBar({
       style={useStableDockHeight ? { minHeight: stableDockHeight } : undefined}
       className={cn(
         "fixed inset-x-0 bottom-0 z-50 flex flex-col border-t border-[rgba(131,56,235,0.15)] bg-[#0d0d14]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-[12px]",
-        "px-4 py-2 font-body",
-        useStableDockHeight && "overflow-hidden"
+        "px-4 py-2 font-body"
       )}
     >
       <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-2">
@@ -701,7 +743,7 @@ export function VideoBottomBar({
         <div
           className={cn(
             "flex min-h-0 gap-2",
-            useStableDockHeight && "items-stretch",
+            useStableDockHeight && "items-stretch overflow-hidden",
             showReferenceMediaPanel
               ? "flex-row items-stretch"
               : "flex-col sm:flex-row sm:items-start"
@@ -1312,13 +1354,14 @@ export function VideoBottomBar({
         </div>
 
         {/* ROW 2 — controls (always visible at bottom of dock) */}
-        <div className={cn("flex shrink-0 items-end gap-2", useStableDockHeight && "border-t border-white/5 pt-1.5")}>
-          <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2">
+        <div className={cn("relative z-[120] flex shrink-0 items-end gap-2 overflow-visible", useStableDockHeight && "border-t border-white/5 pt-1.5")}>
+          <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2 overflow-visible">
           {/* MODEL */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-visible">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Model</span>
-            <div className="relative">
+            <div className="relative overflow-visible">
               <button
+                ref={modelTriggerRef}
                 type="button"
                 onClick={() => openOnly("model")}
                 className={cn(
@@ -1337,35 +1380,35 @@ export function VideoBottomBar({
                   )}
                 />
               </button>
-              <AnimatePresence>
-                {open === "model" ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    style={{ transformOrigin: "bottom left" }}
-                    className={cn(
-                      dropupPanelClass,
-                      "left-0 min-w-[220px] py-1",
-                      actionTab === "Reference to Video" && "max-h-64 overflow-y-auto"
-                    )}
-                  >
-                    {pickerModels.map((m) => (
-                      <ModelRow
-                        key={m.id}
-                        model={m}
-                        active={m.id === composerModelId}
-                        onPick={() => {
-                          if (m.locked) return;
-                          onComposerModelChange(m.id);
-                          setOpen(null);
-                        }}
-                      />
-                    ))}
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
+              {modelMenuMounted && open === "model" && modelMenuStyle
+                ? createPortal(
+                    <AnimatePresence>
+                      <motion.div
+                        ref={modelMenuRef}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        style={{ ...modelMenuStyle, transformOrigin: "bottom left" }}
+                        className={modelMenuPanelClass}
+                      >
+                        {pickerModels.map((m) => (
+                          <ModelRow
+                            key={m.id}
+                            model={m}
+                            active={m.id === composerModelId}
+                            onPick={() => {
+                              if (m.locked) return;
+                              onComposerModelChange(m.id);
+                              setOpen(null);
+                            }}
+                          />
+                        ))}
+                      </motion.div>
+                    </AnimatePresence>,
+                    document.body
+                  )
+                : null}
             </div>
           </div>
 
@@ -1831,9 +1874,9 @@ function ModelRow({
       disabled={disabled}
       onClick={onPick}
       className={cn(
-        "flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors",
-        disabled && "cursor-not-allowed opacity-40",
-        !disabled && active && "bg-zorixa-tab text-white",
+        "flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors",
+        disabled && "cursor-not-allowed opacity-50",
+        !disabled && active && "bg-zorixa-selected text-white",
         !disabled && !active && "text-white/95 hover:bg-[rgba(131,56,235,0.1)]",
         disabled && "hover:bg-transparent"
       )}
@@ -1845,6 +1888,7 @@ function ModelRow({
         {model.badge === "newTeal" ? <Badge variant="newTeal">NEW</Badge> : null}
         {model.badge === "pro" ? <Badge variant="pro">PRO</Badge> : null}
       </span>
+      {active && !disabled ? <Check className="size-4 shrink-0 text-white" /> : null}
     </button>
   );
 }

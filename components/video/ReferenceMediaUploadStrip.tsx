@@ -14,7 +14,7 @@ type ReferenceMediaUploadStripProps = {
   maxSlots: number;
   mediaKind: ReferenceMediaKind;
   accept: string;
-  onMediaChange?: (index: number, url: string | null) => void;
+  onMediaChange?: (index: number, url: string | null, file?: File | null) => void;
   tokenKind?: ReferenceMediaKind;
   compact?: boolean;
   className?: string;
@@ -53,7 +53,7 @@ export function ReferenceMediaUploadStrip({
         if (!fileMatchesKind(file, mediaKind)) continue;
         while (slot < maxSlots && mediaUrls[slot]) slot++;
         if (slot >= maxSlots) break;
-        onMediaChange(slot, URL.createObjectURL(file));
+        onMediaChange(slot, URL.createObjectURL(file), file);
         slot++;
       }
     },

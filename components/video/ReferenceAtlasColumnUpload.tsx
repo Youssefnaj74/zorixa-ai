@@ -16,7 +16,7 @@ type ReferenceAtlasColumnUploadProps = {
   urls: (string | null)[];
   maxSlots: number;
   accept: string;
-  onChange?: (index: number, url: string | null) => void;
+  onChange?: (index: number, url: string | null, file?: File | null) => void;
 };
 
 const KIND_ICON = {
@@ -59,7 +59,7 @@ export function ReferenceAtlasColumnUpload({
         if (!fileMatchesKind(file, kind)) continue;
         while (slot < maxSlots && urls[slot]) slot++;
         if (slot >= maxSlots) break;
-        onChange(slot, URL.createObjectURL(file));
+        onChange(slot, URL.createObjectURL(file), file);
         slot++;
       }
     },

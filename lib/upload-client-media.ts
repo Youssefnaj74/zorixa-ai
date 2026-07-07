@@ -92,11 +92,44 @@ export async function uploadBlobUrlToPublicStorage(blobUrl: string): Promise<str
   return uploadFileToPublicStorage(file);
 }
 
+/** In-memory map: blob preview URL → original File (survives blob revoke races). */
+const clientBlobFiles = new Map<string, File>();
+
+export function registerClientMediaBlob(blobUrl: string, file: File): void {
+  clientBlobFiles.set(blobUrl, file);
+}
+
+export function clearClientMediaBlob(blobUrl: string): void {
+  clientBlobFiles.delete(blobUrl);
+}
+
+/** Upload preview blob in background; keeps File registered until https URL is applied. */
+export function scheduleClientMediaPublicUpload(
+  blobUrl: string,
+  file: File,
+  apply: (https: string) => void,
+  onError?: (message: string) => void
+): void {
+  registerClientMediaBlob(blobUrl, file);
+  void uploadFileToPublicStorage(file)
+    .then((https) => {
+      clearClientMediaBlob(blobUrl);
+      if (blobUrl.startsWith("blob:")) URL.revokeObjectURL(blobUrl);
+      apply(https);
+    })
+    .catch((e) => {
+      onError?.(humanizeClientFetchError(e));
+    });
+}
+
 /**
  * Ensures a public https URL Atlas can fetch.
- * Uploads blob/data URLs and localhost paths via `/api/upload`.
+ * Uses the original File when available (avoids expired blob: URLs).
  */
-export async function ensurePublicHttpsMediaUrl(url: string | null): Promise<string | null> {
+export async function resolvePublicHttpsMediaUrl(
+  url: string | null,
+  file?: File | null
+): Promise<string | null> {
   if (!url) return null;
   let t = url.trim();
   if (!t) return null;
@@ -109,6 +142,18 @@ export async function ensurePublicHttpsMediaUrl(url: string | null): Promise<str
   const coerced = coerceToPublicHttpsUrl(t);
   if (coerced && atlasCanFetchUrlDirectly(coerced)) return coerced;
 
+  const pendingFile = file ?? clientBlobFiles.get(t) ?? null;
+  if (pendingFile) {
+    try {
+      const https = await uploadFileToPublicStorage(pendingFile);
+      clearClientMediaBlob(t);
+      if (t.startsWith("blob:")) URL.revokeObjectURL(t);
+      return https;
+    } catch (e) {
+      throw new Error(humanizeClientFetchError(e));
+    }
+  }
+
   const needsUpload =
     t.startsWith("blob:") ||
     t.startsWith("data:") ||
@@ -117,4 +162,12 @@ export async function ensurePublicHttpsMediaUrl(url: string | null): Promise<str
 
   const fetchSrc = t.startsWith("blob:") || t.startsWith("data:") ? t : coerced ?? t;
   return uploadBlobUrlToPublicStorage(fetchSrc);
+}
+
+/**
+ * Ensures a public https URL Atlas can fetch.
+ * Uploads blob/data URLs and localhost paths via `/api/upload`.
+ */
+export async function ensurePublicHttpsMediaUrl(url: string | null): Promise<string | null> {
+  return resolvePublicHttpsMediaUrl(url);
 }
