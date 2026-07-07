@@ -1772,7 +1772,7 @@ export function VideoGenerationPage() {
               setGenerateError("Select InfiniteTalk or VEED Fabric for Audio to Video.");
               return;
             }
-            sourceInputForLog = audio_url;
+            sourceInputForLog = image_url;
             payload = {
               prompt: promptForAtlas,
               action: "lipsync",
@@ -2008,6 +2008,7 @@ export function VideoGenerationPage() {
         const thumbForHistory =
           (generationTab === "Image to Video" ||
             generationTab === "Reference to Video" ||
+            generationTab === "Audio to Video" ||
             ctx.actionTab === "AI Director" ||
             (generationTab === "Video to Video" &&
               videoToVideoTabUsesDualAssetPipeline(videoModel))) &&

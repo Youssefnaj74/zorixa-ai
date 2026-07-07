@@ -79,6 +79,7 @@ import {
   trackFirstGenerationStarted
 } from "@/lib/generation-analytics";
 import { GENERATION_AUTH_MESSAGE } from "@/lib/generation-api-errors";
+import { persistImageOutputsToDashboard } from "@/lib/client-image-dashboard-log";
 import { usePageViewEvent } from "@/lib/hooks/use-page-view-event";
 import { AnalyticsEvents } from "@/lib/analytics-events";
 
@@ -120,14 +121,19 @@ async function pollAtlasImagePrediction(
   predictionId: string,
   modelId: string,
   interval: number,
-  deadline: number
+  deadline: number,
+  prompt?: string | null
 ): Promise<string[]> {
+  const promptQuery =
+    typeof prompt === "string" && prompt.trim().length > 0
+      ? `&prompt=${encodeURIComponent(prompt.trim())}`
+      : "";
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, interval));
     let pr: Response;
     try {
       pr = await fetch(
-        `/api/generate-image?predictionId=${encodeURIComponent(predictionId)}&imageModel=${encodeURIComponent(modelId)}`,
+        `/api/generate-image?predictionId=${encodeURIComponent(predictionId)}&imageModel=${encodeURIComponent(modelId)}${promptQuery}`,
         { cache: "no-store", credentials: "include" }
       );
     } catch (e) {
@@ -175,6 +181,61 @@ function pickImageUrlsFromPollBody(data: Record<string, unknown>): string[] {
   }
   const one = extractAtlasVideoOutputUrl(data as unknown as AtlasLikeVideoPayload);
   return one ? [one] : [];
+}
+
+function createImageHistoryEntries(
+  outputUrls: string[],
+  baseTitle: string
+): ImageHistoryEntry[] {
+  return outputUrls.map((url, i) => ({
+    id: crypto.randomUUID(),
+    thumb: url,
+    title:
+      outputUrls.length > 1 ? `${baseTitle} (${i + 1}/${outputUrls.length})` : baseTitle,
+    subtitle: outputUrls.length > 1 ? "Batch output" : undefined,
+    outputImageUrl: url
+  }));
+}
+
+function mergeImageHistory(
+  prev: ImageHistoryEntry[],
+  outputUrls: string[],
+  baseTitle: string
+): ImageHistoryEntry[] {
+  const newEntries = createImageHistoryEntries(outputUrls, baseTitle);
+  const urlSet = new Set(outputUrls);
+  return [
+    ...newEntries,
+    ...prev.filter((h) => !h.outputImageUrl || !urlSet.has(h.outputImageUrl))
+  ];
+}
+
+async function pollAtlasImagePredictionsParallel(
+  predictionIds: string[],
+  modelId: string,
+  interval: number,
+  deadline: number,
+  prompt?: string | null
+): Promise<{ urls: string[]; errors: string[] }> {
+  const results = await Promise.allSettled(
+    predictionIds.map((predictionId) =>
+      pollAtlasImagePrediction(predictionId, modelId, interval, deadline, prompt)
+    )
+  );
+  const urls: string[] = [];
+  const errors: string[] = [];
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      urls.push(...result.value);
+    } else {
+      errors.push(
+        result.reason instanceof Error
+          ? result.reason.message
+          : "One image in the batch failed."
+      );
+    }
+  }
+  return { urls, errors };
 }
 
 async function ensureAtlasPublicHttpsMediaUrl(url: string | null): Promise<string | null> {
@@ -553,34 +614,27 @@ export function ImageGenerationPage() {
 
         const predictionIds = pickPredictionIdsFromPost(data);
         const collected = new Set(pickImageUrlsFromPollBody(data as Record<string, unknown>));
+        const expectedCount = Math.max(predictionIds.length, ctx.batchCount);
 
         const needsPoll =
           predictionIds.length > 0 &&
-          (data.pending !== false || collected.size < predictionIds.length);
+          (data.pending !== false || collected.size < expectedCount);
 
         if (needsPoll) {
           const interval = data.poll_interval_ms ?? ATLAS_CLIENT_POLL_MS;
           const deadline = Date.now() + ATLAS_CLIENT_MAX_WAIT_MS;
           const pollErrors: string[] = [];
 
-          if (data.batch && predictionIds.length > 1) {
-            await Promise.all(
-              predictionIds.map(async (predictionId) => {
-                try {
-                  const urls = await pollAtlasImagePrediction(
-                    predictionId,
-                    modelId,
-                    interval,
-                    deadline
-                  );
-                  for (const u of urls) collected.add(u);
-                } catch (e: unknown) {
-                  pollErrors.push(
-                    e instanceof Error ? e.message : "One image in the batch failed."
-                  );
-                }
-              })
+          if (predictionIds.length > 1) {
+            const batchPoll = await pollAtlasImagePredictionsParallel(
+              predictionIds,
+              modelId,
+              interval,
+              deadline,
+              promptForAtlas
             );
+            for (const u of batchPoll.urls) collected.add(u);
+            pollErrors.push(...batchPoll.errors);
           } else {
             const predictionId = predictionIds[0];
             if (!predictionId) {
@@ -592,7 +646,8 @@ export function ImageGenerationPage() {
                 predictionId,
                 modelId,
                 interval,
-                deadline
+                deadline,
+                promptForAtlas
               );
               for (const u of urls) collected.add(u);
             } catch (e: unknown) {
@@ -623,16 +678,13 @@ export function ImageGenerationPage() {
         trackFirstGenerationCompleted("image");
         appliedShowcaseForModel.current = modelId;
         const baseTitle = promptForAtlas.slice(0, 42) || modelId;
-        setHistory((prev) => {
-          const newEntries: ImageHistoryEntry[] = outputUrls.map((url, i) => ({
-            id: `img-${Date.now()}-${i}`,
-            thumb: url,
-            title: outputUrls.length > 1 ? `${baseTitle} (${i + 1}/${outputUrls.length})` : baseTitle,
-            subtitle: outputUrls.length > 1 ? "Batch output" : undefined,
-            outputImageUrl: url
-          }));
-          const urlSet = new Set(outputUrls);
-          return [...newEntries, ...prev.filter((h) => !h.outputImageUrl || !urlSet.has(h.outputImageUrl))];
+        setHistory((prev) => mergeImageHistory(prev, outputUrls, baseTitle));
+        void persistImageOutputsToDashboard({
+          outputUrls,
+          predictionIds,
+          modelId,
+          prompt: promptForAtlas,
+          inputUrl: image_urls[0] ?? null
         });
       } catch (e: unknown) {
         if (e instanceof Error && e.message === "AUTH_REQUIRED") {
@@ -825,7 +877,8 @@ export function ImageGenerationPage() {
           data.prediction_id,
           ATLAS_IMAGE_UPSCALER_COMPOSER_ID,
           ATLAS_CLIENT_POLL_MS,
-          Date.now() + ATLAS_CLIENT_MAX_WAIT_MS
+          Date.now() + ATLAS_CLIENT_MAX_WAIT_MS,
+          "Image Upscale"
         );
         resultUrl = polled[0] ?? null;
       }
@@ -847,6 +900,13 @@ export function ImageGenerationPage() {
         },
         ...prev
       ]);
+      void persistImageOutputsToDashboard({
+        outputUrls: [resultUrl],
+        predictionIds: data.prediction_id ? [data.prediction_id] : [],
+        modelId: ATLAS_IMAGE_UPSCALER_COMPOSER_ID,
+        prompt: "Image Upscale",
+        inputUrl
+      });
       void refreshCredits();
     } catch (e) {
       if (e instanceof Error && e.message === "AUTH_REQUIRED") {

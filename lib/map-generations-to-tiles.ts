@@ -1,6 +1,9 @@
 import { composerModelDisplayLabel } from "@/lib/composer-model-label";
 import type { GenerationTile } from "@/lib/generation-tile";
 import { sanitizeHistoryTitle } from "@/lib/generation-tile";
+import {
+  isUsableVideoHistoryPoster
+} from "@/lib/history-media-url";
 import { isTtsGenerationRow } from "@/lib/tts-generation-shared";
 
 export type GenerationHistoryRow = {
@@ -15,11 +18,6 @@ export type GenerationHistoryRow = {
   prompt?: string | null;
   credits_spent?: number | null;
 };
-
-function isLikelyVideoFile(url: string): boolean {
-  const path = url.split("?")[0]?.toLowerCase() ?? "";
-  return [".mp4", ".webm", ".mov", ".m4v"].some((ext) => path.endsWith(ext));
-}
 
 function dedupeGenerationsByOutput(items: GenerationHistoryRow[]): GenerationHistoryRow[] {
   const seen = new Set<string>();
@@ -79,8 +77,8 @@ export function mapGenerationsToTiles(items: GenerationHistoryRow[]): Generation
       const inn = g.input_url;
       const videoSrc = out?.trim() ? out : undefined;
       let src: string | undefined;
-      if (out && !isLikelyVideoFile(out)) src = out;
-      else if (inn && !isLikelyVideoFile(inn) && !inn.includes("placehold.co")) src = inn;
+      if (out && isUsableVideoHistoryPoster(out)) src = out;
+      else if (isUsableVideoHistoryPoster(inn)) src = inn;
 
       return tileFromRow(g, title, {
         kind: "video",

@@ -155,15 +155,22 @@ export async function GET(request: Request) {
     (typeof pollJson.message === "string" ? pollJson.message : null);
   const statusNorm = String(status).toLowerCase();
 
-  if (imageUrls.length > 0) {
+  const urlsToLog =
+    imageUrls.length > 0
+      ? imageUrls
+      : typeof imageUrl === "string" && imageUrl.trim().length > 0
+        ? [imageUrl.trim()]
+        : [];
+
+  if (urlsToLog.length > 0) {
     const actor = await resolveZorixaActor(request);
     if (actor) {
       const creditsSpent = await lookupCreditsSpentForAtlasPrediction(actor.userId, predictionId);
       const creditsPerImage =
-        creditsSpent > 0 && imageUrls.length > 1
-          ? Math.max(1, Math.round(creditsSpent / imageUrls.length))
+        creditsSpent > 0 && urlsToLog.length > 1
+          ? Math.max(1, Math.round(creditsSpent / urlsToLog.length))
           : creditsSpent;
-      for (const outputUrl of imageUrls) {
+      for (const outputUrl of urlsToLog) {
         void logAtlasImageGenerationIfNew({
           userId: actor.userId,
           outputUrl,
@@ -324,8 +331,18 @@ async function handleImageUpscalePost(body: ClientBody, request: Request) {
     const urls = extractAtlasImageOutputUrls(createJson.data);
     const imageOut = urls[0] ?? extractAtlasVideoOutputUrl(createJson.data);
     if (imageOut) {
+      void logAtlasImageGenerationIfNew({
+        userId: actor.userId,
+        outputUrl: imageOut,
+        inputUrl: imageUrl,
+        predictionId,
+        composerModelId: ATLAS_IMAGE_UPSCALER_COMPOSER_ID,
+        requireTerminalStatus: initialStatus,
+        creditsSpent
+      });
       return NextResponse.json({
         image_url: imageOut,
+        image_urls: urls.length > 0 ? urls : [imageOut],
         prediction_id: predictionId,
         credits_spent: creditsSpent,
         credits_balance: balanceAfter
@@ -688,23 +705,31 @@ async function handleGenerateImagePost(request: Request, body: ClientBody) {
 
   const initialStatus = createJson.data?.status;
   if (initialStatus === "completed" || initialStatus === "succeeded") {
-    const imageUrl = extractAtlasVideoOutputUrl(createJson.data);
+    const imageUrls = extractAtlasImageOutputUrls(createJson.data);
+    const imageUrl = imageUrls[0] ?? extractAtlasVideoOutputUrl(createJson.data);
     if (imageUrl) {
       const actor = await resolveZorixaActor(request);
       if (actor) {
-        void logAtlasImageGenerationIfNew({
-          userId: actor.userId,
-          outputUrl: imageUrl,
-          inputUrl: imageUrls[0] ?? null,
-          predictionId: predictionId ?? null,
-          composerModelId: imageModel,
-          prompt,
-          requireTerminalStatus: initialStatus,
-          creditsSpent
-        });
+        const creditsPerImage =
+          imageUrls.length > 1
+            ? Math.max(1, Math.round(creditsSpent / imageUrls.length))
+            : creditsSpent;
+        for (const outputUrl of imageUrls.length > 0 ? imageUrls : [imageUrl]) {
+          void logAtlasImageGenerationIfNew({
+            userId: actor.userId,
+            outputUrl,
+            inputUrl: imageUrls[0] ?? null,
+            predictionId: predictionId ?? null,
+            composerModelId: imageModel,
+            prompt,
+            requireTerminalStatus: initialStatus,
+            creditsSpent: creditsPerImage
+          });
+        }
       }
       return NextResponse.json({
         image_url: imageUrl,
+        image_urls: imageUrls.length > 0 ? imageUrls : [imageUrl],
         prediction_id: predictionId,
         credits_spent: creditsSpent,
         credits_balance: balanceAfter

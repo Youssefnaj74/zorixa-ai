@@ -18,6 +18,7 @@ import {
 } from "@/lib/history-credits-label";
 import type { GenerationTile } from "@/lib/generation-tile";
 import { dashboardFeatureAlt, generationThumbnailAlt } from "@/lib/image-alt-text";
+import { isUsableVideoHistoryPoster } from "@/lib/history-media-url";
 import { cn } from "@/lib/utils";
 
 export type { GenerationTile } from "@/lib/generation-tile";
@@ -441,8 +442,57 @@ function HistoryImageDownloadButton({
   );
 }
 
+function HistoryVideoPoster({
+  videoSrc,
+  title
+}: {
+  videoSrc: string;
+  title: string;
+}) {
+  const playbackUrl = useProxiedVideoPlaybackUrl(videoSrc);
+  const [failed, setFailed] = useState(false);
+
+  if (!playbackUrl || failed) {
+    return (
+      <div className="flex size-full flex-col items-center justify-center gap-2 bg-zinc-900 text-zorixa-muted">
+        <Clapperboard className="size-12 opacity-60" aria-hidden />
+        <span className="grid size-10 place-items-center rounded-full bg-[rgba(131,56,235,0.85)] text-white">
+          <Play className="ml-0.5 size-5 fill-white" aria-hidden />
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <video
+        src={playbackUrl}
+        muted
+        playsInline
+        preload="metadata"
+        {...domVideoAttrs}
+        aria-label={title ? dashboardFeatureAlt(title) : generationThumbnailAlt("video")}
+        className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        onLoadedData={(e) => {
+          const video = e.currentTarget;
+          if (video.duration > 0.15 && video.currentTime < 0.05) {
+            video.currentTime = 0.1;
+          }
+        }}
+        onError={() => setFailed(true)}
+      />
+      <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/25">
+        <span className="grid size-12 place-items-center rounded-full bg-black/50 text-white ring-2 ring-white/30">
+          <Play className="ml-0.5 size-6 fill-white" aria-hidden />
+        </span>
+      </div>
+    </>
+  );
+}
+
 function GridMedia({ item }: { item: GenerationTile }) {
   const isAudio = item.kind === "audio" || Boolean(item.audioSrc);
+  const [posterFailed, setPosterFailed] = useState(false);
 
   if (isAudio) {
     return (
@@ -461,13 +511,17 @@ function GridMedia({ item }: { item: GenerationTile }) {
   const isVideo = Boolean(item.videoSrc);
 
   if (isVideo) {
-    if (item.src) {
+    const posterSrc =
+      item.src && isUsableVideoHistoryPoster(item.src) && !posterFailed ? item.src : undefined;
+
+    if (posterSrc) {
       return (
         <>
           <ExternalImage
-            src={item.src}
+            src={posterSrc}
             alt={item.title ? dashboardFeatureAlt(item.title) : generationThumbnailAlt("video")}
             className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            onError={() => setPosterFailed(true)}
           />
           <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/25">
             <span className="grid size-12 place-items-center rounded-full bg-black/50 text-white ring-2 ring-white/30">
@@ -477,6 +531,11 @@ function GridMedia({ item }: { item: GenerationTile }) {
         </>
       );
     }
+
+    if (item.videoSrc) {
+      return <HistoryVideoPoster videoSrc={item.videoSrc} title={item.title} />;
+    }
+
     return (
       <div className="flex size-full flex-col items-center justify-center gap-2 bg-zinc-900 text-zorixa-muted">
         <Clapperboard className="size-12 opacity-60" aria-hidden />
