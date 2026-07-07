@@ -142,6 +142,15 @@ export function ImagePreview({
       upscalerDemoAfterUrl
   );
 
+  /** Nearly full preview card height (header only); caption floats so it does not steal space. */
+  const upscalerStudioMaxHeight = `calc(100vh - ${NAV_H}px - ${bottomBarHeight}px - 2.25rem)`;
+  const upscalerImageStyle = {
+    maxHeight: upscalerStudioMaxHeight,
+    maxWidth: "min(calc(100vw - 2rem), 520px)"
+  } as const;
+  const upscalerImageClass =
+    "w-auto rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)] transition-transform group-hover:scale-[1.01]";
+
   const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${bottomBarHeight}px)`;
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [lightboxTitle, setLightboxTitle] = useState("Image preview");
@@ -159,7 +168,11 @@ export function ImagePreview({
     <div className={cn("flex h-full min-h-0 min-w-0 flex-1 flex-col gap-3 font-body", className)}>
       <div
         className="zorixa-card-border flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-zorixa-card shadow-glow"
-        style={{ maxHeight: cardMaxHeight }}
+        style={
+          isUpscalerTab
+            ? { height: cardMaxHeight, maxHeight: cardMaxHeight }
+            : { maxHeight: cardMaxHeight }
+        }
       >
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2.5 sm:px-4">
           <h2 className="font-display text-sm font-semibold text-white">
@@ -243,7 +256,9 @@ export function ImagePreview({
                 "flex min-h-0 flex-1 flex-col",
                 isBatch
                   ? "overflow-y-auto p-3"
-                  : "items-center justify-center p-4"
+                  : isUpscalerTab
+                    ? "items-center justify-center p-1"
+                    : "items-center justify-center p-4"
               )}
             >
               {loading ? (
@@ -266,14 +281,14 @@ export function ImagePreview({
                   ) : null}
                 </div>
               ) : isUpscalerDemo && upscalerDemoBeforeUrl && upscalerDemoAfterUrl ? (
-                <div className="mx-auto flex w-full max-w-3xl flex-col items-center px-2">
+                <div className="relative flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden px-0.5">
                   <BeforeAfterSlider
+                    fit="studio"
+                    studioMaxHeight={upscalerStudioMaxHeight}
+                    studioMaxWidth={upscalerImageStyle.maxWidth}
                     beforeUrl={upscalerDemoBeforeUrl}
                     afterUrl={upscalerDemoAfterUrl}
                   />
-                  <p className="mt-3 text-center text-xs text-zorixa-muted">
-                    Example — drag the slider to see 4× upscale on a UGC face
-                  </p>
                 </div>
               ) : isBatch ? (
                 <div
@@ -308,7 +323,12 @@ export function ImagePreview({
                     alt={isUpscalerTab ? "Upscaled image result" : "Generated output"}
                     width={1024}
                     height={1024}
-                    className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)] transition-transform group-hover:scale-[1.01]"
+                    style={isUpscalerTab ? upscalerImageStyle : undefined}
+                    className={
+                      isUpscalerTab
+                        ? upscalerImageClass
+                        : "max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)] transition-transform group-hover:scale-[1.01]"
+                    }
                   />
                 </button>
               ) : isUpscalerTab && upscalerBeforeUrl ? (
@@ -323,7 +343,8 @@ export function ImagePreview({
                     alt="Source image before upscale"
                     width={1024}
                     height={1024}
-                    className="max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)] transition-transform group-hover:scale-[1.01]"
+                    style={upscalerImageStyle}
+                    className={upscalerImageClass}
                   />
                 </button>
               ) : refUrls.length > 0 ? (
@@ -351,7 +372,12 @@ export function ImagePreview({
                           alt={refLabels[i] ?? `Reference ${i + 1}`}
                           width={512}
                           height={512}
-                          className="max-h-[min(38vh,320px)] w-full object-contain transition-transform group-hover:scale-[1.02]"
+                          style={isUpscalerTab ? upscalerImageStyle : undefined}
+                          className={
+                            isUpscalerTab
+                              ? "w-auto object-contain transition-transform group-hover:scale-[1.02]"
+                              : "max-h-[min(38vh,320px)] w-full object-contain transition-transform group-hover:scale-[1.02]"
+                          }
                         />
                       </button>
                       <div className="border-t border-white/10 bg-black/50 px-3 py-2 text-center text-[11px] font-medium text-white/55">

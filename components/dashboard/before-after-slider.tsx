@@ -12,13 +12,20 @@ export function BeforeAfterSlider({
   afterUrl,
   beforeAlt,
   afterAlt,
-  className
+  className,
+  /** Fits inside Image Studio preview card (does not use viewport-tall portrait sizing). */
+  fit = "default",
+  studioMaxHeight,
+  studioMaxWidth
 }: {
   beforeUrl: string;
   afterUrl: string;
   beforeAlt?: string;
   afterAlt?: string;
   className?: string;
+  fit?: "default" | "studio";
+  studioMaxHeight?: string;
+  studioMaxWidth?: string;
 }) {
   const [value, setValue] = useState(50);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -52,11 +59,21 @@ export function BeforeAfterSlider({
     [updateFromClientX]
   );
 
+  const isStudio = fit === "studio";
+  const afterImageStyle =
+    isStudio && (studioMaxHeight || studioMaxWidth)
+      ? {
+          ...(studioMaxHeight ? { maxHeight: studioMaxHeight } : {}),
+          ...(studioMaxWidth ? { maxWidth: studioMaxWidth } : {})
+        }
+      : undefined;
+
   return (
     <div
       ref={trackRef}
       className={cn(
-        "relative mx-auto w-fit max-w-full select-none overflow-hidden rounded-2xl border border-white/10",
+        "relative mx-auto select-none overflow-hidden rounded-2xl border border-white/10",
+        isStudio ? "max-h-full w-auto max-w-full" : "w-fit max-w-full",
         className
       )}
       onPointerDown={onPointerDown}
@@ -64,12 +81,20 @@ export function BeforeAfterSlider({
       <ExternalImage
         src={afterUrl}
         alt={afterAlt ?? imageUpscalerCompareAlt("after")}
-        className="block h-auto max-h-[min(56vh,600px)] w-auto max-w-[min(calc(100vw-4rem),480px)]"
+        style={afterImageStyle}
+        className={
+          isStudio
+            ? "block h-auto w-auto object-contain"
+            : "block h-auto max-h-[min(56vh,600px)] w-auto max-w-[min(calc(100vw-4rem),480px)]"
+        }
       />
       <ExternalImage
         src={beforeUrl}
         alt={beforeAlt ?? imageUpscalerCompareAlt("before")}
-        className="absolute inset-0 h-full w-full object-contain object-top"
+        className={cn(
+          "absolute inset-0 h-full w-full",
+          isStudio ? "object-contain object-center" : "object-contain object-top"
+        )}
         style={{ clipPath: beforeClip }}
       />
 
