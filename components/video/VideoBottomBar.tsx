@@ -94,6 +94,12 @@ import { ReferenceImageUploadStrip } from "@/components/video/ReferenceImageUplo
 import { SeedanceReferenceUploadPanel } from "@/components/video/SeedanceReferenceUploadPanel";
 import { WanReferenceUploadPanel } from "@/components/video/WanReferenceUploadPanel";
 import { SeedanceI2vReferenceTip } from "@/components/video/SeedanceI2vReferenceTip";
+import {
+  VIDEO_I2V_FRAME_GRID,
+  VIDEO_UPLOAD_PAIR_GRID,
+  videoImageUploadSlotClass
+} from "@/components/video/video-upload-slot-classes";
+import { useIsLgUp } from "@/lib/hooks/use-studio-nav-offset";
 
 export type VideoGenerateContext = {
   promptText: string;
@@ -194,7 +200,10 @@ const modelMenuPanelClass =
   "fixed z-[250] overflow-y-auto studio-scrollbar rounded-xl border border-[rgba(131,56,235,0.2)] bg-zorixa-dropdown py-1 shadow-glow-lg ring-1 ring-white/5";
 
 const triggerClass =
-  "inline-flex h-9 min-h-[36px] shrink-0 items-center gap-1.5 rounded-lg border border-[rgba(131,56,235,0.2)] bg-[#1a1a24] px-3 text-xs font-medium text-white outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand";
+  "inline-flex h-9 min-h-[36px] shrink-0 items-center gap-1.5 rounded-lg border border-[rgba(131,56,235,0.2)] bg-[#1a1a24] px-3 text-xs font-medium text-white outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand max-lg:h-8 max-lg:min-h-[32px] max-lg:gap-1 max-lg:px-2 max-lg:text-[11px]";
+
+const videoControlLabelClass =
+  "text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted max-lg:sr-only";
 
 function GenerateAudioToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -265,6 +274,7 @@ export function VideoBottomBar({
   onGenerate,
   onHeightChange
 }: VideoBottomBarProps) {
+  const isLgUp = useIsLgUp();
   const [open, setOpen] = useState<OpenPanel>(null);
   const bottomBarRef = useRef<HTMLElement>(null);
   const modelTriggerRef = useRef<HTMLButtonElement>(null);
@@ -477,7 +487,7 @@ export function VideoBottomBar({
     showReferenceLayout && composerModelId === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID;
   const showReferenceMediaPanel =
     showSeedanceReferenceMedia || showWanReferenceMedia || showGeminiReferenceMedia;
-  const useStableDockHeight = showReferenceMediaPanel;
+  const useStableDockHeight = showReferenceMediaPanel && isLgUp;
   const stableDockHeight = showWanReferenceMedia
     ? VIDEO_WAN_R2V_DOCK_HEIGHT
     : VIDEO_SEEDANCE_R2V_DOCK_HEIGHT;
@@ -727,10 +737,15 @@ export function VideoBottomBar({
       style={useStableDockHeight ? { minHeight: stableDockHeight } : undefined}
       className={cn(
         "fixed inset-x-0 bottom-0 z-50 flex flex-col border-t border-[rgba(131,56,235,0.15)] bg-[#0d0d14]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-[12px]",
-        "px-4 py-2 font-body"
+        "px-4 py-2 font-body max-lg:px-3",
+        showReferenceMediaPanel
+          ? "max-lg:max-h-[min(64dvh,540px)]"
+          : showSeedanceI2vTip
+            ? "max-lg:max-h-[min(60dvh,500px)]"
+            : "max-lg:max-h-[min(58dvh,480px)]"
       )}
     >
-      <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-2">
+      <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-2 max-lg:min-h-0 max-lg:flex-1">
         <div className="shrink-0">
           <ActionTabsRow
             active={actionTab}
@@ -739,20 +754,22 @@ export function VideoBottomBar({
           />
         </div>
 
+        <div className="max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:gap-2 lg:contents">
+          <div className="max-lg:min-h-0 max-lg:flex-1 max-lg:overflow-y-auto max-lg:overscroll-y-contain lg:contents">
         {/* ROW 1 — uploads + prompt */}
         <div
           className={cn(
             "flex min-h-0 gap-2",
             useStableDockHeight && "items-stretch overflow-hidden",
             showReferenceMediaPanel
-              ? "flex-row items-stretch"
+              ? "max-lg:flex-col max-lg:items-stretch flex-row items-stretch"
               : "flex-col sm:flex-row sm:items-start"
           )}
         >
           {showReferenceLayout ? (
             showSeedanceReferenceMedia ? (
               <SeedanceReferenceUploadPanel
-                className="max-w-[min(100%,58%)] shrink-0"
+                className="max-w-[min(100%,58%)] shrink-0 max-lg:w-full max-lg:max-w-full"
                 composerModelId={composerModelId}
                 referenceImageUrls={referenceImageUrls}
                 referenceVideoUrls={referenceVideoUrls}
@@ -763,7 +780,7 @@ export function VideoBottomBar({
               />
             ) : showWanReferenceMedia ? (
               <WanReferenceUploadPanel
-                className="max-w-[min(100%,58%)] shrink-0"
+                className="max-w-[min(100%,58%)] shrink-0 max-lg:w-full max-lg:max-w-full"
                 referenceImageUrls={referenceImageUrls}
                 referenceVideoUrls={referenceVideoUrls}
                 referenceVoiceUrls={referenceAudioUrls}
@@ -772,7 +789,7 @@ export function VideoBottomBar({
                 onReferenceVoiceChange={onReferenceAudioChange}
               />
             ) : showGeminiReferenceMedia ? (
-              <div className="grid min-w-0 max-w-[min(100%,58%)] shrink-0 flex-1 grid-cols-2 gap-2 sm:gap-2.5">
+              <div className="grid min-w-0 max-w-[min(100%,58%)] shrink-0 flex-1 grid-cols-2 gap-2 sm:gap-2.5 max-lg:w-full max-lg:max-w-full max-lg:grid-cols-1">
                 <ReferenceAtlasColumnUpload
                   kind="image"
                   title="Reference images"
@@ -800,7 +817,7 @@ export function VideoBottomBar({
               />
             )
           ) : !showTextOnlyPromptLayout ? (
-            <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start">
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start max-lg:w-full max-lg:gap-2 max-lg:flex-row max-lg:flex-wrap">
               {showGeminiImageLayout ? (
                 <ReferenceImageUploadStrip
                   referenceImageUrls={referenceImageUrls}
@@ -830,7 +847,7 @@ export function VideoBottomBar({
                     aria-hidden
                     onChange={onAudioInput}
                   />
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className={VIDEO_UPLOAD_PAIR_GRID}>
                     <div
                       className="relative"
                       onDragEnter={stopDragDefaults}
@@ -840,11 +857,7 @@ export function VideoBottomBar({
                       <button
                         type="button"
                         onClick={() => fileRef.current?.click()}
-                        className={cn(
-                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                          "hover:border-white/30 hover:bg-black/55"
-                        )}
+                        className={videoImageUploadSlotClass()}
                         aria-label={promptImageUrl ? "Change portrait" : "Upload portrait"}
                       >
                         {promptImageUrl ? (
@@ -921,7 +934,7 @@ export function VideoBottomBar({
                     aria-hidden
                     onChange={onMotionVideoInput}
                   />
-                  <motion.div className="grid grid-cols-2 gap-3">
+                  <motion.div className={VIDEO_UPLOAD_PAIR_GRID}>
                     <div
                       className="relative"
                       onDragEnter={stopDragDefaults}
@@ -935,11 +948,7 @@ export function VideoBottomBar({
                       <button
                         type="button"
                         onClick={() => fileRef.current?.click()}
-                        className={cn(
-                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                          "hover:border-white/30 hover:bg-black/55"
-                        )}
+                        className={videoImageUploadSlotClass()}
                         aria-label={
                           promptImageUrl
                             ? showWanCharacterSwapLayout
@@ -985,11 +994,7 @@ export function VideoBottomBar({
                       <button
                         type="button"
                         onClick={() => fileMotionVideoRef.current?.click()}
-                        className={cn(
-                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                          "hover:border-white/30 hover:bg-black/55"
-                        )}
+                        className={videoImageUploadSlotClass()}
                         aria-label={
                           motionVideoUrl
                             ? showWanCharacterSwapLayout
@@ -1041,7 +1046,7 @@ export function VideoBottomBar({
                     aria-hidden
                     onChange={onFile2Input}
                   />
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className={VIDEO_I2V_FRAME_GRID}>
                     <div
                       className="relative"
                       onDragEnter={stopDragDefaults}
@@ -1051,11 +1056,7 @@ export function VideoBottomBar({
                       <button
                         type="button"
                         onClick={() => fileRef.current?.click()}
-                        className={cn(
-                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                          "hover:border-white/30 hover:bg-black/55"
-                        )}
+                        className={videoImageUploadSlotClass()}
                         aria-label={promptImageUrl ? "Change start frame" : "Upload start frame"}
                       >
                         {promptImageUrl ? (
@@ -1091,11 +1092,7 @@ export function VideoBottomBar({
                       <button
                         type="button"
                         onClick={() => fileRef2.current?.click()}
-                        className={cn(
-                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                          "hover:border-white/30 hover:bg-black/55"
-                        )}
+                        className={videoImageUploadSlotClass()}
                         aria-label={promptImage2Url ? "Change end frame" : "Upload end frame"}
                       >
                         {promptImage2Url ? (
@@ -1127,7 +1124,7 @@ export function VideoBottomBar({
               ) : showWanV2vLayout ? (
                 <div
                   className={cn(
-                    "flex shrink-0 gap-3",
+                    "flex w-full shrink-0 gap-3 max-lg:flex-col max-lg:gap-2",
                     showHappyHorseV2vRefs || showWanV2vRefs
                       ? "flex-col sm:flex-row sm:items-start"
                       : "flex-col"
@@ -1151,11 +1148,7 @@ export function VideoBottomBar({
                     <button
                       type="button"
                       onClick={() => fileVideoRef.current?.click()}
-                      className={cn(
-                        "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                        "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                        "hover:border-white/30 hover:bg-black/55"
-                      )}
+                      className={videoImageUploadSlotClass()}
                       aria-label={editSourceVideoUrl ? "Change source video" : "Upload source video"}
                     >
                       <Film className="size-5 opacity-60" />
@@ -1215,7 +1208,9 @@ export function VideoBottomBar({
                   />
 
                   <div
-                    className={cn("grid gap-3", showEndFrameSlot ? "grid-cols-2" : "grid-cols-1")}
+                    className={cn(
+                      showEndFrameSlot ? VIDEO_I2V_FRAME_GRID : "grid grid-cols-1 gap-3 max-lg:gap-2"
+                    )}
                   >
                     <div
                       className="relative"
@@ -1226,11 +1221,7 @@ export function VideoBottomBar({
                       <button
                         type="button"
                         onClick={() => fileRef.current?.click()}
-                        className={cn(
-                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                          "hover:border-white/30 hover:bg-black/55"
-                        )}
+                        className={videoImageUploadSlotClass()}
                         aria-label={promptImageUrl ? "Change Start frame" : "Upload Start frame"}
                       >
                         {promptImageUrl ? (
@@ -1268,11 +1259,7 @@ export function VideoBottomBar({
                       <button
                         type="button"
                         onClick={() => fileRef2.current?.click()}
-                        className={cn(
-                          "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                          "hover:border-white/30 hover:bg-black/55"
-                        )}
+                        className={videoImageUploadSlotClass()}
                         aria-label={promptImage2Url ? "Change End frame" : "Upload End frame (optional)"}
                       >
                         {promptImage2Url ? (
@@ -1307,7 +1294,14 @@ export function VideoBottomBar({
                     ) : null}
                   </div>
                   {showSeedanceI2vTip ? (
-                    <SeedanceI2vReferenceTip className="w-full max-w-[312px]" />
+                    <>
+                      <SeedanceI2vReferenceTip className="w-full max-w-[312px] max-lg:hidden" />
+                      <p className="hidden w-full text-[10px] leading-snug text-zorixa-muted max-lg:block">
+                        Real faces may block on 2.0 — try{" "}
+                        <span className="font-medium text-white/80">Seedance 1.5 Pro</span> or{" "}
+                        <span className="font-medium text-white/80">Reference to Video</span>.
+                      </p>
+                    </>
                   ) : null}
                 </>
               )}
@@ -1325,7 +1319,17 @@ export function VideoBottomBar({
               suppressHydrationWarning
               value={prompt}
               onChange={(e) => onPromptChange(e.target.value)}
-              rows={showReferenceMediaPanel ? 3 : showTextOnlyPromptLayout ? 3 : 2}
+              rows={
+                showReferenceMediaPanel
+                  ? isLgUp
+                    ? 3
+                    : 2
+                  : showTextOnlyPromptLayout
+                    ? isLgUp
+                      ? 3
+                      : 2
+                    : 2
+              }
               placeholder={
                 showAudioToVideoLayout
                   ? "Optional: expression, posture, scene style…"
@@ -1346,19 +1350,24 @@ export function VideoBottomBar({
               className={cn(
                 "w-full rounded-lg bg-[#0a0a0a] px-3 py-2 text-sm leading-snug text-white outline-none transition-shadow placeholder:text-zorixa-muted",
                 "focus-visible:ring-2 focus-visible:ring-brand",
-                showReferenceMediaPanel ? "min-h-[88px] resize-none" : "resize-y"
+                showReferenceMediaPanel
+                  ? "min-h-[88px] resize-none max-lg:min-h-[56px]"
+                  : "resize-y max-lg:max-h-[4.5rem]"
               )}
             />
           </div>
           <div className="hidden min-w-[24px] shrink-0 lg:block" aria-hidden />
         </div>
 
-        {/* ROW 2 — controls (always visible at bottom of dock) */}
-        <div className={cn("relative z-[120] flex shrink-0 items-end gap-2 overflow-visible", useStableDockHeight && "border-t border-white/5 pt-1.5")}>
-          <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2 overflow-visible">
+          </div>
+
+        {/* ROW 2 — controls (pinned on mobile for tall Seedance layouts) */}
+        <div className="max-lg:shrink-0 lg:contents">
+        <div className={cn("relative z-[120] flex shrink-0 items-end gap-2 overflow-visible max-lg:flex-col max-lg:items-stretch max-lg:gap-2.5 max-lg:border-t max-lg:border-white/10 max-lg:bg-[#0d0d14]/95 max-lg:pt-2", useStableDockHeight && "border-t border-white/5 pt-1.5")}>
+          <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2 overflow-visible max-lg:gap-1.5">
           {/* MODEL */}
           <div className="flex items-center gap-2 overflow-visible">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Model</span>
+            <span className={videoControlLabelClass}>Model</span>
             <div className="relative overflow-visible">
               <button
                 ref={modelTriggerRef}
@@ -1369,7 +1378,7 @@ export function VideoBottomBar({
                   open === "model" && "border-[rgba(131,56,235,0.5)] bg-[rgba(131,56,235,0.1)]"
                 )}
               >
-                <span className="inline-flex max-w-[160px] items-center gap-2 truncate">
+                <span className="inline-flex max-w-[160px] items-center gap-2 truncate max-lg:max-w-[min(36vw,124px)]">
                   <ModelBrandLogo composerId={selectedModel.id} />
                   <span className="truncate">{selectedModel.label}</span>
                 </span>
@@ -1439,9 +1448,7 @@ export function VideoBottomBar({
               </div>
               <motion.div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
-                  Ref audio
-                </span>
+                <span className={videoControlLabelClass}>Ref audio</span>
                 <GenerateAudioToggle
                   on={keepOriginalSound}
                   onChange={(v) => onKeepOriginalSoundChange?.(v)}
@@ -1455,7 +1462,7 @@ export function VideoBottomBar({
               <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
               <div className="flex items-center gap-2">
                 <span
-                  className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted"
+                  className={videoControlLabelClass}
                   title="Built-in soundtrack on output (Atlas generate_audio). Wan 2.7 defaults On like Atlas playground."
                 >
                   Soundtrack
@@ -1540,7 +1547,7 @@ export function VideoBottomBar({
 
           {/* MODE */}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Mode</span>
+            <span className={videoControlLabelClass}>Mode</span>
             <div className="relative">
               <button
                 type="button"
@@ -1597,7 +1604,7 @@ export function VideoBottomBar({
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
           <div className="flex items-center gap-2">
             <span
-              className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted"
+              className={videoControlLabelClass}
               title={
                 showWanCharacterSwapLayout
                   ? "Std = wan-std · Pro = wan-pro (Atlas animate-mix)"
@@ -1720,7 +1727,7 @@ export function VideoBottomBar({
           <>
           {/* Aspect */}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Aspect</span>
+            <span className={videoControlLabelClass}>Aspect</span>
             <div className="relative">
               <button
                 type="button"
@@ -1777,7 +1784,7 @@ export function VideoBottomBar({
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
           {/* Resolution */}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">Resolution</span>
+            <span className={videoControlLabelClass}>Resolution</span>
             <div className="relative">
               <button
                 type="button"
@@ -1834,7 +1841,7 @@ export function VideoBottomBar({
 
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2.5 pb-0.5">
+          <div className="ml-auto flex shrink-0 items-center gap-2.5 pb-0.5 max-lg:ml-0 max-lg:w-full max-lg:justify-between max-lg:border-t max-lg:border-white/10 max-lg:pt-2">
             <span className="text-sm font-semibold tabular-nums text-white/90">{creditsLine}</span>
             <motion.button
               type="button"
@@ -1842,7 +1849,7 @@ export function VideoBottomBar({
               whileHover={loadingGenerate ? undefined : { scale: 1.02 }}
               whileTap={loadingGenerate ? undefined : { scale: 0.98 }}
               onClick={emitGenerate}
-              className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
+              className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60 max-lg:min-h-[44px] max-lg:flex-1 max-lg:min-w-0"
             >
               {loadingGenerate ? (
                 <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -1852,6 +1859,8 @@ export function VideoBottomBar({
               GENERATE
             </motion.button>
           </div>
+        </div>
+        </div>
         </div>
       </div>
     </footer>

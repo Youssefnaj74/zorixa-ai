@@ -90,9 +90,9 @@ export function ImageUpscalerBottomBar({
     <footer
       ref={bottomBarRef}
       style={{ minHeight: COMPOSER_DOCK_WITH_TABS_HEIGHT }}
-      className="fixed inset-x-0 bottom-0 z-50 flex flex-col border-t border-[rgba(131,56,235,0.15)] bg-[#0d0d14]/95 px-5 py-3 pb-[env(safe-area-inset-bottom)] font-body backdrop-blur-[12px]"
+      className="fixed inset-x-0 bottom-0 z-50 flex flex-col border-t border-[rgba(131,56,235,0.15)] bg-[#0d0d14]/95 px-5 py-3 pb-[env(safe-area-inset-bottom)] font-body backdrop-blur-[12px] max-lg:max-h-[min(58dvh,480px)] max-lg:overflow-hidden max-lg:px-3 max-lg:py-2.5"
     >
-      <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-3">
+      <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-3 max-lg:min-h-0 max-lg:flex-1 max-lg:overflow-y-auto max-lg:overscroll-y-contain">
         <div className="shrink-0">
           <ImageActionTabsRow
             active={actionTab}
@@ -129,7 +129,7 @@ export function ImageUpscalerBottomBar({
               type="button"
               onClick={() => fileRef.current?.click()}
               className={cn(
-                "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                "relative flex h-[88px] w-[150px] max-lg:h-[72px] max-lg:w-[min(44vw,132px)] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
                 "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
                 "hover:border-white/30 hover:bg-black/55"
               )}
@@ -167,7 +167,7 @@ export function ImageUpscalerBottomBar({
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-white/5 pt-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-white/5 pt-2 max-lg:flex-col max-lg:items-stretch max-lg:gap-2.5">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
               Outscale
@@ -228,14 +228,14 @@ export function ImageUpscalerBottomBar({
             Reset
           </button>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-3 max-lg:ml-0 max-lg:w-full max-lg:justify-between max-lg:border-t max-lg:border-white/10 max-lg:pt-2">
             <span className="text-sm font-semibold tabular-nums text-white/90">{creditsLine}</span>
             <motion.button
               type="button"
               disabled={loading || !inputUrl}
               whileTap={loading ? undefined : { scale: 0.98 }}
               onClick={() => void onUpscale()}
-              className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
+              className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60 max-lg:min-h-[44px] max-lg:flex-1 max-lg:min-w-0"
             >
               {loading ? (
                 <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />

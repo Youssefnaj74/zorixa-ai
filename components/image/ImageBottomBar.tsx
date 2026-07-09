@@ -18,6 +18,7 @@ import { ModelBrandLogo } from "@/components/ui/ModelBrandLogo";
 import { getAtlasImageModelLimits, getImageBatchOptions, imageComposerSupportedOnActionTab } from "@/lib/atlas-image-model-ids";
 import { getImageI2iUploadSlots } from "@/lib/image-i2i-model-slots";
 import { IMAGE_I2I_DOCK_HEIGHT } from "@/lib/composer-dock-height";
+import { useIsLgUp } from "@/lib/hooks/use-studio-nav-offset";
 import { studioReferenceImageAlt } from "@/lib/image-alt-text";
 import { cn } from "@/lib/utils";
 
@@ -146,6 +147,7 @@ export function ImageBottomBar({
   onHeightChange,
   studioLock = null
 }: ImageBottomBarProps) {
+  const isLgUp = useIsLgUp();
   const [open, setOpen] = useState<OpenPanel>(null);
   const bottomBarRef = useRef<HTMLElement>(null);
   const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -172,7 +174,7 @@ export function ImageBottomBar({
     ? `Describe your ${selectedModel.label} image…`
     : "Describe your image...";
 
-  const useStableDockHeight = showUploads;
+  const useStableDockHeight = showUploads && isLgUp;
   const stableDockHeight = IMAGE_I2I_DOCK_HEIGHT;
 
   useEffect(() => {
@@ -191,7 +193,7 @@ export function ImageBottomBar({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [onHeightChange, stableDockHeight, useStableDockHeight]);
+  }, [onHeightChange, stableDockHeight, useStableDockHeight, showUploads, referenceUrls.length, actionTab]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -262,13 +264,15 @@ export function ImageBottomBar({
       style={useStableDockHeight ? { minHeight: stableDockHeight } : undefined}
       className={cn(
         "fixed inset-x-0 bottom-0 z-50 flex flex-col border-t border-[rgba(131,56,235,0.15)] bg-[#0d0d14]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-[12px]",
-        "px-5 py-3 font-body",
-        useStableDockHeight && "max-h-[min(40vh,240px)]"
+        "px-5 py-3 font-body max-lg:overflow-hidden max-lg:px-3 max-lg:py-2.5",
+        showUploads
+          ? "max-lg:max-h-[min(70dvh,580px)] lg:max-h-[min(40vh,240px)]"
+          : "max-lg:max-h-[min(58dvh,480px)]"
       )}
     >
       <div
         className={cn(
-          "mx-auto flex w-full max-w-[1920px] flex-col gap-3",
+          "mx-auto flex w-full max-w-[1920px] flex-col gap-3 max-lg:min-h-0 max-lg:flex-1",
           useStableDockHeight && "min-h-0 flex-1"
         )}
       >
@@ -296,9 +300,121 @@ export function ImageBottomBar({
           </div>
         )}
 
+        <div className="max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:gap-2 lg:contents">
+          {showUploads ? (
+            <div className="shrink-0 max-lg:w-full lg:hidden">
+              <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
+                Prompt
+              </span>
+              <textarea
+                suppressHydrationWarning
+                value={prompt}
+                onChange={(e) => onPromptChange(e.target.value)}
+                rows={2}
+                placeholder={promptPlaceholder}
+                style={{ resize: "none" }}
+                className={cn(
+                  "scrollbar-hide w-full resize-none rounded-lg bg-[#0a0a0a] px-3 py-2.5 text-sm leading-relaxed text-white outline-none placeholder:text-zorixa-muted",
+                  "focus-visible:ring-2 focus-visible:ring-brand",
+                  "min-h-[4rem]"
+                )}
+              />
+            </div>
+          ) : null}
+
+          {showUploads ? (
+            <div className="shrink-0 max-lg:w-full lg:hidden">
+              <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
+                Reference{ i2iSlots.length > 1 ? "s" : "" }
+              </span>
+              {i2iSlots.map((slot, idx) => (
+                <input
+                  key={`mobile-${slot.label}-${idx}`}
+                  ref={(el) => {
+                    fileRefs.current[idx] = el;
+                  }}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  tabIndex={-1}
+                  aria-hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) applyFile(idx, f);
+                    e.target.value = "";
+                  }}
+                />
+              ))}
+              <div
+                className={cn(
+                  "grid w-full gap-2",
+                  i2iSlots.length > 1 ? "grid-cols-2" : "grid-cols-1"
+                )}
+              >
+                {i2iSlots.map((slot, idx) => {
+                  const url = referenceUrls[idx] ?? null;
+                  return (
+                    <div
+                      key={`mobile-slot-${slot.label}-${idx}`}
+                      className="relative min-h-[100px]"
+                      onDragEnter={stopDrag}
+                      onDragOver={stopDrag}
+                      onDrop={(e) => {
+                        stopDrag(e);
+                        const f = e.dataTransfer.files?.[0];
+                        if (f) applyFile(idx, f);
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => fileRefs.current[idx]?.click()}
+                        className={cn(
+                          "relative flex h-[100px] w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
+                          "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
+                          "hover:border-white/30 hover:bg-black/55"
+                        )}
+                      >
+                        {url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={url}
+                            alt={studioReferenceImageAlt("image")}
+                            className="absolute inset-0 size-full object-contain bg-black/50"
+                          />
+                        ) : (
+                          <>
+                            <Upload className="size-4 opacity-60" />
+                            <span className="mt-1 text-[11px] font-medium text-zorixa-muted">{slot.label}</span>
+                            {slot.hint ? (
+                              <span className="mt-0.5 max-w-full truncate px-1 text-[9px] text-zorixa-muted/70">
+                                {slot.hint}
+                              </span>
+                            ) : null}
+                          </>
+                        )}
+                      </button>
+                      {url ? (
+                        <button
+                          type="button"
+                          onClick={() => setRefAt(idx, null)}
+                          className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80 hover:bg-black hover:text-white"
+                          aria-label={`Remove ${slot.label}`}
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="max-lg:min-h-0 max-lg:flex-1 max-lg:overflow-y-auto max-lg:overscroll-y-contain lg:contents">
         <div
           className={cn(
             "flex min-h-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-3",
+            showUploads && "max-lg:hidden",
             useStableDockHeight && "flex-1 overflow-y-auto overscroll-y-contain"
           )}
         >
@@ -324,8 +440,8 @@ export function ImageBottomBar({
               ))}
               <div
                 className={cn(
-                  "grid gap-3",
-                  i2iSlots.length > 1 ? "grid-cols-2" : "grid-cols-1"
+                  "grid gap-3 max-lg:w-full",
+                  i2iSlots.length > 1 ? "grid-cols-2 max-lg:grid-cols-2" : "grid-cols-1"
                 )}
               >
                 {i2iSlots.map((slot, idx) => {
@@ -353,7 +469,11 @@ export function ImageBottomBar({
                     >
                       {url ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={url} alt={studioReferenceImageAlt("image")} className="absolute inset-0 size-full object-cover" />
+                        <img
+                          src={url}
+                          alt={studioReferenceImageAlt("image")}
+                          className="absolute inset-0 size-full object-cover"
+                        />
                       ) : (
                         <>
                           <Upload className="size-5 opacity-60" />
@@ -402,7 +522,7 @@ export function ImageBottomBar({
 
         <div
           className={cn(
-            "flex shrink-0 flex-wrap items-center gap-3",
+            "flex shrink-0 flex-wrap items-center gap-3 max-lg:flex-row max-lg:flex-wrap max-lg:items-center max-lg:gap-1.5 max-lg:border-t max-lg:border-white/10 max-lg:pt-2 max-lg:pb-1",
             useStableDockHeight && "border-t border-white/5 pt-2"
           )}
         >
@@ -757,7 +877,12 @@ export function ImageBottomBar({
             </div>
           ) : null}
 
-          <div className="ml-auto flex shrink-0 items-center gap-2.5">
+          <div
+            className={cn(
+              "ml-auto flex shrink-0 items-center gap-2.5 max-lg:ml-0 max-lg:w-full max-lg:justify-between max-lg:border-t max-lg:border-white/10 max-lg:pt-2",
+              showUploads && "max-lg:hidden"
+            )}
+          >
             <span className="text-sm font-semibold tabular-nums text-white/90">{creditsLine}</span>
             <motion.button
               type="button"
@@ -765,7 +890,7 @@ export function ImageBottomBar({
               onClick={emitGenerate}
               whileHover={loadingGenerate ? undefined : { scale: 1.02 }}
               whileTap={loadingGenerate ? undefined : { scale: 0.98 }}
-              className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
+              className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60 max-lg:min-h-[44px] max-lg:flex-1 max-lg:min-w-0"
             >
               {loadingGenerate ? (
                 <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -775,6 +900,30 @@ export function ImageBottomBar({
               GENERATE
             </motion.button>
           </div>
+        </div>
+
+          </div>
+
+        {showUploads ? (
+          <div className="flex shrink-0 items-center gap-2.5 max-lg:w-full max-lg:justify-between max-lg:border-t max-lg:border-white/10 max-lg:bg-[#0d0d14]/95 max-lg:pt-2 lg:hidden">
+            <span className="text-sm font-semibold tabular-nums text-white/90">{creditsLine}</span>
+            <motion.button
+              type="button"
+              disabled={loadingGenerate}
+              onClick={emitGenerate}
+              whileHover={loadingGenerate ? undefined : { scale: 1.02 }}
+              whileTap={loadingGenerate ? undefined : { scale: 0.98 }}
+              className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60 max-lg:min-h-[44px] max-lg:flex-1 max-lg:min-w-0"
+            >
+              {loadingGenerate ? (
+                <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : (
+                <Sparkles className="size-4" />
+              )}
+              GENERATE
+            </motion.button>
+          </div>
+        ) : null}
         </div>
       </div>
     </footer>

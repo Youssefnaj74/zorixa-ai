@@ -1,17 +1,40 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
-import { LandingGenerationsGallery } from "@/components/landing/LandingGenerationsGallery";
-import { LandingPoweredModelsSection } from "@/components/landing/LandingPoweredModelsSection";
-import { LandingProductStudioSection } from "@/components/landing/LandingProductStudioSection";
 import { BrandEmailLink } from "@/components/marketing/BrandEmailLink";
 import { ProductHuntBadge } from "@/components/marketing/ProductHuntBadge";
 import { ZorixaLogo } from "@/components/layout/ZorixaLogo";
+import { heroReveal, reveal } from "@/lib/motion-presets";
 import { BRAND_EMAILS } from "@/lib/site-brand";
 import { cn } from "@/lib/utils";
+
+const LandingPoweredModelsSection = dynamic(
+  () =>
+    import("@/components/landing/LandingPoweredModelsSection").then((m) => ({
+      default: m.LandingPoweredModelsSection
+    })),
+  { ssr: true }
+);
+
+const LandingGenerationsGallery = dynamic(
+  () =>
+    import("@/components/landing/LandingGenerationsGallery").then((m) => ({
+      default: m.LandingGenerationsGallery
+    })),
+  { ssr: true }
+);
+
+const LandingProductStudioSection = dynamic(
+  () =>
+    import("@/components/landing/LandingProductStudioSection").then((m) => ({
+      default: m.LandingProductStudioSection
+    })),
+  { ssr: true }
+);
 
 const NAV = [
   { href: "#why", label: "Why ZorixaAI" },
@@ -20,11 +43,6 @@ const NAV = [
   { href: "#gallery", label: "Gallery" },
   { href: "/pricing", label: "Pricing", route: true as const }
 ] as const;
-
-const reveal = {
-  hidden: { opacity: 0, y: 18 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const } }
-};
 
 function ZorixaGlow() {
   return (
@@ -122,14 +140,14 @@ export function LandingPage() {
         <section className="mx-auto max-w-6xl px-5 pb-16 pt-14 sm:px-8 sm:pb-20 sm:pt-20">
           <motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}>
             <motion.p
-              variants={reveal}
+              variants={heroReveal}
               className="inline-flex rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/85"
             >
               UGC Video · AI Influencers · Image Enhancement
             </motion.p>
 
             <motion.h1
-              variants={reveal}
+              variants={heroReveal}
               className="mt-6 font-display text-[clamp(2.6rem,6.2vw,4.7rem)] font-black leading-[0.98] tracking-tighter"
             >
               The New Gold Standard for{" "}
@@ -139,12 +157,12 @@ export function LandingPage() {
               .
             </motion.h1>
 
-            <motion.p variants={reveal} className="mt-6 max-w-2xl text-base leading-relaxed text-[#a1a1aa] sm:text-lg">
+            <motion.p variants={heroReveal} className="mt-6 max-w-2xl text-base leading-relaxed text-[#a1a1aa] sm:text-lg">
               Create professional AI videos and images with leading models. Generate UGC content, cinematic videos,
               character swaps, and AI-powered visuals from a single platform.
             </motion.p>
 
-            <motion.div variants={reveal} className="mt-10 flex flex-wrap items-center gap-4">
+            <motion.div variants={heroReveal} className="mt-10 flex flex-wrap items-center gap-4">
               <Link
                 href="/login?mode=signup"
                 className="inline-flex h-12 items-center justify-center rounded-full bg-[#00d1ff] px-8 text-sm font-bold text-black shadow-[0_0_0_1px_rgba(0,209,255,0.35),0_0_32px_rgba(0,209,255,0.42)] transition-transform hover:scale-[1.02]"
@@ -160,7 +178,7 @@ export function LandingPage() {
               </Link>
             </motion.div>
 
-            <motion.div variants={reveal} className="mt-8">
+            <motion.div variants={heroReveal} className="mt-8">
               <ProductHuntBadge />
             </motion.div>
           </motion.div>

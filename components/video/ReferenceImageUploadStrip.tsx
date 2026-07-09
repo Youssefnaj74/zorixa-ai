@@ -77,14 +77,14 @@ export function ReferenceImageUploadStrip({
   );
 
   const thumbSize = matchSourceVideoSlot
-    ? "size-[88px] min-h-[88px] min-w-[150px] max-w-[150px]"
+    ? "h-[88px] w-[150px] min-h-[88px] min-w-[150px] max-w-[150px] max-lg:h-[72px] max-lg:min-h-[72px] max-lg:w-full max-lg:min-w-0 max-lg:max-w-none"
     : "size-[72px] sm:size-[80px]";
   const addSlotSize = matchSourceVideoSlot
-    ? "h-[88px] w-[150px]"
+    ? "h-[88px] w-[150px] max-lg:h-[72px] max-lg:w-full max-lg:max-w-none"
     : "size-[72px] sm:size-[80px]";
 
   return (
-    <div className={cn("flex shrink-0 flex-col gap-2", !compact && "sm:w-auto sm:min-w-[200px]", className)}>
+    <div className={cn("flex shrink-0 flex-col gap-2 max-lg:w-full", !compact && "sm:w-auto sm:min-w-[200px]", className)}>
       {!compact && !addSlotLabel ? (
         <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
           References

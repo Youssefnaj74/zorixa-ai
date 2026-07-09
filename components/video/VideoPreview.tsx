@@ -19,13 +19,13 @@ import { DirectorResultBanner } from "@/components/video/DirectorResultBanner";
 import { SeedanceReferenceToVideoTip } from "@/components/video/SeedanceReferenceToVideoTip";
 import { VideoToVideoModelTip } from "@/components/video/VideoToVideoModelTip";
 
-import { NAV_H } from "@/lib/nav-chrome";
+import { useStudioNavOffset } from "@/lib/hooks/use-studio-nav-offset";
 
 /** Size constraints for the preview frame inside the card. */
 function uiAspectFrameLayoutClass(aspect: string): string {
   switch (aspect) {
     case "9:16":
-      return "h-full w-auto max-w-[min(100%,56vh)]";
+      return "h-full w-auto max-w-[min(100%,56vh)] max-lg:max-w-[min(100%,38vh)]";
     case "1:1":
       return "w-full max-w-[min(100%,min(56vh,480px))]";
     case "16:9":
@@ -124,7 +124,8 @@ export function VideoPreview({
   onPlaybackConfirmed?: () => void;
   className?: string;
 }) {
-  const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${bottomBarHeight}px)`;
+  const studioNavOffset = useStudioNavOffset();
+  const cardMaxHeight = `calc(100vh - ${studioNavOffset}px - ${bottomBarHeight}px)`;
   const [inlinePlaybackError, setInlinePlaybackError] = useState<string | null>(null);
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -208,8 +209,8 @@ export function VideoPreview({
         )}
         style={{ maxHeight: cardMaxHeight }}
       >
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2.5 sm:px-4">
-          <h2 className="font-display text-sm font-semibold text-white">Video Preview</h2>
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2.5 sm:px-4 max-lg:py-2">
+          <h2 className="font-display text-sm font-semibold text-white max-lg:text-xs">Video Preview</h2>
           {isExample ? (
             <span className="rounded-md bg-brand/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-light">
               Example
@@ -220,7 +221,7 @@ export function VideoPreview({
               AI Director
             </span>
           ) : null}
-          <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center gap-2 max-lg:hidden">
             <Button
               type="button"
               variant="ghost"
@@ -422,16 +423,16 @@ export function VideoPreview({
               </p>
             ) : null}
 
-            <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-wrap justify-end gap-2">
+            <div className="pointer-events-none absolute bottom-2 right-2 z-10 flex flex-wrap justify-end gap-1.5 max-lg:left-2 sm:bottom-3 sm:right-3 sm:gap-2">
               <Button
                 type="button"
                 variant="ghost"
                 disabled={postProcessBusy || loading}
                 onClick={() => onResetDefaults?.()}
-                className="pointer-events-auto h-9 rounded-lg border border-white/15 bg-black/40 px-3 text-xs text-white backdrop-blur hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-45"
+                className="pointer-events-auto h-9 rounded-lg border border-white/15 bg-black/40 px-2.5 text-xs text-white backdrop-blur hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-45 max-lg:px-2 sm:px-3"
               >
-                <RotateCcw className="mr-1 size-3.5" />
-                Reset to Defaults
+                <RotateCcw className="size-3.5 max-lg:mr-0 sm:mr-1" />
+                <span className="max-lg:sr-only sm:not-sr-only">Reset to Defaults</span>
               </Button>
               {videoUrl ? (
                 <Button
@@ -439,20 +440,22 @@ export function VideoPreview({
                   variant="ghost"
                   disabled={!canonicalDownloadUrl || downloadBusy}
                   onClick={() => void onDownloadClick()}
-                  className="pointer-events-auto h-9 rounded-lg border border-brand/50 bg-black/30 px-3 text-xs font-medium text-white hover:bg-brand/20 disabled:opacity-60"
+                  className="pointer-events-auto h-9 rounded-lg border border-brand/50 bg-black/30 px-2.5 text-xs font-medium text-white hover:bg-brand/20 disabled:opacity-60 max-lg:px-2 sm:px-3"
                 >
-                  <Download className="mr-1 size-3.5" />
-                  {downloadBusy ? "Downloading…" : "Download MP4"}
+                  <Download className="size-3.5 max-lg:mr-0 sm:mr-1" />
+                  <span className="max-lg:sr-only sm:not-sr-only">
+                    {downloadBusy ? "Downloading…" : "Download MP4"}
+                  </span>
                 </Button>
               ) : (
                 <Button
                   type="button"
                   variant="ghost"
                   disabled
-                  className="pointer-events-auto h-9 cursor-not-allowed rounded-lg border border-white/10 bg-black/20 px-3 text-xs text-zorixa-muted opacity-50"
+                  className="pointer-events-auto h-9 cursor-not-allowed rounded-lg border border-white/10 bg-black/20 px-2.5 text-xs text-zorixa-muted opacity-50 max-lg:px-2 sm:px-3"
                 >
-                  <Download className="mr-1 size-3.5" />
-                  Download
+                  <Download className="size-3.5 max-lg:mr-0 sm:mr-1" />
+                  <span className="max-lg:sr-only sm:not-sr-only">Download</span>
                 </Button>
               )}
             </div>

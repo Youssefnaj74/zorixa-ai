@@ -20,6 +20,7 @@ import { videoComposerSupportsGenerateAudio } from "@/lib/atlas-video-generate-a
 import { videoComposerSupportsSpeedTier } from "@/lib/atlas-video-model-ids";
 import { formatGenerationCreditsLine } from "@/lib/atlas-pricing-catalog";
 import { studioReferenceImageAlt } from "@/lib/image-alt-text";
+import { videoImageUploadSlotClass } from "@/components/video/video-upload-slot-classes";
 import { cn } from "@/lib/utils";
 
 export type AiDirectorBottomBarProps = {
@@ -174,10 +175,10 @@ export function AiDirectorBottomBar({
         ref={bottomBarRef}
         className={cn(
           "fixed inset-x-0 bottom-0 z-50 flex flex-col border-t border-[rgba(131,56,235,0.15)] bg-[#0d0d14]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-[12px]",
-          "px-5 py-3 font-body"
+          "px-5 py-3 font-body max-lg:max-h-[min(58dvh,480px)] max-lg:px-3 max-lg:py-2.5"
         )}
       >
-        <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-3">
+        <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-3 max-lg:min-h-0 max-lg:flex-1 max-lg:overflow-y-auto max-lg:overscroll-y-contain">
           <ActionTabsRow active={actionTab} onChange={onActionTabChange} className="h-11 min-h-[44px] w-full" />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -192,11 +193,7 @@ export function AiDirectorBottomBar({
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className={cn(
-                  "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl",
-                  "border border-dashed border-white/20 bg-black/40 text-zorixa-muted transition-colors",
-                  "hover:border-white/30 hover:bg-black/55"
-                )}
+                className={videoImageUploadSlotClass()}
               >
                 {promptImageUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
@@ -297,7 +294,7 @@ export function AiDirectorBottomBar({
                 ) : (
                   <div className="min-w-0 flex-1" />
                 )}
-                <div className="flex shrink-0 items-center justify-end gap-2.5 pb-0.5 sm:ml-auto">
+                <div className="flex shrink-0 items-center justify-end gap-2.5 pb-0.5 max-lg:w-full max-lg:justify-between max-lg:border-t max-lg:border-white/10 max-lg:pt-2 sm:ml-auto">
                   <span className="text-sm font-semibold tabular-nums text-white/90">{creditsDisplay}</span>
                   <motion.button
                     type="button"
@@ -305,7 +302,7 @@ export function AiDirectorBottomBar({
                     whileHover={loadingGenerate || !prompt.trim() ? undefined : { scale: 1.02 }}
                     whileTap={loadingGenerate || !prompt.trim() ? undefined : { scale: 0.98 }}
                     onClick={emitGenerate}
-                    className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60"
+                    className="inline-flex min-w-[140px] shrink-0 items-center justify-center gap-2 rounded-xl bg-zorixa-tab px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wide text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] disabled:opacity-60 max-lg:min-h-[44px] max-lg:flex-1 max-lg:min-w-0"
                   >
                     {loadingGenerate ? (
                       <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />

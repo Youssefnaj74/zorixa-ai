@@ -40,23 +40,50 @@ export function BeforeAfterSlider({
     setValue(Math.min(100, Math.max(0, pct)));
   }, []);
 
+  const releasePointer = useCallback((target: HTMLElement, pointerId: number) => {
+    try {
+      if (target.hasPointerCapture(pointerId)) {
+        target.releasePointerCapture(pointerId);
+      }
+    } catch {
+      // Pointer may already be released on mobile / after re-render.
+    }
+  }, []);
+
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
+      e.stopPropagation();
+
       const target = e.currentTarget as HTMLElement;
-      target.setPointerCapture(e.pointerId);
+      const pointerId = e.pointerId;
+
+      try {
+        target.setPointerCapture(pointerId);
+      } catch {
+        // Ignore if capture is unavailable.
+      }
+
       updateFromClientX(e.clientX);
 
-      const onMove = (ev: PointerEvent) => updateFromClientX(ev.clientX);
-      const onUp = () => {
-        target.releasePointerCapture(e.pointerId);
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
+      const onMove = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
+        updateFromClientX(ev.clientX);
       };
+
+      const onEnd = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
+        releasePointer(target, pointerId);
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onEnd);
+        window.removeEventListener("pointercancel", onEnd);
+      };
+
       window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointerup", onEnd);
+      window.addEventListener("pointercancel", onEnd);
     },
-    [updateFromClientX]
+    [releasePointer, updateFromClientX]
   );
 
   const isStudio = fit === "studio";

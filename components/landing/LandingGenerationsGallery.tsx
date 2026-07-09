@@ -4,13 +4,11 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
+import { LazyAutoplayVideo } from "@/components/landing/LazyAutoplayVideo";
 import { ModelBrandLogo } from "@/components/ui/ModelBrandLogo";
+import { landingGalleryImage, videoShowcasePoster } from "@/lib/landing-media";
+import { reveal } from "@/lib/motion-presets";
 import { cn } from "@/lib/utils";
-
-const reveal = {
-  hidden: { opacity: 0, y: 18 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const } }
-};
 
 type ShowcaseExample = {
   id: string;
@@ -32,8 +30,8 @@ const EXAMPLES: ShowcaseExample[] = [
     title: "AI Influencer · UGC quality",
     beforePoints: ["Plain studio input", "Generic AI look", "Flat lighting"],
     afterPoints: ["Natural skin texture", "Facial detail", "Cinematic lighting"],
-    beforeUrl: "/landing-gallery/ugc/before.png",
-    afterUrl: "/landing-gallery/ugc/after.png",
+    beforeUrl: landingGalleryImage("/landing-gallery/ugc/before"),
+    afterUrl: landingGalleryImage("/landing-gallery/ugc/after"),
     beforeAlt: "Before UGC AI generation — plain studio input with generic AI look and flat lighting",
     afterAlt: "UGC AI influencer result — natural skin texture, facial detail, and cinematic lighting"
   },
@@ -43,8 +41,8 @@ const EXAMPLES: ShowcaseExample[] = [
     title: "Sharper, cleaner output",
     beforePoints: ["Soft detail", "Flat contrast", "Low polish"],
     afterPoints: ["Sharp detail", "Clean finish", "Professional look"],
-    beforeUrl: "/landing-gallery/enhancement/before.png",
-    afterUrl: "/landing-gallery/enhancement/after.png",
+    beforeUrl: landingGalleryImage("/landing-gallery/enhancement/before"),
+    afterUrl: landingGalleryImage("/landing-gallery/enhancement/after"),
     beforeAlt: "Before AI image enhancement — soft detail, flat contrast, and low polish",
     afterAlt: "After professional AI image enhancement — sharp detail and clean studio finish"
   },
@@ -54,8 +52,8 @@ const EXAMPLES: ShowcaseExample[] = [
     title: "Same identity across shots",
     beforePoints: ["Face shifts between frames", "Identity drift", "Inconsistent features"],
     afterPoints: ["Same person every frame", "Stable identity", "Campaign-ready"],
-    beforeUrl: "/landing-gallery/consistency/before.png",
-    afterUrl: "/landing-gallery/consistency/after.png",
+    beforeUrl: landingGalleryImage("/landing-gallery/consistency/before"),
+    afterUrl: landingGalleryImage("/landing-gallery/consistency/after"),
     beforeAlt: "Before AI character consistency — identity drift and inconsistent facial features",
     afterAlt: "After AI character consistency — stable UGC AI influencer identity across every frame"
   },
@@ -65,8 +63,8 @@ const EXAMPLES: ShowcaseExample[] = [
     title: "New face · same scene",
     beforePoints: ["Original subject", "Fixed scene & motion", "Source frame"],
     afterPoints: ["Swapped character", "Scene preserved", "Natural motion match"],
-    beforeUrl: "/landing-gallery/character-swap/before.png",
-    afterUrl: "/landing-gallery/character-swap/after.png",
+    beforeUrl: landingGalleryImage("/landing-gallery/character-swap/before"),
+    afterUrl: landingGalleryImage("/landing-gallery/character-swap/after"),
     beforeAlt: "Before professional AI character swap — original UGC subject in source frame",
     afterAlt: "Professional AI character swap result — new face with scene and motion preserved"
   }
@@ -77,7 +75,7 @@ const SHOWCASE_VIDEOS = [
     id: "ugc-grok",
     modelId: "grok-imagine-video-i2v-15",
     label: "UGC Video · Grok Imagine",
-    poster: "/video-showcases/i2v/grok-imagine-video-i2v-15-start.png",
+    poster: videoShowcasePoster("/video-showcases/i2v/grok-imagine-video-i2v-15-start"),
     posterAlt: "UGC AI influencer result preview — Grok Imagine AI video generation",
     ariaLabel: "UGC AI influencer result — sample AI video generated with Grok Imagine on ZorixaAI",
     src: "/video-showcases/i2v/grok-imagine-video-i2v-15.mp4"
@@ -86,7 +84,7 @@ const SHOWCASE_VIDEOS = [
     id: "ugc-hailuo",
     modelId: "hailuo-2-3",
     label: "UGC Video · Hailuo 2.3",
-    poster: "/video-showcases/i2v/hailuo-2-3-start.png",
+    poster: videoShowcasePoster("/video-showcases/i2v/hailuo-2-3-start"),
     posterAlt: "UGC AI influencer result preview — Hailuo 2.3 AI video generation",
     ariaLabel: "UGC AI influencer result — sample AI video generated with Hailuo 2.3 on ZorixaAI",
     src: "/video-showcases/i2v/hailuo-2-3.mp4"
@@ -95,7 +93,7 @@ const SHOWCASE_VIDEOS = [
     id: "cinematic-seedance",
     modelId: "seedance-2",
     label: "Cinematic · Seedance 2.0",
-    poster: "/video-showcases/i2v/seedance-2-start.png",
+    poster: videoShowcasePoster("/video-showcases/i2v/seedance-2-start"),
     posterAlt: "AI cinematic video generation preview — Seedance 2.0 film-grade output",
     ariaLabel: "AI cinematic video generation sample created with Seedance 2.0 on ZorixaAI",
     src: "/video-showcases/i2v/seedance-2.mp4"
@@ -104,7 +102,7 @@ const SHOWCASE_VIDEOS = [
     id: "cinematic-vidu",
     modelId: "vidu-q3-pro",
     label: "Cinematic · Vidu Q3 Pro",
-    poster: "/video-showcases/i2v/vidu-q3-pro-start.png",
+    poster: videoShowcasePoster("/video-showcases/i2v/vidu-q3-pro-start"),
     posterAlt: "AI cinematic video generation preview — Vidu Q3 Pro film-grade output",
     ariaLabel: "AI cinematic video generation sample created with Vidu Q3 Pro on ZorixaAI",
     src: "/video-showcases/i2v/vidu-q3-pro.mp4"
@@ -135,7 +133,7 @@ function CompareImage({ src, alt, label }: { src: string; alt: string; label: "b
         <StatusBadge kind={label} />
       </div>
       <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/[0.10] bg-black sm:aspect-[3/4]">
-        <Image src={src} alt={alt} fill sizes="(max-width: 640px) 100vw, 45vw" className="object-cover" />
+        <Image src={src} alt={alt} fill sizes="(max-width: 640px) 100vw, 45vw" className="object-cover" loading="lazy" />
       </div>
     </div>
   );
@@ -214,25 +212,11 @@ export function LandingGenerationsGallery() {
                 className="overflow-hidden rounded-2xl border border-white/[0.10] bg-white/[0.03] shadow-[0_18px_55px_rgba(0,0,0,0.55)]"
               >
                 <div className="relative aspect-[9/16] bg-black">
-                  <Image
-                    src={item.poster}
-                    alt={item.posterAlt}
-                    fill
-                    sizes="(max-width: 640px) 50vw, 25vw"
-                    className="object-cover"
-                    priority={false}
-                    aria-hidden
-                  />
-                  <video
+                  <LazyAutoplayVideo
                     src={item.src}
                     poster={item.poster}
-                    className="absolute inset-0 size-full object-cover"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                    aria-label={item.ariaLabel}
+                    posterAlt={item.posterAlt}
+                    ariaLabel={item.ariaLabel}
                   />
                 </div>
                 <div className="flex items-center gap-2.5 px-3 py-3 sm:px-4">

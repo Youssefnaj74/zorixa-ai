@@ -30,7 +30,7 @@ export function WanReferenceUploadPanel({
   className
 }: WanReferenceUploadPanelProps) {
   return (
-    <div className={cn("grid min-w-0 flex-1 grid-cols-3 gap-2 sm:gap-2.5", className)}>
+    <div className={cn("grid min-w-0 flex-1 grid-cols-3 gap-2 max-lg:grid-cols-1 sm:gap-2.5", className)}>
       <ReferenceAtlasColumnUpload
         kind="image"
         title="Reference images"

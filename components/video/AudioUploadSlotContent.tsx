@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
+import { VIDEO_UPLOAD_SLOT_FRAME } from "@/components/video/video-upload-slot-classes";
+
 const BAR_HEIGHTS = [0.3, 0.55, 0.85, 0.45, 0.95, 0.5, 0.75, 0.4, 0.9, 0.35, 0.8, 0.6, 0.7, 0.45, 0.88, 0.5];
 
 export function AudioUploadSlotContent({
@@ -52,7 +54,8 @@ export function AudioUploadSlotContent({
 
 export function audioUploadSlotClass(loaded: boolean) {
   return cn(
-    "relative flex h-[88px] w-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl transition-colors",
+    VIDEO_UPLOAD_SLOT_FRAME,
+    "transition-colors",
     loaded
       ? "border border-solid border-[#00e5ff]/45 bg-[#00e5ff]/[0.06] shadow-[inset_0_0_24px_rgba(0,229,255,0.08)]"
       : "border border-dashed border-white/20 bg-black/40 text-zorixa-muted hover:border-white/30 hover:bg-black/55"

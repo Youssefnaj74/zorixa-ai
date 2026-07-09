@@ -17,6 +17,7 @@ type ReferenceAtlasColumnUploadProps = {
   maxSlots: number;
   accept: string;
   onChange?: (index: number, url: string | null, file?: File | null) => void;
+  className?: string;
 };
 
 const KIND_ICON = {
@@ -39,7 +40,8 @@ export function ReferenceAtlasColumnUpload({
   urls,
   maxSlots,
   accept,
-  onChange
+  onChange,
+  className
 }: ReferenceAtlasColumnUploadProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const Icon = KIND_ICON[kind];
@@ -71,14 +73,14 @@ export function ReferenceAtlasColumnUpload({
   }, []);
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-col rounded-lg border border-white/[0.08] bg-[#0c0c14]/80 p-1.5">
+    <div className={cn("flex min-h-0 min-w-0 flex-col rounded-lg border border-white/[0.08] bg-[#0c0c14]/80 p-1.5 max-lg:p-1", className)}>
       <div className="mb-1 flex items-start justify-between gap-1.5">
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold text-white/92">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold text-white/92 max-lg:text-[10px]">
             <Icon className="size-3 shrink-0 text-brand" aria-hidden />
             {title}
           </p>
-          <p className="mt-0.5 text-[9px] leading-snug text-zorixa-muted/95">{hint}</p>
+          <p className="mt-0.5 text-[9px] leading-snug text-zorixa-muted/95 max-lg:hidden">{hint}</p>
         </div>
         <span className="shrink-0 rounded-md bg-white/[0.06] px-1.5 py-px text-[9px] font-semibold tabular-nums text-white/85">
           {filledCount}/{maxSlots}

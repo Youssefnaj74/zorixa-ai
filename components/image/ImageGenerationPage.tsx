@@ -54,8 +54,7 @@ import {
   resolveImageStudioFromQuery
 } from "@/lib/studio-catalog-link";
 import {
-  COMPOSER_DOCK_WITH_TABS_HEIGHT,
-  IMAGE_I2I_DOCK_HEIGHT
+  COMPOSER_DOCK_WITH_TABS_HEIGHT
 } from "@/lib/composer-dock-height";
 import { applyImageCameraStyle } from "@/lib/image-camera-style-prompt";
 import { composerModelDisplayLabel } from "@/lib/composer-model-label";
@@ -83,7 +82,7 @@ import { persistImageOutputsToDashboard } from "@/lib/client-image-dashboard-log
 import { usePageViewEvent } from "@/lib/hooks/use-page-view-event";
 import { AnalyticsEvents } from "@/lib/analytics-events";
 
-import { NAV_H } from "@/lib/nav-chrome";
+import { useStudioNavOffset } from "@/lib/hooks/use-studio-nav-offset";
 const ATLAS_CLIENT_POLL_MS = 3000;
 const ATLAS_CLIENT_MAX_WAIT_MS = 15 * 60 * 1000;
 
@@ -274,6 +273,7 @@ function defaultImageSettingsForModel(model: string): {
 
 export function ImageGenerationPage() {
   usePageViewEvent(AnalyticsEvents.IMAGE_STUDIO_VIEWED);
+  const studioNavOffset = useStudioNavOffset();
   const { credits, refresh: refreshCredits } = useCredits();
   const searchParams = useSearchParams();
   const studioLock = useMemo(() => parseImageStudioLock(searchParams), [searchParams]);
@@ -366,14 +366,6 @@ export function ImageGenerationPage() {
   useEffect(() => {
     setBatchCount((c) => clampImageBatchCount(modelId, c));
   }, [modelId]);
-
-  useEffect(() => {
-    if (actionTab === "Image to Image") {
-      setBottomBarHeight(IMAGE_I2I_DOCK_HEIGHT);
-    } else {
-      setBottomBarHeight(COMPOSER_DOCK_WITH_TABS_HEIGHT);
-    }
-  }, [actionTab]);
 
   useEffect(() => {
     const resolved = resolveImageStudioFromQuery(
@@ -1031,10 +1023,10 @@ export function ImageGenerationPage() {
       <Navbar fixed />
 
       <div
-        className="box-border flex min-h-0 flex-1 flex-col px-4 pt-0"
-        style={{ marginTop: NAV_H, paddingBottom: bottomBarHeight }}
+        className="box-border flex min-h-0 flex-1 flex-col px-4 pt-0 max-lg:px-3"
+        style={{ marginTop: studioNavOffset, paddingBottom: bottomBarHeight }}
       >
-        <div className="mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 flex-col gap-4 overflow-x-hidden font-body lg:flex-row lg:items-stretch lg:gap-5">
+        <div className="mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 flex-col gap-4 overflow-x-hidden font-body lg:flex-row lg:items-stretch lg:gap-5 max-lg:gap-2">
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:min-h-0">
             {studioLock ? (
               <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-[rgba(131,56,235,0.25)] bg-[#1a1a24]/90 px-4 py-2.5">
@@ -1085,7 +1077,7 @@ export function ImageGenerationPage() {
           <ImageHistory
             items={historyItems}
             onSelect={restoreHistory}
-            className="h-auto max-h-[min(42vh,380px)] min-h-0 w-full shrink-0 lg:h-full lg:max-h-none lg:w-[300px] lg:min-w-[300px] lg:max-w-[300px]"
+            className="hidden h-auto max-h-[min(42vh,380px)] min-h-0 w-full shrink-0 lg:block lg:h-full lg:max-h-none lg:w-[300px] lg:min-w-[300px] lg:max-w-[300px]"
           />
         </div>
       </div>

@@ -197,7 +197,7 @@ import { VideoBottomBar } from "@/components/video/VideoBottomBar";
 import { VideoHistory } from "@/components/video/VideoHistory";
 import { VideoPreview } from "@/components/video/VideoPreview";
 
-import { NAV_H } from "@/lib/nav-chrome";
+import { useStudioNavOffset } from "@/lib/hooks/use-studio-nav-offset";
 
 const ATLAS_CLIENT_POLL_MS = 3000;
 const ATLAS_CLIENT_MAX_WAIT_MS = 15 * 60 * 1000;
@@ -324,6 +324,7 @@ function logAtlasComposerVideoToSupabase(payload: {
 
 export function VideoGenerationPage() {
   usePageViewEvent(AnalyticsEvents.VIDEO_STUDIO_VIEWED);
+  const studioNavOffset = useStudioNavOffset();
   const { credits, refresh: refreshCredits } = useCredits();
   const searchParams = useSearchParams();
   const [bottomBarHeight, setBottomBarHeight] = useState(COMPOSER_DOCK_WITH_TABS_HEIGHT);
@@ -2705,13 +2706,13 @@ export function VideoGenerationPage() {
       <Navbar fixed />
 
       <div
-        className="box-border flex min-h-0 flex-1 flex-col px-4 pt-0"
+        className="box-border flex min-h-0 flex-1 flex-col px-4 pt-0 max-lg:px-3"
         style={{
-          marginTop: NAV_H,
+          marginTop: studioNavOffset,
           paddingBottom: bottomBarHeight
         }}
       >
-        <div className="mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 flex-col gap-4 overflow-x-hidden font-body lg:flex-row lg:items-stretch lg:gap-5">
+        <div className="mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 flex-col gap-4 overflow-x-hidden font-body lg:flex-row lg:items-stretch lg:gap-5 max-lg:gap-2">
           <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:min-h-0">
             <VideoPreview
               actionTab={actionTab}
@@ -2741,7 +2742,7 @@ export function VideoGenerationPage() {
             items={historyItems}
             onSelect={restoreSettings}
             scrollPaddingBottom={0}
-            className="h-auto max-h-[min(42vh,380px)] min-h-0 w-full shrink-0 lg:h-full lg:max-h-none lg:w-[300px] lg:min-w-[300px] lg:max-w-[300px]"
+            className="hidden h-auto max-h-[min(42vh,380px)] min-h-0 w-full shrink-0 lg:block lg:h-full lg:max-h-none lg:w-[300px] lg:min-w-[300px] lg:max-w-[300px]"
           />
         </div>
       </div>

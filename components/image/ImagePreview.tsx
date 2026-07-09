@@ -19,7 +19,7 @@ import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import type { UpscaleTier } from "@/lib/studio-constants";
 import { cn } from "@/lib/utils";
 
-import { NAV_H } from "@/lib/nav-chrome";
+import { useStudioNavOffset } from "@/lib/hooks/use-studio-nav-offset";
 
 function BatchPreviewTile({
   url,
@@ -122,6 +122,7 @@ export function ImagePreview({
   onVariations?: () => void;
   className?: string;
 }) {
+  const studioNavOffset = useStudioNavOffset();
   const urls = imageUrls.filter((u) => typeof u === "string" && u.trim().length > 0);
   const primaryUrl = urls[0] ?? null;
   const isBatch = urls.length > 1;
@@ -143,7 +144,7 @@ export function ImagePreview({
   );
 
   /** Nearly full preview card height (header only); caption floats so it does not steal space. */
-  const upscalerStudioMaxHeight = `calc(100vh - ${NAV_H}px - ${bottomBarHeight}px - 2.25rem)`;
+  const upscalerStudioMaxHeight = `calc(100vh - ${studioNavOffset}px - ${bottomBarHeight}px - 2.25rem)`;
   const upscalerImageStyle = {
     maxHeight: upscalerStudioMaxHeight,
     maxWidth: "min(calc(100vw - 2rem), 520px)"
@@ -151,7 +152,7 @@ export function ImagePreview({
   const upscalerImageClass =
     "w-auto rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)] transition-transform group-hover:scale-[1.01]";
 
-  const cardMaxHeight = `calc(100vh - ${NAV_H}px - ${bottomBarHeight}px)`;
+  const cardMaxHeight = `calc(100vh - ${studioNavOffset}px - ${bottomBarHeight}px)`;
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [lightboxTitle, setLightboxTitle] = useState("Image preview");
 
@@ -174,8 +175,8 @@ export function ImagePreview({
             : { maxHeight: cardMaxHeight }
         }
       >
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2.5 sm:px-4">
-          <h2 className="font-display text-sm font-semibold text-white">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2.5 sm:px-4 max-lg:py-2">
+          <h2 className="font-display text-sm font-semibold text-white max-lg:text-xs">
             {isUpscalerTab ? "Image Upscaler" : "Image Preview"}
             {isExample ? (
               <span className="ml-2 rounded-md bg-brand/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-light">
@@ -188,7 +189,7 @@ export function ImagePreview({
               </span>
             ) : null}
           </h2>
-          <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center gap-2 max-lg:hidden">
             {!isUpscalerTab ? (
               <>
             <DropdownMenu>
@@ -258,7 +259,7 @@ export function ImagePreview({
                   ? "overflow-y-auto p-3"
                   : isUpscalerTab
                     ? "items-center justify-center p-1"
-                    : "items-center justify-center p-4"
+                    : "items-center justify-center p-4 max-lg:items-start max-lg:justify-start max-lg:overflow-y-auto max-lg:pb-12 max-lg:pt-2"
               )}
             >
               {loading ? (
@@ -315,7 +316,7 @@ export function ImagePreview({
                       isUpscalerTab ? "Upscaled image" : "Image preview"
                     )
                   }
-                  className="group relative max-h-full max-w-full cursor-zoom-in rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                  className="group relative max-h-full max-w-full cursor-zoom-in rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand max-lg:h-auto max-lg:max-h-none max-lg:w-full"
                   aria-label={isUpscalerTab ? "Enlarge upscaled image" : "Enlarge image preview"}
                 >
                   <ExternalImage
@@ -327,7 +328,7 @@ export function ImagePreview({
                     className={
                       isUpscalerTab
                         ? upscalerImageClass
-                        : "max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)] transition-transform group-hover:scale-[1.01]"
+                        : "max-h-full max-w-full rounded-xl object-contain shadow-[0_0_24px_rgba(131,56,235,0.2)] ring-1 ring-[rgba(131,56,235,0.15)] transition-transform group-hover:scale-[1.01] max-lg:mx-auto max-lg:max-h-[min(44vh,420px)] max-lg:w-auto"
                     }
                   />
                 </button>
@@ -397,16 +398,16 @@ export function ImagePreview({
             </div>
 
             {!isBatch ? (
-              <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-wrap justify-end gap-2">
+              <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-wrap justify-end gap-2 max-lg:bottom-2 max-lg:left-2 max-lg:right-2 max-lg:justify-between">
                 <Button
                   type="button"
                   variant="ghost"
                   disabled={postProcessBusy || loading}
                   onClick={() => onResetDefaults?.()}
-                  className="pointer-events-auto h-9 rounded-lg border border-white/15 bg-black/40 px-3 text-xs text-white backdrop-blur hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="pointer-events-auto h-9 rounded-lg border border-white/15 bg-black/40 px-2.5 text-xs text-white backdrop-blur hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-45 max-lg:px-2 sm:px-3"
                 >
-                  <RotateCcw className="mr-1 size-3.5" />
-                  Reset {actionTab}
+                  <RotateCcw className="size-3.5 max-lg:mr-0 sm:mr-1" />
+                  <span className="max-lg:sr-only sm:not-sr-only">Reset {actionTab}</span>
                 </Button>
                 {primaryUrl ? (
                   <a
@@ -414,20 +415,20 @@ export function ImagePreview({
                     download
                     target="_blank"
                     rel="noreferrer"
-                    className="pointer-events-auto inline-flex h-9 items-center justify-center rounded-lg border border-brand/50 bg-black/30 px-3 text-xs font-medium text-white transition-colors hover:bg-brand/20"
+                    className="pointer-events-auto inline-flex h-9 items-center justify-center rounded-lg border border-brand/50 bg-black/30 px-2.5 text-xs font-medium text-white transition-colors hover:bg-brand/20 max-lg:px-2 sm:px-3"
                   >
-                    <Download className="mr-1 size-3.5" />
-                    Download
+                    <Download className="size-3.5 max-lg:mr-0 sm:mr-1" />
+                    <span className="max-lg:sr-only sm:not-sr-only">Download</span>
                   </a>
                 ) : (
                   <Button
                     type="button"
                     variant="ghost"
                     disabled
-                    className="pointer-events-auto h-9 cursor-not-allowed rounded-lg border border-white/10 bg-black/20 px-3 text-xs text-zorixa-muted opacity-50"
+                    className="pointer-events-auto h-9 cursor-not-allowed rounded-lg border border-white/10 bg-black/20 px-2.5 text-xs text-zorixa-muted opacity-50 max-lg:px-2 sm:px-3"
                   >
-                    <Download className="mr-1 size-3.5" />
-                    Download
+                    <Download className="size-3.5 max-lg:mr-0 sm:mr-1" />
+                    <span className="max-lg:sr-only sm:not-sr-only">Download</span>
                   </Button>
                 )}
               </div>
