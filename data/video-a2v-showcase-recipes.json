@@ -1,0 +1,23 @@
+{
+  "defaults": {
+    "timeSeconds": 5,
+    "aspect": "9:16",
+    "resolution": "720p",
+    "durationStandard": "Standard",
+    "prompt": ""
+  },
+  "models": {
+    "infinitetalk": {
+      "historyTitle": "Talking Head Demo",
+      "prompt": "The woman naturally speaks to the camera with realistic lip sync, subtle head movements, natural blinking, gentle facial expressions, occasional smiles, soft hand gestures, and authentic eye contact. Cinematic lighting, realistic body motion, shallow depth of field, smooth 4K quality, natural breathing, no exaggerated movements."
+    },
+    "veed-fabric-1": {
+      "historyTitle": "VEED Fabric Presenter",
+      "prompt": "Friendly and confident startup founder speaking naturally to the camera. Maintain direct eye contact, realistic lip sync, subtle head movements, natural blinking, warm smile, relaxed posture, professional interview style. High-end tech company presentation, cinematic realism, smooth facial expressions, no exaggerated gestures."
+    },
+    "veed-fabric-1-fast": {
+      "historyTitle": "VEED Fabric Fast Demo",
+      "prompt": "Quick talking-head clip with smooth lip sync and natural movement."
+    }
+  }
+}

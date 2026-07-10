@@ -650,32 +650,62 @@ export function VideoGenerationPage() {
   const [showcaseAssetsReady, setShowcaseAssetsReady] = useState(false);
 
   useEffect(() => {
-    if (!modelShowcase || actionTab !== "Image to Video") {
+    if (!modelShowcase) {
       setShowcaseAssetsReady(true);
       return;
     }
-    let cancelled = false;
-    setShowcaseAssetsReady(false);
-    const check = async () => {
-      const urls = [modelShowcase.videoUrl, modelShowcase.startFrameImageUrl].filter(
-        (u): u is string => typeof u === "string" && u.trim().length > 0
-      );
-      try {
-        const results = await Promise.all(
-          urls.map(async (path) => {
-            const res = await fetch(path, { method: "HEAD", cache: "no-store" });
-            return res.ok;
-          })
+
+    if (actionTab === "Image to Video") {
+      let cancelled = false;
+      setShowcaseAssetsReady(false);
+      const check = async () => {
+        const urls = [modelShowcase.videoUrl, modelShowcase.startFrameImageUrl].filter(
+          (u): u is string => typeof u === "string" && u.trim().length > 0
         );
-        if (!cancelled) setShowcaseAssetsReady(results.every(Boolean));
-      } catch {
-        if (!cancelled) setShowcaseAssetsReady(false);
-      }
-    };
-    void check();
-    return () => {
-      cancelled = true;
-    };
+        try {
+          const results = await Promise.all(
+            urls.map(async (path) => {
+              const res = await fetch(path, { method: "HEAD", cache: "no-store" });
+              return res.ok;
+            })
+          );
+          if (!cancelled) setShowcaseAssetsReady(results.every(Boolean));
+        } catch {
+          if (!cancelled) setShowcaseAssetsReady(false);
+        }
+      };
+      void check();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (actionTab === "Audio to Video") {
+      let cancelled = false;
+      setShowcaseAssetsReady(false);
+      const check = async () => {
+        const urls = [modelShowcase.videoUrl, modelShowcase.portraitImageUrl, modelShowcase.audioUrl].filter(
+          (u): u is string => typeof u === "string" && u.trim().length > 0
+        );
+        try {
+          const results = await Promise.all(
+            urls.map(async (path) => {
+              const res = await fetch(path, { method: "HEAD", cache: "no-store" });
+              return res.ok;
+            })
+          );
+          if (!cancelled) setShowcaseAssetsReady(results.every(Boolean));
+        } catch {
+          if (!cancelled) setShowcaseAssetsReady(false);
+        }
+      };
+      void check();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setShowcaseAssetsReady(true);
   }, [actionTab, modelShowcase]);
 
   const showingModelShowcase = Boolean(
@@ -845,11 +875,18 @@ export function VideoGenerationPage() {
     (nextModelId: string, tab: ActionTab) => {
       if (searchParams.get("prompt")?.trim()) return;
       if (hasUserGenerated) return;
+      if (tab === "AI Director") return;
 
-      const showcase = getVideoModelShowcase(nextModelId, tab);
       const showcaseKey = `${nextModelId}:${tab}`;
+      const showcase = getVideoModelShowcase(nextModelId, tab);
       if (!showcase) {
         appliedShowcaseForModel.current = null;
+        setPrompt("");
+        setPromptImageUrlSafe(null);
+        setPromptImage2UrlSafe(null);
+        setLipsyncAudioUrlSafe(null);
+        setVideoUrl(null);
+        setVideoDownloadUrl(null);
         return;
       }
       if (appliedShowcaseForModel.current === showcaseKey) return;
@@ -911,6 +948,21 @@ export function VideoGenerationPage() {
           setPromptImage2UrlSafe(null);
           setReferenceImageUrls(Array.from({ length: referenceToVideoMaxImages(nextModelId) }, () => null));
         }
+        setLipsyncAudioUrlSafe(null);
+      } else if (tab === "Audio to Video") {
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const portraitUrl = showcase.portraitImageUrl
+          ? showcaseVideoAssetUrl(showcase.portraitImageUrl, origin)
+          : null;
+        const audioUrl = showcase.audioUrl ? showcaseVideoAssetUrl(showcase.audioUrl, origin) : null;
+        setPromptImageUrlSafe(portraitUrl);
+        setPromptImage2UrlSafe(null);
+        setLipsyncAudioUrlSafe(audioUrl);
+        setReferenceImageUrls(Array.from({ length: referenceToVideoMaxImages(nextModelId) }, () => null));
+      } else {
+        setPromptImageUrlSafe(null);
+        setPromptImage2UrlSafe(null);
+        setLipsyncAudioUrlSafe(null);
       }
 
       const urlResolution = parseVideoResolutionFromQuery(searchParams.get("resolution"));
@@ -920,12 +972,19 @@ export function VideoGenerationPage() {
         );
       }
     },
-    [hasUserGenerated, searchParams, setPromptImage2UrlSafe, setPromptImageUrlSafe]
+    [hasUserGenerated, searchParams, setLipsyncAudioUrlSafe, setPromptImage2UrlSafe, setPromptImageUrlSafe]
   );
 
   useEffect(() => {
+    if (searchParams.get("prompt")?.trim()) return;
+    if (hasUserGenerated) return;
+    if (actionTab === "AI Director") return;
+
+    const key = `${composerModelId}:${actionTab}`;
+    if (appliedShowcaseForModel.current === key) return;
+
     applyModelShowcase(composerModelId, actionTab);
-  }, [actionTab, applyModelShowcase, composerModelId]);
+  }, [actionTab, applyModelShowcase, composerModelId, hasUserGenerated, searchParams]);
 
   const handleComposerModelChange = useCallback((id: string) => {
     appliedShowcaseForModel.current = null;
@@ -1026,7 +1085,7 @@ export function VideoGenerationPage() {
     ) {
       setActionTab("Image to Video");
     }
-  }, [actionTab, aspect, resolution, timeSeconds, setPromptImage2UrlSafe]);
+  }, [actionTab, aspect, resolution, setPromptImage2UrlSafe, setPromptImageUrlSafe, timeSeconds]);
 
   useEffect(() => {
     if (actionTab === "Reference to Video" && seedanceComposerSupportsReferenceMedia(composerModelId)) {
@@ -1188,6 +1247,13 @@ export function VideoGenerationPage() {
     if (actionTab === "Audio to Video" && !isAudioToVideoComposerId(composerModelId)) {
       setComposerModelId(INFINITETALK_COMPOSER_ID);
     }
+    if (
+      (actionTab === "Text to Video" || actionTab === "Image to Video") &&
+      isAudioToVideoComposerId(composerModelId)
+    ) {
+      const models = bottomBarModelsForActionTab(actionTab);
+      setComposerModelId(models[0]?.id ?? "seedance-2");
+    }
   }, [actionTab, composerModelId]);
 
   useEffect(() => {
@@ -1246,8 +1312,28 @@ export function VideoGenerationPage() {
     appliedShowcaseForModel.current = null;
     const wasGemini = isGeminiOmniFlashComposerId(composerModelId);
     const wasGrok = isGrokImagineVideoComposerId(composerModelId);
+    const wasAudioToVideo = isAudioToVideoComposerId(composerModelId);
     setActionTab(tab);
     setGenerateError(null);
+    if (tab === "AI Director") {
+      setPrompt("");
+      setPromptImageUrlSafe(null);
+      setPromptImage2UrlSafe(null);
+      setVideoUrl(null);
+      setVideoDownloadUrl(null);
+      setHasUserGenerated(false);
+      setDirectorActiveExampleId(null);
+      return;
+    }
+    if (wasAudioToVideo && tab !== "Audio to Video") {
+      setLipsyncAudioUrlSafe(null);
+      if (tab === "Text to Video" || tab === "Image to Video") {
+        const models = bottomBarModelsForActionTab(tab);
+        setComposerModelId(models[0]?.id ?? "seedance-2");
+        setResolution("1080p");
+        return;
+      }
+    }
     if (tab === "Text to Video" && wasGrok) {
       setComposerModelId(GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID);
       return;
@@ -1299,7 +1385,7 @@ export function VideoGenerationPage() {
         isAudioToVideoResolution(r) ? r : DEFAULT_AUDIO_TO_VIDEO_RESOLUTION
       );
     }
-  }, [composerModelId, setPromptImageUrlSafe]);
+  }, [composerModelId, setLipsyncAudioUrlSafe, setPromptImage2UrlSafe, setPromptImageUrlSafe]);
 
   const runGeneration = useCallback(
     async (ctx: VideoGenerateContext) => {
@@ -2722,6 +2808,11 @@ export function VideoGenerationPage() {
               loading={loading}
               errorMessage={generateError}
               isExample={showingModelShowcase}
+              posterUrl={
+                showingModelShowcase && modelShowcase
+                  ? showcaseVideoAssetUrl(modelShowcase.posterUrl)
+                  : null
+              }
               directorResult={directorResultPanel}
               directorResultLoading={loading}
               generationProgress={generationProgressPanel}

@@ -1,6 +1,13 @@
 import type { ActionTab } from "@/components/video/ActionTabsRow";
+import a2vRecipes from "@/data/video-a2v-showcase-recipes.json";
 import i2vRecipes from "@/data/video-i2v-showcase-recipes.json";
 import t2vRecipes from "@/data/video-t2v-showcase-recipes.json";
+import {
+  videoA2vShowcaseAudioPath,
+  videoA2vShowcaseOutputPath,
+  videoA2vShowcasePortraitPath,
+  videoA2vShowcasePosterPath
+} from "@/lib/video-a2v-showcase-paths";
 import {
   videoI2vShowcaseOutputPath,
   videoI2vShowcasePosterPath,
@@ -24,6 +31,10 @@ export type VideoModelShowcase = {
   historyTitle: string;
   /** Image to Video — per-model start frame. */
   startFrameImageUrl?: string;
+  /** Audio to Video — portrait input. */
+  portraitImageUrl?: string;
+  /** Audio to Video — audio input. */
+  audioUrl?: string;
 };
 
 type VideoRecipe = {
@@ -52,6 +63,16 @@ const I2V_DEFAULTS = i2vRecipes.defaults as {
 
 const T2V_RECIPES = t2vRecipes.models as Record<string, VideoRecipe>;
 const I2V_RECIPES = i2vRecipes.models as Record<string, VideoRecipe>;
+
+const A2V_DEFAULTS = a2vRecipes.defaults as {
+  timeSeconds: number;
+  aspect: string;
+  resolution: string;
+  durationStandard: string;
+  prompt: string;
+};
+
+const A2V_RECIPES = a2vRecipes.models as Record<string, VideoRecipe>;
 
 export function showcaseVideoAssetUrl(path: string, origin = ""): string {
   const p = path.trim();
@@ -98,11 +119,34 @@ function buildI2vShowcase(composerModelId: string): VideoModelShowcase | null {
   };
 }
 
-/** First-visit studio demo for Text / Image to Video. */
+function buildA2vShowcase(composerModelId: string): VideoModelShowcase | null {
+  const recipe = A2V_RECIPES[composerModelId];
+  if (!recipe) return null;
+
+  return {
+    modelId: composerModelId,
+    actionTab: "Audio to Video",
+    prompt: recipe.prompt?.trim() || A2V_DEFAULTS.prompt,
+    timeSeconds: recipe.timeSeconds ?? A2V_DEFAULTS.timeSeconds,
+    aspect: recipe.aspect ?? A2V_DEFAULTS.aspect,
+    resolution: recipe.resolution ?? A2V_DEFAULTS.resolution,
+    durationStandard: recipe.durationStandard ?? A2V_DEFAULTS.durationStandard,
+    videoUrl: videoA2vShowcaseOutputPath(composerModelId),
+    posterUrl: videoA2vShowcasePosterPath(composerModelId),
+    historyTitle: recipe.historyTitle,
+    portraitImageUrl: videoA2vShowcasePortraitPath(composerModelId),
+    audioUrl: videoA2vShowcaseAudioPath(composerModelId)
+  };
+}
+
+/** First-visit studio demo for Text / Image / Audio to Video. */
 export function getVideoModelShowcase(
   composerModelId: string,
   actionTab: ActionTab
 ): VideoModelShowcase | null {
+  if (actionTab === "Audio to Video") {
+    return buildA2vShowcase(composerModelId);
+  }
   if (actionTab === "Image to Video") {
     return buildI2vShowcase(composerModelId);
   }

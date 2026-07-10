@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Download, Expand, History, Play, RotateCcw } from "lucide-react";
+import { Download, Expand, History, Play, RotateCcw, Volume2 } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState, type VideoHTMLAttributes } from "react";
@@ -25,7 +25,7 @@ import { useStudioNavOffset } from "@/lib/hooks/use-studio-nav-offset";
 function uiAspectFrameLayoutClass(aspect: string): string {
   switch (aspect) {
     case "9:16":
-      return "h-full w-auto max-w-[min(100%,56vh)] max-lg:max-w-[min(100%,38vh)]";
+      return "h-[min(56vh,100%)] w-auto max-h-full max-w-[min(100%,56vh)] max-lg:h-[min(38vh,100%)] max-lg:max-w-[min(100%,38vh)]";
     case "1:1":
       return "w-full max-w-[min(100%,min(56vh,480px))]";
     case "16:9":
@@ -61,6 +61,7 @@ export function VideoPreview({
   loading,
   errorMessage,
   isExample = false,
+  posterUrl = null,
   directorResult = null,
   directorResultLoading = false,
   generationProgress = null,
@@ -87,6 +88,8 @@ export function VideoPreview({
   errorMessage?: string | null;
   /** Model showcase demo — not a user generation. */
   isExample?: boolean;
+  /** Showcase / example poster (start frame) while the MP4 buffers. */
+  posterUrl?: string | null;
   /** AI Director — result panel after generation. */
   directorResult?: {
     modelLabel: string;
@@ -131,6 +134,8 @@ export function VideoPreview({
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const downloadInFlightRef = useRef(false);
   const playbackConfirmedRef = useRef(false);
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
+  const [exampleSoundBlocked, setExampleSoundBlocked] = useState(false);
   const [fileAspectCss, setFileAspectCss] = useState<string | null>(null);
   const frameAspectClass = uiAspectFrameClass(aspectRatio);
   const frameLayoutClass = uiAspectFrameLayoutClass(aspectRatio);
@@ -159,12 +164,60 @@ export function VideoPreview({
     }
   }, [canonicalDownloadUrl]);
 
+  const onExpandPreview = useCallback(() => {
+    const el = previewVideoRef.current;
+    if (!el) return;
+    const request =
+      el.requestFullscreen?.bind(el) ??
+      (el as HTMLVideoElement & { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen?.bind(el);
+    void request?.();
+  }, []);
+
+  const playExampleWithSound = useCallback(async (el: HTMLVideoElement) => {
+    el.muted = false;
+    el.volume = 1;
+    try {
+      await el.play();
+      setExampleSoundBlocked(false);
+      return;
+    } catch {
+      /* Browsers often block unmuted autoplay — fall back to muted loop. */
+    }
+    el.muted = true;
+    try {
+      await el.play();
+      setExampleSoundBlocked(true);
+    } catch {
+      setExampleSoundBlocked(true);
+    }
+  }, []);
+
+  const onEnableExampleSound = useCallback(() => {
+    const el = previewVideoRef.current;
+    if (!el) return;
+    el.muted = false;
+    el.volume = 1;
+    void el.play()
+      .then(() => setExampleSoundBlocked(false))
+      .catch(() => setExampleSoundBlocked(true));
+  }, []);
+
   useEffect(() => {
     setInlinePlaybackError(null);
     setDownloadError(null);
     setFileAspectCss(null);
     playbackConfirmedRef.current = false;
+    setExampleSoundBlocked(false);
   }, [videoUrl]);
+
+  useEffect(() => {
+    if (!isExample || !exampleSoundBlocked) return;
+    const onGesture = () => {
+      onEnableExampleSound();
+    };
+    document.addEventListener("pointerdown", onGesture, { once: true, capture: true });
+    return () => document.removeEventListener("pointerdown", onGesture, { capture: true });
+  }, [exampleSoundBlocked, isExample, onEnableExampleSound]);
 
   useEffect(() => {
     if (videoUrl && !errorMessage) {
@@ -242,7 +295,9 @@ export function VideoPreview({
             </Button>
             <button
               type="button"
-              className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/10 text-zorixa-muted hover:bg-white/5 hover:text-white"
+              disabled={!videoUrl || loading}
+              onClick={onExpandPreview}
+              className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/10 text-zorixa-muted hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Expand"
             >
               <Expand className="size-4" />
@@ -289,14 +344,23 @@ export function VideoPreview({
                   >
                     <video
                       key={videoUrl ? `zorixa-preview:${videoUrl}` : "zorixa-preview:empty"}
+                      ref={previewVideoRef}
                       controls
                       controlsList="nodownload noremoteplayback"
                       disablePictureInPicture
                       playsInline
                       preload="auto"
+                      poster={posterUrl ?? undefined}
+                      autoPlay={isExample}
+                      muted={isExample ? exampleSoundBlocked : false}
+                      loop={isExample}
                       {...domVideoAttrs}
                       className="size-full object-contain bg-black"
                       onContextMenu={(e) => e.preventDefault()}
+                      onLoadedData={(e) => {
+                        if (!isExample) return;
+                        void playExampleWithSound(e.currentTarget);
+                      }}
                       onLoadedMetadata={(e) => {
                         const el = e.currentTarget;
                         setInlinePlaybackError(null);
@@ -356,6 +420,18 @@ export function VideoPreview({
                     >
                       <source src={videoUrl} type="video/mp4" />
                     </video>
+                    {isExample && exampleSoundBlocked ? (
+                      <button
+                        type="button"
+                        onClick={onEnableExampleSound}
+                        className="absolute inset-x-0 bottom-0 z-10 flex justify-center bg-gradient-to-t from-black/75 via-black/35 to-transparent px-4 pb-3 pt-10"
+                      >
+                        <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/80 px-3 py-1.5 text-xs font-medium text-white shadow-lg backdrop-blur-sm">
+                          <Volume2 className="size-3.5 text-[#00e5ff]" aria-hidden />
+                          Tap to hear sound
+                        </span>
+                      </button>
+                    ) : null}
                   </div>
                   {inlinePlaybackError ? (
                     <div className="max-w-md rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-100/95">
