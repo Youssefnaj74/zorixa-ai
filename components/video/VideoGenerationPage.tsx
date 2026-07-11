@@ -63,6 +63,7 @@ import type { ActionTab } from "@/components/video/ActionTabsRow";
 import type { VideoGenerateContext } from "@/components/video/VideoBottomBar";
 import {
   resolveMotionControlAtlasPrompt,
+  KLING_MOTION_CREDIT_ESTIMATE_SECONDS,
   type KlingMotionCharacterOrientation
 } from "@/lib/atlas-kling-motion-control";
 import {
@@ -705,18 +706,68 @@ export function VideoGenerationPage() {
       };
     }
 
+    if (actionTab === "Video to Video") {
+      let cancelled = false;
+      setShowcaseAssetsReady(false);
+      const check = async () => {
+        const urls = [
+          modelShowcase.videoUrl,
+          modelShowcase.characterImageUrl,
+          modelShowcase.motionClipUrl
+        ].filter((u): u is string => typeof u === "string" && u.trim().length > 0);
+        try {
+          const results = await Promise.all(
+            urls.map(async (path) => {
+              const res = await fetch(path, { method: "HEAD", cache: "no-store" });
+              return res.ok;
+            })
+          );
+          if (!cancelled) setShowcaseAssetsReady(results.every(Boolean));
+        } catch {
+          if (!cancelled) setShowcaseAssetsReady(false);
+        }
+      };
+      void check();
+      return () => {
+        cancelled = true;
+      };
+    }
+
     setShowcaseAssetsReady(true);
   }, [actionTab, modelShowcase]);
 
   const showingModelShowcase = Boolean(
     modelShowcase && showcaseAssetsReady && !videoUrl && !loading && !hasUserGenerated
   );
+  const inputPreviewVideoUrl = useMemo(() => {
+    if (actionTab === "Video to Video") {
+      if (videoToVideoTabUsesDualAssetPipeline(composerModelId) && motionVideoUrl) {
+        return motionVideoUrl;
+      }
+      if (videoComposerSupportsVideoEditTab(composerModelId) && editSourceVideoUrl) {
+        return editSourceVideoUrl;
+      }
+    }
+    if (actionTab === "Reference to Video") {
+      const firstRefVideo = referenceVideoUrls.find((url): url is string => Boolean(url));
+      if (firstRefVideo) return firstRefVideo;
+    }
+    return null;
+  }, [
+    actionTab,
+    composerModelId,
+    editSourceVideoUrl,
+    motionVideoUrl,
+    referenceVideoUrls
+  ]);
+
   const previewVideoUrl = useMemo(() => {
     if (showingModelShowcase && modelShowcase) {
       return showcaseVideoAssetUrl(modelShowcase.videoUrl);
     }
-    return videoUrl;
-  }, [modelShowcase, showingModelShowcase, videoUrl]);
+    if (videoUrl) return videoUrl;
+    return inputPreviewVideoUrl;
+  }, [inputPreviewVideoUrl, modelShowcase, showingModelShowcase, videoUrl]);
 
   const historyItems = useMemo(() => {
     if (!showingModelShowcase || !modelShowcase) return history;
@@ -820,7 +871,12 @@ export function VideoGenerationPage() {
           billingActionTab === "Reference to Video" ||
           (billingActionTab === "Video to Video" &&
             videoToVideoTabUsesViduStartEnd(billingModelId)));
-      const directorDuration = actionTab === "AI Director" ? directorDurationSec : timeSeconds;
+      const directorDuration =
+        actionTab === "Video to Video" && videoToVideoTabUsesKlingMotion(composerModelId)
+          ? KLING_MOTION_CREDIT_ESTIMATE_SECONDS
+          : actionTab === "AI Director"
+            ? directorDurationSec
+            : timeSeconds;
       const directorResolution =
         actionTab === "AI Director" && directorPreviewRoute
           ? directorPreviewRoute.resolution
@@ -885,6 +941,7 @@ export function VideoGenerationPage() {
         setPromptImageUrlSafe(null);
         setPromptImage2UrlSafe(null);
         setLipsyncAudioUrlSafe(null);
+        setMotionVideoUrlSafe(null);
         setVideoUrl(null);
         setVideoDownloadUrl(null);
         return;
@@ -958,11 +1015,32 @@ export function VideoGenerationPage() {
         setPromptImageUrlSafe(portraitUrl);
         setPromptImage2UrlSafe(null);
         setLipsyncAudioUrlSafe(audioUrl);
+        setMotionVideoUrlSafe(null);
         setReferenceImageUrls(Array.from({ length: referenceToVideoMaxImages(nextModelId) }, () => null));
+      } else if (tab === "Video to Video") {
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const characterUrl = showcase.characterImageUrl
+          ? showcaseVideoAssetUrl(showcase.characterImageUrl, origin)
+          : null;
+        const motionUrl = showcase.motionClipUrl
+          ? showcaseVideoAssetUrl(showcase.motionClipUrl, origin)
+          : null;
+        setPromptImageUrlSafe(characterUrl);
+        setPromptImage2UrlSafe(null);
+        setLipsyncAudioUrlSafe(null);
+        setMotionVideoUrlSafe(motionUrl);
+        setReferenceImageUrls(Array.from({ length: referenceToVideoMaxImages(nextModelId) }, () => null));
+        if (showcase.characterOrientation) {
+          setCharacterOrientation(showcase.characterOrientation);
+        }
+        if (showcase.keepOriginalSound != null) {
+          setKeepOriginalSound(showcase.keepOriginalSound);
+        }
       } else {
         setPromptImageUrlSafe(null);
         setPromptImage2UrlSafe(null);
         setLipsyncAudioUrlSafe(null);
+        setMotionVideoUrlSafe(null);
       }
 
       const urlResolution = parseVideoResolutionFromQuery(searchParams.get("resolution"));
@@ -972,7 +1050,7 @@ export function VideoGenerationPage() {
         );
       }
     },
-    [hasUserGenerated, searchParams, setLipsyncAudioUrlSafe, setPromptImage2UrlSafe, setPromptImageUrlSafe]
+    [hasUserGenerated, searchParams, setLipsyncAudioUrlSafe, setMotionVideoUrlSafe, setPromptImage2UrlSafe, setPromptImageUrlSafe]
   );
 
   useEffect(() => {
@@ -1541,10 +1619,12 @@ export function VideoGenerationPage() {
             ? klingV3AspectFromUi(aspectRatio)
             : atlasAspect;
         const atlasDurationForPayload =
-          videoModel === KLING_30_PRO_MODEL_ID &&
-          (generationTab === "Text to Video" || generationTab === "Image to Video")
-            ? normalizeKlingV3DurationSeconds(duration)
-            : atlasDuration;
+          generationTab === "Video to Video" && videoToVideoTabUsesKlingMotion(videoModel)
+            ? KLING_MOTION_CREDIT_ESTIMATE_SECONDS
+            : videoModel === KLING_30_PRO_MODEL_ID &&
+              (generationTab === "Text to Video" || generationTab === "Image to Video")
+              ? normalizeKlingV3DurationSeconds(duration)
+              : atlasDuration;
 
         switch (generationTab) {
           case "Text to Video":
@@ -1760,7 +1840,6 @@ export function VideoGenerationPage() {
                   video_url,
                   character_orientation: ctx.characterOrientation,
                   keep_original_sound: ctx.keepOriginalSound,
-                  duration,
                   speed_tier
                 };
               } else {
@@ -2594,7 +2673,17 @@ export function VideoGenerationPage() {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ generation_id: generationId })
-    }).catch(() => {});
+    })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = (await res.json()) as { output_url?: string };
+        const mirrored = data.output_url?.trim();
+        if (mirrored?.startsWith("https://")) {
+          setVideoDownloadUrl(mirrored);
+          setVideoUrl(toBrowserVideoSrc(mirrored));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleDirectorSlowTryAnother = useCallback(() => {
@@ -2734,7 +2823,8 @@ export function VideoGenerationPage() {
       : actionTab === "Audio to Video"
         ? true
         : videoComposerUsesTextOnlyLayout(composerModelId, actionTab) ||
-          actionTab === "Reference to Video";
+          actionTab === "Reference to Video" ||
+          Boolean(inputPreviewVideoUrl);
 
   const previewComposerModelId =
     directorLastRoute?.modelId ?? (actionTab === "AI Director" ? directorPreviewRoute?.modelId : null) ?? composerModelId;
@@ -2824,6 +2914,7 @@ export function VideoGenerationPage() {
               onResetDefaults={resetCurrentTabDefaults}
               onExtendVideo={() => void handleExtendVideo()}
               onUpscaleVideo={() => void runVideoUpscale()}
+              allowVideoDownload={Boolean(outputVideoSourceUrl) || showingModelShowcase}
               onPlaybackConfirmed={handleVideoPlaybackConfirmed}
               className="scrollbar-hide h-full min-h-0 w-full min-w-0 flex-1"
             />

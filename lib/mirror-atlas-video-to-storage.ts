@@ -62,7 +62,7 @@ export async function mirrorAtlasVideoToSupabaseStorage(input: {
 export async function mirrorAtlasVideoAfterPlaybackConfirmed(input: {
   userId: string;
   generationId: number;
-}): Promise<boolean> {
+}): Promise<string | null> {
   const { data: row, error: fetchErr } = await supabaseAdmin
     .from("generations")
     .select("id, output_url")
@@ -71,26 +71,26 @@ export async function mirrorAtlasVideoAfterPlaybackConfirmed(input: {
     .eq("feature_type", "video")
     .maybeSingle();
 
-  if (fetchErr || !row?.output_url) return false;
+  if (fetchErr || !row?.output_url) return null;
 
   const atlasUrl = coerceToPublicHttpsUrl(String(row.output_url).trim());
-  if (!atlasUrl) return false;
+  if (!atlasUrl) return null;
 
   let host: string;
   try {
     host = new URL(atlasUrl).hostname;
   } catch {
-    return false;
+    return null;
   }
-  if (!isAllowedVideoPlaybackHost(host)) return false;
-  if (host.endsWith(".supabase.co") || host.endsWith(".supabase.in")) return true;
+  if (!isAllowedVideoPlaybackHost(host)) return null;
+  if (host.endsWith(".supabase.co") || host.endsWith(".supabase.in")) return atlasUrl;
 
   const mirrored = await mirrorAtlasVideoToSupabaseStorage({
     userId: input.userId,
     generationId: input.generationId,
     atlasUrl
   });
-  if (!mirrored || mirrored === atlasUrl) return false;
+  if (!mirrored || mirrored === atlasUrl) return null;
 
   const { error: updateErr } = await supabaseAdmin
     .from("generations")
@@ -98,5 +98,5 @@ export async function mirrorAtlasVideoAfterPlaybackConfirmed(input: {
     .eq("id", input.generationId)
     .eq("user_id", input.userId);
 
-  return !updateErr;
+  return updateErr ? null : mirrored;
 }

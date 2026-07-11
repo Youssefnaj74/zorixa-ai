@@ -2,6 +2,7 @@ import type { ActionTab } from "@/components/video/ActionTabsRow";
 import a2vRecipes from "@/data/video-a2v-showcase-recipes.json";
 import i2vRecipes from "@/data/video-i2v-showcase-recipes.json";
 import t2vRecipes from "@/data/video-t2v-showcase-recipes.json";
+import v2vRecipes from "@/data/video-v2v-showcase-recipes.json";
 import {
   videoA2vShowcaseAudioPath,
   videoA2vShowcaseOutputPath,
@@ -17,6 +18,12 @@ import {
   videoT2vShowcaseOutputPath,
   videoT2vShowcasePosterPath
 } from "@/lib/video-t2v-showcase-paths";
+import {
+  videoV2vShowcaseCharacterPath,
+  videoV2vShowcaseMotionClipPath,
+  videoV2vShowcaseOutputPath,
+  videoV2vShowcasePosterPath
+} from "@/lib/video-v2v-showcase-paths";
 
 export type VideoModelShowcase = {
   modelId: string;
@@ -35,6 +42,13 @@ export type VideoModelShowcase = {
   portraitImageUrl?: string;
   /** Audio to Video — audio input. */
   audioUrl?: string;
+  /** Video to Video — character still (motion control). */
+  characterImageUrl?: string;
+  /** Video to Video — reference motion clip. */
+  motionClipUrl?: string;
+  /** Video to Video — Kling motion framing. */
+  characterOrientation?: "image" | "video";
+  keepOriginalSound?: boolean;
 };
 
 type VideoRecipe = {
@@ -73,6 +87,22 @@ const A2V_DEFAULTS = a2vRecipes.defaults as {
 };
 
 const A2V_RECIPES = a2vRecipes.models as Record<string, VideoRecipe>;
+
+type V2vRecipe = VideoRecipe & {
+  characterOrientation?: "image" | "video";
+  keepOriginalSound?: boolean;
+};
+
+const V2V_DEFAULTS = v2vRecipes.defaults as {
+  aspect: string;
+  resolution: string;
+  durationStandard: string;
+  characterOrientation: "image" | "video";
+  keepOriginalSound: boolean;
+  prompt: string;
+};
+
+const V2V_RECIPES = v2vRecipes.models as Record<string, V2vRecipe>;
 
 export function showcaseVideoAssetUrl(path: string, origin = ""): string {
   const p = path.trim();
@@ -119,6 +149,28 @@ function buildI2vShowcase(composerModelId: string): VideoModelShowcase | null {
   };
 }
 
+function buildV2vShowcase(composerModelId: string): VideoModelShowcase | null {
+  const recipe = V2V_RECIPES[composerModelId];
+  if (!recipe) return null;
+
+  return {
+    modelId: composerModelId,
+    actionTab: "Video to Video",
+    prompt: recipe.prompt != null ? String(recipe.prompt).trim() : V2V_DEFAULTS.prompt,
+    timeSeconds: recipe.timeSeconds ?? 5,
+    aspect: recipe.aspect ?? V2V_DEFAULTS.aspect,
+    resolution: recipe.resolution ?? V2V_DEFAULTS.resolution,
+    durationStandard: recipe.durationStandard ?? V2V_DEFAULTS.durationStandard,
+    videoUrl: videoV2vShowcaseOutputPath(composerModelId),
+    posterUrl: videoV2vShowcasePosterPath(composerModelId),
+    historyTitle: recipe.historyTitle,
+    characterImageUrl: videoV2vShowcaseCharacterPath(composerModelId),
+    motionClipUrl: videoV2vShowcaseMotionClipPath(composerModelId),
+    characterOrientation: recipe.characterOrientation ?? V2V_DEFAULTS.characterOrientation,
+    keepOriginalSound: recipe.keepOriginalSound ?? V2V_DEFAULTS.keepOriginalSound
+  };
+}
+
 function buildA2vShowcase(composerModelId: string): VideoModelShowcase | null {
   const recipe = A2V_RECIPES[composerModelId];
   if (!recipe) return null;
@@ -152,6 +204,9 @@ export function getVideoModelShowcase(
   }
   if (actionTab === "Text to Video") {
     return buildT2vShowcase(composerModelId);
+  }
+  if (actionTab === "Video to Video") {
+    return buildV2vShowcase(composerModelId);
   }
   return null;
 }

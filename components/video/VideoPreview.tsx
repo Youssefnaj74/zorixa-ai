@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState, type VideoHTMLAttributes } fr
 
 import { Button } from "@/components/ui/button";
 import { downloadVideoFile, videoDownloadFilename } from "@/lib/download-video-file";
+import { humanizeClientFetchError } from "@/lib/upload-client-media";
 import { isInsufficientCreditsMessage } from "@/lib/insufficient-credits-message";
 import { extractCanonicalVideoUrlFromProxy } from "@/lib/video-playback-proxy";
 import { studioReferenceImageAlt } from "@/lib/image-alt-text";
@@ -17,7 +18,6 @@ import type { ActionTab } from "@/components/video/ActionTabsRow";
 import { VideoGenerationProgress } from "@/components/video/VideoGenerationProgress";
 import { DirectorResultBanner } from "@/components/video/DirectorResultBanner";
 import { SeedanceReferenceToVideoTip } from "@/components/video/SeedanceReferenceToVideoTip";
-import { VideoToVideoModelTip } from "@/components/video/VideoToVideoModelTip";
 
 import { useStudioNavOffset } from "@/lib/hooks/use-studio-nav-offset";
 
@@ -76,6 +76,7 @@ export function VideoPreview({
   onExtendVideo,
   onUpscaleVideo,
   onPlaybackConfirmed,
+  allowVideoDownload = true,
   className
 }: {
   actionTab: ActionTab;
@@ -125,6 +126,7 @@ export function VideoPreview({
   onUpscaleVideo?: () => void;
   /** Fired once inline playback metadata loads — triggers deferred Atlas CDN mirror. */
   onPlaybackConfirmed?: () => void;
+  allowVideoDownload?: boolean;
   className?: string;
 }) {
   const studioNavOffset = useStudioNavOffset();
@@ -140,10 +142,11 @@ export function VideoPreview({
   const frameAspectClass = uiAspectFrameClass(aspectRatio);
   const frameLayoutClass = uiAspectFrameLayoutClass(aspectRatio);
   const uiPortrait = aspectRatio === "9:16";
-  const canonicalDownloadUrl =
-    videoDownloadUrl?.trim() ||
-    (videoUrl ? extractCanonicalVideoUrlFromProxy(videoUrl) : null) ||
-    (videoUrl?.startsWith("https://") ? videoUrl : null);
+  const canonicalDownloadUrl = allowVideoDownload
+    ? videoDownloadUrl?.trim() ||
+      (videoUrl ? extractCanonicalVideoUrlFromProxy(videoUrl) : null) ||
+      (videoUrl?.startsWith("https://") ? videoUrl : null)
+    : null;
 
   const onDownloadClick = useCallback(async () => {
     if (!canonicalDownloadUrl || downloadInFlightRef.current) return;
@@ -153,7 +156,7 @@ export function VideoPreview({
     try {
       await downloadVideoFile(canonicalDownloadUrl, videoDownloadFilename(canonicalDownloadUrl));
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Download failed";
+      const msg = humanizeClientFetchError(e);
       setDownloadError(msg);
       if (process.env.NODE_ENV === "development") {
         console.warn("[VideoPreview] download failed", msg);
@@ -231,10 +234,7 @@ export function VideoPreview({
   }, [videoUrl, errorMessage]);
 
   const showInPreviewModelTip =
-    !videoUrl &&
-    !loading &&
-    !errorMessage &&
-    (actionTab === "Video to Video" || actionTab === "Reference to Video");
+    !videoUrl && !loading && !errorMessage && actionTab === "Reference to Video";
 
   const previewPlaceholderHero = (
     <div className="flex shrink-0 flex-col items-center justify-center gap-4">
@@ -323,16 +323,24 @@ export function VideoPreview({
               {showInPreviewModelTip ? (
                 <div className="flex w-full max-w-2xl flex-col items-center justify-center gap-5 py-2">
                   {previewPlaceholderHero}
-                  {actionTab === "Video to Video" ? (
-                    <VideoToVideoModelTip composerModelId={composerModelId} className="w-full" />
-                  ) : null}
-                  {actionTab === "Reference to Video" ? (
-                    <SeedanceReferenceToVideoTip
-                      composerModelId={composerModelId}
-                      className="w-full"
-                    />
-                  ) : null}
+                  <SeedanceReferenceToVideoTip
+                    composerModelId={composerModelId}
+                    className="w-full"
+                  />
                 </div>
+              ) : loading && generationProgress ? (
+                <VideoGenerationProgress
+                  modelLabel={generationProgress.modelLabel}
+                  composerModelId={generationProgress.composerModelId}
+                  elapsedSec={generationProgress.elapsedSec}
+                  directorRouted={generationProgress.directorRouted}
+                  tip={generationProgress.tip}
+                  showSlowBanner={generationProgress.showSlowBanner}
+                  canTryAnother={generationProgress.canTryAnother}
+                  onCancel={generationProgress.onCancel}
+                  onKeepWaiting={generationProgress.onKeepWaiting}
+                  onTryAnother={generationProgress.onTryAnother}
+                />
               ) : videoUrl && !errorMessage ? (
                 <div className="flex h-full min-h-0 w-full flex-1 flex-col items-center justify-center gap-3">
                   <div
@@ -458,19 +466,6 @@ export function VideoPreview({
                     />
                   ) : null}
                 </div>
-              ) : loading && generationProgress ? (
-                <VideoGenerationProgress
-                  modelLabel={generationProgress.modelLabel}
-                  composerModelId={generationProgress.composerModelId}
-                  elapsedSec={generationProgress.elapsedSec}
-                  directorRouted={generationProgress.directorRouted}
-                  tip={generationProgress.tip}
-                  showSlowBanner={generationProgress.showSlowBanner}
-                  canTryAnother={generationProgress.canTryAnother}
-                  onCancel={generationProgress.onCancel}
-                  onKeepWaiting={generationProgress.onKeepWaiting}
-                  onTryAnother={generationProgress.onTryAnother}
-                />
               ) : errorMessage ? (
                 <div className="max-w-md px-4 text-center">
                   <p className="mb-2 font-display text-xs font-semibold uppercase tracking-wide text-red-300/90">

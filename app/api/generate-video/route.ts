@@ -20,8 +20,8 @@ import {
 } from "@/lib/atlas-video-generate-audio";
 import {
   isKlingMotionControlAtlasModel,
+  KLING_MOTION_CREDIT_ESTIMATE_SECONDS,
   normalizeKlingMotionCharacterOrientation,
-  normalizeKlingMotionDurationSeconds,
   resolveMotionControlAtlasPrompt,
   videoComposerUsesOptionalMotionPrompt
 } from "@/lib/atlas-kling-motion-control";
@@ -1055,7 +1055,7 @@ async function handleGenerateVideoPost(request: Request) {
       ? normalizeGeminiOmniFlashReferenceDurationSeconds(durationSec)
       : normalizeGeminiOmniFlashDurationSeconds(durationSec);
   } else if (action === "motion-control" && isKlingMotionControlAtlasModel(model)) {
-    durationSec = normalizeKlingMotionDurationSeconds(durationSec, motionOrientation!);
+    durationSec = KLING_MOTION_CREDIT_ESTIMATE_SECONDS;
   } else if (isKlingV3AtlasModel(model)) {
     durationSec = normalizeKlingV3DurationSeconds(durationSec);
   } else if (isAtlasKlingModelSlug(model)) {
@@ -1137,8 +1137,7 @@ async function handleGenerateVideoPost(request: Request) {
       image: image_url,
       video: video_url,
       character_orientation: motionOrientation,
-      keep_original_sound: body.keep_original_sound !== false,
-      duration: durationSec
+      keep_original_sound: body.keep_original_sound !== false
     };
   } else if (action === "motion-control" && isWanCharacterSwapAtlasModel(model)) {
     atlasBody = buildWanCharacterSwapAtlasBody({

@@ -1,0 +1,16 @@
+{
+  "defaults": {
+    "aspect": "9:16",
+    "resolution": "720p",
+    "durationStandard": "Standard",
+    "characterOrientation": "image",
+    "keepOriginalSound": true,
+    "prompt": ""
+  },
+  "models": {
+    "kling-2-6-motion": {
+      "historyTitle": "Motion Control Demo",
+      "prompt": ""
+    }
+  }
+}

@@ -439,8 +439,6 @@ export const MODE_DROPUP_OPTIONS = [
 
 export const TIME_SECONDS_OPTIONS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as const;
 
-export const MOTION_CONTROL_DURATION_OPTIONS = [5, 10, 15, 30] as const;
-
 export const ASPECT_STEP_OPTIONS = ["16:9", "9:16", "1:1", "4:3", "3:4"] as const;
 
 export const HAPPYHORSE_DURATION_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as const;

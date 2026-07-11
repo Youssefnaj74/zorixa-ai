@@ -20,7 +20,14 @@ export function resolveMotionControlAtlasPrompt(userPrompt: string): string {
   return trimmed || MOTION_CONTROL_DEFAULT_PROMPT;
 }
 
-export type KlingMotionCharacterOrientation = "image" | "video";
+/** Atlas bills per reference clip length; API has no duration param — use 5s for credit estimate. */
+export const KLING_MOTION_CREDIT_ESTIMATE_SECONDS = 5 as const;
+
+/** Max reference clip length by framing mode (Atlas / Kling motion-control). */
+export const KLING_MOTION_REFERENCE_VIDEO_MAX_SECONDS = {
+  image: 10,
+  video: 30
+} as const;
 
 export function isKlingMotionControlAtlasModel(model: string): boolean {
   return /kling-v2\.6-(pro|std)\/motion-control/i.test(model);
@@ -35,11 +42,10 @@ export function normalizeKlingMotionCharacterOrientation(
   return "image";
 }
 
-/** Atlas bills 5–30s depending on orientation; clamp to supported range. */
-export function normalizeKlingMotionDurationSeconds(
-  durationSec: number,
+export type KlingMotionCharacterOrientation = "image" | "video";
+
+export function klingMotionReferenceVideoMaxSeconds(
   orientation: KlingMotionCharacterOrientation
 ): number {
-  const max = orientation === "video" ? 30 : 15;
-  return Math.min(max, Math.max(5, Math.round(durationSec)));
+  return KLING_MOTION_REFERENCE_VIDEO_MAX_SECONDS[orientation];
 }

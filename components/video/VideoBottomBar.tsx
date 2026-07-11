@@ -1,12 +1,13 @@
 "use client";
 
-import { Check, ChevronUp, CircleHelp, Film, Sparkles, Upload, X } from "lucide-react";
+import { Check, ChevronUp, CircleHelp, Expand, Film, Sparkles, Upload, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { Badge } from "@/components/ui/Badge";
 import { ModelBrandLogo } from "@/components/ui/ModelBrandLogo";
+import { VideoLightbox } from "@/components/ui/VideoLightbox";
 import {
   VIDEO_SEEDANCE_R2V_DOCK_HEIGHT,
   VIDEO_WAN_R2V_DOCK_HEIGHT
@@ -62,7 +63,6 @@ import {
   wan26ComposerSupportsShotType,
   type Wan26ShotType,
   MODE_DROPUP_OPTIONS,
-  MOTION_CONTROL_DURATION_OPTIONS,
   videoComposerSupportsEndFrame,
   videoComposerUsesTextOnlyLayout,
   atlasSpeedTierUiLabel,
@@ -292,6 +292,7 @@ export function VideoBottomBar({
   const fileMotionVideoRef = useRef<HTMLInputElement>(null);
   const [file1Name, setFile1Name] = useState<string | null>(null);
   const [file2Name, setFile2Name] = useState<string | null>(null);
+  const [motionVideoLightboxOpen, setMotionVideoLightboxOpen] = useState(false);
 
   useEffect(() => {
     setModelMenuMounted(true);
@@ -471,12 +472,6 @@ export function VideoBottomBar({
     if (!promptImage2Url) setFile2Name(null);
   }, [promptImage2Url]);
 
-  useEffect(() => {
-    if (actionTab !== "Video to Video" || !videoToVideoTabUsesKlingMotion(composerModelId)) return;
-    const max = characterOrientation === "video" ? 30 : 15;
-    if (timeSeconds > max) onTimeSecondsChange(max);
-  }, [actionTab, characterOrientation, composerModelId, timeSeconds, onTimeSecondsChange]);
-
   const showReferenceLayout = actionTab === "Reference to Video";
   const referenceMaxImages = referenceToVideoMaxImages(composerModelId);
   const showSeedanceReferenceMedia =
@@ -637,12 +632,7 @@ export function VideoBottomBar({
     if (showViduStartEndLayout || isViduQ3ProComposerId(composerModelId)) {
       return Array.from({ length: 16 }, (_, i) => i + 1);
     }
-    if (showMotionControlLayout) {
-      return MOTION_CONTROL_DURATION_OPTIONS.filter((t) =>
-        characterOrientation === "video" ? t <= 30 : t <= 15
-      );
-    }
-    if (showWanCharacterSwapLayout) return [];
+    if (showMotionControlLayout || showWanCharacterSwapLayout) return [];
     if (showGrokLayout) return [...GROK_IMAGINE_VIDEO_DURATION_OPTIONS];
     if (showGeminiLayout) return [...GEMINI_OMNI_FLASH_DURATION_OPTIONS];
     if (showHappyHorseLayout) return [...HAPPYHORSE_DURATION_OPTIONS];
@@ -703,6 +693,7 @@ export function VideoBottomBar({
       composerModelId,
       hasPromptImage: Boolean(promptImageUrl),
       hasPromptImage2: Boolean(promptImage2Url),
+      hasMotionVideo: Boolean(motionVideoUrl),
       hasLipsyncAudio: Boolean(lipsyncAudioUrl),
       hasEditSourceVideo: Boolean(editSourceVideoUrl),
       generateAudio: generateAudioEffective,
@@ -712,11 +703,14 @@ export function VideoBottomBar({
   }, [
     actionTab,
     aspect,
+    characterOrientation,
     composerModelId,
     durationStandard,
     editSourceVideoUrl,
     generateAudioEffective,
+    keepOriginalSound,
     lipsyncAudioUrl,
+    motionVideoUrl,
     onGenerate,
     promptImage2Url,
     promptImageUrl,
@@ -732,6 +726,7 @@ export function VideoBottomBar({
   ]);
 
   return (
+    <>
     <footer
       ref={bottomBarRef}
       style={useStableDockHeight ? { minHeight: stableDockHeight } : undefined}
@@ -1005,23 +1000,53 @@ export function VideoBottomBar({
                               : "Upload motion clip"
                         }
                       >
-                        <Film className="size-5 opacity-60" />
-                        <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">
-                          {showWanCharacterSwapLayout ? "Source video" : "Motion clip"}
-                        </span>
+                        {motionVideoUrl ? (
+                          <video
+                            src={motionVideoUrl}
+                            className="absolute inset-0 size-full object-cover"
+                            muted
+                            playsInline
+                            preload="metadata"
+                          />
+                        ) : (
+                          <>
+                            <Film className="size-5 opacity-60" />
+                            <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">
+                              {showWanCharacterSwapLayout ? "Source video" : "Motion clip"}
+                            </span>
+                          </>
+                        )}
                       </button>
                       {motionVideoUrl ? (
-                        <button
-                          type="button"
-                          onClick={() => onMotionVideoUrlChange?.(null)}
-                          className={cn(
-                            "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
-                            "hover:bg-black hover:text-white"
-                          )}
-                          aria-label="Remove motion clip"
-                        >
-                          <X className="size-3.5" />
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMotionVideoLightboxOpen(true);
+                            }}
+                            className={cn(
+                              "absolute bottom-2 left-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                              "hover:bg-black hover:text-white"
+                            )}
+                            aria-label={
+                              showWanCharacterSwapLayout ? "Preview source video" : "Preview motion clip"
+                            }
+                          >
+                            <Expand className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onMotionVideoUrlChange?.(null)}
+                            className={cn(
+                              "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                              "hover:bg-black hover:text-white"
+                            )}
+                            aria-label="Remove motion clip"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </>
                       ) : null}
                     </motion.div>
                   </motion.div>
@@ -1151,10 +1176,22 @@ export function VideoBottomBar({
                       className={videoImageUploadSlotClass()}
                       aria-label={editSourceVideoUrl ? "Change source video" : "Upload source video"}
                     >
-                      <Film className="size-5 opacity-60" />
-                      <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">
-                        Source video
-                      </span>
+                      {editSourceVideoUrl ? (
+                        <video
+                          src={editSourceVideoUrl}
+                          className="absolute inset-0 size-full object-cover"
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                      ) : (
+                        <>
+                          <Film className="size-5 opacity-60" />
+                          <span className="mt-2 text-center text-xs font-medium text-zorixa-muted">
+                            Source video
+                          </span>
+                        </>
+                      )}
                     </button>
                     {editSourceVideoUrl ? (
                       <button
@@ -1672,7 +1709,10 @@ export function VideoBottomBar({
           </>
           ) : null}
 
-          {!showAudioToVideoLayout && !showWanCharacterSwapLayout && !hideHailuoT2vTimeControl ? (
+          {!showAudioToVideoLayout &&
+          !showWanCharacterSwapLayout &&
+          !showMotionControlLayout &&
+          !hideHailuoT2vTimeControl ? (
           <>
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
 
@@ -1864,6 +1904,13 @@ export function VideoBottomBar({
         </div>
       </div>
     </footer>
+      <VideoLightbox
+        open={motionVideoLightboxOpen && Boolean(motionVideoUrl)}
+        src={motionVideoUrl}
+        title={showWanCharacterSwapLayout ? "Source video" : "Motion clip"}
+        onClose={() => setMotionVideoLightboxOpen(false)}
+      />
+    </>
   );
 }
 

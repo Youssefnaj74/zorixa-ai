@@ -28,10 +28,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "generation_id must be a positive integer" }, { status: 400 });
   }
 
-  const mirrored = await mirrorAtlasVideoAfterPlaybackConfirmed({
+  const outputUrl = await mirrorAtlasVideoAfterPlaybackConfirmed({
     userId: actor.userId,
     generationId
   });
 
-  return NextResponse.json({ ok: mirrored });
+  return NextResponse.json({ ok: Boolean(outputUrl), output_url: outputUrl ?? undefined });
 }
