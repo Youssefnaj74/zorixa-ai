@@ -101,6 +101,7 @@ const V2V_DEFAULTS = v2vRecipes.defaults as {
   aspect: string;
   resolution: string;
   durationStandard: string;
+  timeSeconds: number;
   characterOrientation: "image" | "video";
   keepOriginalSound: boolean;
   prompt: string;
