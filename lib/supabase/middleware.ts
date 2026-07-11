@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 import { requirePublicSupabaseEnv } from "@/lib/env";
+import { isInvalidRefreshTokenError } from "@/lib/supabase/auth-errors";
 
 /**
  * Refreshes the Supabase session from cookies and returns a response that may
@@ -32,8 +33,15 @@ export async function updateSession(request: NextRequest) {
   });
 
   const {
-    data: { user }
+    data: { user },
+    error
   } = await supabase.auth.getUser();
 
-  return { response: supabaseResponse, supabase, user };
+  if (error && isInvalidRefreshTokenError(error)) {
+    await supabase.auth.signOut();
+  }
+
+  const resolvedUser = error && isInvalidRefreshTokenError(error) ? null : user;
+
+  return { response: supabaseResponse, supabase, user: resolvedUser };
 }

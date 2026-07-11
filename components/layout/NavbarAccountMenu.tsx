@@ -6,6 +6,7 @@ import { ArrowRight, Settings } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getBrowserUserSafe } from "@/lib/supabase/auth-client";
 
 export function NavbarAccountMenu() {
   const [open, setOpen] = useState(false);
@@ -19,7 +20,7 @@ export function NavbarAccountMenu() {
     const supabase = createSupabaseBrowserClient();
 
     function syncUser() {
-      void supabase.auth.getUser().then(({ data: { user } }) => {
+      void getBrowserUserSafe().then((user) => {
         setSignedIn(!!user);
         const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
         const fromMeta = meta?.full_name ?? meta?.name;

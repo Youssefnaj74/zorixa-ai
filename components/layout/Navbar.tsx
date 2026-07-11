@@ -12,6 +12,7 @@ import { SiteAnnouncementBanner } from "@/components/layout/SiteAnnouncementBann
 import { ZorixaLogo } from "@/components/layout/ZorixaLogo";
 import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getBrowserUserSafe } from "@/lib/supabase/auth-client";
 
 export type DashboardNavbarProps = {
   credits: number;
@@ -279,9 +280,7 @@ export function Navbar({
     const supabase = createSupabaseBrowserClient();
 
     void (async () => {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
+      const user = await getBrowserUserSafe();
       if (cancelled) return;
 
       if (!user) {
