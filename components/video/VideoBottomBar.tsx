@@ -41,6 +41,8 @@ import {
   videoComposerUsesVeo31,
   veo31ReferenceDurationSeconds,
   videoComposerUsesWan27,
+  wan26DurationOptionsForTab,
+  isWan26ComposerId,
   GEMINI_OMNI_FLASH_DURATION_OPTIONS,
   GEMINI_OMNI_FLASH_I2V_COMPOSER_ID,
   GEMINI_OMNI_FLASH_MAX_IMAGES,
@@ -292,7 +294,10 @@ export function VideoBottomBar({
   const fileMotionVideoRef = useRef<HTMLInputElement>(null);
   const [file1Name, setFile1Name] = useState<string | null>(null);
   const [file2Name, setFile2Name] = useState<string | null>(null);
-  const [motionVideoLightboxOpen, setMotionVideoLightboxOpen] = useState(false);
+  const [uploadVideoLightbox, setUploadVideoLightbox] = useState<{
+    src: string;
+    title: string;
+  } | null>(null);
 
   useEffect(() => {
     setModelMenuMounted(true);
@@ -527,6 +532,7 @@ export function VideoBottomBar({
   const showHailuoLayout = videoComposerUsesHailuo(composerModelId);
   const hideHailuoT2vTimeControl = showHailuoLayout && actionTab === "Text to Video";
   const showWan27Layout = videoComposerUsesWan27(composerModelId);
+  const showWan26Layout = isWan26ComposerId(composerModelId);
   const showKling30Layout = isKling30ProComposerId(composerModelId);
   const showGeminiLayout = isGeminiOmniFlashComposerId(composerModelId);
   const showGeminiImageLayout =
@@ -637,6 +643,7 @@ export function VideoBottomBar({
     if (showGeminiLayout) return [...GEMINI_OMNI_FLASH_DURATION_OPTIONS];
     if (showHappyHorseLayout) return [...HAPPYHORSE_DURATION_OPTIONS];
     if (showHailuoLayout) return [...HAILUO_23_DURATION_OPTIONS];
+    if (showWan26Layout) return [...wan26DurationOptionsForTab(actionTab)];
     if (showWan27Layout) return [...WAN27_DURATION_OPTIONS];
     if (showKling30Layout) return [...klingV3DurationOptionsForUi()];
     if (showVeo31Layout) return veo31DurationOptionsForTab(actionTab);
@@ -1023,7 +1030,11 @@ export function VideoBottomBar({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setMotionVideoLightboxOpen(true);
+                              if (!motionVideoUrl) return;
+                              setUploadVideoLightbox({
+                                src: motionVideoUrl,
+                                title: showWanCharacterSwapLayout ? "Source video" : "Original motion"
+                              });
                             }}
                             className={cn(
                               "absolute bottom-2 left-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
@@ -1194,17 +1205,36 @@ export function VideoBottomBar({
                       )}
                     </button>
                     {editSourceVideoUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => onEditSourceVideoUrlChange(null)}
-                        className={cn(
-                          "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
-                          "hover:bg-black hover:text-white"
-                        )}
-                        aria-label="Remove source video"
-                      >
-                        <X className="size-3.5" />
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUploadVideoLightbox({
+                              src: editSourceVideoUrl,
+                              title: "Original video"
+                            });
+                          }}
+                          className={cn(
+                            "absolute bottom-2 left-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                            "hover:bg-black hover:text-white"
+                          )}
+                          aria-label="Preview source video"
+                        >
+                          <Expand className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onEditSourceVideoUrlChange(null)}
+                          className={cn(
+                            "absolute right-2 top-2 grid size-6 place-items-center rounded-full border border-white/10 bg-black/70 text-white/80",
+                            "hover:bg-black hover:text-white"
+                          )}
+                          aria-label="Remove source video"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </>
                     ) : null}
                   </div>
                   {showHappyHorseV2vRefs || showWanV2vRefs ? (
@@ -1905,10 +1935,10 @@ export function VideoBottomBar({
       </div>
     </footer>
       <VideoLightbox
-        open={motionVideoLightboxOpen && Boolean(motionVideoUrl)}
-        src={motionVideoUrl}
-        title={showWanCharacterSwapLayout ? "Source video" : "Motion clip"}
-        onClose={() => setMotionVideoLightboxOpen(false)}
+        open={uploadVideoLightbox != null}
+        src={uploadVideoLightbox?.src ?? null}
+        title={uploadVideoLightbox?.title}
+        onClose={() => setUploadVideoLightbox(null)}
       />
     </>
   );

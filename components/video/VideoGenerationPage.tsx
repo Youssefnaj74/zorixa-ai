@@ -87,6 +87,7 @@ import {
   videoToVideoTabUsesViduStartEnd,
   videoComposerUsesTextOnlyLayout,
   isWan26ComposerId,
+  normalizeWan26DurationSeconds,
   type Wan26ShotType,
   GEMINI_OMNI_FLASH_I2V_COMPOSER_ID,
   GEMINI_OMNI_FLASH_MAX_IMAGES,
@@ -712,12 +713,17 @@ export function VideoGenerationPage() {
       const check = async () => {
         const urls = [
           modelShowcase.videoUrl,
+          modelShowcase.sourceVideoUrl,
           modelShowcase.characterImageUrl,
-          modelShowcase.motionClipUrl
+          modelShowcase.motionClipUrl,
+          modelShowcase.posterUrl
         ].filter((u): u is string => typeof u === "string" && u.trim().length > 0);
+        const required = modelShowcase.sourceVideoUrl
+          ? [modelShowcase.videoUrl, modelShowcase.sourceVideoUrl]
+          : urls;
         try {
           const results = await Promise.all(
-            urls.map(async (path) => {
+            required.map(async (path) => {
               const res = await fetch(path, { method: "HEAD", cache: "no-store" });
               return res.ok;
             })
@@ -773,7 +779,7 @@ export function VideoGenerationPage() {
     if (!showingModelShowcase || !modelShowcase) return history;
     const exampleEntry: VideoHistoryEntry = {
       id: `showcase-${modelShowcase.modelId}`,
-      thumb: modelShowcase.posterUrl,
+      thumb: modelShowcase.sourceVideoUrl ? modelShowcase.videoUrl : modelShowcase.posterUrl,
       title: modelShowcase.historyTitle,
       subtitle: `Example · ${composerModelDisplayLabel(modelShowcase.modelId, "video")}`,
       outputVideoUrl: modelShowcase.videoUrl
@@ -942,6 +948,7 @@ export function VideoGenerationPage() {
         setPromptImage2UrlSafe(null);
         setLipsyncAudioUrlSafe(null);
         setMotionVideoUrlSafe(null);
+        setEditSourceVideoUrlSafe(null);
         setVideoUrl(null);
         setVideoDownloadUrl(null);
         return;
@@ -985,6 +992,10 @@ export function VideoGenerationPage() {
       if (isHailuo23ComposerId(nextModelId) && tab === "Image to Video") {
         setTimeSeconds(normalizeHailuo23I2vDurationSeconds(showcase.timeSeconds));
       }
+      if (isWan26ComposerId(nextModelId) && tab === "Video to Video") {
+        setTimeSeconds(normalizeWan26DurationSeconds(showcase.timeSeconds, tab));
+        setWan26ShotType("single");
+      }
 
       if (tab === "Image to Video") {
         const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -1019,16 +1030,24 @@ export function VideoGenerationPage() {
         setReferenceImageUrls(Array.from({ length: referenceToVideoMaxImages(nextModelId) }, () => null));
       } else if (tab === "Video to Video") {
         const origin = typeof window !== "undefined" ? window.location.origin : "";
-        const characterUrl = showcase.characterImageUrl
-          ? showcaseVideoAssetUrl(showcase.characterImageUrl, origin)
-          : null;
-        const motionUrl = showcase.motionClipUrl
-          ? showcaseVideoAssetUrl(showcase.motionClipUrl, origin)
-          : null;
-        setPromptImageUrlSafe(characterUrl);
-        setPromptImage2UrlSafe(null);
+        if (showcase.sourceVideoUrl) {
+          setEditSourceVideoUrlSafe(showcaseVideoAssetUrl(showcase.sourceVideoUrl, origin));
+          setPromptImageUrlSafe(null);
+          setPromptImage2UrlSafe(null);
+          setMotionVideoUrlSafe(null);
+        } else {
+          setEditSourceVideoUrlSafe(null);
+          const characterUrl = showcase.characterImageUrl
+            ? showcaseVideoAssetUrl(showcase.characterImageUrl, origin)
+            : null;
+          const motionUrl = showcase.motionClipUrl
+            ? showcaseVideoAssetUrl(showcase.motionClipUrl, origin)
+            : null;
+          setPromptImageUrlSafe(characterUrl);
+          setPromptImage2UrlSafe(null);
+          setMotionVideoUrlSafe(motionUrl);
+        }
         setLipsyncAudioUrlSafe(null);
-        setMotionVideoUrlSafe(motionUrl);
         setReferenceImageUrls(Array.from({ length: referenceToVideoMaxImages(nextModelId) }, () => null));
         if (showcase.characterOrientation) {
           setCharacterOrientation(showcase.characterOrientation);
@@ -1120,6 +1139,10 @@ export function VideoGenerationPage() {
       if (!wanAspects.includes(aspect as (typeof wanAspects)[number])) {
         setAspect("16:9");
       }
+    }
+    if (isWan26ComposerId(id)) {
+      setTimeSeconds((t) => normalizeWan26DurationSeconds(t, actionTab));
+      if (resolution === "480p") setResolution("720p");
     }
     if (isVeo31ComposerId(id)) {
       const veo = normalizeVeo31ComposerSettings({
@@ -1282,6 +1305,11 @@ export function VideoGenerationPage() {
         ? normalizeHailuo23I2vDurationSeconds(t)
         : HAILUO_23_T2V_DURATION_SECONDS
     );
+  }, [actionTab, composerModelId]);
+
+  useEffect(() => {
+    if (!isWan26ComposerId(composerModelId)) return;
+    setTimeSeconds((t) => normalizeWan26DurationSeconds(t, actionTab));
   }, [actionTab, composerModelId]);
 
   useEffect(() => {
@@ -1599,6 +1627,14 @@ export function VideoGenerationPage() {
         const atlasDuration =
           hailuoSettings?.timeSeconds ?? veoT2vI2vSettings?.timeSeconds ?? duration;
 
+        const wan26Duration =
+          isWan26ComposerId(videoModel) &&
+          (generationTab === "Text to Video" ||
+            generationTab === "Image to Video" ||
+            generationTab === "Video to Video")
+            ? normalizeWan26DurationSeconds(duration, generationTab)
+            : null;
+
         const wan26ShotPayload =
           isWan26ComposerId(videoModel) &&
           (generationTab === "Text to Video" ||
@@ -1621,7 +1657,9 @@ export function VideoGenerationPage() {
         const atlasDurationForPayload =
           generationTab === "Video to Video" && videoToVideoTabUsesKlingMotion(videoModel)
             ? KLING_MOTION_CREDIT_ESTIMATE_SECONDS
-            : videoModel === KLING_30_PRO_MODEL_ID &&
+            : wan26Duration != null
+              ? wan26Duration
+              : videoModel === KLING_30_PRO_MODEL_ID &&
               (generationTab === "Text to Video" || generationTab === "Image to Video")
               ? normalizeKlingV3DurationSeconds(duration)
               : atlasDuration;

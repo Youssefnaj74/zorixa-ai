@@ -22,7 +22,8 @@ import {
   videoV2vShowcaseCharacterPath,
   videoV2vShowcaseMotionClipPath,
   videoV2vShowcaseOutputPath,
-  videoV2vShowcasePosterPath
+  videoV2vShowcasePosterPath,
+  videoV2vShowcaseSourcePath
 } from "@/lib/video-v2v-showcase-paths";
 
 export type VideoModelShowcase = {
@@ -46,6 +47,8 @@ export type VideoModelShowcase = {
   characterImageUrl?: string;
   /** Video to Video — reference motion clip. */
   motionClipUrl?: string;
+  /** Video to Video — source clip (Wan-style edit). */
+  sourceVideoUrl?: string;
   /** Video to Video — Kling motion framing. */
   characterOrientation?: "image" | "video";
   keepOriginalSound?: boolean;
@@ -89,6 +92,7 @@ const A2V_DEFAULTS = a2vRecipes.defaults as {
 const A2V_RECIPES = a2vRecipes.models as Record<string, VideoRecipe>;
 
 type V2vRecipe = VideoRecipe & {
+  layout?: "motion-control" | "source-output";
   characterOrientation?: "image" | "video";
   keepOriginalSound?: boolean;
 };
@@ -153,10 +157,31 @@ function buildV2vShowcase(composerModelId: string): VideoModelShowcase | null {
   const recipe = V2V_RECIPES[composerModelId];
   if (!recipe) return null;
 
+  const prompt = recipe.prompt != null ? String(recipe.prompt).trim() : V2V_DEFAULTS.prompt;
+  const layout =
+    recipe.layout ?? (composerModelId === "wan-2-6" ? "source-output" : "motion-control");
+
+  if (layout === "source-output") {
+    if (!prompt) return null;
+    return {
+      modelId: composerModelId,
+      actionTab: "Video to Video",
+      prompt,
+      timeSeconds: recipe.timeSeconds ?? V2V_DEFAULTS.timeSeconds ?? 5,
+      aspect: recipe.aspect ?? V2V_DEFAULTS.aspect,
+      resolution: recipe.resolution ?? V2V_DEFAULTS.resolution,
+      durationStandard: recipe.durationStandard ?? V2V_DEFAULTS.durationStandard,
+      videoUrl: videoV2vShowcaseOutputPath(composerModelId),
+      posterUrl: videoV2vShowcasePosterPath(composerModelId),
+      historyTitle: recipe.historyTitle,
+      sourceVideoUrl: videoV2vShowcaseSourcePath(composerModelId)
+    };
+  }
+
   return {
     modelId: composerModelId,
     actionTab: "Video to Video",
-    prompt: recipe.prompt != null ? String(recipe.prompt).trim() : V2V_DEFAULTS.prompt,
+    prompt,
     timeSeconds: recipe.timeSeconds ?? 5,
     aspect: recipe.aspect ?? V2V_DEFAULTS.aspect,
     resolution: recipe.resolution ?? V2V_DEFAULTS.resolution,

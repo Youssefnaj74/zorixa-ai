@@ -105,8 +105,14 @@ import {
   normalizeHailuo23I2vDurationSeconds
 } from "@/lib/atlas-hailuo-video";
 import {
-  applyWan26ShotTypeFields,
+  buildWan26ImageAtlasBody,
+  buildWan26TextAtlasBody,
+  buildWan26VideoEditAtlasBody,
   isWan26AtlasModel,
+  isWan26ImageToVideoModel,
+  isWan26TextToVideoModel,
+  isWan26VideoEditModel,
+  normalizeWan26DurationSecondsForAction,
   normalizeWan26ShotType
 } from "@/lib/atlas-wan-26-video";
 import {
@@ -1064,6 +1070,8 @@ async function handleGenerateVideoPost(request: Request) {
     durationSec = normalizeViduDurationSeconds(durationSec);
   } else if (isHappyHorseAtlasModel(model) || isHappyHorseComposerId(videoModel)) {
     durationSec = normalizeHappyHorseDurationSeconds(durationSec);
+  } else if (isWan26AtlasModel(model)) {
+    durationSec = normalizeWan26DurationSecondsForAction(durationSec, action);
   } else if (action === "reference" && isWan27ReferenceToVideoModel(model)) {
     durationSec = normalizeWan27ReferenceDurationSeconds(durationSec);
   } else if (isWan27AtlasModel(model) || isWan27ComposerId(videoModel)) {
@@ -1307,6 +1315,47 @@ async function handleGenerateVideoPost(request: Request) {
       lastImageUrl: action === "image" ? last_image_url : undefined,
       generateAudio: applyNativeAudio ? generateAudio : undefined
     });
+  } else if (action === "edit" && isWan26VideoEditModel(model)) {
+    if (!video_url) {
+      return NextResponse.json(
+        { error: "Missing source video for Wan 2.6 Video to Video (Atlas requires `videos` URLs)." },
+        { status: 400 }
+      );
+    }
+    atlasBody = buildWan26VideoEditAtlasBody({
+      model,
+      prompt,
+      aspectRatio,
+      resolution,
+      durationSec,
+      videoUrls: [video_url],
+      shotType: normalizeWan26ShotType(body.shot_type)
+    });
+  } else if (action === "text" && isWan26TextToVideoModel(model)) {
+    atlasBody = buildWan26TextAtlasBody({
+      model,
+      prompt,
+      aspectRatio,
+      resolution,
+      durationSec,
+      shotType: normalizeWan26ShotType(body.shot_type)
+    });
+  } else if (action === "image" && isWan26ImageToVideoModel(model)) {
+    if (!image_url) {
+      return NextResponse.json(
+        { error: "Missing image for Wan 2.6 Image to Video (Atlas requires `image` URL)." },
+        { status: 400 }
+      );
+    }
+    atlasBody = buildWan26ImageAtlasBody({
+      model,
+      prompt,
+      resolution,
+      durationSec,
+      imageUrl: image_url,
+      audioUrl: audio_url,
+      shotType: normalizeWan26ShotType(body.shot_type)
+    });
   } else if (action === "edit" && isWan27VideoEditModel(model)) {
     const wanEditRefs = reference_images.slice(0, WAN_27_VIDEO_EDIT_MAX_IMAGES);
     atlasBody = buildWan27VideoEditAtlasBody({
@@ -1445,10 +1494,6 @@ async function handleGenerateVideoPost(request: Request) {
     if (applyNativeAudio) {
       applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
     }
-  }
-
-  if (isWan26AtlasModel(model)) {
-    applyWan26ShotTypeFields(atlasBody, normalizeWan26ShotType(body.shot_type));
   }
 
   if (process.env.NODE_ENV === "development") {

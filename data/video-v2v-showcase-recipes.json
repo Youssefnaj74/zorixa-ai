@@ -3,14 +3,22 @@
     "aspect": "9:16",
     "resolution": "720p",
     "durationStandard": "Standard",
+    "timeSeconds": 5,
     "characterOrientation": "image",
     "keepOriginalSound": true,
     "prompt": ""
   },
   "models": {
     "kling-2-6-motion": {
+      "layout": "motion-control",
       "historyTitle": "Motion Control Demo",
       "prompt": ""
+    },
+    "wan-2-6": {
+      "layout": "source-output",
+      "historyTitle": "Anime Transform",
+      "timeSeconds": 5,
+      "prompt": "Transform this live-action video into a breathtaking cinematic anime while preserving the original camera movement, facial expressions, body motion, and timing. Apply beautiful cel shading, vibrant anime colors, expressive eyes, detailed hair animation flowing naturally in the wind, soft golden sunset lighting, dramatic sky, highly detailed anime city background, Makoto Shinkai inspired visual quality, masterpiece, ultra detailed."
     }
   }
 }

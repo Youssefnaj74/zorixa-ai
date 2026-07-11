@@ -501,6 +501,10 @@ export function videoComposerUsesWan27(composerModelId: string): boolean {
 export {
   isWan26ComposerId,
   wan26ComposerSupportsShotType,
+  wan26DurationOptionsForTab,
+  normalizeWan26DurationSeconds,
+  WAN_26_DURATION_OPTIONS,
+  WAN_26_V2V_DURATION_OPTIONS,
   type Wan26ShotType
 } from "@/lib/atlas-wan-26-video";
 export {
