@@ -27,6 +27,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const TMP_DIR = path.join(ROOT, ".tmp", "v2v");
 const OUT_DIR = path.join(ROOT, "public", "video-showcases", "v2v");
 
+const REFERENCE_NAMES = ["ref-1.png", "ref-1.jpg", "reference.png", "reference.jpg", "ref.png"];
 const CHARACTER_NAMES = [
   "character.png",
   "character.jpg",
@@ -42,10 +43,12 @@ const OUTPUT_NAMES = ["output.mp4", "video.mp4", "zorixa-video.mp4"];
 /** modelId → optional legacy folder (under .tmp/a2v) when .tmp/v2v/<id> is missing */
 const LEGACY_A2V_FOLDERS = {
   "kling-2-6-motion": path.join(ROOT, ".tmp", "a2v", "Kling 2.6 Motion"),
-  "wan-2-6": path.join(ROOT, ".tmp", "a2v", "wan 2.6")
+  "wan-2-6": path.join(ROOT, ".tmp", "a2v", "wan 2.6"),
+  "wan-2-7": path.join(ROOT, ".tmp", "a2v", "Wan 2.7")
 };
 
-const SOURCE_OUTPUT_MODELS = new Set(["wan-2-6"]);
+const SOURCE_OUTPUT_MODELS = new Set(["wan-2-6", "wan-2-7"]);
+const VIDEO_EDIT_MODELS = new Set(["wan-2-7"]);
 
 async function findFirst(dir, names) {
   for (const name of names) {
@@ -161,6 +164,34 @@ async function resolveMotionModelAssets(modelId) {
   return resolveLegacyMotionAssets(legacyDir);
 }
 
+async function resolveLegacyVideoEditAssets(legacyDir) {
+  const { sourceSrc, videoSrc } = await resolveLegacySourceOutputAssets(legacyDir);
+  const refSrc = (await findFirst(legacyDir, REFERENCE_NAMES)) || (await findByExtension(legacyDir, ".png"));
+  return { sourceSrc, videoSrc, refSrc };
+}
+
+async function resolveVideoEditModelAssets(modelId) {
+  const srcDir = path.join(TMP_DIR, modelId);
+  let sourceSrc = await findFirst(srcDir, SOURCE_NAMES);
+  let videoSrc = await findFirst(srcDir, OUTPUT_NAMES);
+  let refSrc = await findFirst(srcDir, REFERENCE_NAMES);
+
+  if (sourceSrc && videoSrc) {
+    return { sourceSrc, videoSrc, refSrc };
+  }
+
+  const legacyDir = LEGACY_A2V_FOLDERS[modelId];
+  if (!legacyDir) return { sourceSrc, videoSrc, refSrc };
+
+  try {
+    await fs.access(legacyDir);
+  } catch {
+    return { sourceSrc, videoSrc, refSrc };
+  }
+
+  return resolveLegacyVideoEditAssets(legacyDir);
+}
+
 async function resolveSourceOutputModelAssets(modelId) {
   const srcDir = path.join(TMP_DIR, modelId);
   let sourceSrc = await findFirst(srcDir, SOURCE_NAMES);
@@ -227,6 +258,40 @@ async function ingestMotionModel(modelId) {
   return true;
 }
 
+async function ingestVideoEditModel(modelId) {
+  const { sourceSrc, videoSrc, refSrc } = await resolveVideoEditModelAssets(modelId);
+
+  if (!sourceSrc || !videoSrc) {
+    const missing = [!sourceSrc ? "source.mp4" : null, !videoSrc ? "output.mp4" : null].filter(Boolean);
+    console.warn(`[ingest-v2v-showcase] skip ${modelId} — missing: ${missing.join(", ")}`);
+    return false;
+  }
+
+  await fs.mkdir(OUT_DIR, { recursive: true });
+
+  const sourceOut = path.join(OUT_DIR, `${modelId}-source.mp4`);
+  const videoOut = path.join(OUT_DIR, `${modelId}.mp4`);
+  const posterOut = path.join(OUT_DIR, `${modelId}-poster.png`);
+
+  await fs.copyFile(sourceSrc, sourceOut);
+  await fs.copyFile(videoSrc, videoOut);
+
+  if (refSrc) {
+    const refOut = path.join(OUT_DIR, `${modelId}-ref-1.png`);
+    await sharp(refSrc).png({ compressionLevel: 9 }).toFile(refOut);
+  } else {
+    console.warn(`[ingest-v2v-showcase] ${modelId} — no reference image found (optional)`);
+  }
+
+  const posterOk = await tryExtractPoster(videoSrc, posterOut);
+  if (!posterOk) {
+    console.warn(`[ingest-v2v-showcase] ${modelId} — poster skipped (ffmpeg unavailable)`);
+  }
+
+  console.log(`[ingest-v2v-showcase] ok ${modelId} (video-edit)`);
+  return true;
+}
+
 async function ingestSourceOutputModel(modelId) {
   const { sourceSrc, videoSrc } = await resolveSourceOutputModelAssets(modelId);
 
@@ -255,6 +320,9 @@ async function ingestSourceOutputModel(modelId) {
 }
 
 async function ingestModel(modelId) {
+  if (VIDEO_EDIT_MODELS.has(modelId)) {
+    return ingestVideoEditModel(modelId);
+  }
   if (SOURCE_OUTPUT_MODELS.has(modelId)) {
     return ingestSourceOutputModel(modelId);
   }

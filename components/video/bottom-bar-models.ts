@@ -71,6 +71,7 @@ import {
   WAN_27_REFERENCE_MAX_VIDEOS,
   WAN_27_REFERENCE_MAX_VOICE_AUDIOS,
   WAN_27_VIDEO_EDIT_MAX_IMAGES,
+  wan27DurationOptionsForTab,
   isWan27ComposerId,
   wan27ComposerSupportsReferenceMedia
 } from "@/lib/atlas-wan-27-video";
@@ -421,10 +422,7 @@ export function wan27VideoEditMaxImages(): number {
 }
 
 export function wan27ReferenceDurationOptionsForTab(actionTab: string): number[] {
-  if (actionTab === "Reference to Video") {
-    return [...WAN_27_REFERENCE_DURATION_OPTIONS];
-  }
-  return [...WAN27_DURATION_OPTIONS];
+  return [...wan27DurationOptionsForTab(actionTab)];
 }
 
 export const MODE_DROPUP_OPTIONS = [

@@ -145,6 +145,7 @@ import {
 import {
   isWan27ComposerId,
   normalizeWan27DurationSeconds,
+  normalizeWan27DurationSecondsForTab,
   normalizeWan27ReferenceDurationSeconds
 } from "@/lib/atlas-wan-27-video";
 import {
@@ -714,12 +715,17 @@ export function VideoGenerationPage() {
         const urls = [
           modelShowcase.videoUrl,
           modelShowcase.sourceVideoUrl,
+          ...(modelShowcase.referenceImageUrls ?? []),
           modelShowcase.characterImageUrl,
           modelShowcase.motionClipUrl,
           modelShowcase.posterUrl
         ].filter((u): u is string => typeof u === "string" && u.trim().length > 0);
         const required = modelShowcase.sourceVideoUrl
-          ? [modelShowcase.videoUrl, modelShowcase.sourceVideoUrl]
+          ? [
+              modelShowcase.videoUrl,
+              modelShowcase.sourceVideoUrl,
+              ...(modelShowcase.referenceImageUrls ?? [])
+            ]
           : urls;
         try {
           const results = await Promise.all(
@@ -996,6 +1002,9 @@ export function VideoGenerationPage() {
         setTimeSeconds(normalizeWan26DurationSeconds(showcase.timeSeconds, tab));
         setWan26ShotType("single");
       }
+      if (isWan27ComposerId(nextModelId) && tab === "Video to Video") {
+        setTimeSeconds(normalizeWan27DurationSecondsForTab(showcase.timeSeconds, tab));
+      }
 
       if (tab === "Image to Video") {
         const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -1048,7 +1057,19 @@ export function VideoGenerationPage() {
           setMotionVideoUrlSafe(motionUrl);
         }
         setLipsyncAudioUrlSafe(null);
-        setReferenceImageUrls(Array.from({ length: referenceToVideoMaxImages(nextModelId) }, () => null));
+        const v2vRefMax = wan27VideoEditSupportsReferenceImages(nextModelId, tab)
+          ? wan27VideoEditMaxImages()
+          : referenceToVideoMaxImages(nextModelId);
+        if (showcase.referenceImageUrls?.length) {
+          setReferenceImageUrls(
+            Array.from({ length: v2vRefMax }, (_, i) => {
+              const path = showcase.referenceImageUrls?.[i];
+              return path ? showcaseVideoAssetUrl(path, origin) : null;
+            })
+          );
+        } else {
+          setReferenceImageUrls(Array.from({ length: v2vRefMax }, () => null));
+        }
         if (showcase.characterOrientation) {
           setCharacterOrientation(showcase.characterOrientation);
         }
@@ -1129,11 +1150,7 @@ export function VideoGenerationPage() {
       );
     }
     if (isWan27ComposerId(id)) {
-      setTimeSeconds((t) =>
-        actionTab === "Reference to Video"
-          ? normalizeWan27ReferenceDurationSeconds(t)
-          : normalizeWan27DurationSeconds(t)
-      );
+      setTimeSeconds((t) => normalizeWan27DurationSecondsForTab(t, actionTab));
       if (resolution === "480p") setResolution("720p");
       const wanAspects = ["16:9", "9:16", "1:1", "4:3", "3:4"] as const;
       if (!wanAspects.includes(aspect as (typeof wanAspects)[number])) {
@@ -1322,6 +1339,11 @@ export function VideoGenerationPage() {
     setAspect((a) => grokImagineVideoAspectFromUi(a));
     if (resolution !== "480p" && resolution !== "720p") setResolution("720p");
   }, [composerModelId, resolution]);
+
+  useEffect(() => {
+    if (!isWan27ComposerId(composerModelId)) return;
+    setTimeSeconds((t) => normalizeWan27DurationSecondsForTab(t, actionTab));
+  }, [actionTab, composerModelId]);
 
   useEffect(() => {
     if (actionTab !== "Reference to Video" || !wan27ComposerSupportsReferenceMedia(composerModelId)) {

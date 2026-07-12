@@ -23,6 +23,7 @@ import {
   videoV2vShowcaseMotionClipPath,
   videoV2vShowcaseOutputPath,
   videoV2vShowcasePosterPath,
+  videoV2vShowcaseReferenceImagePath,
   videoV2vShowcaseSourcePath
 } from "@/lib/video-v2v-showcase-paths";
 
@@ -49,6 +50,8 @@ export type VideoModelShowcase = {
   motionClipUrl?: string;
   /** Video to Video — source clip (Wan-style edit). */
   sourceVideoUrl?: string;
+  /** Video to Video — optional reference stills (Wan 2.7 video-edit). */
+  referenceImageUrls?: string[];
   /** Video to Video — Kling motion framing. */
   characterOrientation?: "image" | "video";
   keepOriginalSound?: boolean;
@@ -92,9 +95,10 @@ const A2V_DEFAULTS = a2vRecipes.defaults as {
 const A2V_RECIPES = a2vRecipes.models as Record<string, VideoRecipe>;
 
 type V2vRecipe = VideoRecipe & {
-  layout?: "motion-control" | "source-output";
+  layout?: "motion-control" | "source-output" | "video-edit";
   characterOrientation?: "image" | "video";
   keepOriginalSound?: boolean;
+  referenceImageCount?: number;
 };
 
 const V2V_DEFAULTS = v2vRecipes.defaults as {
@@ -160,10 +164,22 @@ function buildV2vShowcase(composerModelId: string): VideoModelShowcase | null {
 
   const prompt = recipe.prompt != null ? String(recipe.prompt).trim() : V2V_DEFAULTS.prompt;
   const layout =
-    recipe.layout ?? (composerModelId === "wan-2-6" ? "source-output" : "motion-control");
+    recipe.layout ??
+    (composerModelId === "wan-2-6" || composerModelId === "wan-2-7"
+      ? composerModelId === "wan-2-7"
+        ? "video-edit"
+        : "source-output"
+      : "motion-control");
 
-  if (layout === "source-output") {
+  if (layout === "source-output" || layout === "video-edit") {
     if (!prompt) return null;
+    const refCount = recipe.referenceImageCount ?? (layout === "video-edit" ? 1 : 0);
+    const referenceImageUrls =
+      refCount > 0
+        ? Array.from({ length: refCount }, (_, i) =>
+            videoV2vShowcaseReferenceImagePath(composerModelId, i + 1)
+          )
+        : undefined;
     return {
       modelId: composerModelId,
       actionTab: "Video to Video",
@@ -175,7 +191,8 @@ function buildV2vShowcase(composerModelId: string): VideoModelShowcase | null {
       videoUrl: videoV2vShowcaseOutputPath(composerModelId),
       posterUrl: videoV2vShowcasePosterPath(composerModelId),
       historyTitle: recipe.historyTitle,
-      sourceVideoUrl: videoV2vShowcaseSourcePath(composerModelId)
+      sourceVideoUrl: videoV2vShowcaseSourcePath(composerModelId),
+      referenceImageUrls
     };
   }
 

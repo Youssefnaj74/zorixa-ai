@@ -14,8 +14,12 @@ export function videoV2vShowcaseOutputPath(composerModelId: string): string {
   return `/video-showcases/v2v/${composerModelId}.mp4`;
 }
 
+export function videoV2vShowcaseReferenceImagePath(composerModelId: string, index = 1): string {
+  return `/video-showcases/v2v/${composerModelId}-ref-${index}.png`;
+}
+
 export function videoV2vShowcasePosterPath(composerModelId: string): string {
-  if (composerModelId === "wan-2-6") {
+  if (composerModelId === "wan-2-6" || composerModelId === "wan-2-7") {
     return `/video-showcases/v2v/${composerModelId}-poster.png`;
   }
   return videoV2vShowcaseCharacterPath(composerModelId);

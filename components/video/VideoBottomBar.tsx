@@ -30,7 +30,6 @@ import {
   wan27ReferenceDurationOptionsForTab,
   wan27VideoEditMaxImages,
   wan27VideoEditSupportsReferenceImages,
-  WAN27_DURATION_OPTIONS,
   videoComposerUsesAudioToVideoBarLayout,
   videoComposerUses720p1080pOnly,
   referenceToVideoHide480p,
@@ -644,7 +643,7 @@ export function VideoBottomBar({
     if (showHappyHorseLayout) return [...HAPPYHORSE_DURATION_OPTIONS];
     if (showHailuoLayout) return [...HAILUO_23_DURATION_OPTIONS];
     if (showWan26Layout) return [...wan26DurationOptionsForTab(actionTab)];
-    if (showWan27Layout) return [...WAN27_DURATION_OPTIONS];
+    if (showWan27Layout) return [...wan27ReferenceDurationOptionsForTab(actionTab)];
     if (showKling30Layout) return [...klingV3DurationOptionsForUi()];
     if (showVeo31Layout) return veo31DurationOptionsForTab(actionTab);
     return [...TIME_SECONDS_OPTIONS];

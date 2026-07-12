@@ -47,6 +47,7 @@ import {
   isWan27VideoEditModel,
   normalizeWan27DurationSeconds,
   normalizeWan27ReferenceDurationSeconds,
+  normalizeWan27VideoEditDurationSeconds,
   resolveWan27GenerateAudioFlag,
   WAN_27_REFERENCE_MAX_VIDEOS,
   WAN_27_REFERENCE_MAX_VOICE_AUDIOS,
@@ -1074,6 +1075,8 @@ async function handleGenerateVideoPost(request: Request) {
     durationSec = normalizeWan26DurationSecondsForAction(durationSec, action);
   } else if (action === "reference" && isWan27ReferenceToVideoModel(model)) {
     durationSec = normalizeWan27ReferenceDurationSeconds(durationSec);
+  } else if (action === "edit" && isWan27VideoEditModel(model)) {
+    durationSec = normalizeWan27VideoEditDurationSeconds(durationSec);
   } else if (isWan27AtlasModel(model) || isWan27ComposerId(videoModel)) {
     durationSec = normalizeWan27DurationSeconds(durationSec);
   } else if (action === "reference" && isVeo31ReferenceToVideoModel(model)) {

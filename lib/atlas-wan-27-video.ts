@@ -27,8 +27,11 @@ export const WAN_27_REFERENCE_MAX_MATERIALS = 5;
 /** Single voice-clone audio for Wan R2V (`audio` on Atlas). */
 export const WAN_27_REFERENCE_MAX_VOICE_AUDIOS = 1;
 
-/** Optional reference images on video-edit. */
-export const WAN_27_VIDEO_EDIT_MAX_IMAGES = 5;
+/** Optional reference images on video-edit (Atlas playground MAX: 4). */
+export const WAN_27_VIDEO_EDIT_MAX_IMAGES = 4;
+
+/** Video-edit output duration on Atlas (2–10s). */
+export const WAN_27_VIDEO_EDIT_DURATION_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
 const ATLAS_T2V = "alibaba/wan-2.7/text-to-video";
 const ATLAS_I2V = "alibaba/wan-2.7/image-to-video";
@@ -81,7 +84,7 @@ export function wan27AspectFromUi(raw: string): (typeof WAN_27_ASPECT_OPTIONS)[n
     : "16:9";
 }
 
-/** T2V / I2V / V2V — 2–15 seconds. */
+/** T2V / I2V — 2–15 seconds on Atlas. */
 export function normalizeWan27DurationSeconds(raw: number): number {
   if (!Number.isFinite(raw)) return 5;
   return Math.min(15, Math.max(2, Math.round(raw)));
@@ -91,6 +94,30 @@ export function normalizeWan27DurationSeconds(raw: number): number {
 export function normalizeWan27ReferenceDurationSeconds(raw: number): number {
   if (!Number.isFinite(raw)) return 5;
   return Math.min(10, Math.max(2, Math.round(raw)));
+}
+
+/** Video-edit (V2V) — 2–10 seconds on Atlas. */
+export function normalizeWan27VideoEditDurationSeconds(raw: number): number {
+  if (!Number.isFinite(raw)) return 5;
+  return Math.min(10, Math.max(2, Math.round(raw)));
+}
+
+export function wan27DurationOptionsForTab(actionTab: string): readonly number[] {
+  if (actionTab === "Reference to Video") return WAN_27_REFERENCE_DURATION_OPTIONS;
+  if (actionTab === "Video to Video") return WAN_27_VIDEO_EDIT_DURATION_OPTIONS;
+  return WAN_27_DURATION_OPTIONS;
+}
+
+export function normalizeWan27DurationSecondsForTab(raw: number, actionTab: string): number {
+  if (actionTab === "Reference to Video") return normalizeWan27ReferenceDurationSeconds(raw);
+  if (actionTab === "Video to Video") return normalizeWan27VideoEditDurationSeconds(raw);
+  return normalizeWan27DurationSeconds(raw);
+}
+
+export function normalizeWan27DurationSecondsForAction(raw: number, action: string): number {
+  if (action === "reference") return normalizeWan27ReferenceDurationSeconds(raw);
+  if (action === "edit") return normalizeWan27VideoEditDurationSeconds(raw);
+  return normalizeWan27DurationSeconds(raw);
 }
 
 /**
@@ -224,7 +251,7 @@ export function buildWan27VideoEditAtlasBody(input: {
     video_url: input.videoUrl,
     ratio: wan27AspectFromUi(input.aspectRatio),
     resolution: wan27ResolutionFromUi(input.resolution),
-    duration: normalizeWan27DurationSeconds(input.durationSec),
+    duration: normalizeWan27VideoEditDurationSeconds(input.durationSec),
     fps: 24
   };
   const refs = (input.referenceImages ?? []).slice(0, WAN_27_VIDEO_EDIT_MAX_IMAGES);
