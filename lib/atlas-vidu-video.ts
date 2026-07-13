@@ -35,3 +35,17 @@ export function normalizeViduDurationSeconds(raw: unknown): number {
   if (typeof raw !== "number" || !Number.isFinite(raw)) return 5;
   return Math.min(16, Math.max(1, Math.round(raw)));
 }
+
+/** Atlas Vidu Q3-Pro / Q3-Turbo — 540p, 720p, 1080p (no 480p). */
+export const VIDU_Q3_PRO_RESOLUTION_OPTIONS = [
+  { id: "1080p" as const, label: "1080p", newBadge: true },
+  { id: "720p" as const, label: "720p", newBadge: false },
+  { id: "540p" as const, label: "540p", newBadge: false }
+] as const;
+
+export function viduQ3ProResolutionFromUi(raw: string): "540p" | "720p" | "1080p" {
+  const v = raw.trim().toLowerCase();
+  if (v === "1080p" || v === "1080") return "1080p";
+  if (v === "540p" || v === "540") return "540p";
+  return "720p";
+}

@@ -28,14 +28,12 @@ export function wanCharacterSwapModeFromSpeedTier(tier: AtlasVideoSpeedTier): "w
 
 export function buildWanCharacterSwapAtlasBody(input: {
   model: string;
-  prompt: string;
   image_url: string;
   video_url: string;
   speedTier: AtlasVideoSpeedTier;
 }): Record<string, unknown> {
   return {
     model: input.model,
-    prompt: input.prompt,
     image_url: input.image_url,
     image: input.image_url,
     video_url: input.video_url,

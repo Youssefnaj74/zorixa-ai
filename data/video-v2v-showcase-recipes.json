@@ -14,6 +14,12 @@
       "historyTitle": "Motion Control Demo",
       "prompt": ""
     },
+    "wan-2-2-character-swap": {
+      "layout": "motion-control",
+      "historyTitle": "Character Swap Demo",
+      "prompt": "",
+      "durationStandard": "Standard"
+    },
     "wan-2-6": {
       "layout": "source-output",
       "historyTitle": "Anime Transform",
@@ -25,7 +31,21 @@
       "historyTitle": "Cinematic Product Edit",
       "timeSeconds": 5,
       "resolution": "1080p",
-      "prompt": "Turn the source clip into a cinematic product shot with smooth camera movement and richer studio lighting."
+      "prompt": "Transform the astronaut in the source video to match the appearance and artistic style of the reference image while preserving all original movement, camera motion and timing. Maintain consistent identity across every frame with high-quality anime rendering, cinematic lighting, detailed textures and smooth animation."
+    },
+    "happyhorse-1": {
+      "layout": "video-edit",
+      "historyTitle": "Pegasus Transform",
+      "resolution": "720p",
+      "prompt": "Transform the horse in the source video into the majestic Pegasus from the reference image while preserving the original running motion, body movement and camera angle. Add large glowing wings, magical particles, cinematic lighting and realistic fantasy details while keeping the animation smooth and natural."
+    },
+    "vidu-q3-pro": {
+      "layout": "start-end",
+      "historyTitle": "Cyber Warrior Transform",
+      "resolution": "720p",
+      "timeSeconds": 5,
+      "durationStandard": "Standard",
+      "prompt": "Create a smooth cinematic transformation from the start frame to the end frame. The white futuristic robot gradually upgrades into the powerful cyber warrior as mechanical armor assembles piece by piece, glowing energy flows through the body, wings deploy dramatically, sparks and light effects appear naturally, maintaining consistent camera angle and character identity. Hollywood-quality sci-fi transformation with seamless animation, realistic physics, cinematic lighting and premium visual effects."
     }
   }
 }

@@ -86,7 +86,7 @@ import {
   videoComposerSupportsSpeedTier
 } from "@/lib/atlas-video-model-ids";
 import { AUDIO_TO_VIDEO_RESOLUTION_OPTIONS } from "@/lib/atlas-audio-to-video";
-import { isViduQ3ComposerId, isViduQ3ProComposerId } from "@/lib/atlas-vidu-video";
+import { isViduQ3ComposerId, isViduQ3ProComposerId, VIDU_Q3_PRO_RESOLUTION_OPTIONS } from "@/lib/atlas-vidu-video";
 
 import { ActionTabsRow, type ActionTab } from "@/components/video/ActionTabsRow";
 import { AudioUploadSlotContent, audioUploadSlotClass } from "@/components/video/AudioUploadSlotContent";
@@ -568,7 +568,8 @@ export function VideoBottomBar({
   /** Kling motion / Wan character swap — hides mode, aspect, resolution. */
   const hideWanOnlyBarControls = showDualAssetV2vLayout;
   /** Audio to Video — hide mode/aspect/time; keep model + resolution (480p/720p). */
-  const hideModeAspectControls = showDualAssetV2vLayout || showAudioToVideoLayout;
+  const hideModeAspectControls =
+    showDualAssetV2vLayout || showAudioToVideoLayout || showHappyHorseV2vRefs;
   const showResolutionControl =
     (showAudioToVideoLayout || !showDualAssetV2vLayout) &&
     !hideKlingResolution &&
@@ -581,6 +582,8 @@ export function VideoBottomBar({
     ? [...AUDIO_TO_VIDEO_RESOLUTION_OPTIONS]
     : isSeedance20ComposerId(composerModelId)
     ? seedance20ResolutionOptionsForTab(actionTab)
+    : isViduQ3ProComposerId(composerModelId)
+      ? [...VIDU_Q3_PRO_RESOLUTION_OPTIONS]
     : show720p1080pOnlyLayout
       ? RESOLUTION_STEP_OPTIONS.filter((r) => r.id !== "480p")
       : RESOLUTION_STEP_OPTIONS;
@@ -640,7 +643,7 @@ export function VideoBottomBar({
     if (showMotionControlLayout || showWanCharacterSwapLayout) return [];
     if (showGrokLayout) return [...GROK_IMAGINE_VIDEO_DURATION_OPTIONS];
     if (showGeminiLayout) return [...GEMINI_OMNI_FLASH_DURATION_OPTIONS];
-    if (showHappyHorseLayout) return [...HAPPYHORSE_DURATION_OPTIONS];
+    if (showHappyHorseLayout && !showHappyHorseV2vRefs) return [...HAPPYHORSE_DURATION_OPTIONS];
     if (showHailuoLayout) return [...HAILUO_23_DURATION_OPTIONS];
     if (showWan26Layout) return [...wan26DurationOptionsForTab(actionTab)];
     if (showWan27Layout) return [...wan27ReferenceDurationOptionsForTab(actionTab)];
@@ -1374,6 +1377,7 @@ export function VideoBottomBar({
             </div>
           ) : null}
 
+          {!showWanCharacterSwapLayout ? (
           <div
             className={cn(
               "flex min-w-0 flex-col",
@@ -1403,8 +1407,6 @@ export function VideoBottomBar({
                     ? "Use @image1 @video1 @audio1 in your scene — e.g. In @image1 the hero from @image2 walks through @video1 with mood from @audio1…"
                     : showReferenceLayout
                       ? "Describe the scene — e.g. image 1 is the character, image 2 is the background…"
-                    : showWanCharacterSwapLayout
-                      ? "Optional: scene notes — motion comes from the source video…"
                       : showMotionControlLayout
                         ? "Optional: scene style, lighting, background (motion comes from the clip)…"
                       : showWanV2vLayout
@@ -1422,6 +1424,7 @@ export function VideoBottomBar({
               )}
             />
           </div>
+          ) : null}
           <div className="hidden min-w-[24px] shrink-0 lg:block" aria-hidden />
         </div>
 
@@ -1741,6 +1744,7 @@ export function VideoBottomBar({
           {!showAudioToVideoLayout &&
           !showWanCharacterSwapLayout &&
           !showMotionControlLayout &&
+          !showHappyHorseV2vRefs &&
           !hideHailuoT2vTimeControl ? (
           <>
           <div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />

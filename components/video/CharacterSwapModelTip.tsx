@@ -42,14 +42,14 @@ export function CharacterSwapModelTip({
         </li>
         <li className={cn(wanSwap && "font-medium text-white/90")}>
           <span className="text-white/80">Wan 2.2 Character Swap</span> — portrait + source video.
-          Speed = Std / Pro on Atlas.
+          Speed = Std / Pro on Atlas. No text prompt — motion comes from the source clip.
         </li>
       </ul>
       {wanSwap ? (
         <p className="mt-2 border-t border-white/10 pt-2 pl-5 text-[11px] leading-relaxed text-brand/95">
           Selected: Wan 2.2 — <span className="font-medium text-white/85">Portrait</span>,{" "}
-          <span className="font-medium text-white/85">Source video</span>, optional prompt. Tier Std/Pro
-          → <span className="font-medium text-white/85">wan-std</span> /{" "}
+          <span className="font-medium text-white/85">Source video</span>, Tier Std/Pro →{" "}
+          <span className="font-medium text-white/85">wan-std</span> /{" "}
           <span className="font-medium text-white/85">wan-pro</span>.
         </p>
       ) : kling ? (

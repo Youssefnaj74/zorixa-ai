@@ -27,6 +27,7 @@ import {
 } from "@/lib/atlas-kling-motion-control";
 import {
   buildHappyHorseAtlasBody,
+  buildHappyHorseVideoEditAtlasBody,
   HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES,
   isHappyHorseAtlasModel,
   isHappyHorseComposerId,
@@ -161,7 +162,8 @@ import {
   isViduQ3ProComposerId,
   isViduReferenceToVideoModel,
   isViduStartEndToVideoModel,
-  normalizeViduDurationSeconds
+  normalizeViduDurationSeconds,
+  viduQ3ProResolutionFromUi
 } from "@/lib/atlas-vidu-video";
 import {
   augmentSeedancePromptForAspect,
@@ -232,7 +234,7 @@ function normalizeAspectRatio(raw: unknown): string {
   return ALLOWED_ASPECT_RATIOS.has(v) ? v : DEFAULT_ASPECT_RATIO;
 }
 
-const ALLOWED_RESOLUTIONS = new Set(["480p", "720p", "1080p", "4k"]);
+const ALLOWED_RESOLUTIONS = new Set(["480p", "540p", "720p", "1080p", "4k"]);
 const DEFAULT_RESOLUTION = "1080p";
 
 function normalizeResolution(raw: unknown): string {
@@ -682,8 +684,12 @@ async function handleGenerateVideoPost(request: Request) {
     action === "motion-control" &&
     videoModelEarly &&
     videoComposerUsesOptionalMotionPrompt(videoModelEarly);
+  const wanCharacterSwapNoPrompt =
+    action === "motion-control" &&
+    videoModelEarly &&
+    videoComposerSupportsWanCharacterSwap(videoModelEarly);
 
-  if (!prompt && !motionPromptOptional) {
+  if (!prompt && !motionPromptOptional && !wanCharacterSwapNoPrompt) {
     return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
   }
   if (!prompt && motionPromptOptional) {
@@ -701,7 +707,7 @@ async function handleGenerateVideoPost(request: Request) {
     userId: actor.userId,
     workflow: videoWorkflow,
     route: "/api/generate-video",
-    texts: [prompt],
+    texts: prompt ? [prompt] : [],
     ip: requestIp(request),
     metadata: { action, videoModel: body.videoModel ?? null }
   });
@@ -1042,6 +1048,9 @@ async function handleGenerateVideoPost(request: Request) {
 
   let aspectRatio = normalizeAspectRatio(body.aspectRatio);
   let resolution = normalizeResolution(body.resolution);
+  if (isViduQ3ProComposerId(videoModel)) {
+    resolution = viduQ3ProResolutionFromUi(resolution);
+  }
   let durationSec = normalizeDurationSeconds(body.duration);
 
   const fps = 24;
@@ -1069,7 +1078,10 @@ async function handleGenerateVideoPost(request: Request) {
     durationSec = normalizeAtlasKlingDurationSeconds(durationSec);
   } else if (isViduAtlasModelSlug(model) || isViduQ3ProComposerId(videoModel)) {
     durationSec = normalizeViduDurationSeconds(durationSec);
-  } else if (isHappyHorseAtlasModel(model) || isHappyHorseComposerId(videoModel)) {
+  } else if (
+    (isHappyHorseAtlasModel(model) || isHappyHorseComposerId(videoModel)) &&
+    !(action === "edit" && isHappyHorseVideoEditModel(model))
+  ) {
     durationSec = normalizeHappyHorseDurationSeconds(durationSec);
   } else if (isWan26AtlasModel(model)) {
     durationSec = normalizeWan26DurationSecondsForAction(durationSec, action);
@@ -1153,7 +1165,6 @@ async function handleGenerateVideoPost(request: Request) {
   } else if (action === "motion-control" && isWanCharacterSwapAtlasModel(model)) {
     atlasBody = buildWanCharacterSwapAtlasBody({
       model,
-      prompt,
       image_url,
       video_url,
       speedTier
@@ -1256,12 +1267,10 @@ async function handleGenerateVideoPost(request: Request) {
     });
   } else if (action === "edit" && isHappyHorseVideoEditModel(model)) {
     const editReferenceImages = reference_images.slice(0, HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES);
-    atlasBody = buildHappyHorseAtlasBody({
+    atlasBody = buildHappyHorseVideoEditAtlasBody({
       model,
       prompt,
-      aspectRatio,
       resolution,
-      durationSec,
       videoUrl: video_url,
       referenceImages:
         editReferenceImages.length > 0 ? editReferenceImages : undefined

@@ -9,7 +9,11 @@
  *
  * Legacy:
  *   .tmp/a2v/Kling 2.6 Motion/ → kling-2-6-motion
+ *   .tmp/a2v/Wan 2.2 Character Swap/ → wan-2-2-character-swap
  *   .tmp/a2v/wan 2.6/ (2 mp4s) → wan-2-6
+ *   .tmp/a2v/Wan 2.7/ → wan-2-7
+ *   .tmp/a2v/happyhorse-1.0/ → happyhorse-1
+ *   .tmp/a2v/Vidu Q3-Pro/ → vidu-q3-pro
  *
  * Usage: npm run ingest:v2v-showcase
  */
@@ -39,16 +43,22 @@ const CHARACTER_NAMES = [
 const MOTION_NAMES = ["motion.mp4", "motion-clip.mp4", "reference.mp4"];
 const SOURCE_NAMES = ["source.mp4", "input.mp4", "reference.mp4"];
 const OUTPUT_NAMES = ["output.mp4", "video.mp4", "zorixa-video.mp4"];
+const START_FRAME_NAMES = ["start.png", "start-frame.png", "start.jpg", "image.png"];
+const END_FRAME_NAMES = ["end.png", "end-frame.png", "end.jpg", "last_image.png"];
 
 /** modelId → optional legacy folder (under .tmp/a2v) when .tmp/v2v/<id> is missing */
 const LEGACY_A2V_FOLDERS = {
   "kling-2-6-motion": path.join(ROOT, ".tmp", "a2v", "Kling 2.6 Motion"),
+  "wan-2-2-character-swap": path.join(ROOT, ".tmp", "a2v", "Wan 2.2 Character Swap"),
   "wan-2-6": path.join(ROOT, ".tmp", "a2v", "wan 2.6"),
-  "wan-2-7": path.join(ROOT, ".tmp", "a2v", "Wan 2.7")
+  "wan-2-7": path.join(ROOT, ".tmp", "a2v", "Wan 2.7"),
+  "happyhorse-1": path.join(ROOT, ".tmp", "a2v", "happyhorse-1.0"),
+  "vidu-q3-pro": path.join(ROOT, ".tmp", "a2v", "Vidu Q3-Pro")
 };
 
-const SOURCE_OUTPUT_MODELS = new Set(["wan-2-6", "wan-2-7"]);
-const VIDEO_EDIT_MODELS = new Set(["wan-2-7"]);
+const SOURCE_OUTPUT_MODELS = new Set(["wan-2-6"]);
+const VIDEO_EDIT_MODELS = new Set(["wan-2-7", "happyhorse-1"]);
+const START_END_MODELS = new Set(["vidu-q3-pro"]);
 
 async function findFirst(dir, names) {
   for (const name of names) {
@@ -87,6 +97,18 @@ async function listMp4s(dir) {
   }
 }
 
+async function listPngs(dir) {
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    return entries
+      .filter((e) => e.isFile() && e.name.toLowerCase().endsWith(".png"))
+      .map((e) => path.join(dir, e.name))
+      .sort((a, b) => path.basename(a).localeCompare(path.basename(b), undefined, { numeric: true }));
+  } catch {
+    return [];
+  }
+}
+
 async function findLargestMp4(dir, exclude) {
   const mp4s = await listMp4s(dir);
   if (mp4s.length === 0) return null;
@@ -103,6 +125,23 @@ async function findLargestMp4(dir, exclude) {
     }
   }
   return best;
+}
+
+async function resolveLegacyWanCharacterSwapAssets(legacyDir) {
+  const characterSrc =
+    (await findFirst(legacyDir, CHARACTER_NAMES)) || (await findByExtension(legacyDir, ".png"));
+  const mp4s = await listMp4s(legacyDir);
+  if (mp4s.length >= 2) {
+    return {
+      characterSrc,
+      motionSrc: mp4s[0],
+      videoSrc: mp4s[mp4s.length - 1]
+    };
+  }
+  if (mp4s.length === 1) {
+    return { characterSrc, motionSrc: null, videoSrc: mp4s[0] };
+  }
+  return { characterSrc, motionSrc: null, videoSrc: null };
 }
 
 async function resolveLegacyMotionAssets(legacyDir) {
@@ -161,6 +200,10 @@ async function resolveMotionModelAssets(modelId) {
     return { characterSrc, motionSrc, videoSrc };
   }
 
+  if (modelId === "wan-2-2-character-swap") {
+    return resolveLegacyWanCharacterSwapAssets(legacyDir);
+  }
+
   return resolveLegacyMotionAssets(legacyDir);
 }
 
@@ -211,6 +254,46 @@ async function resolveSourceOutputModelAssets(modelId) {
   }
 
   return resolveLegacySourceOutputAssets(legacyDir);
+}
+
+/** Legacy .tmp/a2v folders where sorted PNG order is end-first, start-last. */
+const LEGACY_START_END_SWAP_MODELS = new Set(["vidu-q3-pro"]);
+
+async function resolveLegacyStartEndAssets(legacyDir, modelId) {
+  let startSrc = await findFirst(legacyDir, START_FRAME_NAMES);
+  let endSrc = await findFirst(legacyDir, END_FRAME_NAMES);
+  let videoSrc = (await findFirst(legacyDir, OUTPUT_NAMES)) || (await findLargestMp4(legacyDir, null));
+  const pngs = await listPngs(legacyDir);
+  if (pngs.length >= 2) {
+    const swap = LEGACY_START_END_SWAP_MODELS.has(modelId);
+    if (!startSrc) startSrc = swap ? pngs[pngs.length - 1] : pngs[0];
+    if (!endSrc) endSrc = swap ? pngs[0] : pngs[pngs.length - 1];
+  } else if (pngs.length === 1 && !startSrc) {
+    startSrc = pngs[0];
+  }
+  return { startSrc, endSrc, videoSrc };
+}
+
+async function resolveStartEndModelAssets(modelId) {
+  const srcDir = path.join(TMP_DIR, modelId);
+  let startSrc = await findFirst(srcDir, START_FRAME_NAMES);
+  let endSrc = await findFirst(srcDir, END_FRAME_NAMES);
+  let videoSrc = await findFirst(srcDir, OUTPUT_NAMES);
+
+  if (startSrc && endSrc && videoSrc) {
+    return { startSrc, endSrc, videoSrc };
+  }
+
+  const legacyDir = LEGACY_A2V_FOLDERS[modelId];
+  if (!legacyDir) return { startSrc, endSrc, videoSrc };
+
+  try {
+    await fs.access(legacyDir);
+  } catch {
+    return { startSrc, endSrc, videoSrc };
+  }
+
+  return resolveLegacyStartEndAssets(legacyDir, modelId);
 }
 
 async function tryExtractPoster(videoPath, posterOut) {
@@ -319,7 +402,37 @@ async function ingestSourceOutputModel(modelId) {
   return true;
 }
 
+async function ingestStartEndModel(modelId) {
+  const { startSrc, endSrc, videoSrc } = await resolveStartEndModelAssets(modelId);
+
+  if (!startSrc || !endSrc || !videoSrc) {
+    const missing = [
+      !startSrc ? "start frame" : null,
+      !endSrc ? "end frame" : null,
+      !videoSrc ? "output.mp4" : null
+    ].filter(Boolean);
+    console.warn(`[ingest-v2v-showcase] skip ${modelId} — missing: ${missing.join(", ")}`);
+    return false;
+  }
+
+  await fs.mkdir(OUT_DIR, { recursive: true });
+
+  const startOut = path.join(OUT_DIR, `${modelId}-start.png`);
+  const endOut = path.join(OUT_DIR, `${modelId}-end.png`);
+  const videoOut = path.join(OUT_DIR, `${modelId}.mp4`);
+
+  await sharp(startSrc).png({ compressionLevel: 9 }).toFile(startOut);
+  await sharp(endSrc).png({ compressionLevel: 9 }).toFile(endOut);
+  await fs.copyFile(videoSrc, videoOut);
+
+  console.log(`[ingest-v2v-showcase] ok ${modelId} (start-end)`);
+  return true;
+}
+
 async function ingestModel(modelId) {
+  if (START_END_MODELS.has(modelId)) {
+    return ingestStartEndModel(modelId);
+  }
   if (VIDEO_EDIT_MODELS.has(modelId)) {
     return ingestVideoEditModel(modelId);
   }

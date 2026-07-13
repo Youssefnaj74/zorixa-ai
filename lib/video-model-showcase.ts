@@ -20,11 +20,13 @@ import {
 } from "@/lib/video-t2v-showcase-paths";
 import {
   videoV2vShowcaseCharacterPath,
+  videoV2vShowcaseEndFramePath,
   videoV2vShowcaseMotionClipPath,
   videoV2vShowcaseOutputPath,
   videoV2vShowcasePosterPath,
   videoV2vShowcaseReferenceImagePath,
-  videoV2vShowcaseSourcePath
+  videoV2vShowcaseSourcePath,
+  videoV2vShowcaseStartFramePath
 } from "@/lib/video-v2v-showcase-paths";
 
 export type VideoModelShowcase = {
@@ -52,6 +54,8 @@ export type VideoModelShowcase = {
   sourceVideoUrl?: string;
   /** Video to Video — optional reference stills (Wan 2.7 video-edit). */
   referenceImageUrls?: string[];
+  /** Video to Video — Vidu Q3-Pro start frame. */
+  endFrameImageUrl?: string;
   /** Video to Video — Kling motion framing. */
   characterOrientation?: "image" | "video";
   keepOriginalSound?: boolean;
@@ -95,7 +99,7 @@ const A2V_DEFAULTS = a2vRecipes.defaults as {
 const A2V_RECIPES = a2vRecipes.models as Record<string, VideoRecipe>;
 
 type V2vRecipe = VideoRecipe & {
-  layout?: "motion-control" | "source-output" | "video-edit";
+  layout?: "motion-control" | "source-output" | "video-edit" | "start-end";
   characterOrientation?: "image" | "video";
   keepOriginalSound?: boolean;
   referenceImageCount?: number;
@@ -165,10 +169,10 @@ function buildV2vShowcase(composerModelId: string): VideoModelShowcase | null {
   const prompt = recipe.prompt != null ? String(recipe.prompt).trim() : V2V_DEFAULTS.prompt;
   const layout =
     recipe.layout ??
-    (composerModelId === "wan-2-6" || composerModelId === "wan-2-7"
-      ? composerModelId === "wan-2-7"
-        ? "video-edit"
-        : "source-output"
+    (composerModelId === "wan-2-6" || composerModelId === "wan-2-7" || composerModelId === "happyhorse-1"
+      ? composerModelId === "wan-2-6"
+        ? "source-output"
+        : "video-edit"
       : "motion-control");
 
   if (layout === "source-output" || layout === "video-edit") {
@@ -193,6 +197,24 @@ function buildV2vShowcase(composerModelId: string): VideoModelShowcase | null {
       historyTitle: recipe.historyTitle,
       sourceVideoUrl: videoV2vShowcaseSourcePath(composerModelId),
       referenceImageUrls
+    };
+  }
+
+  if (layout === "start-end") {
+    if (!prompt) return null;
+    return {
+      modelId: composerModelId,
+      actionTab: "Video to Video",
+      prompt,
+      timeSeconds: recipe.timeSeconds ?? V2V_DEFAULTS.timeSeconds ?? 5,
+      aspect: recipe.aspect ?? V2V_DEFAULTS.aspect,
+      resolution: recipe.resolution ?? V2V_DEFAULTS.resolution,
+      durationStandard: recipe.durationStandard ?? V2V_DEFAULTS.durationStandard,
+      videoUrl: videoV2vShowcaseOutputPath(composerModelId),
+      posterUrl: videoV2vShowcasePosterPath(composerModelId),
+      historyTitle: recipe.historyTitle,
+      startFrameImageUrl: videoV2vShowcaseStartFramePath(composerModelId),
+      endFrameImageUrl: videoV2vShowcaseEndFramePath(composerModelId)
     };
   }
 

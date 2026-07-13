@@ -65,7 +65,7 @@ export type ImageStudioLock = {
   toolTitle?: string;
 };
 
-const VIDEO_RESOLUTION_QUERY = new Set(["480p", "720p", "1080p", "4k"]);
+const VIDEO_RESOLUTION_QUERY = new Set(["480p", "540p", "720p", "1080p", "4k"]);
 
 /** ?resolution= from studio deep links (e.g. announcement → Seedance 4K). */
 export function parseVideoResolutionFromQuery(raw: string | null): string | null {

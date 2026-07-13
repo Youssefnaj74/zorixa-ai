@@ -1,7 +1,7 @@
 /**
  * Alibaba HappyHorse 1.0 — text / image / reference / video-edit on Atlas Cloud.
- * Reference-to-video accepts up to 9 `reference_images`; video-edit up to 5.
  * @see https://www.atlascloud.ai/models/alibaba/happyhorse-1.0/reference-to-video
+ * @see https://www.atlascloud.ai/models/alibaba/happyhorse-1.0/video-edit
  */
 
 /** Atlas HappyHorse reference-to-video image slot limit. */
@@ -44,12 +44,13 @@ export function happyHorseResolutionFromUi(raw: string): "720P" | "1080P" {
   return "720P";
 }
 
-/** HappyHorse supports 3–15 second clips. */
+/** T2V / I2V / R2V — 3–15 seconds on Atlas. */
 export function normalizeHappyHorseDurationSeconds(raw: number): number {
   if (!Number.isFinite(raw)) return 5;
   return Math.min(15, Math.max(3, Math.round(raw)));
 }
 
+/** T2V / I2V / R2V — aspect, duration, and reference_images. */
 export function buildHappyHorseAtlasBody(input: {
   model: string;
   prompt: string;
@@ -57,7 +58,6 @@ export function buildHappyHorseAtlasBody(input: {
   resolution: string;
   durationSec: number;
   imageUrl?: string;
-  videoUrl?: string;
   referenceImages?: string[];
 }): Record<string, unknown> {
   const body: Record<string, unknown> = {
@@ -72,12 +72,30 @@ export function buildHappyHorseAtlasBody(input: {
     body.image_url = input.imageUrl;
     body.image = input.imageUrl;
   }
-  if (input.videoUrl) {
-    body.video_url = input.videoUrl;
-    body.video = input.videoUrl;
-  }
   if (input.referenceImages && input.referenceImages.length > 0) {
     body.reference_images = input.referenceImages;
+  }
+  return body;
+}
+
+/** Video-edit — prompt + video + optional images + resolution only (no aspect/duration on Atlas). */
+export function buildHappyHorseVideoEditAtlasBody(input: {
+  model: string;
+  prompt: string;
+  resolution: string;
+  videoUrl: string;
+  referenceImages?: string[];
+}): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model: input.model,
+    prompt: input.prompt,
+    video: input.videoUrl,
+    video_url: input.videoUrl,
+    resolution: happyHorseResolutionFromUi(input.resolution)
+  };
+  const refs = (input.referenceImages ?? []).slice(0, HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES);
+  if (refs.length > 0) {
+    body.images = refs;
   }
   return body;
 }

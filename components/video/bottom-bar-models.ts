@@ -99,7 +99,11 @@ import {
   videoComposerSupportsWan27VideoEdit,
   videoComposerSupportsWanVideoToVideo
 } from "@/lib/atlas-video-model-ids";
-import { VIDU_Q3_COMPOSER_ID, VIDU_Q3_PRO_COMPOSER_ID } from "@/lib/atlas-vidu-video";
+import {
+  VIDU_Q3_COMPOSER_ID,
+  VIDU_Q3_PRO_COMPOSER_ID,
+  VIDU_Q3_PRO_RESOLUTION_OPTIONS
+} from "@/lib/atlas-vidu-video";
 
 export const KLING_30_PRO_MODEL_ID = KLING_V3_COMPOSER_ID;
 
@@ -107,7 +111,7 @@ export { KLING_26_MOTION_COMPOSER_ID };
 export { HAPPYHORSE_1_COMPOSER_ID };
 export { WAN_27_COMPOSER_ID };
 export { WAN_22_CHARACTER_SWAP_COMPOSER_ID };
-export { VIDU_Q3_COMPOSER_ID, VIDU_Q3_PRO_COMPOSER_ID };
+export { VIDU_Q3_COMPOSER_ID, VIDU_Q3_PRO_COMPOSER_ID, VIDU_Q3_PRO_RESOLUTION_OPTIONS };
 
 export type BottomBarModel = {
   id: string;
