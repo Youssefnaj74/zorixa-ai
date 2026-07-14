@@ -28,6 +28,7 @@ import {
 import {
   buildHappyHorseAtlasBody,
   buildHappyHorseVideoEditAtlasBody,
+  HAPPYHORSE_REFERENCE_TO_VIDEO_MAX_IMAGES,
   HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES,
   isHappyHorseAtlasModel,
   isHappyHorseComposerId,
@@ -1263,7 +1264,7 @@ async function handleGenerateVideoPost(request: Request) {
       aspectRatio,
       resolution,
       durationSec,
-      referenceImages: reference_images
+      referenceImages: reference_images.slice(0, HAPPYHORSE_REFERENCE_TO_VIDEO_MAX_IMAGES)
     });
   } else if (action === "edit" && isHappyHorseVideoEditModel(model)) {
     const editReferenceImages = reference_images.slice(0, HAPPYHORSE_VIDEO_EDIT_MAX_IMAGES);
@@ -1832,7 +1833,9 @@ async function handleGenerateVideoPost(request: Request) {
     has_last_image: typeof atlasBody.last_image === "string",
     reference_image_count: Array.isArray(atlasBody.reference_images)
       ? (atlasBody.reference_images as string[]).length
-      : 0,
+      : Array.isArray(atlasBody.images)
+        ? (atlasBody.images as string[]).length
+        : 0,
     image_host: atlasImage
       ? (() => {
           try {

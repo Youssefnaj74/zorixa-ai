@@ -151,6 +151,11 @@ export function SeedanceReferenceToVideoTip({
           first, then upload refs and reference them with{" "}
           <span className="font-medium text-brand">{"<IMAGE_N>"}</span> in your prompt.
         </p>
+      ) : happyhorse ? (
+        <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
+          Upload 1–{maxRefs} reference images (Atlas{" "}
+          <span className="font-medium text-white/80">images</span>). Duration 3–15s · 720P / 1080P.
+        </p>
       ) : !seedance && !wan ? (
         <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
           <span className="font-medium text-brand/90">Tip:</span>{" "}
