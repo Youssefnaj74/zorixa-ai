@@ -40,6 +40,11 @@ export function humanizeClientFetchError(error: unknown): string {
 }
 
 export async function uploadFileToPublicStorage(file: File): Promise<string> {
+  if (file.size > 100 * 1024 * 1024) {
+    throw new Error(
+      `Upload failed — file is ${(file.size / (1024 * 1024)).toFixed(0)}MB. Max is 100MB.`
+    );
+  }
   const form = new FormData();
   form.set("file", file);
   let up: Response;
@@ -56,9 +61,18 @@ export async function uploadFileToPublicStorage(file: File): Promise<string> {
     let message = "Upload failed — sign in and try again.";
     try {
       const j = (await up.json()) as { error?: string };
-      if (j.error) message = j.error;
+      if (typeof j.error === "string" && j.error.trim()) {
+        message =
+          up.status === 401
+            ? "Upload failed — sign in and try again."
+            : j.error.trim();
+      }
     } catch {
-      /* ignore */
+      if (up.status === 413) {
+        message = "Upload failed — file is too large. Try a shorter or smaller video.";
+      } else if (up.status >= 500) {
+        message = "Upload failed — server error. Try again in a moment.";
+      }
     }
     throw new Error(message);
   }

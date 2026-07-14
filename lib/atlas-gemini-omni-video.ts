@@ -12,7 +12,7 @@ export const GEMINI_OMNI_FLASH_R2V_COMPOSER_ID = "gemini-omni-flash-r2v" as cons
 export const GEMINI_OMNI_FLASH_MAX_IMAGES = 5;
 export const GEMINI_OMNI_FLASH_REFERENCE_MAX_VIDEOS = 1;
 export const GEMINI_OMNI_FLASH_DURATION_OPTIONS = [4, 6, 8, 10] as const;
-export const GEMINI_OMNI_FLASH_REFERENCE_DURATION_OPTIONS = [6, 8, 10] as const;
+export const GEMINI_OMNI_FLASH_REFERENCE_DURATION_OPTIONS = [4, 6, 8, 10] as const;
 export const GEMINI_OMNI_FLASH_ASPECT_OPTIONS = ["16:9", "9:16"] as const;
 export const GEMINI_OMNI_FLASH_RESOLUTION_OPTIONS = [
   { id: "4k" as const, label: "4K", newBadge: true },

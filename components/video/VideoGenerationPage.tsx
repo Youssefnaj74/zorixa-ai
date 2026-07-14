@@ -1586,6 +1586,17 @@ export function VideoGenerationPage() {
         return;
       }
 
+      if (
+        ctx.actionTab === "Reference to Video" &&
+        composerModelId === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID
+      ) {
+        const hasSourceVideo = ctx.referenceVideoUrls.some((u) => Boolean(u?.trim()));
+        if (!hasSourceVideo) {
+          setGenerateError("Add a source video for Gemini Omni Flash Reference to Video.");
+          return;
+        }
+      }
+
       setLoading(true);
       generationUserCancelledRef.current = false;
       generationAbortRef.current?.abort();
@@ -1809,12 +1820,19 @@ export function VideoGenerationPage() {
             for (let i = 0; i < ctx.referenceImageUrls.length; i++) {
               const raw = ctx.referenceImageUrls[i];
               if (!raw) continue;
-              const u = await ensureAtlasPublicHttpsMediaUrl(raw);
-              if (!u) {
-                setGenerateError(`Could not upload reference image ${i + 1}. Try again.`);
+              try {
+                const u = await ensureAtlasPublicHttpsMediaUrl(raw);
+                if (!u) {
+                  setGenerateError(`Could not upload reference image ${i + 1}. Try again.`);
+                  return;
+                }
+                reference_images.push(u);
+              } catch (e) {
+                setGenerateError(
+                  `Reference image ${i + 1}: ${humanizeClientFetchError(e)}`
+                );
                 return;
               }
-              reference_images.push(u);
             }
             const reference_videos: string[] = [];
             const reference_audios: string[] = [];
@@ -1826,42 +1844,58 @@ export function VideoGenerationPage() {
               for (let i = 0; i < ctx.referenceVideoUrls.length; i++) {
                 const raw = ctx.referenceVideoUrls[i];
                 if (!raw) continue;
-                const u = await ensureAtlasPublicHttpsMediaUrl(raw);
-                if (!u) {
-                  setGenerateError(`Could not upload reference video ${i + 1}. Try again.`);
+                try {
+                  const u = await ensureAtlasPublicHttpsMediaUrl(raw);
+                  if (!u) {
+                    setGenerateError(`Could not upload reference video ${i + 1}. Try again.`);
+                    return;
+                  }
+                  reference_videos.push(u);
+                } catch (e) {
+                  setGenerateError(
+                    videoModel === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID
+                      ? `Source video: ${humanizeClientFetchError(e)}`
+                      : `Reference video ${i + 1}: ${humanizeClientFetchError(e)}`
+                  );
                   return;
                 }
-                reference_videos.push(u);
               }
               for (let i = 0; i < ctx.referenceAudioUrls.length; i++) {
                 const raw = ctx.referenceAudioUrls[i];
                 if (!raw) continue;
-                const u = await ensureAtlasPublicHttpsMediaUrl(raw);
-                if (!u) {
+                try {
+                  const u = await ensureAtlasPublicHttpsMediaUrl(raw);
+                  if (!u) {
+                    setGenerateError(
+                      isWan27ComposerId(videoModel)
+                        ? `Could not upload voice reference. Try again.`
+                        : `Could not upload reference audio ${i + 1}. Try again.`
+                    );
+                    return;
+                  }
+                  reference_audios.push(u);
+                } catch (e) {
                   setGenerateError(
                     isWan27ComposerId(videoModel)
-                      ? `Could not upload voice reference. Try again.`
-                      : `Could not upload reference audio ${i + 1}. Try again.`
+                      ? `Voice reference: ${humanizeClientFetchError(e)}`
+                      : `Reference audio ${i + 1}: ${humanizeClientFetchError(e)}`
                   );
                   return;
                 }
-                reference_audios.push(u);
               }
-              if (reference_images.length < 1 && reference_videos.length < 1) {
+              if (videoModel === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID) {
+                if (reference_videos.length < 1) {
+                  setGenerateError(
+                    "Add a source video for Gemini Omni Flash Reference to Video."
+                  );
+                  return;
+                }
+              } else if (reference_images.length < 1 && reference_videos.length < 1) {
                 setGenerateError(
-                  videoModel === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID
-                    ? "Add at least one reference image and one source video for Gemini Omni Flash."
-                    : isWan27ComposerId(videoModel)
+                  isWan27ComposerId(videoModel)
                     ? "Add at least one reference image or video (Wan 2.7)."
                     : "Add at least one reference image or reference video (Seedance 2.0)."
                 );
-                return;
-              }
-              if (
-                videoModel === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID &&
-                (reference_images.length < 1 || reference_videos.length < 1)
-              ) {
-                setGenerateError("Add at least one reference image and one source video for Gemini Omni Flash.");
                 return;
               }
             } else if (reference_images.length < 1) {

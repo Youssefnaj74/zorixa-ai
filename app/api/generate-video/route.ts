@@ -860,11 +860,11 @@ async function handleGenerateVideoPost(request: Request) {
       );
     }
     if (isGeminiOmniFlashReferenceAtlasModel(model)) {
-      if (reference_images.length < 1 || reference_videos.length < 1) {
+      if (reference_videos.length < 1) {
         return NextResponse.json(
           {
             error:
-              "Gemini Omni Flash Reference-to-Video requires at least one reference image and one source video."
+              "Gemini Omni Flash Reference-to-Video requires a source video."
           },
           { status: 400 }
         );

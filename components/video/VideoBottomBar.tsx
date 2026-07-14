@@ -797,7 +797,7 @@ export function VideoBottomBar({
                 <ReferenceAtlasColumnUpload
                   kind="image"
                   title="Reference images"
-                  hint={`Up to ${GEMINI_OMNI_FLASH_MAX_IMAGES} · character/style`}
+                  hint="Up to 5 · optional character/style"
                   urls={referenceImageUrls}
                   maxSlots={GEMINI_OMNI_FLASH_MAX_IMAGES}
                   accept="image/*"
@@ -806,7 +806,7 @@ export function VideoBottomBar({
                 <ReferenceAtlasColumnUpload
                   kind="video"
                   title="Source video"
-                  hint="Exactly 1 · mp4/mov"
+                  hint="Required · under 100MB"
                   urls={referenceVideoUrls}
                   maxSlots={GEMINI_OMNI_FLASH_REFERENCE_MAX_VIDEOS}
                   accept="video/mp4,video/quicktime,video/*"
@@ -1403,17 +1403,23 @@ export function VideoBottomBar({
               placeholder={
                 showAudioToVideoLayout
                   ? "Optional: expression, posture, scene style…"
-                  : showReferenceLayout && showReferenceMediaPanel
-                    ? "Use @image1 @video1 @audio1 in your scene — e.g. In @image1 the hero from @image2 walks through @video1 with mood from @audio1…"
-                    : showReferenceLayout
-                      ? "Describe the scene — e.g. image 1 is the character, image 2 is the background…"
-                      : showMotionControlLayout
-                        ? "Optional: scene style, lighting, background (motion comes from the clip)…"
-                      : showWanV2vLayout
-                        ? "Describe how to transform the source video…"
-                        : showTextOnlyPromptLayout
-                          ? "Describe the video you want to generate…"
-                          : "Describe your image..."
+                  : showGeminiReferenceMedia
+                    ? "Describe the transformation — e.g. keep the person from the reference images, restyle the source video with cinematic lighting…"
+                    : showSeedanceReferenceMedia
+                      ? "Use @image1 @video1 @audio1 in your scene — e.g. In @image1 the hero from @image2 walks through @video1 with mood from @audio1…"
+                      : showWanReferenceMedia
+                        ? "Name subjects character1, character2 — describe the scene using your image and video refs…"
+                        : showReferenceLayout
+                          ? composerModelId === GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID
+                            ? "Describe the scene — use <IMAGE_1>, <IMAGE_2> to attach each reference image…"
+                            : "Describe the scene — e.g. image 1 is the character, image 2 is the background…"
+                          : showMotionControlLayout
+                            ? "Optional: scene style, lighting, background (motion comes from the clip)…"
+                          : showWanV2vLayout
+                            ? "Describe how to transform the source video…"
+                            : showTextOnlyPromptLayout
+                              ? "Describe the video you want to generate…"
+                              : "Describe your image..."
               }
               className={cn(
                 "w-full rounded-lg bg-[#0a0a0a] px-3 py-2 text-sm leading-snug text-white outline-none transition-shadow placeholder:text-zorixa-muted",

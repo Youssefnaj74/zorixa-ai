@@ -7,6 +7,10 @@ import { cn } from "@/lib/utils";
 
 import { isHappyHorseComposerId } from "@/lib/atlas-happyhorse-video";
 import {
+  GEMINI_OMNI_FLASH_MAX_IMAGES,
+  GEMINI_OMNI_FLASH_R2V_COMPOSER_ID
+} from "@/lib/atlas-gemini-omni-video";
+import {
   GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
   GROK_IMAGINE_VIDEO_MAX_REFERENCE_IMAGES
 } from "@/lib/atlas-grok-video";
@@ -30,32 +34,37 @@ export function SeedanceReferenceToVideoTip({
   const vidu = isViduQ3ComposerId(composerModelId);
   const happyhorse = isHappyHorseComposerId(composerModelId);
   const grok = composerModelId === GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID;
+  const gemini = composerModelId === GEMINI_OMNI_FLASH_R2V_COMPOSER_ID;
   const veo = isVeo31ComposerId(composerModelId);
   const wan = isWan27ComposerId(composerModelId);
   const seedance = composerModelId === "seedance-2";
   const maxRefs = referenceToVideoMaxImages(composerModelId);
-  const modelLabel = grok
-    ? "Grok Imagine · Atlas Reference-to-Video"
-    : veo
-      ? "Google Veo 3.1 · Atlas Reference-to-Video"
-      : wan
-        ? "Wan 2.7 · Atlas Reference-to-Video"
-        : happyhorse
-          ? "HappyHorse 1.0 · Atlas Reference-to-Video"
-          : vidu
-            ? "Vidu Q3 · Atlas Reference-to-Video"
-            : "Seedance 2.0 · Atlas Reference-to-Video";
-  const atlasSlug = grok
-    ? "xai/grok-imagine-video/reference-to-video"
-    : veo
-      ? "google/veo3.1/reference-to-video"
-      : wan
-        ? "alibaba/wan-2.7/reference-to-video"
-        : happyhorse
-          ? "alibaba/happyhorse-1.0/reference-to-video"
-          : vidu
-            ? "vidu/q3/reference-to-video"
-            : "bytedance/seedance-2.0/reference-to-video";
+  const modelLabel = gemini
+    ? "Gemini Omni Flash · Atlas Reference-to-Video (Dev)"
+    : grok
+      ? "Grok Imagine · Atlas Reference-to-Video"
+      : veo
+        ? "Google Veo 3.1 · Atlas Reference-to-Video"
+        : wan
+          ? "Wan 2.7 · Atlas Reference-to-Video"
+          : happyhorse
+            ? "HappyHorse 1.0 · Atlas Reference-to-Video"
+            : vidu
+              ? "Vidu Q3 · Atlas Reference-to-Video"
+              : "Seedance 2.0 · Atlas Reference-to-Video";
+  const atlasSlug = gemini
+    ? "google/gemini-omni-flash/reference-to-video-developer"
+    : grok
+      ? "xai/grok-imagine-video/reference-to-video"
+      : veo
+        ? "google/veo3.1/reference-to-video"
+        : wan
+          ? "alibaba/wan-2.7/reference-to-video"
+          : happyhorse
+            ? "alibaba/happyhorse-1.0/reference-to-video"
+            : vidu
+              ? "vidu/q3/reference-to-video"
+              : "bytedance/seedance-2.0/reference-to-video";
   return (
     <div
       role="note"
@@ -84,6 +93,16 @@ export function SeedanceReferenceToVideoTip({
                 {WAN_27_REFERENCE_MAX_MATERIALS} image+video refs).
               </>
             )}
+          </span>
+        </p>
+      ) : gemini ? (
+        <p className="flex items-start gap-2 text-xs leading-relaxed text-zorixa-muted">
+          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
+          <span>
+            <span className="font-semibold text-white/90">{modelLabel}:</span> upload{" "}
+            <span className="font-medium text-white/85">1 source video</span> (required) and up to{" "}
+            {GEMINI_OMNI_FLASH_MAX_IMAGES} optional reference images for character/style. Duration
+            4–10s · 720p / 1080p / 4K · keep videos under 100MB.
           </span>
         </p>
       ) : grok ? (
@@ -118,7 +137,12 @@ export function SeedanceReferenceToVideoTip({
           </>
         ) : null}
       </p>
-      {grok ? (
+      {gemini ? (
+        <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
+          Source video is required. Reference images are optional — use them to lock character or
+          style while the prompt describes the transformation.
+        </p>
+      ) : grok ? (
         <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
           <span className="font-medium text-brand/90">Tip:</span>{" "}
           <Link href="/image" className="font-medium text-brand underline-offset-2 hover:underline">

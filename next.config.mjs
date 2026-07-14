@@ -3,6 +3,13 @@ import { getSecurityHeaders } from "./lib/security-headers.mjs";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Video reference uploads (Gemini / Seedance / Wan) routinely exceed Next's 10MB default.
+  experimental: {
+    proxyClientMaxBodySize: "100mb",
+    serverActions: {
+      bodySizeLimit: "100mb"
+    }
+  },
   async headers() {
     return [
       {
