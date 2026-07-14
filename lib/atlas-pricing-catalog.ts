@@ -251,7 +251,7 @@ export const ATLAS_VIDEO_RATE_CARDS: Record<string, VideoRateCard> = {
     note: "T2V Pro flat $0.49/run; I2V Standard $0.28/s — see hailuo23AtlasUsdForOptions"
   },
   "google-veo-3-1": {
-    resolutionRates: { "480p": 0.05, "720p": 0.2, "1080p": 0.2 },
+    resolutionRates: { "480p": 0.05, "720p": 0.2, "1080p": 0.2, "4k": 0.4 },
     note: "Veo 3.1 / Lite style tiers"
   },
   "vidu-q3": {

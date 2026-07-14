@@ -159,12 +159,17 @@ import {
   SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS
 } from "@/lib/atlas-seedance-reference-video";
 import {
+  buildViduReferenceAtlasBody,
   isViduAtlasModelSlug,
+  isViduQ3ComposerId,
   isViduQ3ProComposerId,
   isViduReferenceToVideoModel,
   isViduStartEndToVideoModel,
   normalizeViduDurationSeconds,
-  viduQ3ProResolutionFromUi
+  normalizeViduReferenceDurationSeconds,
+  resolveViduGenerateAudioFlag,
+  viduQ3ProResolutionFromUi,
+  VIDU_Q3_REFERENCE_TO_VIDEO_MAX_IMAGES
 } from "@/lib/atlas-vidu-video";
 import {
   augmentSeedancePromptForAspect,
@@ -1049,7 +1054,7 @@ async function handleGenerateVideoPost(request: Request) {
 
   let aspectRatio = normalizeAspectRatio(body.aspectRatio);
   let resolution = normalizeResolution(body.resolution);
-  if (isViduQ3ProComposerId(videoModel)) {
+  if (isViduQ3ProComposerId(videoModel) || isViduQ3ComposerId(videoModel)) {
     resolution = viduQ3ProResolutionFromUi(resolution);
   }
   let durationSec = normalizeDurationSeconds(body.duration);
@@ -1077,6 +1082,8 @@ async function handleGenerateVideoPost(request: Request) {
     durationSec = normalizeKlingV3DurationSeconds(durationSec);
   } else if (isAtlasKlingModelSlug(model)) {
     durationSec = normalizeAtlasKlingDurationSeconds(durationSec);
+  } else if (action === "reference" && isViduReferenceToVideoModel(model)) {
+    durationSec = normalizeViduReferenceDurationSeconds(durationSec, model);
   } else if (isViduAtlasModelSlug(model) || isViduQ3ProComposerId(videoModel)) {
     durationSec = normalizeViduDurationSeconds(durationSec);
   } else if (
@@ -1117,6 +1124,7 @@ async function handleGenerateVideoPost(request: Request) {
 
   const wanNativeAudio =
     applyNativeAudio && (isWan27AtlasModel(model) || isWan27ComposerId(videoModel));
+  const viduNativeAudio = applyNativeAudio && isViduAtlasModelSlug(model);
 
   let generateAudio =
     body.generate_audio === true &&
@@ -1128,6 +1136,8 @@ async function handleGenerateVideoPost(request: Request) {
 
   if (wanNativeAudio) {
     generateAudio = resolveWan27GenerateAudioFlag(body.generate_audio);
+  } else if (viduNativeAudio) {
+    generateAudio = resolveViduGenerateAudioFlag(body.generate_audio);
   }
 
   const creditCost = creditsForVideoModel(videoModel, {
@@ -1230,19 +1240,15 @@ async function handleGenerateVideoPost(request: Request) {
       applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
     }
   } else if (action === "reference" && isViduReferenceToVideoModel(model)) {
-    durationSec = normalizeViduDurationSeconds(durationSec);
-    atlasBody = {
+    atlasBody = buildViduReferenceAtlasBody({
       model,
       prompt,
-      reference_images,
-      duration: durationSec,
-      aspect_ratio: aspectRatio,
+      images: reference_images.slice(0, VIDU_Q3_REFERENCE_TO_VIDEO_MAX_IMAGES),
+      durationSec,
+      aspectRatio,
       resolution,
-      fps
-    };
-    if (applyNativeAudio) {
-      applyAtlasNativeAudioFields(atlasBody, model, generateAudio);
-    }
+      generateAudio: applyNativeAudio ? generateAudio : undefined
+    });
   } else if (action === "start-end" && isViduStartEndToVideoModel(model)) {
     atlasBody = {
       model,

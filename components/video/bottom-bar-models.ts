@@ -102,7 +102,9 @@ import {
 import {
   VIDU_Q3_COMPOSER_ID,
   VIDU_Q3_PRO_COMPOSER_ID,
-  VIDU_Q3_PRO_RESOLUTION_OPTIONS
+  VIDU_Q3_PRO_RESOLUTION_OPTIONS,
+  VIDU_Q3_REFERENCE_TO_VIDEO_MAX_IMAGES,
+  VIDU_Q3_REFERENCE_RESOLUTION_OPTIONS
 } from "@/lib/atlas-vidu-video";
 
 export const KLING_30_PRO_MODEL_ID = KLING_V3_COMPOSER_ID;
@@ -111,7 +113,7 @@ export { KLING_26_MOTION_COMPOSER_ID };
 export { HAPPYHORSE_1_COMPOSER_ID };
 export { WAN_27_COMPOSER_ID };
 export { WAN_22_CHARACTER_SWAP_COMPOSER_ID };
-export { VIDU_Q3_COMPOSER_ID, VIDU_Q3_PRO_COMPOSER_ID, VIDU_Q3_PRO_RESOLUTION_OPTIONS };
+export { VIDU_Q3_COMPOSER_ID, VIDU_Q3_PRO_COMPOSER_ID, VIDU_Q3_PRO_RESOLUTION_OPTIONS, VIDU_Q3_REFERENCE_RESOLUTION_OPTIONS };
 
 export type BottomBarModel = {
   id: string;
@@ -365,6 +367,9 @@ export function referenceToVideoMaxImages(composerModelId: string): number {
   if (isWan27ComposerId(composerModelId)) {
     return WAN_27_REFERENCE_MAX_IMAGES;
   }
+  if (composerModelId === VIDU_Q3_COMPOSER_ID) {
+    return VIDU_Q3_REFERENCE_TO_VIDEO_MAX_IMAGES;
+  }
   return REFERENCE_TO_VIDEO_MAX_IMAGES;
 }
 
@@ -538,8 +543,18 @@ export function isSeedance20ComposerId(composerModelId: string): boolean {
 }
 
 export function videoComposerSupports4k(composerModelId: string): boolean {
-  return isGeminiOmniFlashComposerId(composerModelId) || isSeedance20ComposerId(composerModelId);
+  return (
+    isGeminiOmniFlashComposerId(composerModelId) ||
+    isSeedance20ComposerId(composerModelId) ||
+    isVeo31ComposerId(composerModelId)
+  );
 }
+
+export const VEO_31_RESOLUTION_OPTIONS = [
+  { id: "4k" as const, label: "4K", newBadge: true },
+  { id: "1080p" as const, label: "1080p", newBadge: false },
+  { id: "720p" as const, label: "720p", newBadge: false }
+] as const;
 
 export const SEEDANCE_20_RESOLUTION_OPTIONS = [
   { id: "4k" as const, label: "4K", newBadge: true },

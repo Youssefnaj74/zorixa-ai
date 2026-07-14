@@ -120,10 +120,17 @@ export function SeedanceReferenceToVideoTip({
         <p className="flex items-start gap-2 text-xs leading-relaxed text-zorixa-muted">
           <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
           <span>
-            <span className="font-semibold text-white/90">{modelLabel}:</span> upload up to {maxRefs}{" "}
-            reference images
-            {veo ? `, ${VEO_31_REFERENCE_DURATION_SECONDS}s clip, 720p or 1080p` : ""}, then describe
-            the scene in the prompt.
+            <span className="font-semibold text-white/90">{modelLabel}:</span>{" "}
+            {veo ? (
+              <>
+                upload 1–{maxRefs} images · fixed {VEO_31_REFERENCE_DURATION_SECONDS}s · 720p /
+                1080p / 4K · then describe motion in the prompt.
+              </>
+            ) : (
+              <>
+                upload up to {maxRefs} reference images, then describe the scene in the prompt.
+              </>
+            )}
           </span>
         </p>
       )}
@@ -155,6 +162,11 @@ export function SeedanceReferenceToVideoTip({
         <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
           Upload 1–{maxRefs} reference images (Atlas{" "}
           <span className="font-medium text-white/80">images</span>). Duration 3–15s · 720P / 1080P.
+        </p>
+      ) : vidu ? (
+        <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
+          Upload 1–{maxRefs} images · duration 3–16s · 540p / 720p / 1080p · Audio defaults On.
+          Fast tier uses <span className="font-medium text-white/80">vidu/q3-mix/reference-to-video</span>.
         </p>
       ) : !seedance && !wan ? (
         <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">

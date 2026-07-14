@@ -76,6 +76,7 @@ import {
   RESOLUTION_STEP_OPTIONS,
   seedance20ResolutionOptionsForTab,
   isSeedance20ComposerId,
+  VEO_31_RESOLUTION_OPTIONS,
   STANDARD_DURATION_OPTIONS,
   TIME_SECONDS_OPTIONS,
   type BottomBarModel
@@ -86,7 +87,7 @@ import {
   videoComposerSupportsSpeedTier
 } from "@/lib/atlas-video-model-ids";
 import { AUDIO_TO_VIDEO_RESOLUTION_OPTIONS } from "@/lib/atlas-audio-to-video";
-import { isViduQ3ComposerId, isViduQ3ProComposerId, VIDU_Q3_PRO_RESOLUTION_OPTIONS } from "@/lib/atlas-vidu-video";
+import { isViduQ3ComposerId, isViduQ3ProComposerId, VIDU_Q3_PRO_RESOLUTION_OPTIONS, VIDU_Q3_REFERENCE_RESOLUTION_OPTIONS } from "@/lib/atlas-vidu-video";
 
 import { ActionTabsRow, type ActionTab } from "@/components/video/ActionTabsRow";
 import { AudioUploadSlotContent, audioUploadSlotClass } from "@/components/video/AudioUploadSlotContent";
@@ -583,6 +584,10 @@ export function VideoBottomBar({
     ? [...AUDIO_TO_VIDEO_RESOLUTION_OPTIONS]
     : isSeedance20ComposerId(composerModelId)
     ? seedance20ResolutionOptionsForTab(actionTab, speedTier)
+    : showVeo31Layout
+    ? [...VEO_31_RESOLUTION_OPTIONS]
+    : isViduQ3ComposerId(composerModelId) && showReferenceLayout
+    ? [...VIDU_Q3_REFERENCE_RESOLUTION_OPTIONS]
     : isViduQ3ProComposerId(composerModelId)
       ? [...VIDU_Q3_PRO_RESOLUTION_OPTIONS]
     : show720p1080pOnlyLayout
@@ -633,7 +638,10 @@ export function VideoBottomBar({
     if (showReferenceLayout) {
       if (showGrokReferenceMedia) return [...GROK_IMAGINE_VIDEO_REFERENCE_DURATION_OPTIONS];
       if (showGeminiReferenceMedia) return [...GEMINI_OMNI_FLASH_REFERENCE_DURATION_OPTIONS];
-      if (isViduQ3ComposerId(composerModelId)) return Array.from({ length: 16 }, (_, i) => i + 1);
+      if (isViduQ3ComposerId(composerModelId)) {
+        // Atlas Q3 R2V min 3s (Mix Fast allows 1s — UI keeps 3–16 for both; API clamps).
+        return Array.from({ length: 14 }, (_, i) => i + 3);
+      }
       if (showVeo31Layout) return veo31DurationOptionsForTab(actionTab);
       if (showWan27Layout) return [...wan27ReferenceDurationOptionsForTab(actionTab)];
       return TIME_SECONDS_OPTIONS.filter((t) => t >= 4 && t <= 15);

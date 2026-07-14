@@ -120,8 +120,10 @@ import {
 } from "@/lib/atlas-seedance-reference-video";
 import {
   normalizeViduDurationSeconds,
+  normalizeViduReferenceDurationSeconds,
   VIDU_Q3_COMPOSER_ID,
   VIDU_Q3_PRO_COMPOSER_ID,
+  isViduQ3ComposerId,
   isViduQ3ProComposerId
 } from "@/lib/atlas-vidu-video";
 import type { VideoHistoryEntry, VideoHistorySettingsSnapshot } from "@/components/video/VideoHistory";
@@ -1438,8 +1440,8 @@ export function VideoGenerationPage() {
     }
     if (resolved.tab === "Reference to Video") {
       setTimeSeconds((t) =>
-        resolved.model === VIDU_Q3_COMPOSER_ID || resolved.model === VIDU_Q3_PRO_COMPOSER_ID
-          ? normalizeViduDurationSeconds(t)
+        resolved.model === VIDU_Q3_COMPOSER_ID
+          ? normalizeViduReferenceDurationSeconds(t)
           : normalizeSeedanceReferenceDurationSeconds(t)
       );
     }
@@ -1919,6 +1921,8 @@ export function VideoGenerationPage() {
                   ? normalizeVeo31ReferenceDurationSeconds(duration)
                   : isWan27ComposerId(videoModel)
                     ? normalizeWan27ReferenceDurationSeconds(duration)
+                    : isViduQ3ComposerId(videoModel)
+                      ? normalizeViduReferenceDurationSeconds(duration)
                     : normalizeSeedanceReferenceDurationSeconds(duration);
             payload = {
               prompt: promptForAtlas,
