@@ -19,7 +19,8 @@ export const WAN_27_ASPECT_OPTIONS = ["16:9", "9:16", "1:1", "4:3", "3:4"] as co
 
 export const WAN_27_REFERENCE_MAX_IMAGES = 4;
 
-export const WAN_27_REFERENCE_MAX_VIDEOS = 4;
+/** Atlas R2V: up to 3 reference videos (combined images+videos ≤ 5). */
+export const WAN_27_REFERENCE_MAX_VIDEOS = 3;
 
 /** Combined image + video reference slots on Atlas R2V. */
 export const WAN_27_REFERENCE_MAX_MATERIALS = 5;
@@ -216,19 +217,19 @@ export function buildWan27ReferenceAtlasBody(input: {
   generateAudio?: boolean;
 }): Record<string, unknown> {
   const { images, videos } = sliceWan27ReferenceMaterials(input.images, input.videos);
+  // Atlas R2V schema: model, prompt, images, videos, audio, resolution, ratio, duration
+  // (no `fps` — that belongs to other Wan routes). Prefer `audio` over `reference_voice`.
   const body: Record<string, unknown> = {
     model: input.model,
     prompt: input.prompt,
     ratio: wan27AspectFromUi(input.aspectRatio),
     resolution: wan27ResolutionFromUi(input.resolution),
-    duration: normalizeWan27ReferenceDurationSeconds(input.durationSec),
-    fps: 24
+    duration: normalizeWan27ReferenceDurationSeconds(input.durationSec)
   };
   if (images.length > 0) body.images = images;
   if (videos.length > 0) body.videos = videos;
   if (input.voiceAudioUrl) {
     body.audio = input.voiceAudioUrl;
-    body.reference_voice = input.voiceAudioUrl;
   }
   applyWan27GenerateAudio(body, input.generateAudio ?? true);
   return body;
