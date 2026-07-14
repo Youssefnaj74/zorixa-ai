@@ -40,7 +40,7 @@ const navLinks = [
 
 const dropdownItems = [
   { label: "Subscription", href: "/pricing", icon: CreditCard },
-  { label: "Usage", href: "/dashboard/usage", icon: BarChart2 },
+  { label: "Usage", href: "/dashboard/billing", icon: BarChart2 },
   { label: "API Access", href: "/dashboard/api", icon: Key },
   { label: "Help", href: "/helpsupport", icon: HelpCircle },
 ];

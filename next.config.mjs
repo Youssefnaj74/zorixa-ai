@@ -26,7 +26,9 @@ const nextConfig = {
       { source: "/abuse@zorixaai.com", destination: "/abuse", permanent: true },
       { source: "/:path+/support@zorixaai.com", destination: "/support", permanent: true },
       { source: "/:path+/billing@zorixaai.com", destination: "/billing", permanent: true },
-      { source: "/:path+/abuse@zorixaai.com", destination: "/abuse", permanent: true }
+      { source: "/:path+/abuse@zorixaai.com", destination: "/abuse", permanent: true },
+      // Legacy Settings link; Usage lives under Billing
+      { source: "/dashboard/usage", destination: "/dashboard/billing", permanent: true }
     ];
   },
   images: {

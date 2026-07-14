@@ -123,7 +123,7 @@ export function NavbarAccountMenu() {
             Subscription
           </Link>
           <Link
-            href="/dashboard/history"
+            href="/dashboard/billing"
             role="menuitem"
             onClick={() => setOpen(false)}
             className="px-5 py-3 text-sm font-normal text-white transition-opacity hover:opacity-70"
