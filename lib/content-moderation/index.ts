@@ -7,4 +7,10 @@ export {
 } from "./constants";
 export { enforceContentPolicy, requestIp } from "./enforce";
 export { logModerationBlock } from "./log-block";
-export { moderatePrompt, moderateTexts, normalizeModerationText } from "./moderate-prompt";
+export {
+  moderatePrompt,
+  moderateTexts,
+  normalizeModerationText,
+  stripSafeModerationPhrases,
+  type ModerationResult
+} from "./moderate-prompt";

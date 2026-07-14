@@ -1,17 +1,19 @@
 # Zorixa AI — Content Moderation Compliance Report
 
-**Last updated:** June 11, 2026  
-**Status:** Server-side enforcement active
+**Last updated:** July 14, 2026  
+**Status:** Server-side enforcement active (global, provider-agnostic)
 
 ## Summary
 
-Zorixa AI implements a **centralized server-side moderation layer** that screens user prompts before any image, video, UGC, or character-swap generation request is sent to upstream AI providers. Violations return a consistent error message and are logged for review.
+Zorixa AI implements a **centralized server-side moderation layer** that screens every user prompt **before** any image or video generation request is dispatched to upstream providers (Atlas Cloud, BytePlus, Hailuo, Kling, Seedance, Vidu, Wan, Veo, Grok, Gemini, etc.). Routing and model selection are unchanged — moderation is a hard gate in front of them.
+
+Violations return a friendly HTTP 422 validation error and are logged for review.
 
 **Blocked response (HTTP 422):**
 
 ```json
 {
-  "error": "This request violates ZorixaAI Content Policy.",
+  "error": "This prompt can't be used — it violates ZorixaAI's content policy. Please try a different description without explicit or sexual content.",
   "code": "CONTENT_POLICY_VIOLATION"
 }
 ```
@@ -20,27 +22,29 @@ Zorixa AI implements a **centralized server-side moderation layer** that screens
 
 | Route | Workflow | Enforcement point |
 |-------|----------|-------------------|
-| `POST /api/generate-image` | `image_generation` | After auth; before credits / Atlas call |
-| `POST /api/generate-video` | `video_generation` | After auth; before credits / Atlas call |
+| `POST /api/generate-image` | `image_generation` | After prompt parse; **before** credits / Atlas |
+| `POST /api/generate-video` | `video_generation` | After auth + prompt; **before** credits / Atlas / BytePlus (all models incl. Hailuo) |
 | `POST /api/generate-video` | `ugc_generation` | Same route; UGC-style prompts tagged in workflow log |
 | `POST /api/generate-video` | `character_swap` | `action=motion-control` (Wan / Kling character workflows) |
 | `POST /api/enhance` | `image_enhance` | SDXL creative prompts + negative prompts |
 | `POST /api/video` | `legacy_video` | Legacy studio description field |
 | `POST /api/generations/video` | `video_generation` | User-supplied motion prompt (form field) |
 
-**Not moderated (no user text prompt):** video upscale (`action=upscale`), background removal, pure upscalers without prompts.
+**Not moderated (no generative user text prompt):** video/image upscale-only actions, background removal, pure upscalers without prompts.
 
 ## Blocked categories
 
 | Category | Examples of blocked intent |
 |----------|----------------------------|
 | `nsfw` | NSFW, adult-only requests |
-| `pornography` | Porn, XXX, hentai, hardcore sexual content |
-| `nudity` | Nude, naked, topless, undress, remove clothes |
-| `sexual_content` | Explicit sex scenes, sexual acts, erotic generation |
+| `pornography` | Porn, XXX, hentai, sex tapes/videos, hardcore sexual content |
+| `nudity` | Nude, naked, topless, undress, strip, exposed genitals/breasts |
+| `sexual_content` | Sexual acts, fetish/BDSM, intercourse, explicit slang, erotic generation |
 | `child_exploitation` | CSAM-related terms, underage sexual content, loli/shota |
 | `deepfake_impersonation` | Deepfake, face swap, nudify, non-consensual imagery |
-| `illegal_content` | Bomb-making, terrorism, trafficking, bestiality, incest |
+| `illegal_content` | Bomb-making, terrorism, trafficking, bestiality, incest, rape |
+
+Safe artistic / fashion / swimwear / fitness / medical / educational phrasing (e.g. `nude makeup`, `sex education`, swimsuit catalogs, anatomy textbooks) is strip-allowlisted so it does not false-positive.
 
 Implementation: `lib/content-moderation/moderate-prompt.ts` (normalized keyword / pattern matching).
 
@@ -50,6 +54,8 @@ Implementation: `lib/content-moderation/moderate-prompt.ts` (normalized keyword 
 User prompt → API route → enforceContentPolicy()
                               ├─ moderateTexts()  → block or pass
                               └─ logModerationBlock() → moderation_blocks table + server log
+                                     ↓ (only if pass)
+                              credits → Atlas / BytePlus / Replicate
 ```
 
 **Core modules:**
@@ -71,11 +77,13 @@ User prompt → API route → enforceContentPolicy()
 
 ## Verification
 
-Run locally:
-
 ```bash
+npm run test:moderation
 npm run verify:content-moderation
 ```
+
+Unit tests: `lib/content-moderation/moderate-prompt.test.ts`  
+Route bypass check: every generation route must call `enforceContentPolicy`.
 
 Apply DB migration (Supabase SQL Editor or CLI):
 
@@ -83,6 +91,6 @@ Apply DB migration (Supabase SQL Editor or CLI):
 # File: supabase/migrations/20260611120000_moderation_blocks.sql
 ```
 
-## Dodo Payments response template
+## Dodo / TAAFT response template
 
-> We implemented server-side moderation controls across all image, video, UGC, and character-related generation workflows. Prompts are screened before reaching AI providers; policy violations are blocked with a standard message and logged for review. Our Acceptable Use Policy is published at https://www.zorixaai.com/acceptable-use.
+> We implemented a global, provider-agnostic server-side moderation layer across all image and video generation workflows (including Hailuo, Kling, Seedance, Vidu, Wan, and others). Every prompt is screened before any provider is called; policy violations return a friendly validation error and are logged. Our Acceptable Use Policy is published at https://www.zorixaai.com/acceptable-use.

@@ -41,7 +41,7 @@ const prodBase = (env.PRODUCTION_URL ?? "https://www.zorixaai.com").replace(/\/$
 const supabaseUrl = (env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 const serviceKey = (env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim();
 
-const POLICY_MSG = "This request violates ZorixaAI Content Policy.";
+const POLICY_MSG_SNIPPET = "content policy";
 const POLICY_CODE = "CONTENT_POLICY_VIOLATION";
 
 let failures = 0;
@@ -118,8 +118,9 @@ for (const check of routeChecks) {
   }
   if (
     res.status === 422 &&
-    json.error === POLICY_MSG &&
-    json.code === POLICY_CODE
+    json.code === POLICY_CODE &&
+    typeof json.error === "string" &&
+    json.error.toLowerCase().includes(POLICY_MSG_SNIPPET)
   ) {
     ok(`${check.route} blocks policy violations (${check.label})`);
   } else {

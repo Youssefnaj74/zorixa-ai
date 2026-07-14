@@ -1,5 +1,5 @@
 export const CONTENT_POLICY_VIOLATION_MESSAGE =
-  "This request violates ZorixaAI Content Policy.";
+  "This prompt can't be used — it violates ZorixaAI's content policy. Please try a different description without explicit or sexual content.";
 
 export const CONTENT_POLICY_VIOLATION_CODE = "CONTENT_POLICY_VIOLATION";
 
