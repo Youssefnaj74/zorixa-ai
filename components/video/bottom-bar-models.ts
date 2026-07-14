@@ -548,11 +548,20 @@ export const SEEDANCE_20_RESOLUTION_OPTIONS = [
   { id: "480p" as const, label: "480p", newBadge: false }
 ] as const;
 
-export function seedance20ResolutionOptionsForTab(actionTab: string): typeof SEEDANCE_20_RESOLUTION_OPTIONS[number][] {
+export function seedance20ResolutionOptionsForTab(
+  actionTab: string,
+  speedTier: "standard" | "fast" = "standard"
+): typeof SEEDANCE_20_RESOLUTION_OPTIONS[number][] {
+  let options = [...SEEDANCE_20_RESOLUTION_OPTIONS];
+  // Seedance R2V is trained for 720p+; hide 480p.
   if (actionTab === "Reference to Video") {
-    return SEEDANCE_20_RESOLUTION_OPTIONS.filter((r) => r.id !== "480p");
+    options = options.filter((r) => r.id !== "480p");
   }
-  return [...SEEDANCE_20_RESOLUTION_OPTIONS];
+  // Atlas Fast R2V has no native 1080p / 4k (only 720p + SR tiers).
+  if (speedTier === "fast") {
+    options = options.filter((r) => r.id === "720p" || r.id === "480p");
+  }
+  return options;
 }
 
 export const RESOLUTION_STEP_OPTIONS = [

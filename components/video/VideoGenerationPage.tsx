@@ -3169,7 +3169,17 @@ export function VideoGenerationPage() {
         modeValue={modeValue}
         onModeChange={setModeValue}
         durationStandard={durationStandard}
-        onDurationStandardChange={setDurationStandard}
+        onDurationStandardChange={(next) => {
+          setDurationStandard(next);
+          // Atlas Seedance Fast R2V rejects native 1080p / 4k — clamp when switching to Fast.
+          if (
+            next === "Fast" &&
+            composerModelId === "seedance-2" &&
+            (resolution === "1080p" || resolution === "4k")
+          ) {
+            setResolution("720p");
+          }
+        }}
         timeSeconds={timeSeconds}
         onTimeSecondsChange={setTimeSeconds}
         aspect={aspect}

@@ -31,9 +31,33 @@ export function uiAspectToAtlasRatio(aspectRatio: string): string {
   return R2V_RATIOS.has(v) ? v : "9:16";
 }
 
-export function normalizeSeedanceReferenceResolution(raw: string): string {
+/** Atlas Fast R2V has no native `1080p` / `4k` (only 720p + *-SR tiers). */
+export function isSeedanceFastReferenceModel(model: string): boolean {
+  return /seedance-2\.0-fast\/reference-to-video/i.test(model);
+}
+
+/**
+ * Map UI resolution → Atlas R2V `resolution`.
+ * Standard: 720p | 1080p | 4k (480p forced up for R2V).
+ * Fast: 720p only among our UI tiers (Atlas Fast enum rejects native 1080p/4k).
+ */
+export function normalizeSeedanceReferenceResolution(
+  raw: string,
+  modelOrFast?: string | boolean
+): string {
   const v = raw.trim().toLowerCase();
+  const isFast =
+    typeof modelOrFast === "boolean"
+      ? modelOrFast
+      : typeof modelOrFast === "string"
+        ? isSeedanceFastReferenceModel(modelOrFast)
+        : false;
+
   if (v === "480p") return "720p";
+  if (isFast) {
+    // Atlas `seedance-2.0-fast/reference-to-video`: 480p | 720p | 720p-SR | 1080p-SR | 1440p-SR
+    return "720p";
+  }
   if (v === "4k" || v === "2160p") return "4k";
   return v === "1080p" || v === "720p" ? v : "720p";
 }
@@ -52,7 +76,7 @@ export function buildSeedanceReferenceAtlasBody(input: {
     model: input.model,
     prompt: input.prompt,
     duration: normalizeSeedanceReferenceDurationSeconds(input.durationSec),
-    resolution: normalizeSeedanceReferenceResolution(input.resolution),
+    resolution: normalizeSeedanceReferenceResolution(input.resolution, input.model),
     ratio: uiAspectToAtlasRatio(input.aspectRatio)
   };
   const images = input.reference_images.slice(0, SEEDANCE_REFERENCE_TO_VIDEO_MAX_IMAGES);

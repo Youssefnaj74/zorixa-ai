@@ -574,6 +574,7 @@ export function VideoBottomBar({
     (showAudioToVideoLayout || !showDualAssetV2vLayout) &&
     !hideKlingResolution &&
     !showHailuoLayout;
+  const speedTier = parseVideoSpeedTierFromUiLabel(durationStandard);
   const resolutionOptions = showGrokLayout
     ? [...GROK_IMAGINE_VIDEO_RESOLUTION_OPTIONS]
     : showGeminiLayout
@@ -581,7 +582,7 @@ export function VideoBottomBar({
     : showAudioToVideoLayout
     ? [...AUDIO_TO_VIDEO_RESOLUTION_OPTIONS]
     : isSeedance20ComposerId(composerModelId)
-    ? seedance20ResolutionOptionsForTab(actionTab)
+    ? seedance20ResolutionOptionsForTab(actionTab, speedTier)
     : isViduQ3ProComposerId(composerModelId)
       ? [...VIDU_Q3_PRO_RESOLUTION_OPTIONS]
     : show720p1080pOnlyLayout
@@ -655,7 +656,6 @@ export function VideoBottomBar({
   const showSpeedTierControl = videoComposerSupportsSpeedTier(composerModelId);
   const showWan26ShotTypeControl = wan26ComposerSupportsShotType(composerModelId, actionTab);
   const showKlingV3ShotTypeControl = kling30ProComposerSupportsShotType(composerModelId, actionTab);
-  const speedTier = parseVideoSpeedTierFromUiLabel(durationStandard);
   const showSeedanceI2vTip =
     actionTab === "Image to Video" && composerModelId === "seedance-2";
   const showEndFrameSlot =
