@@ -112,9 +112,10 @@ export function buildGrokImagineVideoAtlasBody(input: {
     body.image_url = input.imageUrl;
   }
 
+  // Atlas R2V expects `image_urls` (not Seedance-style `reference_images`).
   const refs = (input.referenceImages ?? []).slice(0, GROK_IMAGINE_VIDEO_MAX_REFERENCE_IMAGES);
-  if (refs.length > 0) {
-    body.reference_images = refs;
+  if (isReference && refs.length > 0) {
+    body.image_urls = refs;
   }
 
   return body;

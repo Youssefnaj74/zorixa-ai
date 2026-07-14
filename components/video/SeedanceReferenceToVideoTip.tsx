@@ -6,6 +6,10 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 import { isHappyHorseComposerId } from "@/lib/atlas-happyhorse-video";
+import {
+  GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
+  GROK_IMAGINE_VIDEO_MAX_REFERENCE_IMAGES
+} from "@/lib/atlas-grok-video";
 import { isWan27ComposerId, WAN_27_REFERENCE_MAX_MATERIALS } from "@/lib/atlas-wan-27-video";
 import { isViduQ3ComposerId } from "@/lib/atlas-vidu-video";
 import {
@@ -25,28 +29,33 @@ export function SeedanceReferenceToVideoTip({
 }) {
   const vidu = isViduQ3ComposerId(composerModelId);
   const happyhorse = isHappyHorseComposerId(composerModelId);
+  const grok = composerModelId === GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID;
   const veo = isVeo31ComposerId(composerModelId);
   const wan = isWan27ComposerId(composerModelId);
   const seedance = composerModelId === "seedance-2";
   const maxRefs = referenceToVideoMaxImages(composerModelId);
-  const modelLabel = veo
-    ? "Google Veo 3.1 · Atlas Reference-to-Video"
-    : wan
-      ? "Wan 2.7 · Atlas Reference-to-Video"
-      : happyhorse
-        ? "HappyHorse 1.0 · Atlas Reference-to-Video"
-        : vidu
-          ? "Vidu Q3 · Atlas Reference-to-Video"
-          : "Seedance 2.0 · Atlas Reference-to-Video";
-  const atlasSlug = veo
-    ? "google/veo3.1/reference-to-video"
-    : wan
-      ? "alibaba/wan-2.7/reference-to-video"
-      : happyhorse
-        ? "alibaba/happyhorse-1.0/reference-to-video"
-        : vidu
-          ? "vidu/q3/reference-to-video"
-          : "bytedance/seedance-2.0/reference-to-video";
+  const modelLabel = grok
+    ? "Grok Imagine · Atlas Reference-to-Video"
+    : veo
+      ? "Google Veo 3.1 · Atlas Reference-to-Video"
+      : wan
+        ? "Wan 2.7 · Atlas Reference-to-Video"
+        : happyhorse
+          ? "HappyHorse 1.0 · Atlas Reference-to-Video"
+          : vidu
+            ? "Vidu Q3 · Atlas Reference-to-Video"
+            : "Seedance 2.0 · Atlas Reference-to-Video";
+  const atlasSlug = grok
+    ? "xai/grok-imagine-video/reference-to-video"
+    : veo
+      ? "google/veo3.1/reference-to-video"
+      : wan
+        ? "alibaba/wan-2.7/reference-to-video"
+        : happyhorse
+          ? "alibaba/happyhorse-1.0/reference-to-video"
+          : vidu
+            ? "vidu/q3/reference-to-video"
+            : "bytedance/seedance-2.0/reference-to-video";
   return (
     <div
       role="note"
@@ -77,6 +86,17 @@ export function SeedanceReferenceToVideoTip({
             )}
           </span>
         </p>
+      ) : grok ? (
+        <p className="flex items-start gap-2 text-xs leading-relaxed text-zorixa-muted">
+          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
+          <span>
+            <span className="font-semibold text-white/90">{modelLabel}:</span> upload 1–
+            {GROK_IMAGINE_VIDEO_MAX_REFERENCE_IMAGES} reference images (480p or 720p, 1–10s). In the
+            prompt, use tags like <span className="font-medium text-brand">{"<IMAGE_1>"}</span>,{" "}
+            <span className="font-medium text-brand">{"<IMAGE_2>"}</span> to attach each image to a
+            scene element.
+          </span>
+        </p>
       ) : (
         <p className="flex items-start gap-2 text-xs leading-relaxed text-zorixa-muted">
           <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
@@ -98,7 +118,16 @@ export function SeedanceReferenceToVideoTip({
           </>
         ) : null}
       </p>
-      {!seedance && !wan ? (
+      {grok ? (
+        <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
+          <span className="font-medium text-brand/90">Tip:</span>{" "}
+          <Link href="/image" className="font-medium text-brand underline-offset-2 hover:underline">
+            Generate images
+          </Link>{" "}
+          first, then upload refs and reference them with{" "}
+          <span className="font-medium text-brand">{"<IMAGE_N>"}</span> in your prompt.
+        </p>
+      ) : !seedance && !wan ? (
         <p className="mt-2 pl-5 text-[11px] leading-relaxed text-zorixa-muted/95">
           <span className="font-medium text-brand/90">Tip:</span>{" "}
           <Link href="/image" className="font-medium text-brand underline-offset-2 hover:underline">
