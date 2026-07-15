@@ -595,6 +595,14 @@ export function VideoBottomBar({
       : RESOLUTION_STEP_OPTIONS;
   const characterSwapBar = videoComposerUsesCharacterSwapBarLayout(composerModelId, actionTab);
   const showTextOnlyPromptLayout = videoComposerUsesTextOnlyLayout(composerModelId, actionTab);
+  /** Phone: keep start/end, character/motion, source+refs uploads visible (not crushed in the scroll pane). */
+  const pinMediaUploadsOnMobile =
+    showDualAssetV2vLayout ||
+    showViduStartEndLayout ||
+    showWanV2vLayout ||
+    showHappyHorseV2vRefs ||
+    showWanV2vRefs ||
+    (actionTab === "Image to Video" && !showAudioToVideoLayout);
   const pickerModels = bottomBarModelsForActionTab(actionTab);
   const selectedModel =
     pickerModels.find((m) => m.id === composerModelId) ?? pickerModels[0] ?? pickerModels[0];
@@ -750,7 +758,7 @@ export function VideoBottomBar({
       className={cn(
         "fixed inset-x-0 bottom-0 z-50 flex flex-col border-t border-[rgba(131,56,235,0.15)] bg-[#0d0d14]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-[12px]",
         "px-4 py-2 font-body max-lg:px-3",
-        showReferenceMediaPanel
+        showReferenceMediaPanel || pinMediaUploadsOnMobile
           ? "max-lg:max-h-[min(64dvh,540px)]"
           : showSeedanceI2vTip
             ? "max-lg:max-h-[min(60dvh,500px)]"
@@ -767,15 +775,25 @@ export function VideoBottomBar({
         </div>
 
         <div className="max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:gap-2 lg:contents">
-          <div className="max-lg:min-h-0 max-lg:flex-1 max-lg:overflow-y-auto max-lg:overscroll-y-contain lg:contents">
+          <div
+            className={cn(
+              "lg:contents",
+              /* Pin media uploads on phone — don't bury/crush them in the scroll pane */
+              pinMediaUploadsOnMobile
+                ? "max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:gap-2"
+                : "max-lg:min-h-0 max-lg:flex-1 max-lg:overflow-y-auto max-lg:overscroll-y-contain"
+            )}
+          >
         {/* ROW 1 — uploads + prompt */}
         <div
           className={cn(
             "flex min-h-0 gap-2",
             useStableDockHeight && "items-stretch overflow-hidden",
-            showReferenceMediaPanel
-              ? "max-lg:flex-col max-lg:items-stretch flex-row items-stretch"
-              : "flex-col sm:flex-row sm:items-start"
+            pinMediaUploadsOnMobile
+              ? "max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col"
+              : showReferenceMediaPanel
+                ? "max-lg:flex-col max-lg:items-stretch flex-row items-stretch"
+                : "flex-col sm:flex-row sm:items-start"
           )}
         >
           {showReferenceLayout ? (
@@ -829,7 +847,14 @@ export function VideoBottomBar({
               />
             )
           ) : !showTextOnlyPromptLayout ? (
-            <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start max-lg:w-full max-lg:gap-2 max-lg:flex-row max-lg:flex-wrap">
+            <div
+              className={cn(
+                "flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start max-lg:w-full max-lg:gap-2",
+                pinMediaUploadsOnMobile
+                  ? "max-lg:shrink-0 max-lg:flex-col"
+                  : "max-lg:flex-row max-lg:flex-wrap"
+              )}
+            >
               {showGeminiImageLayout ? (
                 <ReferenceImageUploadStrip
                   referenceImageUrls={referenceImageUrls}
@@ -946,7 +971,7 @@ export function VideoBottomBar({
                     aria-hidden
                     onChange={onMotionVideoInput}
                   />
-                  <motion.div className={VIDEO_UPLOAD_PAIR_GRID}>
+                  <motion.div className={cn(VIDEO_I2V_FRAME_GRID, "w-full shrink-0")}>
                     <div
                       className="relative"
                       onDragEnter={stopDragDefaults}
@@ -1092,7 +1117,7 @@ export function VideoBottomBar({
                     aria-hidden
                     onChange={onFile2Input}
                   />
-                  <div className={VIDEO_I2V_FRAME_GRID}>
+                  <div className={cn(VIDEO_I2V_FRAME_GRID, "w-full shrink-0")}>
                     <div
                       className="relative"
                       onDragEnter={stopDragDefaults}
@@ -1172,7 +1197,7 @@ export function VideoBottomBar({
                   className={cn(
                     "flex w-full shrink-0 gap-3 max-lg:flex-col max-lg:gap-2",
                     showHappyHorseV2vRefs || showWanV2vRefs
-                      ? "flex-col sm:flex-row sm:items-start"
+                      ? "flex-col lg:flex-row lg:items-start"
                       : "flex-col"
                   )}
                 >
@@ -1186,7 +1211,7 @@ export function VideoBottomBar({
                     onChange={onVideoInput}
                   />
                   <div
-                    className="relative shrink-0"
+                    className="relative w-full shrink-0 max-lg:w-full lg:w-auto"
                     onDragEnter={stopDragDefaults}
                     onDragOver={stopDragDefaults}
                     onDrop={onDropVideo}
@@ -1194,7 +1219,7 @@ export function VideoBottomBar({
                     <button
                       type="button"
                       onClick={() => fileVideoRef.current?.click()}
-                      className={videoImageUploadSlotClass()}
+                      className={videoImageUploadSlotClass("max-lg:w-full")}
                       aria-label={editSourceVideoUrl ? "Change source video" : "Upload source video"}
                     >
                       {editSourceVideoUrl ? (
@@ -1259,7 +1284,7 @@ export function VideoBottomBar({
                       addSlotLabel="image"
                       countInSlot
                       matchSourceVideoSlot
-                      className="min-w-0 shrink-0"
+                      className="min-w-0 w-full shrink-0 max-lg:w-full lg:w-auto"
                     />
                   ) : null}
                 </div>
@@ -1389,7 +1414,8 @@ export function VideoBottomBar({
           <div
             className={cn(
               "flex min-w-0 flex-col",
-              "flex-1"
+              "flex-1",
+              pinMediaUploadsOnMobile && "max-lg:min-h-0 max-lg:overflow-y-auto"
             )}
           >
             <textarea
@@ -1507,7 +1533,8 @@ export function VideoBottomBar({
           {showMotionControlLayout ? (
             <>
               <motion.div className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
-              <div className="flex flex-col gap-1">
+              {/* Framing: desktop only (phone dock stays compact) */}
+              <div className="hidden flex-col gap-1 sm:flex">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">
                   Framing
                 </span>

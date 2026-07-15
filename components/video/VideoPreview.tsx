@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Download, Expand, History, Play, RotateCcw, Volume2 } from "lucide-react";
+import { Download, Expand, History, Play, RotateCcw, Volume2, X } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState, type VideoHTMLAttributes } from "react";
@@ -73,6 +73,7 @@ export function VideoPreview({
   canPostProcessVideo = false,
   postProcessBusy = false,
   onResetDefaults,
+  onClearExample,
   onExtendVideo,
   onUpscaleVideo,
   onPlaybackConfirmed,
@@ -122,6 +123,8 @@ export function VideoPreview({
   canPostProcessVideo?: boolean;
   postProcessBusy?: boolean;
   onResetDefaults?: () => void;
+  /** Dismiss studio example prompt + preview so the user can start blank. */
+  onClearExample?: () => void;
   onExtendVideo?: () => void;
   onUpscaleVideo?: () => void;
   /** Fired once inline playback metadata loads — triggers deferred Atlas CDN mirror. */
@@ -258,7 +261,7 @@ export function VideoPreview({
         className={cn(
           "zorixa-card-border flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-zorixa-card shadow-glow",
           (actionTab === "Video to Video" || actionTab === "Reference to Video") &&
-            "min-h-[min(42vh,320px)]"
+            "min-h-[min(42vh,320px)] max-lg:min-h-[min(28vh,240px)]"
         )}
         style={{ maxHeight: cardMaxHeight }}
       >
@@ -268,6 +271,19 @@ export function VideoPreview({
             <span className="rounded-md bg-brand/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-light">
               Example
             </span>
+          ) : null}
+          {isExample && onClearExample ? (
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={loading || postProcessBusy}
+              onClick={() => onClearExample()}
+              className="h-7 shrink-0 rounded-lg border border-white/15 bg-white/5 px-2.5 text-[11px] font-medium text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+              aria-label="Clear example"
+            >
+              <X className="size-3.5 sm:mr-1" />
+              <span className="max-sm:sr-only">Clear example</span>
+            </Button>
           ) : null}
           {directorResult ? (
             <span className="rounded-md bg-[#8338eb]/20 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[#c084fc]">

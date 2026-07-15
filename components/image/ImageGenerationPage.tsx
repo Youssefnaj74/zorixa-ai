@@ -302,6 +302,8 @@ export function ImageGenerationPage() {
   );
   const [authRequiredOpen, setAuthRequiredOpen] = useState(false);
   const [hasUserGenerated, setHasUserGenerated] = useState(false);
+  /** User dismissed the studio example so they can enter their own prompt/images. */
+  const [showcaseDismissed, setShowcaseDismissed] = useState(false);
 
   const [history, setHistory] = useState<ImageHistoryEntry[]>([]);
   const appliedShowcaseForModel = useRef<string | null>(null);
@@ -313,6 +315,7 @@ export function ImageGenerationPage() {
   const showingUpscalerShowcase = Boolean(
     actionTab === "Image Upscaler" &&
       !hasUserGenerated &&
+      !showcaseDismissed &&
       !loading &&
       outputUrls.length === 0 &&
       !studioLock
@@ -323,6 +326,7 @@ export function ImageGenerationPage() {
       outputUrls.length === 0 &&
       !loading &&
       !hasUserGenerated &&
+      !showcaseDismissed &&
       !studioLock
   );
   const previewUrls =
@@ -452,14 +456,21 @@ export function ImageGenerationPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- normalize only when `modelId` changes
   }, [modelId]);
 
-  const setReferenceUrlsSafe = useCallback((urls: string[]) => {
-    setReferenceUrls((prev) => {
-      for (const u of prev) {
-        if (u.startsWith("blob:") && !urls.includes(u)) URL.revokeObjectURL(u);
-      }
-      return urls;
-    });
-  }, []);
+  const setReferenceUrlsSafe = useCallback(
+    (urls: string[] | ((prev: string[]) => string[])) => {
+      setReferenceUrls((prev) => {
+        const next = typeof urls === "function" ? urls(prev) : urls;
+        for (const u of prev) {
+          if (u.startsWith("blob:") && !next.includes(u)) {
+            URL.revokeObjectURL(u);
+            clearClientMediaBlob(u);
+          }
+        }
+        return next;
+      });
+    },
+    []
+  );
 
   const applyModelShowcase = useCallback(
     (nextModelId: string, tab: ImageActionTab) => {
@@ -480,6 +491,7 @@ export function ImageGenerationPage() {
       setResolution(showcase.resolution);
       setAspect(showcase.aspect);
       setGenerateError(null);
+      setShowcaseDismissed(false);
       appliedShowcaseForModel.current = showcaseKey;
 
       if (tab === "Image to Image") {
@@ -700,6 +712,7 @@ export function ImageGenerationPage() {
         setOutputUrls([]);
         setUpscaleBeforeUrl(null);
         setHasUserGenerated(false);
+        setShowcaseDismissed(false);
         appliedShowcaseForModel.current = null;
         if (item.id.startsWith("showcase-")) {
           applyModelShowcase(modelId, actionTab);
@@ -711,6 +724,7 @@ export function ImageGenerationPage() {
         setGenerateError(null);
         setOutputUrls([url]);
         setHasUserGenerated(true);
+        setShowcaseDismissed(true);
       }
     },
     [actionTab, applyModelShowcase, modelId]
@@ -766,10 +780,25 @@ export function ImageGenerationPage() {
     setGenerateError(null);
   }, [setUpscaleInput]);
 
+  const clearExample = useCallback(() => {
+    setGenerateError(null);
+    setOutputUrls([]);
+    setUpscaleBeforeUrl(null);
+    setPrompt("");
+    setCameraStyle("None");
+    setReferenceUrlsSafe([]);
+    if (actionTab === "Image Upscaler") {
+      setUpscaleInput(null, null);
+    }
+    setShowcaseDismissed(true);
+    appliedShowcaseForModel.current = `${modelId}:${actionTab}`;
+  }, [actionTab, modelId, setReferenceUrlsSafe, setUpscaleInput]);
+
   const resetImageTabDefaults = useCallback(() => {
     setGenerateError(null);
     if (actionTab === "Image Upscaler") {
       resetUpscalerTab();
+      setShowcaseDismissed(false);
       return;
     }
     setPrompt("");
@@ -782,6 +811,7 @@ export function ImageGenerationPage() {
     setModelId(defaultModel);
     setResolution(defaults.resolution);
     setAspect(defaults.aspect);
+    setShowcaseDismissed(false);
     appliedShowcaseForModel.current = null;
     applyModelShowcase(defaultModel, actionTab);
   }, [actionTab, applyModelShowcase, resetUpscalerTab, setReferenceUrlsSafe, studioLock?.modelId]);
@@ -1069,6 +1099,7 @@ export function ImageGenerationPage() {
               canRunVariations={canRunVariations && actionTab !== "Image Upscaler"}
               postProcessBusy={loading}
               onResetDefaults={resetImageTabDefaults}
+              onClearExample={clearExample}
               onUpscaleImage={(tier) => void runImageUpscale(tier)}
               onVariations={() => void runImageVariations()}
               className="scrollbar-hide h-full min-h-0 w-full min-w-0 flex-1"
@@ -1089,6 +1120,7 @@ export function ImageGenerationPage() {
           onActionTabChange={(tab) => {
             setActionTab(tab);
             setGenerateError(null);
+            setShowcaseDismissed(false);
             appliedShowcaseForModel.current = null;
           }}
           inputUrl={upscaleInputUrl}
@@ -1112,14 +1144,17 @@ export function ImageGenerationPage() {
           onActionTabChange={(tab) => {
             setActionTab(tab);
             setGenerateError(null);
+            setShowcaseDismissed(false);
             appliedShowcaseForModel.current = null;
           }}
           referenceUrls={referenceUrls}
           onReferenceUrlsChange={setReferenceUrlsSafe}
+          onReferenceUploadError={(message) => setGenerateError(message)}
           modelId={modelId}
           onModelChange={(id) => {
             setModelId(id);
             setGenerateError(null);
+            setShowcaseDismissed(false);
             appliedShowcaseForModel.current = null;
           }}
           cameraStyle={cameraStyle}

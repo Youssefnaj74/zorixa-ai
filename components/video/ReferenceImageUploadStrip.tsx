@@ -77,10 +77,10 @@ export function ReferenceImageUploadStrip({
   );
 
   const thumbSize = matchSourceVideoSlot
-    ? "h-[88px] w-[150px] min-h-[88px] min-w-[150px] max-w-[150px] max-lg:h-[72px] max-lg:min-h-[72px] max-lg:w-full max-lg:min-w-0 max-lg:max-w-none"
+    ? "h-[88px] w-[150px] min-h-[88px] min-w-[150px] max-w-[150px] max-lg:h-[72px] max-lg:min-h-[72px] max-lg:w-[140px] max-lg:min-w-[140px] max-lg:max-w-[140px]"
     : "size-[72px] sm:size-[80px]";
   const addSlotSize = matchSourceVideoSlot
-    ? "h-[88px] w-[150px] max-lg:h-[72px] max-lg:w-full max-lg:max-w-none"
+    ? "h-[88px] w-[150px] max-lg:h-[72px] max-lg:w-[140px] max-lg:max-w-[140px]"
     : "size-[72px] sm:size-[80px]";
 
   return (
@@ -101,7 +101,10 @@ export function ReferenceImageUploadStrip({
         onChange={onFileInput}
       />
       <div
-        className="flex flex-wrap items-start gap-2"
+        className={cn(
+          "flex flex-wrap items-start gap-2",
+          matchSourceVideoSlot && "max-lg:w-full max-lg:justify-center"
+        )}
         onDragEnter={stopDrag}
         onDragOver={stopDrag}
         onDrop={onDrop}

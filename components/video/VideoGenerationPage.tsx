@@ -645,6 +645,8 @@ export function VideoGenerationPage() {
   /** Raw Atlas/CDN URL for full-file download (playback uses proxied `videoUrl`). */
   const [videoDownloadUrl, setVideoDownloadUrl] = useState<string | null>(null);
   const [hasUserGenerated, setHasUserGenerated] = useState(false);
+  /** User dismissed the studio example so they can enter their own prompt/assets. */
+  const [showcaseDismissed, setShowcaseDismissed] = useState(false);
 
   const [history, setHistory] = useState<VideoHistoryEntry[]>([]);
   const appliedShowcaseForModel = useRef<string | null>(null);
@@ -761,7 +763,12 @@ export function VideoGenerationPage() {
   }, [actionTab, modelShowcase]);
 
   const showingModelShowcase = Boolean(
-    modelShowcase && showcaseAssetsReady && !videoUrl && !loading && !hasUserGenerated
+    modelShowcase &&
+      showcaseAssetsReady &&
+      !videoUrl &&
+      !loading &&
+      !hasUserGenerated &&
+      !showcaseDismissed
   );
   const inputPreviewVideoUrl = useMemo(() => {
     if (actionTab === "Video to Video") {
@@ -981,6 +988,7 @@ export function VideoGenerationPage() {
       setGenerateError(null);
       setVideoUrl(null);
       setVideoDownloadUrl(null);
+      setShowcaseDismissed(false);
       appliedShowcaseForModel.current = showcaseKey;
 
       if (isGrokImagineVideoComposerId(nextModelId)) {
@@ -1137,6 +1145,7 @@ export function VideoGenerationPage() {
 
   const handleComposerModelChange = useCallback((id: string) => {
     appliedShowcaseForModel.current = null;
+    setShowcaseDismissed(false);
     setComposerModelId(id);
     setGenerateError(null);
     if (!videoComposerSupportsGenerateAudio(id)) {
@@ -1483,6 +1492,7 @@ export function VideoGenerationPage() {
 
   const handleActionTabChange = useCallback((tab: ActionTab) => {
     appliedShowcaseForModel.current = null;
+    setShowcaseDismissed(false);
     const wasGemini = isGeminiOmniFlashComposerId(composerModelId);
     const wasGrok = isGrokImagineVideoComposerId(composerModelId);
     const wasAudioToVideo = isAudioToVideoComposerId(composerModelId);
@@ -2528,6 +2538,7 @@ export function VideoGenerationPage() {
         Array.from({ length: SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS }, () => null)
       );
 
+      setShowcaseDismissed(false);
       appliedShowcaseForModel.current = null;
       applyModelShowcase(defaultModel, tab);
     },
@@ -2540,6 +2551,51 @@ export function VideoGenerationPage() {
       setPromptImageUrlSafe
     ]
   );
+
+  const clearExample = useCallback(() => {
+    setGenerateError(null);
+    setVideoUrl(null);
+    setVideoDownloadUrl(null);
+    setPrompt("");
+    setPromptImageUrlSafe(null);
+    setPromptImage2UrlSafe(null);
+    setLipsyncAudioUrlSafe(null);
+    setEditSourceVideoUrlSafe(null);
+    setMotionVideoUrlSafe(null);
+    setReferenceImageUrls(
+      Array.from({ length: referenceToVideoMaxImages(composerModelId) }, () => null)
+    );
+    setReferenceVideoUrls(
+      Array.from(
+        {
+          length: isWan27ComposerId(composerModelId)
+            ? WAN_27_REFERENCE_MAX_VIDEOS
+            : SEEDANCE_REFERENCE_TO_VIDEO_MAX_VIDEOS
+        },
+        () => null
+      )
+    );
+    setReferenceAudioUrls(
+      Array.from(
+        {
+          length: isWan27ComposerId(composerModelId)
+            ? WAN_27_REFERENCE_MAX_VOICE_AUDIOS
+            : SEEDANCE_REFERENCE_TO_VIDEO_MAX_AUDIOS
+        },
+        () => null
+      )
+    );
+    setShowcaseDismissed(true);
+    appliedShowcaseForModel.current = `${composerModelId}:${actionTab}`;
+  }, [
+    actionTab,
+    composerModelId,
+    setEditSourceVideoUrlSafe,
+    setLipsyncAudioUrlSafe,
+    setMotionVideoUrlSafe,
+    setPromptImage2UrlSafe,
+    setPromptImageUrlSafe
+  ]);
 
   const resetCurrentTabDefaults = useCallback(() => {
     if (actionTab === "AI Director") {
@@ -2863,6 +2919,7 @@ export function VideoGenerationPage() {
         setVideoUrl(null);
         setVideoDownloadUrl(null);
         setHasUserGenerated(false);
+        setShowcaseDismissed(false);
         appliedShowcaseForModel.current = null;
         applyModelShowcase(composerModelId, actionTab);
         return;
@@ -3065,6 +3122,7 @@ export function VideoGenerationPage() {
               canPostProcessVideo={canPostProcessVideo}
               postProcessBusy={loading}
               onResetDefaults={resetCurrentTabDefaults}
+              onClearExample={clearExample}
               onExtendVideo={() => void handleExtendVideo()}
               onUpscaleVideo={() => void runVideoUpscale()}
               allowVideoDownload={Boolean(outputVideoSourceUrl) || showingModelShowcase}

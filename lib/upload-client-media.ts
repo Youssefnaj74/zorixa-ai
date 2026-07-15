@@ -85,10 +85,15 @@ export async function uploadFileToPublicStorage(file: File): Promise<string> {
 }
 
 export async function uploadBlobUrlToPublicStorage(blobUrl: string): Promise<string> {
+  const pending = clientBlobFiles.get(blobUrl);
+  if (pending) {
+    return uploadFileToPublicStorage(pending);
+  }
+
   let blobRes: Response;
   try {
     blobRes = await fetch(blobUrl);
-  } catch (e) {
+  } catch {
     throw new Error(
       "Could not read the uploaded file (link expired). Remove the image and upload it again."
     );
@@ -154,6 +159,7 @@ export async function resolvePublicHttpsMediaUrl(
   }
 
   const coerced = coerceToPublicHttpsUrl(t);
+  // Only hand Atlas a URL it can fetch from the public internet (not localhost).
   if (coerced && atlasCanFetchUrlDirectly(coerced)) return coerced;
 
   const pendingFile = file ?? clientBlobFiles.get(t) ?? null;
@@ -174,7 +180,9 @@ export async function resolvePublicHttpsMediaUrl(
     Boolean(coerced && !atlasCanFetchUrlDirectly(coerced));
   if (!needsUpload) return null;
 
-  const fetchSrc = t.startsWith("blob:") || t.startsWith("data:") ? t : coerced ?? t;
+  // Fetch with the browser-reachable URL. Never use https://localhost — coerce
+  // upgrades http→https and breaks local showcase / dev uploads.
+  const fetchSrc = t.startsWith("blob:") || t.startsWith("data:") ? t : t;
   return uploadBlobUrlToPublicStorage(fetchSrc);
 }
 

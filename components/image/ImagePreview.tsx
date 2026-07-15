@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { Download, Expand, History, ImageIcon, RotateCcw } from "lucide-react";
+import { Download, Expand, History, ImageIcon, RotateCcw, X } from "lucide-react";
 
 import { BeforeAfterSlider } from "@/components/dashboard/before-after-slider";
 import type { ImageActionTab } from "@/components/image/ImageActionTabsRow";
@@ -90,6 +90,7 @@ export function ImagePreview({
   canRunVariations = false,
   postProcessBusy = false,
   onResetDefaults,
+  onClearExample,
   onUpscaleImage,
   onVariations,
   className
@@ -118,6 +119,8 @@ export function ImagePreview({
   canRunVariations?: boolean;
   postProcessBusy?: boolean;
   onResetDefaults?: () => void;
+  /** Dismiss studio example prompt + preview so the user can start blank. */
+  onClearExample?: () => void;
   onUpscaleImage?: (tier: UpscaleTier) => void;
   onVariations?: () => void;
   className?: string;
@@ -189,6 +192,19 @@ export function ImagePreview({
               </span>
             ) : null}
           </h2>
+          {isExample && onClearExample ? (
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={loading || postProcessBusy}
+              onClick={() => onClearExample()}
+              className="h-7 shrink-0 rounded-lg border border-white/15 bg-white/5 px-2.5 text-[11px] font-medium text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+              aria-label="Clear example"
+            >
+              <X className="size-3.5 sm:mr-1" />
+              <span className="max-sm:sr-only">Clear example</span>
+            </Button>
+          ) : null}
           <div className="ml-auto flex flex-wrap items-center gap-2 max-lg:hidden">
             {!isUpscalerTab ? (
               <>

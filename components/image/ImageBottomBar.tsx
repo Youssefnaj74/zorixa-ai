@@ -22,6 +22,10 @@ import { getImageI2iUploadSlots } from "@/lib/image-i2i-model-slots";
 import { IMAGE_I2I_DOCK_HEIGHT } from "@/lib/composer-dock-height";
 import { useIsLgUp } from "@/lib/hooks/use-studio-nav-offset";
 import { studioReferenceImageAlt } from "@/lib/image-alt-text";
+import {
+  registerClientMediaBlob,
+  scheduleClientMediaPublicUpload
+} from "@/lib/upload-client-media";
 import { cn } from "@/lib/utils";
 
 export type ImageGenerateContext = {
@@ -40,7 +44,7 @@ export type ImageBottomBarProps = {
   actionTab: ImageActionTab;
   onActionTabChange: (tab: ImageActionTab) => void;
   referenceUrls: string[];
-  onReferenceUrlsChange: (urls: string[]) => void;
+  onReferenceUrlsChange: (urls: string[] | ((prev: string[]) => string[])) => void;
   modelId: string;
   onModelChange: (id: string) => void;
   cameraStyle: string;
@@ -55,6 +59,8 @@ export type ImageBottomBarProps = {
   loadingGenerate: boolean;
   onGenerate: (ctx: ImageGenerateContext) => void | Promise<void>;
   onHeightChange?: (height: number) => void;
+  /** Surface reference upload failures (blob → public https). */
+  onReferenceUploadError?: (message: string) => void;
   /** When set (from /tools), tab + model are fixed to this tool card. */
   studioLock?: ImageStudioLock | null;
 };
@@ -176,6 +182,7 @@ export function ImageBottomBar({
   loadingGenerate,
   onGenerate,
   onHeightChange,
+  onReferenceUploadError,
   studioLock = null
 }: ImageBottomBarProps) {
   const isLgUp = useIsLgUp();
@@ -331,10 +338,21 @@ export function ImageBottomBar({
   const applyFile = useCallback(
     (index: number, file: File) => {
       if (!file.type.startsWith("image/")) return;
-      const url = URL.createObjectURL(file);
-      setRefAt(index, url);
+      const blobUrl = URL.createObjectURL(file);
+      registerClientMediaBlob(blobUrl, file);
+      setRefAt(index, blobUrl);
+      scheduleClientMediaPublicUpload(
+        blobUrl,
+        file,
+        (https) => {
+          onReferenceUrlsChange((prev) =>
+            prev.map((u) => (u === blobUrl ? https : u)).slice(0, maxRefs)
+          );
+        },
+        onReferenceUploadError
+      );
     },
-    [setRefAt]
+    [maxRefs, onReferenceUploadError, onReferenceUrlsChange, setRefAt]
   );
 
   useEffect(() => {
