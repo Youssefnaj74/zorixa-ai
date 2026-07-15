@@ -58,7 +58,12 @@ export function gptImage2SelectionForAspect(aspect: string): {
 
 export {
   defaultSeedreamSelection,
+  defaultSeedreamSelectionForComposer,
   formatSeedreamPixelLabel,
   isSeedreamSizeSelection,
-  SEEDREAM_ATLAS_SIZE_GROUPS
+  isSeedreamSizeSelectionForComposer,
+  isSeedreamProComposerId,
+  seedreamSizeGroupsForComposer,
+  SEEDREAM_ATLAS_SIZE_GROUPS,
+  SEEDREAM_PRO_ATLAS_SIZE_GROUPS
 } from "@/lib/seedream-atlas-sizes";

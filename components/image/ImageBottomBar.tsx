@@ -12,7 +12,8 @@ import {
   IMAGE_ASPECTS,
   IMAGE_CAMERA_STYLES,
   IMAGE_RESOLUTIONS,
-  SEEDREAM_ATLAS_SIZE_GROUPS
+  isSeedreamProComposerId,
+  seedreamSizeGroupsForComposer
 } from "@/components/image/image-bottom-bar-constants";
 import { MODEL_OPTIONS, type ModelOption } from "@/components/ui/ModelDropdown";
 import { ModelBrandLogo } from "@/components/ui/ModelBrandLogo";
@@ -220,7 +221,8 @@ export function ImageBottomBar({
   const batchOptions = getImageBatchOptions(modelId);
   const showBatchPicker = batchOptions.length > 1;
   const isGptImage2 = modelId === "gpt-image-2";
-  const isSeedream = modelId === "seedream-5";
+  const isSeedream = modelId === "seedream-5" || isSeedreamProComposerId(modelId);
+  const seedreamSizeGroups = seedreamSizeGroupsForComposer(modelId);
   const lockedFromTools = studioLock != null;
   const promptPlaceholder = lockedFromTools
     ? `Describe your ${selectedModel.label} image…`
@@ -961,12 +963,12 @@ export function ImageBottomBar({
                     ))
                   : null}
                 {open === "seedreamSize"
-                  ? SEEDREAM_ATLAS_SIZE_GROUPS.map((group, gi) => (
+                  ? seedreamSizeGroups.map((group, gi) => (
                       <div
                         key={group.tier}
                         className={cn(
                           "px-2 pb-2",
-                          gi < SEEDREAM_ATLAS_SIZE_GROUPS.length - 1 && "border-b border-white/5"
+                          gi < seedreamSizeGroups.length - 1 && "border-b border-white/5"
                         )}
                       >
                         <div className="px-2 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-zorixa-muted">

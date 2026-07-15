@@ -25,6 +25,7 @@ const EDIT_MODELS = {
   "nano-banana-pro": "google/nano-banana-pro/edit",
   zorixa: "qwen/qwen-image-2.0-pro/edit",
   "seedream-5": "bytedance/seedream-v5.0-lite/edit",
+  "seedream-5-pro": "bytedance/seedream-v5.0-pro/edit",
   "grok-imagine": "xai/grok-imagine-image-quality/edit",
   "flux-kontext-dev": "black-forest-labs/flux-kontext-dev",
   "flux-kontext-dev-lora": "black-forest-labs/flux-kontext-dev-lora",

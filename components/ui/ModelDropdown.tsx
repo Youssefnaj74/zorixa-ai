@@ -45,6 +45,12 @@ export const MODEL_OPTIONS: ModelOption[] = [
     badge: <Badge variant="fullAccess">FULL ACCESS</Badge>
   },
   {
+    id: "seedream-5-pro",
+    label: "Seedream 5 Pro",
+    title: "Seedream v5.0 Pro",
+    badge: <Badge variant="pro">PRO</Badge>
+  },
+  {
     id: "grok-imagine",
     label: "Grok Imagine"
   },

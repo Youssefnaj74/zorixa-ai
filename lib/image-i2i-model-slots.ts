@@ -44,6 +44,7 @@ export function getImageI2iUploadSlots(modelId: string): ImageI2iUploadSlot[] {
     case "flux-kontext-dev-lora":
       return FLUX_KONTEXT_SLOTS;
     case "seedream-5":
+    case "seedream-5-pro":
       return SOURCE_PLUS_REF;
     default:
       return MULTI_REF;

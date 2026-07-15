@@ -299,7 +299,6 @@ export function bottomBarModelsForActionTab(actionTab: string): BottomBarModel[]
           HAPPYHORSE_1_COMPOSER_ID,
           HAILUO_23_COMPOSER_ID,
           "google-veo-3-1",
-          VIDU_Q3_COMPOSER_ID,
           VIDU_Q3_PRO_COMPOSER_ID
         ]
       : [
@@ -313,7 +312,6 @@ export function bottomBarModelsForActionTab(actionTab: string): BottomBarModel[]
           HAPPYHORSE_1_COMPOSER_ID,
           HAILUO_23_COMPOSER_ID,
           "google-veo-3-1",
-          VIDU_Q3_COMPOSER_ID,
           VIDU_Q3_PRO_COMPOSER_ID
         ];
   return studioOrder

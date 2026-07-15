@@ -62,6 +62,15 @@ export const ATLAS_IMAGE_MODEL_MAP: Record<string, AtlasImageModelRow> = {
     maxBatch: 1,
     batchMode: "atlas"
   },
+  /** ByteDance flagship — Pro quality tier. Edit accepts up to 10 reference images. */
+  "seedream-5-pro": {
+    text: "bytedance/seedream-v5.0-pro/text-to-image",
+    edit: "bytedance/seedream-v5.0-pro/edit",
+    maxImages: 10,
+    defaultBatch: 1,
+    maxBatch: 1,
+    batchMode: "atlas"
+  },
   "grok-imagine": {
     text: "xai/grok-imagine-image-quality/text-to-image",
     edit: "xai/grok-imagine-image-quality/edit",

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-05T20:19:01.715Z",
+  "generatedAt": "2026-07-14T20:45:46.601Z",
   "items": {
     "gpt-image-2": {
       "modelId": "gpt-image-2",
@@ -120,6 +120,16 @@
       "publicPath": "/image-showcases/t2i/wan-image-2-6.png",
       "atlasOutputUrl": "https://dashscope-463f.oss-accelerate.aliyuncs.com/1d/9a/20260606/ac736e69/21818134-dHZdmj4j_dc38c9827646.png?Expires=1780777140&OSSAccessKeyId=LTAI5tRcsWJEymQaTsKbKqGf&Signature=Vilf0q0b4Q3rvDxBv9oXG9LfEVg%3D",
       "predictionId": "521cac2b17564a49a4d214f92a52d2c0"
+    },
+    "seedream-5-pro": {
+      "modelId": "seedream-5-pro",
+      "atlasModel": "bytedance/seedream-v5.0-pro/text-to-image",
+      "prompt": "An ultra-detailed cinematic portrait of a warrior queen in ornate engraved silver armor, standing in a misty ancient forest at dawn, volumetric golden light rays, intricate metalwork, realistic skin and fabric textures, dramatic shallow depth of field, hyper-detailed 8K masterpiece.",
+      "aspect": "3:4",
+      "resolution": "3K",
+      "publicPath": "/image-showcases/t2i/seedream-5-pro.png",
+      "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/images/2a122045906b4ff7b675a83e48116799-0.jpeg",
+      "predictionId": "3e3c269a98e64ff4a9710e497b66be5a"
     }
   }
 }

@@ -104,6 +104,7 @@ export const ATLAS_MODEL_PRICING: Record<string, AtlasModelPrice> = {
   "nano-banana-pro": { usd: 0.04, unit: "per image", note: "Pro tier" },
   zorixa: { usd: 0.024, unit: "per image" },
   "seedream-5": { usd: 0.015, unit: "per image" },
+  "seedream-5-pro": { usd: 0.054, unit: "per image", note: "Pro tier · up to 10 refs on edit" },
   "grok-imagine": { usd: 0.03, unit: "per image" },
   "flux-dev": { usd: 0.025, unit: "per image" },
   "flux-schnell": { usd: 0.004, unit: "per image", note: "Fast draft" },
@@ -369,6 +370,12 @@ export const ATLAS_IMAGE_RATE_CARDS: Record<string, ImageRateCard> = {
     resolutionRates: { "1K": 0.015, "2K": 0.015, "3K": 0.025, "4K": 0.03 },
     note: "3K tier higher than 2K on Atlas"
   },
+  /** Seedream v5.0 Pro — flat $0.054 across 1.5K / 2K tiers (edit +$0.003/extra ref). */
+  "seedream-5-pro": {
+    resolutionRates: { "1K": 0.054, "2K": 0.054, "3K": 0.054, "4K": 0.054 },
+    editResolutionRates: { "1K": 0.054, "2K": 0.054, "3K": 0.054, "4K": 0.054 },
+    note: "Pro tier · 1.5K / 2K"
+  },
   "wan-image-2-7-pro": {
     resolutionRates: { "1K": 0.05, "2K": 0.075, "4K": 0.075 },
     note: "Pro / 4K-ready"
@@ -557,6 +564,7 @@ const IMAGE_NAMES: Record<string, string> = {
   "nano-banana-pro": "Nano Banana Pro",
   zorixa: "Qwen 2.0 Pro",
   "seedream-5": "Seedream 5 Lite",
+  "seedream-5-pro": "Seedream 5 Pro",
   "grok-imagine": "Grok Imagine",
   "flux-dev": "Flux Dev",
   "flux-schnell": "Flux Schnell",

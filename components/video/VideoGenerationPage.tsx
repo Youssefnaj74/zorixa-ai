@@ -1411,6 +1411,12 @@ export function VideoGenerationPage() {
     ) {
       setComposerModelId(VIDU_Q3_COMPOSER_ID);
     }
+    if (
+      (actionTab === "Text to Video" || actionTab === "Image to Video") &&
+      composerModelId === VIDU_Q3_COMPOSER_ID
+    ) {
+      setComposerModelId(VIDU_Q3_PRO_COMPOSER_ID);
+    }
     if (actionTab === "Audio to Video" && !isAudioToVideoComposerId(composerModelId)) {
       setComposerModelId(INFINITETALK_COMPOSER_ID);
     }

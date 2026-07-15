@@ -24,6 +24,7 @@ const ATLAS_T2I_SLUG = {
   "nano-banana-pro": "google/nano-banana-pro/text-to-image",
   zorixa: "qwen/qwen-image-2.0-pro/text-to-image",
   "seedream-5": "bytedance/seedream-v5.0-lite",
+  "seedream-5-pro": "bytedance/seedream-v5.0-pro/text-to-image",
   "grok-imagine": "xai/grok-imagine-image-quality/text-to-image",
   "flux-dev": "black-forest-labs/flux-dev",
   "flux-schnell": "black-forest-labs/flux-schnell",
@@ -42,6 +43,29 @@ const SEEDREAM_2K = {
   "3:2": { width: 2496, height: 1664 },
   "2:3": { width: 1664, height: 2496 },
   "21:9": { width: 3136, height: 1344 }
+};
+
+/** Seedream v5.0 Pro presets by tier (matches lib/seedream-atlas-sizes.ts). */
+const SEEDREAM_PRO = {
+  "1K": {
+    "1:1": { width: 1024, height: 1024 }
+  },
+  "2K": {
+    "1:1": { width: 1536, height: 1536 },
+    "4:3": { width: 1776, height: 1328 },
+    "3:4": { width: 1328, height: 1776 },
+    "16:9": { width: 2048, height: 1152 },
+    "9:16": { width: 1152, height: 2048 }
+  },
+  "3K": {
+    "1:1": { width: 2048, height: 2048 },
+    "4:3": { width: 2304, height: 1728 },
+    "3:4": { width: 1728, height: 2304 },
+    "16:9": { width: 2720, height: 1530 },
+    "9:16": { width: 1530, height: 2720 },
+    "3:2": { width: 2496, height: 1664 },
+    "2:3": { width: 1664, height: 2496 }
+  }
 };
 
 function loadDotenv(contents) {
@@ -183,6 +207,13 @@ function seedreamPixels(resolution, aspect) {
   return row;
 }
 
+function seedreamProPixels(resolution, aspect) {
+  const tier = (resolution || "3K").trim();
+  const group = SEEDREAM_PRO[tier] ?? SEEDREAM_PRO["3K"];
+  const a = aspect && aspect !== "Auto" ? aspect : "1:1";
+  return group[a] ?? group["1:1"] ?? SEEDREAM_PRO["3K"]["1:1"];
+}
+
 function mergeRecipe(modelId, recipe, defaults) {
   return {
     modelId,
@@ -213,7 +244,10 @@ function buildT2iBody(modelId, atlasModel, merged) {
   }
 
   if (atlasModel.includes("seedream")) {
-    const { width, height } = seedreamPixels(resolution, merged.aspect);
+    const isPro = /seedream-v5\.0-pro/i.test(atlasModel);
+    const { width, height } = isPro
+      ? seedreamProPixels(resolution, merged.aspect)
+      : seedreamPixels(resolution, merged.aspect);
     return {
       model: atlasModel,
       prompt: merged.prompt,

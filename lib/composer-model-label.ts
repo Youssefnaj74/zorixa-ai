@@ -8,6 +8,7 @@ const IMAGE_COMPOSER_LABELS: Record<string, string> = {
   "nano-banana-pro": "Nano Banana Pro",
   zorixa: "Qwen 2.0 Pro",
   "seedream-5": "Seedream 5 Lite",
+  "seedream-5-pro": "Seedream 5 Pro",
   "grok-imagine": "Grok Imagine",
   "flux-dev": "Flux Dev",
   "flux-schnell": "Flux Schnell",

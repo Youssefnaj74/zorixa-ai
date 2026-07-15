@@ -26,6 +26,12 @@
       "historyTitle": "Anime Hero",
       "aspect": "9:16"
     },
+    "seedream-5-pro": {
+      "prompt": "An ultra-detailed cinematic portrait of a warrior queen in ornate engraved silver armor, standing in a misty ancient forest at dawn, volumetric golden light rays, intricate metalwork, realistic skin and fabric textures, dramatic shallow depth of field, hyper-detailed 8K masterpiece.",
+      "historyTitle": "Warrior Queen",
+      "resolution": "3K",
+      "aspect": "3:4"
+    },
     "grok-imagine": {
       "prompt": "A cyberpunk street market at night, glowing neon signs, rain-soaked pavement reflecting colorful lights, futuristic fashion, cinematic atmosphere, ultra detailed, realistic lighting.",
       "historyTitle": "Cyberpunk Street"

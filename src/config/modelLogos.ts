@@ -49,6 +49,7 @@ export const MODEL_LOGOS: Record<string, string> = {
   "nano-banana-pro": G.gemini,
   zorixa: G.qwen,
   "seedream-5": G.seedance,
+  "seedream-5-pro": G.seedance,
   "grok-imagine": G.grok,
   "flux-dev": G.flux,
   "flux-schnell": G.flux,

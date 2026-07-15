@@ -13,12 +13,13 @@ import { ImageHistory } from "@/components/image/ImageHistory";
 import { ImagePreview } from "@/components/image/ImagePreview";
 import {
   defaultGptImage2Selection,
-  defaultSeedreamSelection,
+  defaultSeedreamSelectionForComposer,
   gptImage2SelectionForAspect,
   IMAGE_ASPECTS,
   IMAGE_RESOLUTIONS,
   isGptImage2SizeSelection,
-  isSeedreamSizeSelection
+  isSeedreamProComposerId,
+  isSeedreamSizeSelectionForComposer
 } from "@/components/image/image-bottom-bar-constants";
 import { pollGenerationJob } from "@/components/studio/batch-jobs";
 import { MODEL_OPTIONS } from "@/components/ui/ModelDropdown";
@@ -264,8 +265,8 @@ function defaultImageSettingsForModel(model: string): {
     const gpt = defaultGptImage2Selection();
     return { resolution: gpt.resolution, aspect: gpt.aspect };
   }
-  if (model === "seedream-5") {
-    const sd = defaultSeedreamSelection();
+  if (model === "seedream-5" || isSeedreamProComposerId(model)) {
+    const sd = defaultSeedreamSelectionForComposer(model);
     return { resolution: sd.resolution, aspect: sd.aspect };
   }
   return { resolution: "2K", aspect: "Auto" };
@@ -438,9 +439,9 @@ export function ImageGenerationPage() {
       }
       return;
     }
-    if (modelId === "seedream-5") {
-      if (!isSeedreamSizeSelection(resolution, aspect)) {
-        const d = defaultSeedreamSelection();
+    if (modelId === "seedream-5" || isSeedreamProComposerId(modelId)) {
+      if (!isSeedreamSizeSelectionForComposer(modelId, resolution, aspect)) {
+        const d = defaultSeedreamSelectionForComposer(modelId);
         setResolution(d.resolution);
         setAspect(d.aspect);
       }

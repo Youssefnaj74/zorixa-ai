@@ -147,7 +147,26 @@ const RULES: Rule[] = [
       /\b(show|showing|exposed)\s+(her|his|their)\s+(breasts?|nipples?|genitals?|butt|ass|vagina|penis)\b/,
       /\bbare\s+(breasts?|chest|genitals?|body)\b/,
       /\bno\s+underwear\b/,
-      /\bwithout\s+underwear\b/
+      /\bwithout\s+underwear\b/,
+      // Accidental / implied exposure (covers "reveals upper body by accident" style bypasses)
+      /\b(by\s+accident|accidentally|accidental)\b.{0,60}\b(reveal|reveals|revealing|expose|exposes|exposing|exposed|uncover|uncovers|uncovering|slip|slips|slipped|flash|flashing)\b/,
+      /\b(reveal|reveals|revealing|expose|exposes|exposing|exposed|uncover|uncovers|uncovering|slip|slips|slipped|flash|flashing)\b.{0,60}\b(by\s+accident|accidentally|accidental)\b/,
+      /\baccident(al(ly)?)?\s+(exposure|reveal|revealing|nudge|flash)\b/,
+      /\bnip\s*slip\b/,
+      /\bwardrobe\s+malfunction\b/,
+      /\b(reveal|reveals|revealing|expose|exposes|exposing|exposed|uncover|uncovering|show|showing)\b.{0,40}\b(her|his|their)\s+(upper\s+body|breasts?|boobs?|nipples?|bare\s+chest|cleavage)\b/,
+      /\b(her|his|their)\s+(upper\s+body|breasts?|boobs?|nipples?)\b.{0,40}\b(reveal|reveals|revealing|expose|exposes|exposing|exposed|showing|shown|visible|uncovered|out)\b/,
+      /\b(breasts?|nipples?|boobs?)\s+(visible|showing|exposed|out|uncovered)\b/,
+      /\bcover(ing|ed|s)?\s+(herself|himself|themselves)\b.{0,90}\b(reveal|reveals|revealing|expose|exposes|exposing|exposed|naked|nude|bare)\b/,
+      /\b(sheet|sheets|towel|blanket|duvet)s?\b.{0,70}\b(reveal|reveals|revealing|expose|exposes|exposing|exposed)\b.{0,45}\b(upper\s+body|breasts?|chest|body|skin|nipples?|cleavage)\b/,
+      /\b(sheet|towel|blanket|duvet)s?\b.{0,40}\b(slip|slips|slipped|falls?\s+off|falls?\s+open|drops?|dropped|slides?\s+(off|down))\b/,
+      /\bpartially\s+(nude|naked|undressed|clothed)\b/,
+      /\b(barely|scantily)\s+(covered|clad|dressed)\b/,
+      /\bnothing\s+(but|except|under)\s+(a\s+)?(sheet|towel|blanket|duvet)\b/,
+      /\bwearing\s+(only|just)\s+(a\s+)?(sheet|towel|blanket)\b/,
+      /\bonly\s+(covered|wearing|wrapped)\s+(by|in|with)\s+(a\s+)?(sheet|towel|blanket)\b/,
+      /\bimplied\s+(nudity|nude|naked)\b/,
+      /\b(see\s*through|sheer)\s+(top|dress|blouse|clothing)\b.{0,40}\b(nipples?|breasts?|nude|naked)\b/
     ]
   },
   {
@@ -209,10 +228,17 @@ const RULES: Rule[] = [
       /\bnot\s+safe\s+for\s+work\b/,
       /\badult\s+only\b/,
       /\buncensored\s+(nude|naked|sex|porn)\b/,
-      /\bsexy\s+(nude|naked)\b/,
+      /\bsexy\s+(nude|naked|pose|posing)\b/,
       /\b(seduce|seducing)\b.{0,25}\b(bed|sex|nude|naked)\b/,
       /\barousing\b/,
-      /\bsexo\b/
+      /\bsexo\b/,
+      // Erotic / sexually suggestive posing without explicit nudity keywords
+      /\bsexually\s+suggestive\b/,
+      /\bsuggestive\s+(pose|posing|situation|content|image|photo|nudity|outfit)\b/,
+      /\bsensual\s+(pose|posing|nude|naked|bedroom)\b/,
+      /\bprovocative\s+(pose|posing|nude|naked)\b/,
+      /\bseductive\s+(pose|posing|look)\b/,
+      /\berotic\s+(pose|posing)\b/
     ]
   },
   {

@@ -5,7 +5,7 @@
 
 import {
   defaultSeedreamSelection,
-  seedreamAtlasPixels
+  seedreamAtlasPixelsForModel
 } from "@/lib/seedream-atlas-sizes";
 
 export type BuildAtlasImageBodyInput = {
@@ -260,8 +260,9 @@ export function buildAtlasImageBody(input: BuildAtlasImageBodyInput): Record<str
     const tier = resolution?.trim() || defaultSeedreamSelection().resolution;
     const aspect = aspectRatio ?? defaultSeedreamSelection().aspect;
     const dims =
-      seedreamAtlasPixels(tier, aspect) ??
-      seedreamAtlasPixels(
+      seedreamAtlasPixelsForModel(model, tier, aspect) ??
+      seedreamAtlasPixelsForModel(
+        model,
         defaultSeedreamSelection().resolution,
         defaultSeedreamSelection().aspect
       )!;
