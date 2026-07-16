@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 
 import { AtlasApiError } from "@/lib/atlas-api";
 import { seedanceGenerateVideo } from "@/lib/seedance-video-generate";
-import { enforceContentPolicy, requestIp } from "@/lib/content-moderation";
+import {
+  enforceContentPolicy,
+  enforceMediaContentPolicy,
+  requestIp
+} from "@/lib/content-moderation";
 import { CREDIT_COSTS } from "@/lib/replicate";
 import { rateLimit } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -43,6 +47,21 @@ export async function POST(request: Request) {
     ip: requestIp(request)
   });
   if (policyBlock) return policyBlock;
+
+  const mediaBlock = await enforceMediaContentPolicy({
+    userId: null,
+    workflow: "legacy_video",
+    route: "/api/video",
+    media: [
+      { url: body.input_url, kind: "image" },
+      ...(typeof body.end_image_url === "string" && body.end_image_url.trim()
+        ? [{ url: body.end_image_url.trim(), kind: "image" as const }]
+        : [])
+    ],
+    ip: requestIp(request),
+    metadata: { stage: "input_media" }
+  });
+  if (mediaBlock) return mediaBlock;
 
   const supabase = await createSupabaseServerClient();
   const {

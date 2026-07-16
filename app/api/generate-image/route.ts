@@ -32,7 +32,11 @@ import {
   extractAtlasImageOutputUrls,
   extractAtlasVideoOutputUrl
 } from "@/lib/extract-atlas-video-output-url";
-import { enforceContentPolicy, requestIp } from "@/lib/content-moderation";
+import {
+  enforceContentPolicy,
+  enforceMediaContentPolicy,
+  requestIp
+} from "@/lib/content-moderation";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
 
@@ -584,6 +588,18 @@ async function handleGenerateImagePost(request: Request, body: ClientBody) {
       );
     }
     imageUrls.push(c);
+  }
+
+  if (imageUrls.length > 0) {
+    const mediaBlock = await enforceMediaContentPolicy({
+      userId: actorEarly?.userId ?? null,
+      workflow: "image_generation",
+      route: "/api/generate-image",
+      media: imageUrls.map((url) => ({ url, kind: "image" as const })),
+      ip: requestIp(request),
+      metadata: { imageModel, stage: "reference_images" }
+    });
+    if (mediaBlock) return mediaBlock;
   }
 
   const model = resolveAtlasImageModelId(imageModel, imageUrls.length > 0);

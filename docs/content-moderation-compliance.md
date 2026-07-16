@@ -1,11 +1,11 @@
 # Zorixa AI — Content Moderation Compliance Report
 
-**Last updated:** July 14, 2026  
-**Status:** Server-side enforcement active (global, provider-agnostic)
+**Last updated:** July 17, 2026  
+**Status:** Server-side text + media enforcement active (global, provider-agnostic)
 
 ## Summary
 
-Zorixa AI implements a **centralized server-side moderation layer** that screens every user prompt **before** any image or video generation request is dispatched to upstream providers (Atlas Cloud, BytePlus, Hailuo, Kling, Seedance, Vidu, Wan, Veo, Grok, Gemini, etc.). Routing and model selection are unchanged — moderation is a hard gate in front of them.
+Zorixa AI implements a **centralized server-side moderation layer** that screens every user prompt **and uploaded/reference media** **before** any image or video generation request is dispatched to upstream providers (Atlas Cloud, BytePlus, Hailuo, Kling, Seedance, Vidu, Wan, Veo, Grok, Gemini, etc.). Routing and model selection are unchanged — moderation is a hard gate in front of them.
 
 Violations return a friendly HTTP 422 validation error and are logged for review.
 
@@ -22,15 +22,17 @@ Violations return a friendly HTTP 422 validation error and are logged for review
 
 | Route | Workflow | Enforcement point |
 |-------|----------|-------------------|
-| `POST /api/generate-image` | `image_generation` | After prompt parse; **before** credits / Atlas |
-| `POST /api/generate-video` | `video_generation` | After auth + prompt; **before** credits / Atlas / BytePlus (all models incl. Hailuo) |
+| `POST /api/generate-image` | `image_generation` | Text + **reference images (I2I)**; **before** credits / Atlas |
+| `POST /api/generate-video` | `video_generation` | Text + **I2V / R2V / V2V / start-end media**; **before** auth credits / Atlas / BytePlus |
 | `POST /api/generate-video` | `ugc_generation` | Same route; UGC-style prompts tagged in workflow log |
-| `POST /api/generate-video` | `character_swap` | `action=motion-control` (Wan / Kling character workflows) |
+| `POST /api/generate-video` | `character_swap` | `action=motion-control` — text + **character image + motion video** |
 | `POST /api/enhance` | `image_enhance` | SDXL creative prompts + negative prompts |
-| `POST /api/video` | `legacy_video` | Legacy studio description field |
-| `POST /api/generations/video` | `video_generation` | User-supplied motion prompt (form field) |
+| `POST /api/video` | `legacy_video` | Description + **start/end images** |
+| `POST /api/generations/video` | `video_generation` | Motion prompt + **uploaded start frame** |
 
-**Not moderated (no generative user text prompt):** video/image upscale-only actions, background removal, pure upscalers without prompts.
+**Media classifier:** Atlas Cloud `google/gemini-2.5-flash-lite` (`lib/content-moderation/moderate-media.ts`). Labels `NUDITY` / `SEXUAL` → HTTP 422; classifier outage → HTTP 503 fail-closed.
+
+**Not media-screened:** pure image/video upscale-only actions and background removal (no generative transform from user media intent beyond resolution).
 
 ## Blocked categories
 
@@ -51,17 +53,18 @@ Implementation: `lib/content-moderation/moderate-prompt.ts` (normalized keyword 
 ## Enforcement architecture
 
 ```
-User prompt → API route → enforceContentPolicy()
-                              ├─ moderateTexts()  → block or pass
-                              └─ logModerationBlock() → moderation_blocks table + server log
-                                     ↓ (only if pass)
-                              credits → Atlas / BytePlus / Replicate
+User prompt + media URLs
+        → enforceContentPolicy()      (text keywords / obfuscation squash)
+        → enforceMediaContentPolicy() (vision NSFW classifier)
+                ├─ block → HTTP 422 (no credits, no Atlas)
+                └─ pass  → auth → credits → Atlas / BytePlus / Replicate
 ```
 
 **Core modules:**
 
-- `lib/content-moderation/moderate-prompt.ts` — classification
-- `lib/content-moderation/enforce.ts` — route guard + HTTP response
+- `lib/content-moderation/moderate-prompt.ts` — text classification
+- `lib/content-moderation/moderate-media.ts` — image/video vision classification
+- `lib/content-moderation/enforce.ts` / `enforce-media.ts` — route guards + HTTP responses
 - `lib/content-moderation/log-block.ts` — audit logging
 - `supabase/migrations/20260611120000_moderation_blocks.sql` — `moderation_blocks` table
 

@@ -6,7 +6,19 @@ export {
   type ModerationWorkflow
 } from "./constants";
 export { enforceContentPolicy, requestIp } from "./enforce";
+export {
+  enforceMediaContentPolicy,
+  type EnforceMediaContentPolicyInput,
+  type MediaPolicyItem
+} from "./enforce-media";
 export { logModerationBlock } from "./log-block";
+export {
+  MEDIA_MODERATION_MODEL,
+  moderateMediaUrl,
+  moderateMediaUrls,
+  type MediaKind,
+  type MediaModerationResult
+} from "./moderate-media";
 export {
   moderatePrompt,
   moderateTexts,

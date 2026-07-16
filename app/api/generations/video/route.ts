@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 
 import { AtlasApiError } from "@/lib/atlas-api";
 import { seedanceGenerateVideo } from "@/lib/seedance-video-generate";
-import { enforceContentPolicy, requestIp } from "@/lib/content-moderation";
+import {
+  enforceContentPolicy,
+  enforceMediaContentPolicy,
+  requestIp
+} from "@/lib/content-moderation";
 import { CREDIT_COSTS } from "@/lib/replicate";
 import { rateLimit } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -109,6 +113,16 @@ export async function POST(request: Request) {
 
   const { data: pub } = supabaseAdmin.storage.from("uploads").getPublicUrl(path);
   const inputUrl = pub.publicUrl;
+
+  const mediaBlock = await enforceMediaContentPolicy({
+    userId: user.id,
+    workflow: "video_generation",
+    route: "/api/generations/video",
+    media: [{ url: inputUrl, kind: "image" }],
+    ip: requestIp(request),
+    metadata: { stage: "uploaded_start_frame" }
+  });
+  if (mediaBlock) return mediaBlock;
 
   const { data: profile, error: profileErr } = await supabaseAdmin
     .from("users_profiles")

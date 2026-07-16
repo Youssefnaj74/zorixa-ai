@@ -175,7 +175,11 @@ import {
   augmentSeedancePromptForAspect,
   seedanceAtlasRequestDimensions
 } from "@/lib/seedance-atlas-dimensions";
-import { enforceContentPolicy, requestIp } from "@/lib/content-moderation";
+import {
+  enforceContentPolicy,
+  enforceMediaContentPolicy,
+  requestIp
+} from "@/lib/content-moderation";
 import {
   finalizeGenerationEconomicsStatus,
   scheduleGenerationEconomics
@@ -740,6 +744,43 @@ async function handleGenerateVideoPost(request: Request) {
   });
   if (policyBlock) return policyBlock;
 
+  // Early media screen (before auth) so NSFW uploads return 422 without credits/Atlas.
+  if (
+    action === "image" ||
+    action === "motion-control" ||
+    action === "edit" ||
+    action === "reference" ||
+    action === "start-end" ||
+    action === "lipsync"
+  ) {
+    const earlyMedia: Array<{ url: string; kind: "image" | "video" }> = [];
+    const pushUrl = (raw: unknown, kind: "image" | "video") => {
+      if (typeof raw !== "string") return;
+      const c = coerceToPublicHttpsUrl(raw.trim());
+      if (c) earlyMedia.push({ url: c, kind });
+    };
+    pushUrl(body.image_url, "image");
+    pushUrl(body.last_image_url, "image");
+    pushUrl(body.video_url, "video");
+    if (Array.isArray(body.reference_images)) {
+      for (const u of body.reference_images) pushUrl(u, "image");
+    }
+    if (Array.isArray(body.reference_videos)) {
+      for (const u of body.reference_videos) pushUrl(u, "video");
+    }
+    if (earlyMedia.length > 0) {
+      const mediaBlock = await enforceMediaContentPolicy({
+        userId: actorEarly?.userId ?? null,
+        workflow: videoWorkflow,
+        route: "/api/generate-video",
+        media: earlyMedia,
+        ip: requestIp(request),
+        metadata: { action, videoModel: body.videoModel ?? null, stage: "early_input_media" }
+      });
+      if (mediaBlock) return mediaBlock;
+    }
+  }
+
   const actor = actorEarly;
   if (!actor) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -1009,7 +1050,13 @@ async function handleGenerateVideoPost(request: Request) {
     }
   }
 
-  if ((action === "image" || action === "motion-control") && image_url) {
+  if (
+    (action === "image" ||
+      action === "motion-control" ||
+      action === "start-end" ||
+      action === "lipsync") &&
+    image_url
+  ) {
     const c = coerceToPublicHttpsUrl(image_url);
     if (!c) {
       return NextResponse.json(
