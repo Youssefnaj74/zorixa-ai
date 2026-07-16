@@ -32,12 +32,6 @@ export async function POST(request: Request) {
   const rl = rateLimit({ key: `enhance:${ip}`, limit: 30, windowMs: 60_000 });
   if (!rl.ok) return NextResponse.json({ error: "Rate limit" }, { status: 429 });
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
   const body = (await request.json()) as {
     input_url?: string;
     enhancement?: string;
@@ -72,7 +66,7 @@ export async function POST(request: Request) {
 
   if (promptText || negativePromptText) {
     const policyBlock = await enforceContentPolicy({
-      userId: user.id,
+      userId: null,
       workflow: "image_enhance",
       route: "/api/enhance",
       texts: [promptText, negativePromptText],
@@ -81,6 +75,12 @@ export async function POST(request: Request) {
     });
     if (policyBlock) return policyBlock;
   }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const aspect =
     body.aspect_ratio === "9:16" || body.aspect_ratio === "16:9" || body.aspect_ratio === "1:1"
