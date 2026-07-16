@@ -19,6 +19,13 @@ const PROTECTED_ROUTES = [
 
 let failed = 0;
 
+const MEDIA_ROUTES = [
+  "app/api/generate-image/route.ts",
+  "app/api/generate-video/route.ts",
+  "app/api/video/route.ts",
+  "app/api/generations/video/route.ts"
+];
+
 for (const rel of PROTECTED_ROUTES) {
   const src = fs.readFileSync(path.join(root, rel), "utf8");
   if (!src.includes("enforceContentPolicy")) {
@@ -36,9 +43,22 @@ for (const rel of PROTECTED_ROUTES) {
   }
 }
 
+for (const rel of MEDIA_ROUTES) {
+  const src = fs.readFileSync(path.join(root, rel), "utf8");
+  if (!src.includes("enforceMediaContentPolicy")) {
+    console.error("FAIL: missing enforceMediaContentPolicy in", rel);
+    failed++;
+  }
+}
+
 const vitest = spawnSync(
   process.platform === "win32" ? "npx.cmd" : "npx",
-  ["vitest", "run", "lib/content-moderation/moderate-prompt.test.ts"],
+  [
+    "vitest",
+    "run",
+    "lib/content-moderation/moderate-prompt.test.ts",
+    "lib/content-moderation/moderate-media.test.ts"
+  ],
   { cwd: root, stdio: "inherit", shell: process.platform === "win32" }
 );
 
