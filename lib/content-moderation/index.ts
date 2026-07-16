@@ -11,6 +11,7 @@ export {
   moderatePrompt,
   moderateTexts,
   normalizeModerationText,
+  squashRepeatedLetters,
   stripSafeModerationPhrases,
   type ModerationResult
 } from "./moderate-prompt";

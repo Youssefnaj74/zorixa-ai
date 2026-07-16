@@ -35,6 +35,15 @@ export function normalizeModerationText(input: string): string {
 }
 
 /**
+ * Collapse repeated letters for a secondary match pass.
+ * "womaan with nooo clooothhheees" → "woman with no clothes"
+ * Kept separate from normalize so words like "sheet" / "dress" still match primary rules.
+ */
+export function squashRepeatedLetters(normalized: string): string {
+  return normalized.replace(/([a-z])\1+/g, "$1");
+}
+
+/**
  * Fashion / medical / educational / cosmetic multi-word phrases that should not
  * trip soft NSFW rules. Stripped before classification so "nude makeup" stays OK
  * while "nude woman" still blocks.
@@ -138,7 +147,11 @@ const RULES: Rule[] = [
       /\bbottomless\b/,
       /\bfully\s+nude\b/,
       /\bno\s+clothes\b/,
+      /\bno\s+clothing\b/,
       /\bwithout\s+(any\s+)?clothes\b/,
+      /\bwithout\s+(any\s+)?clothing\b/,
+      /\bunclothed\b/,
+      /\b(desnuda|desnudo|desnudas|desnudos)\b/,
       /\bremove\s+(her|his|their|the)\s+clothes\b/,
       /\bremove\s+clothes\b/,
       /\bundress(es|ing|ed)?\b/,
@@ -288,7 +301,9 @@ export function moderatePrompt(text: string): ModerationResult {
   const searchable = stripSafeModerationPhrases(normalized);
   if (!searchable) return { blocked: false };
 
-  const match = firstMatch(searchable);
+  const match =
+    firstMatch(searchable) ??
+    firstMatch(stripSafeModerationPhrases(squashRepeatedLetters(searchable)));
   if (!match) return { blocked: false };
 
   return {

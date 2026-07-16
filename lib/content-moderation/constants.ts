@@ -18,7 +18,8 @@ export type ModerationWorkflow =
   | "ugc_generation"
   | "character_swap"
   | "image_enhance"
-  | "legacy_video";
+  | "legacy_video"
+  | "assistant_chat";
 
 export const MODERATION_CATEGORY_LABELS: Record<ModerationCategory, string> = {
   nsfw: "NSFW",
