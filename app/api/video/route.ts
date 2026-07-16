@@ -13,12 +13,6 @@ export async function POST(request: Request) {
   const rl = rateLimit({ key: `video:${ip}`, limit: 15, windowMs: 60_000 });
   if (!rl.ok) return NextResponse.json({ error: "Rate limit" }, { status: 429 });
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
   const body = (await request.json()) as {
     input_url?: string;
     end_image_url?: string;
@@ -40,14 +34,21 @@ export async function POST(request: Request) {
     );
   }
 
+  // Policy before auth — reject NSFW text with 422 without provider calls.
   const policyBlock = await enforceContentPolicy({
-    userId: user.id,
+    userId: null,
     workflow: "legacy_video",
     route: "/api/video",
     texts: [body.description, body.negative_prompt],
     ip: requestIp(request)
   });
   if (policyBlock) return policyBlock;
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const aspect_ratio =
     body.aspect_ratio === "9:16" || body.aspect_ratio === "1:1" || body.aspect_ratio === "16:9"
