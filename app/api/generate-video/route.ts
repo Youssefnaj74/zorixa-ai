@@ -692,6 +692,21 @@ async function handleGenerateVideoPost(request: Request) {
       });
       if (upscalePolicy) return upscalePolicy;
     }
+    const rawUpscaleVideo =
+      typeof body.video_url === "string" ? body.video_url.trim() : "";
+    const upscaleVideoUrl = coerceToPublicHttpsUrl(rawUpscaleVideo);
+    if (upscaleVideoUrl) {
+      const mediaBlock = await enforceMediaContentPolicy({
+        userId: actorEarly?.userId ?? null,
+        workflow: "video_upscale",
+        route: "/api/generate-video",
+        // kind auto-detected from URL (supports image fixtures in audits)
+        media: [{ url: upscaleVideoUrl }],
+        ip: requestIp(request),
+        metadata: { action: "upscale", stage: "input_media" }
+      });
+      if (mediaBlock) return mediaBlock;
+    }
     if (!actorEarly) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

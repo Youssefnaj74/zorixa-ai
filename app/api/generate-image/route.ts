@@ -254,6 +254,16 @@ async function handleImageUpscalePost(body: ClientBody, request: Request) {
     );
   }
 
+  const mediaBlock = await enforceMediaContentPolicy({
+    userId: actorEarly?.userId ?? null,
+    workflow: "image_upscale",
+    route: "/api/generate-image",
+    media: [{ url: imageUrl, kind: "image" }],
+    ip: requestIp(request),
+    metadata: { action: "upscale", stage: "input_media" }
+  });
+  if (mediaBlock) return mediaBlock;
+
   const outscale = normalizeAtlasImageUpscalerOutscale(body.outscale);
   const actor = actorEarly;
   if (!actor) {
