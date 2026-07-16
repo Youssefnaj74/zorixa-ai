@@ -227,6 +227,20 @@ async function handleImageUpscalePost(body: ClientBody, request: Request) {
     );
   }
 
+  const upscalePrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+  const actorEarly = await resolveZorixaActor(request);
+  if (upscalePrompt) {
+    const policyBlock = await enforceContentPolicy({
+      userId: actorEarly?.userId ?? null,
+      workflow: "image_upscale",
+      route: "/api/generate-image",
+      texts: [upscalePrompt],
+      ip: requestIp(request),
+      metadata: { action: "upscale" }
+    });
+    if (policyBlock) return policyBlock;
+  }
+
   const rawImage = typeof body.image_url === "string" ? body.image_url.trim() : "";
   const imageUrl = coerceToPublicHttpsUrl(rawImage);
   if (!imageUrl) {
@@ -237,7 +251,7 @@ async function handleImageUpscalePost(body: ClientBody, request: Request) {
   }
 
   const outscale = normalizeAtlasImageUpscalerOutscale(body.outscale);
-  const actor = await resolveZorixaActor(request);
+  const actor = actorEarly;
   if (!actor) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

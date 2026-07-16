@@ -77,18 +77,17 @@ export async function POST(request: Request) {
   const resolution = normalizeResolution(form.get("resolution"));
   const promptRaw = form.get("prompt");
   const explicitPrompt = typeof promptRaw === "string" ? promptRaw.trim() : "";
-  if (explicitPrompt) {
-    const policyBlock = await enforceContentPolicy({
-      userId: user.id,
-      workflow: "video_generation",
-      route: "/api/generations/video",
-      texts: [explicitPrompt],
-      ip: requestIp(request)
-    });
-    if (policyBlock) return policyBlock;
-  }
-
   const prompt = buildPrompt(motion_bucket_id, explicitPrompt || undefined);
+
+  // Always screen the final prompt (explicit or synthesized) before Seedance/Atlas.
+  const policyBlock = await enforceContentPolicy({
+    userId: user.id,
+    workflow: "video_generation",
+    route: "/api/generations/video",
+    texts: [prompt],
+    ip: requestIp(request)
+  });
+  if (policyBlock) return policyBlock;
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const ext = file.name.split(".").pop()?.toLowerCase() || "png";

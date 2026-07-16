@@ -18,6 +18,8 @@ export type ModerationWorkflow =
   | "ugc_generation"
   | "character_swap"
   | "image_enhance"
+  | "image_upscale"
+  | "video_upscale"
   | "legacy_video"
   | "assistant_chat";
 

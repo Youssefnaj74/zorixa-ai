@@ -670,13 +670,28 @@ async function handleGenerateVideoPost(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const actor = await resolveZorixaActor(request);
-  if (!actor) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Content policy runs before auth so NSFW text is rejected with 422 without
+  // touching Atlas/BytePlus — same ordering as /api/generate-image.
+  const actorEarly = await resolveZorixaActor(request);
 
   if (body.action === "upscale") {
-    return handleVideoUpscalePost(body, actor, apiKey);
+    const upscalePrompt =
+      typeof body.prompt === "string" ? body.prompt.trim() : "";
+    if (upscalePrompt) {
+      const upscalePolicy = await enforceContentPolicy({
+        userId: actorEarly?.userId ?? null,
+        workflow: "video_upscale",
+        route: "/api/generate-video",
+        texts: [upscalePrompt],
+        ip: requestIp(request),
+        metadata: { action: "upscale" }
+      });
+      if (upscalePolicy) return upscalePolicy;
+    }
+    if (!actorEarly) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    return handleVideoUpscalePost(body, actorEarly, apiKey);
   }
 
   const action: AtlasVideoRouteAction = (body.action ?? "text") as AtlasVideoRouteAction;
@@ -701,6 +716,12 @@ async function handleGenerateVideoPost(request: Request) {
   if (!prompt && motionPromptOptional) {
     prompt = resolveMotionControlAtlasPrompt("");
   }
+  // Character swap Atlas body has no prompt field, but we still require a
+  // screenable description so NSFW text cannot skip enforceContentPolicy.
+  if (!prompt && wanCharacterSwapNoPrompt) {
+    prompt =
+      "Transfer the character appearance from the reference image onto the motion in the reference video.";
+  }
 
   const videoWorkflow =
     action === "motion-control"
@@ -710,14 +731,19 @@ async function handleGenerateVideoPost(request: Request) {
         : ("video_generation" as const);
 
   const policyBlock = await enforceContentPolicy({
-    userId: actor.userId,
+    userId: actorEarly?.userId ?? null,
     workflow: videoWorkflow,
     route: "/api/generate-video",
-    texts: prompt ? [prompt] : [],
+    texts: [prompt],
     ip: requestIp(request),
     metadata: { action, videoModel: body.videoModel ?? null }
   });
   if (policyBlock) return policyBlock;
+
+  const actor = actorEarly;
+  if (!actor) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const videoModel =
     typeof body.videoModel === "string" ? body.videoModel.trim() : "";
