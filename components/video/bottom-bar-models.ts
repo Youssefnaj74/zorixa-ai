@@ -3,6 +3,7 @@ import type { BadgeVariant } from "@/components/ui/Badge";
 import {
   AUDIO_TO_VIDEO_COMPOSER_IDS,
   INFINITETALK_COMPOSER_ID,
+  OMNI_HUMAN_15_COMPOSER_ID,
   VEED_FABRIC_1_COMPOSER_ID,
   VEED_FABRIC_1_FAST_COMPOSER_ID
 } from "@/lib/atlas-audio-to-video";
@@ -146,7 +147,8 @@ export const BOTTOM_BAR_MODELS: BottomBarModel[] = [
 export const AUDIO_TO_VIDEO_BOTTOM_BAR_MODELS: BottomBarModel[] = [
   { id: INFINITETALK_COMPOSER_ID, label: "InfiniteTalk" },
   { id: VEED_FABRIC_1_COMPOSER_ID, label: "VEED Fabric 1.0", badge: "newTeal" },
-  { id: VEED_FABRIC_1_FAST_COMPOSER_ID, label: "VEED Fabric 1.0 Fast", badge: "newTeal" }
+  { id: VEED_FABRIC_1_FAST_COMPOSER_ID, label: "VEED Fabric 1.0 Fast", badge: "newTeal" },
+  { id: OMNI_HUMAN_15_COMPOSER_ID, label: "OmniHuman 1.5", badge: "newTeal" }
 ];
 
 const TEXT_TO_VIDEO_PROMPT_ONLY_IDS = new Set(BOTTOM_BAR_MODELS.map((m) => m.id));

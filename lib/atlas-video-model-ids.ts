@@ -217,6 +217,15 @@ export const ATLAS_VIDEO_MODEL_MAP: Record<string, AtlasModelRow> = {
     edit: "veed/fabric-1.0/fast/image-to-video",
     "motion-control": "veed/fabric-1.0/fast/image-to-video",
     "start-end": "veed/fabric-1.0/fast/image-to-video"
+  },
+  "omni-human-1-5": {
+    text: "bytedance/avatar-omni-human-v1.5",
+    image: "bytedance/avatar-omni-human-v1.5",
+    reference: "bytedance/avatar-omni-human-v1.5",
+    lipsync: "bytedance/avatar-omni-human-v1.5",
+    edit: "bytedance/avatar-omni-human-v1.5",
+    "motion-control": "bytedance/avatar-omni-human-v1.5",
+    "start-end": "bytedance/avatar-omni-human-v1.5"
   }
 };
 

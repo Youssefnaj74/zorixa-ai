@@ -11,6 +11,7 @@ import {
   formatGenerationCreditsLine
 } from "@/lib/atlas-pricing-catalog";
 import { useCredits } from "@/lib/hooks/use-credits";
+import { publishAssistantStudioSnapshot } from "@/lib/assistant-studio-bridge";
 import { insufficientCreditsMessage } from "@/lib/insufficient-credits-message";
 import {
   CLOSED_INSUFFICIENT_CREDITS,
@@ -137,7 +138,6 @@ import {
   DEFAULT_AUDIO_TO_VIDEO_RESOLUTION,
   INFINITETALK_COMPOSER_ID,
   isAudioToVideoComposerId,
-  isAudioToVideoResolution,
   normalizeAudioToVideoResolution
 } from "@/lib/atlas-audio-to-video";
 import {
@@ -331,7 +331,7 @@ function logAtlasComposerVideoToSupabase(payload: {
 export function VideoGenerationPage() {
   usePageViewEvent(AnalyticsEvents.VIDEO_STUDIO_VIEWED);
   const studioNavOffset = useStudioNavOffset();
-  const { credits, refresh: refreshCredits } = useCredits();
+  const { credits, refresh: refreshCredits, applyBalance } = useCredits();
   const searchParams = useSearchParams();
   const [bottomBarHeight, setBottomBarHeight] = useState(COMPOSER_DOCK_WITH_TABS_HEIGHT);
 
@@ -366,6 +366,17 @@ export function VideoGenerationPage() {
   directorForceModelIdRef.current = directorForceModelId;
   const [prompt, setPrompt] = useState("");
   const [generateError, setGenerateError] = useState<string | null>(null);
+
+  useEffect(() => {
+    publishAssistantStudioSnapshot({
+      page: "Video Studio",
+      selectedModel: composerModelId,
+      selectedDuration: `${timeSeconds}s`,
+      selectedQuality: resolution,
+      selectedAspectRatio: aspect,
+      draftPrompt: prompt || null
+    });
+  }, [aspect, composerModelId, prompt, resolution, timeSeconds]);
   const [insufficientCredits, setInsufficientCredits] = useState<InsufficientCreditsState>(
     CLOSED_INSUFFICIENT_CREDITS
   );
@@ -1438,47 +1449,72 @@ export function VideoGenerationPage() {
     }
   }, [actionTab, composerModelId]);
 
+  // Keep the resolution valid for the selected A2V model (OmniHuman: 720p/1080p, others: 480p/720p).
+  useEffect(() => {
+    if (actionTab !== "Audio to Video") return;
+    if (!isAudioToVideoComposerId(composerModelId)) return;
+    setResolution((r) => normalizeAudioToVideoResolution(r, composerModelId));
+  }, [actionTab, composerModelId]);
+
   useEffect(() => {
     const resolved = resolveVideoStudioFromQuery(
       searchParams.get("tab"),
       searchParams.get("model")
     );
-    if (!resolved) return;
-    setActionTab(resolved.tab);
-    setComposerModelId(resolved.model);
-    setGenerateError(null);
-    if (!videoComposerSupportsGenerateAudio(resolved.model)) {
-      setGenerateAudioOn(false);
-    }
-    if (!videoComposerSupportsSpeedTier(resolved.model)) {
-      setDurationStandard("Standard");
-    }
-    if (resolved.tab === "Reference to Video") {
-      setTimeSeconds((t) =>
-        resolved.model === VIDU_Q3_COMPOSER_ID
-          ? normalizeViduReferenceDurationSeconds(t)
-          : normalizeSeedanceReferenceDurationSeconds(t)
-      );
-    }
+    if (resolved) {
+      setActionTab(resolved.tab);
+      setComposerModelId(resolved.model);
+      setGenerateError(null);
+      if (!videoComposerSupportsGenerateAudio(resolved.model)) {
+        setGenerateAudioOn(false);
+      }
+      if (!videoComposerSupportsSpeedTier(resolved.model)) {
+        setDurationStandard("Standard");
+      }
+      if (resolved.tab === "Reference to Video") {
+        setTimeSeconds((t) =>
+          resolved.model === VIDU_Q3_COMPOSER_ID
+            ? normalizeViduReferenceDurationSeconds(t)
+            : normalizeSeedanceReferenceDurationSeconds(t)
+        );
+      }
 
-    const audioParam = searchParams.get("audio");
-    if (audioParam && resolved.tab === "Audio to Video") {
-      const coerced = coerceToPublicHttpsUrl(audioParam.trim());
-      if (coerced) {
-        setLipsyncAudioUrlSafe(coerced);
-        setPromptImageUrlSafe(null);
+      const audioParam = searchParams.get("audio");
+      if (audioParam && resolved.tab === "Audio to Video") {
+        const coerced = coerceToPublicHttpsUrl(audioParam.trim());
+        if (coerced) {
+          setLipsyncAudioUrlSafe(coerced);
+          setPromptImageUrlSafe(null);
+        }
+      }
+
+      const urlResolution = parseVideoResolutionFromQuery(searchParams.get("resolution"));
+      if (urlResolution) {
+        setResolution(
+          urlResolution === "4k" && !videoComposerSupports4k(resolved.model) ? "1080p" : urlResolution
+        );
+        setVideoUrl(null);
+        setVideoDownloadUrl(null);
+        setHasUserGenerated(false);
+        appliedShowcaseForModel.current = null;
       }
     }
 
-    const urlResolution = parseVideoResolutionFromQuery(searchParams.get("resolution"));
-    if (urlResolution) {
-      setResolution(
-        urlResolution === "4k" && !videoComposerSupports4k(resolved.model) ? "1080p" : urlResolution
-      );
-      setVideoUrl(null);
-      setVideoDownloadUrl(null);
-      setHasUserGenerated(false);
-      appliedShowcaseForModel.current = null;
+    const promptFromQuery = searchParams.get("prompt")?.trim();
+    if (promptFromQuery) {
+      setPrompt(promptFromQuery.slice(0, 4000));
+      setShowcaseDismissed(true);
+      if (resolved) {
+        appliedShowcaseForModel.current = `${resolved.model}:${resolved.tab}`;
+      }
+    }
+
+    const durationRaw = searchParams.get("duration")?.trim();
+    if (durationRaw) {
+      const duration = Number(durationRaw);
+      if (Number.isFinite(duration) && duration > 0) {
+        setTimeSeconds(Math.round(duration));
+      }
     }
   }, [searchParams, setLipsyncAudioUrlSafe, setPromptImageUrlSafe]);
 
@@ -1565,7 +1601,7 @@ export function VideoGenerationPage() {
       setPromptImageUrlSafe(null);
       setComposerModelId(INFINITETALK_COMPOSER_ID);
       setResolution((r) =>
-        isAudioToVideoResolution(r) ? r : DEFAULT_AUDIO_TO_VIDEO_RESOLUTION
+        normalizeAudioToVideoResolution(r, INFINITETALK_COMPOSER_ID)
       );
     }
   }, [composerModelId, setLipsyncAudioUrlSafe, setPromptImage2UrlSafe, setPromptImageUrlSafe]);
@@ -1662,7 +1698,10 @@ export function VideoGenerationPage() {
           ctx.actionTab === "AI Director"
             ? (directorRoute?.resolution ?? (ctx.resolution.trim() || "720p"))
             : ctx.actionTab === "Audio to Video"
-              ? normalizeAudioToVideoResolution(ctx.resolution.trim() || resolution.trim())
+              ? normalizeAudioToVideoResolution(
+                  ctx.resolution.trim() || resolution.trim(),
+                  videoModel
+                )
               : ctx.resolution.trim() || resolution.trim();
         const duration =
           ctx.actionTab === "AI Director"
@@ -2193,6 +2232,12 @@ export function VideoGenerationPage() {
             return;
           }
           if (res.status === 402) {
+            if (typeof data.credits_balance === "number") applyBalance(data.credits_balance);
+            setInsufficientCredits({
+              open: true,
+              required: data.credits_required ?? requiredCredits,
+              balance: data.credits_balance ?? credits
+            });
             setGenerateError(insufficientCreditsMessage(data));
             return;
           }
@@ -2211,7 +2256,11 @@ export function VideoGenerationPage() {
         if (directorRoute) {
           setDirectorLastCreditsSpent(creditsSpent);
         }
-        void refreshCredits();
+        if (typeof data.credits_balance === "number") {
+          applyBalance(data.credits_balance);
+        } else {
+          void refreshCredits();
+        }
 
         if (data.atlas_request) {
           console.log("[VideoGenerationPage] Atlas request echoed from server", data.atlas_request);
@@ -2304,6 +2353,8 @@ export function VideoGenerationPage() {
                   prediction_id: pollId
                 });
               }
+              // Server may refund on failed polls — keep navbar balance live.
+              void refreshCredits();
               const msg = formatAtlasVideoFailureForUi(rawErr, {
                 generateAudio: wantGenerateAudio,
                 hostIsProduction:
@@ -2453,6 +2504,7 @@ export function VideoGenerationPage() {
       loading,
       modeValue,
       prompt,
+      applyBalance,
       refreshCredits,
       resolution,
       timeSeconds
@@ -2700,7 +2752,18 @@ export function VideoGenerationPage() {
           return;
         }
         if (res.status === 402) {
-          setGenerateError(insufficientCreditsMessage(data as Parameters<typeof insufficientCreditsMessage>[0]));
+          const body = data as {
+            credits_balance?: number;
+            credits_required?: number;
+            error?: string;
+          };
+          if (typeof body.credits_balance === "number") applyBalance(body.credits_balance);
+          setInsufficientCredits({
+            open: true,
+            required: body.credits_required ?? 0,
+            balance: body.credits_balance ?? credits
+          });
+          setGenerateError(insufficientCreditsMessage(body));
           return;
         }
         setGenerateError(
@@ -2713,7 +2776,11 @@ export function VideoGenerationPage() {
         return;
       }
 
-      void refreshCredits();
+      if (typeof data.credits_balance === "number") {
+        applyBalance(data.credits_balance as number);
+      } else {
+        void refreshCredits();
+      }
 
       let finalVideoUrl: string | null = pickVideoUrlFromPollBody(data);
       if (finalVideoUrl) {
@@ -2790,6 +2857,7 @@ export function VideoGenerationPage() {
     directorDurationSec,
     directorPreviewRoute?.resolution,
     loading,
+    applyBalance,
     outputVideoSourceUrl,
     refreshCredits,
     resolution,

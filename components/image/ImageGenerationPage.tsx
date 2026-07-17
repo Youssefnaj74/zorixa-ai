@@ -68,6 +68,7 @@ import {
 } from "@/lib/atlas-pricing-catalog";
 import type { UpscaleTier } from "@/lib/studio-constants";
 import { useCredits } from "@/lib/hooks/use-credits";
+import { publishAssistantStudioSnapshot } from "@/lib/assistant-studio-bridge";
 import { insufficientCreditsMessage } from "@/lib/insufficient-credits-message";
 import {
   CLOSED_INSUFFICIENT_CREDITS,
@@ -275,7 +276,7 @@ function defaultImageSettingsForModel(model: string): {
 export function ImageGenerationPage() {
   usePageViewEvent(AnalyticsEvents.IMAGE_STUDIO_VIEWED);
   const studioNavOffset = useStudioNavOffset();
-  const { credits, refresh: refreshCredits } = useCredits();
+  const { credits, refresh: refreshCredits, applyBalance } = useCredits();
   const searchParams = useSearchParams();
   const studioLock = useMemo(() => parseImageStudioLock(searchParams), [searchParams]);
   const [bottomBarHeight, setBottomBarHeight] = useState(COMPOSER_DOCK_WITH_TABS_HEIGHT);
@@ -293,6 +294,17 @@ export function ImageGenerationPage() {
   const upscalePreviewBlobRef = useRef<string | null>(null);
   const [upscaleBeforeUrl, setUpscaleBeforeUrl] = useState<string | null>(null);
   const [outscale, setOutscale] = useState<AtlasImageUpscalerOutscale>(4);
+
+  useEffect(() => {
+    publishAssistantStudioSnapshot({
+      page: "Image Studio",
+      selectedModel: modelId,
+      selectedDuration: null,
+      selectedQuality: resolution,
+      selectedAspectRatio: aspect === "Auto" ? null : aspect,
+      draftPrompt: prompt || null
+    });
+  }, [aspect, modelId, prompt, resolution]);
 
   const [loading, setLoading] = useState(false);
   const [outputUrls, setOutputUrls] = useState<string[]>([]);
@@ -606,6 +618,12 @@ export function ImageGenerationPage() {
             return;
           }
           if (res.status === 402) {
+            if (typeof data.credits_balance === "number") applyBalance(data.credits_balance);
+            setInsufficientCredits({
+              open: true,
+              required: data.credits_required ?? requiredCredits,
+              balance: data.credits_balance ?? credits
+            });
             setGenerateError(insufficientCreditsMessage(data));
             return;
           }
@@ -615,7 +633,11 @@ export function ImageGenerationPage() {
           return;
         }
 
-        void refreshCredits();
+        if (typeof data.credits_balance === "number") {
+          applyBalance(data.credits_balance);
+        } else {
+          void refreshCredits();
+        }
 
         const predictionIds = pickPredictionIdsFromPost(data);
         const collected = new Set(pickImageUrlsFromPollBody(data as Record<string, unknown>));
@@ -702,7 +724,7 @@ export function ImageGenerationPage() {
         setLoading(false);
       }
     },
-    [aspect, credits, loading, modelId, prompt, refreshCredits, resolution, batchCount]
+    [applyBalance, aspect, credits, loading, modelId, prompt, refreshCredits, resolution, batchCount]
   );
 
   const restoreHistory = useCallback(
@@ -883,6 +905,12 @@ export function ImageGenerationPage() {
         return;
       }
       if (res.status === 402) {
+        if (typeof data.credits_balance === "number") applyBalance(data.credits_balance);
+        setInsufficientCredits({
+          open: true,
+          required: data.credits_required ?? 0,
+          balance: data.credits_balance ?? credits
+        });
         setGenerateError(insufficientCreditsMessage(data));
         return;
       }
@@ -892,7 +920,11 @@ export function ImageGenerationPage() {
       }
 
       setUpscaleBeforeUrl(inputUrl);
-      void refreshCredits();
+      if (typeof data.credits_balance === "number") {
+        applyBalance(data.credits_balance);
+      } else {
+        void refreshCredits();
+      }
 
       let resultUrl: string | null = data.image_url ?? null;
       if (!resultUrl && data.prediction_id) {
@@ -930,7 +962,9 @@ export function ImageGenerationPage() {
         prompt: "Image Upscale",
         inputUrl
       });
-      void refreshCredits();
+      if (typeof data.credits_balance !== "number") {
+        void refreshCredits();
+      }
     } catch (e) {
       if (e instanceof Error && e.message === "AUTH_REQUIRED") {
         setAuthRequiredOpen(true);
@@ -943,7 +977,7 @@ export function ImageGenerationPage() {
     } finally {
       setLoading(false);
     }
-  }, [loading, outscale, refreshCredits, upscaleInputFile, upscaleInputUrl]);
+  }, [applyBalance, credits, loading, outscale, refreshCredits, upscaleInputFile, upscaleInputUrl]);
 
   const runImageUpscale = useCallback(
     async (tier: UpscaleTier) => {
@@ -988,12 +1022,22 @@ export function ImageGenerationPage() {
           return;
         }
         if (res.status === 402) {
+          if (typeof data.credits_balance === "number") applyBalance(data.credits_balance);
+          setInsufficientCredits({
+            open: true,
+            required: data.credits_required ?? 0,
+            balance: data.credits_balance ?? credits
+          });
           setGenerateError(insufficientCreditsMessage(data));
           return;
         }
         if (!res.ok) {
           setGenerateError(data.error ?? `Upscale failed (${res.status})`);
           return;
+        }
+
+        if (typeof data.credits_balance === "number") {
+          applyBalance(data.credits_balance);
         }
 
         let resultUrl: string | null = null;
@@ -1020,14 +1064,16 @@ export function ImageGenerationPage() {
           },
           ...prev.filter((h) => h.outputImageUrl !== resultUrl)
         ]);
-        void refreshCredits();
+        if (typeof data.credits_balance !== "number") {
+          void refreshCredits();
+        }
       } catch (e: unknown) {
         setGenerateError(e instanceof Error ? e.message : "Upscale network error.");
       } finally {
         setLoading(false);
       }
     },
-    [loading, outputUrls, refreshCredits, showingModelShowcase]
+    [applyBalance, credits, loading, outputUrls, refreshCredits, showingModelShowcase]
   );
 
   const runImageVariations = useCallback(async () => {

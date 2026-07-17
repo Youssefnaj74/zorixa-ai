@@ -135,6 +135,7 @@ export const ATLAS_MODEL_PRICING: Record<string, AtlasModelPrice> = {
   infinitetalk: { usd: 0.15, unit: "per 5s video (720p)", note: "Audio to video" },
   "veed-fabric-1": { usd: 0.12, unit: "per 5s video (720p)", note: "Audio to video" },
   "veed-fabric-1-fast": { usd: 0.08, unit: "per 5s video (720p)", note: "Fast A2V" },
+  "omni-human-1-5": { usd: 0.12, unit: "per 5s video (720p)", note: "Audio to video" },
   "atlas-video-upscaler": { usd: 0.09, unit: "per 5s video (1080p)", note: "V2V FlashVSR upscale" }
 };
 
@@ -267,7 +268,8 @@ export const ATLAS_VIDEO_RATE_CARDS: Record<string, VideoRateCard> = {
   },
   infinitetalk: { perSecondUsd: 0.15, note: "Audio to video" },
   "veed-fabric-1": { perSecondUsd: 0.12, note: "Audio to video" },
-  "veed-fabric-1-fast": { perSecondUsd: 0.08, note: "Fast audio to video" }
+  "veed-fabric-1-fast": { perSecondUsd: 0.08, note: "Fast audio to video" },
+  "omni-human-1-5": { perSecondUsd: 0.12, note: "Audio to video" }
 };
 
 function videoMarginForModel(composerModelId: string, atlasUsd: number): number {
@@ -598,6 +600,7 @@ const VIDEO_NAMES: Record<string, string> = {
   infinitetalk: "InfiniteTalk",
   "veed-fabric-1": "VEED Fabric 1.0",
   "veed-fabric-1-fast": "VEED Fabric 1.0 Fast",
+  "omni-human-1-5": "OmniHuman 1.5",
   "atlas-video-upscaler": "Video Upscaler"
 };
 

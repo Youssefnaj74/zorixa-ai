@@ -38,7 +38,7 @@ type TtsHistoryEntry = {
 
 export function TextToSpeechPage() {
   const searchParams = useSearchParams();
-  const { refresh: refreshCredits } = useCredits();
+  const { refresh: refreshCredits, applyBalance } = useCredits();
   const { voices: clonedVoices } = useClonedVoices();
   const { voices: rawVoices, facets, warning, isLoading: loadingVoices } = useTtsVoices();
 
@@ -156,6 +156,7 @@ export function TextToSpeechPage() {
       };
       if (!res.ok) {
         if (res.status === 402 && data.error === "INSUFFICIENT_CREDITS") {
+          if (typeof data.credits_balance === "number") applyBalance(data.credits_balance);
           throw new Error(
             `Not enough credits (need ${data.credits_required ?? "?"}, you have ${data.credits_balance ?? 0}).`
           );
@@ -166,7 +167,11 @@ export function TextToSpeechPage() {
         throw new Error("No audio returned");
       }
 
-      void refreshCredits();
+      if (typeof data.credits_balance === "number") {
+        applyBalance(data.credits_balance);
+      } else {
+        void refreshCredits();
+      }
 
       setAudioUrl(data.audio_url);
       setHistory((prev) => [
@@ -184,7 +189,7 @@ export function TextToSpeechPage() {
     } finally {
       setGenerating(false);
     }
-  }, [text, voiceId, modelId, speed, selectedVoice?.name, refreshCredits]);
+  }, [applyBalance, text, voiceId, modelId, speed, selectedVoice?.name, refreshCredits]);
 
   useEffect(() => {
     setPlaying(false);

@@ -58,6 +58,48 @@ export function hailuo23AtlasUsdForOptions(
   return HAILUO_23_T2V_PRO_USD;
 }
 
+/**
+ * Atlas I2V examples use `enable_prompt_expansion: false`.
+ * T2V Pro defaults on. Explicit `body.enable_prompt_expansion` still wins.
+ */
+export function resolveHailuo23EnablePromptExpansion(
+  model: string,
+  explicit?: boolean
+): boolean {
+  if (typeof explicit === "boolean") return explicit;
+  return !isHailuo23ImageAtlasModel(model);
+}
+
+/** Hailuo I2V accepts JPG/PNG (WebP works on Atlas; AVIF fails). */
+export function isHailuo23I2vImageMagic(bytes: Uint8Array): boolean {
+  if (bytes.length < 12) return false;
+  // PNG
+  if (
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  ) {
+    return true;
+  }
+  // JPEG
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return true;
+  // WebP (RIFF....WEBP)
+  if (
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function buildHailuo23AtlasBody(input: {
   model: string;
   prompt: string;
@@ -69,7 +111,10 @@ export function buildHailuo23AtlasBody(input: {
   const body: Record<string, unknown> = {
     model: input.model,
     prompt: input.prompt,
-    enable_prompt_expansion: input.enablePromptExpansion ?? !isI2v
+    enable_prompt_expansion: resolveHailuo23EnablePromptExpansion(
+      input.model,
+      input.enablePromptExpansion
+    )
   };
 
   if (isI2v) {

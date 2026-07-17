@@ -107,6 +107,7 @@ import {
   isHailuo23ImageAtlasModel,
   normalizeHailuo23I2vDurationSeconds
 } from "@/lib/atlas-hailuo-video";
+import { prepareHailuo23I2vImageUrl } from "@/lib/atlas-hailuo-i2v-image";
 import {
   buildWan26ImageAtlasBody,
   buildWan26TextAtlasBody,
@@ -147,7 +148,8 @@ import {
   beginAtlasCharge,
   completeAtlasCharge,
   creditsForVideoModel,
-  insufficientCreditsResponse
+  insufficientCreditsResponse,
+  refundAtlasPredictionCharge
 } from "@/lib/credits-charge";
 import { env } from "@/lib/env";
 import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
@@ -399,6 +401,7 @@ export async function GET(request: Request) {
           generateAudio: pollGenerateAudio
         });
         void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
+        void refundAtlasPredictionCharge(predictionId);
       } else if (terminalSuccess && poll.outputUrl) {
         void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
       }
@@ -458,6 +461,7 @@ export async function GET(request: Request) {
         generateAudio: pollGenerateAudio
       });
       void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
+      void refundAtlasPredictionCharge(predictionId);
     } else if (terminalSuccess && poll.outputUrl) {
       void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
     }
@@ -1569,12 +1573,25 @@ async function handleGenerateVideoPost(request: Request) {
         { status: 400 }
       );
     }
+    if (action === "image") {
+      const prepared = await prepareHailuo23I2vImageUrl({
+        imageUrl: image_url,
+        userId: actor.userId
+      });
+      if (!prepared.ok) {
+        return NextResponse.json({ error: prepared.error }, { status: 400 });
+      }
+      image_url = prepared.imageUrl;
+    }
     atlasBody = buildHailuo23AtlasBody({
       model,
       prompt,
       durationSec,
       imageUrl: action === "image" ? image_url : undefined,
-      enablePromptExpansion: body.enable_prompt_expansion !== false
+      enablePromptExpansion:
+        typeof body.enable_prompt_expansion === "boolean"
+          ? body.enable_prompt_expansion
+          : undefined
     });
   } else {
     // Kling, Veo, Wan — `aspect_ratio` + `resolution` on flat body.
@@ -1906,6 +1923,7 @@ async function handleGenerateVideoPost(request: Request) {
         action === "image" ? "image" : action === "reference" ? "reference" : "text"
     });
     void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
+    void refundAtlasPredictionCharge(predictionId);
     return NextResponse.json(
       { error: err, atlas_error: atlasRaw, atlas_model: model, prediction_id: predictionId },
       { status: 502 }

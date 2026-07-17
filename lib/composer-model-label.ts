@@ -43,6 +43,7 @@ const VIDEO_COMPOSER_LABELS: Record<string, string> = {
   infinitetalk: "InfiniteTalk",
   "veed-fabric-1": "VEED Fabric 1.0",
   "veed-fabric-1-fast": "VEED Fabric 1.0 Fast",
+  "omni-human-1-5": "OmniHuman 1.5",
   "atlas-video-upscaler": "Video Upscaler"
 };
 

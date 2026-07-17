@@ -76,6 +76,14 @@ function atlasVideoFailureHint(message: string): string | null {
     return "Check your Atlas Cloud account balance on atlascloud.ai.";
   }
 
+  if (
+    lower.includes("invalid parameters") ||
+    lower.includes("unknown format") ||
+    lower.includes("invalid image")
+  ) {
+    return "Usually a start frame that is too small (short side must be >300px), a bad URL, or unsupported type. Use a JPG/PNG at least ~512px on the short side (not AVIF), then retry.";
+  }
+
   return null;
 }
 

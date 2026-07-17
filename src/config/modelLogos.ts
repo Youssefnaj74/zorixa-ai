@@ -91,6 +91,7 @@ export const MODEL_LOGOS: Record<string, string> = {
   infinitetalk: G.alibaba,
   "veed-fabric-1": G.google,
   "veed-fabric-1-fast": G.google,
+  "omni-human-1-5": G.seedance,
   "atlas-video-upscaler": G.zorixa
 };
 
@@ -108,7 +109,8 @@ export function resolveModelLogoPath(composerId: string | null | undefined): str
   if (id.includes("google-veo") || id.includes("veo-3")) return G.veo;
   if (id.includes("grok")) return G.grok;
   if (id.includes("kling")) return G.kling;
-  if (id.includes("seedream") || id.includes("seedance")) return G.seedance;
+  if (id.includes("seedream") || id.includes("seedance") || id.includes("omni-human"))
+    return G.seedance;
   if (id.includes("flux")) return G.flux;
   if (id.includes("wan")) return G.wan;
   if (id.includes("happyhorse")) return G.happyhorse;

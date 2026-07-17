@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Space_Grotesk } from "next/font/google";
 import Footer from "@/components/layout/Footer";
+import { ZorixaAssistantWidget } from "@/components/assistant/ZorixaAssistantWidget";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SiteJsonLd } from "@/components/seo/site-json-ld";
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider>{children}</ThemeProvider>
         </AnalyticsProvider>
         <Footer />
+        <ZorixaAssistantWidget />
       </body>
     </html>
   );

@@ -254,7 +254,12 @@ function MyVoiceRow({
 }
 
 export function VoiceCloneStudioPage() {
-  const { credits, isLoading: creditsLoading, refresh: refreshCredits } = useCredits();
+  const {
+    credits,
+    isLoading: creditsLoading,
+    refresh: refreshCredits,
+    applyBalance
+  } = useCredits();
   const { voices, isLoading, refresh } = useClonedVoices();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -361,6 +366,7 @@ export function VoiceCloneStudioPage() {
       };
       if (!res.ok) {
         if (res.status === 402) {
+          if (typeof data.credits_balance === "number") applyBalance(data.credits_balance);
           throw new Error(
             `Not enough credits (need ${data.credits_required ?? cloneCost}, you have ${data.credits_balance ?? credits}).`
           );
@@ -371,12 +377,16 @@ export function VoiceCloneStudioPage() {
       resetFile();
       setName("");
       void refresh();
-      void refreshCredits();
+      if (typeof data.credits_balance === "number") {
+        applyBalance(data.credits_balance);
+      } else {
+        void refreshCredits();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Clone failed");
       setPhase("error");
     }
-  }, [file, durationSec, name, refresh, refreshCredits, stopPreview, cloneCost, credits]);
+  }, [applyBalance, file, durationSec, name, refresh, refreshCredits, stopPreview, cloneCost, credits]);
 
   const togglePreview = () => {
     if (!previewUrlRef.current) return;

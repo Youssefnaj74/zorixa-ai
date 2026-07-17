@@ -1,5 +1,32 @@
 import { coerceToPublicHttpsUrl } from "@/lib/coerce-public-https-url";
 
+/** Production host for studio showcase files — Atlas can fetch these; localhost cannot. */
+const SHOWCASE_PUBLIC_ORIGIN = "https://www.zorixaai.com";
+
+/**
+ * Map /video-showcases/* and /image-showcases/* to the production origin so
+ * localhost example Generate does not re-upload a tiny/wrong browser copy.
+ */
+export function rewriteShowcaseAssetUrlForAtlas(url: string): string {
+  const t = url.trim();
+  if (!t) return t;
+  try {
+    if (t.startsWith("/video-showcases/") || t.startsWith("/image-showcases/")) {
+      return `${SHOWCASE_PUBLIC_ORIGIN}${t}`;
+    }
+    const u = new URL(t, typeof window !== "undefined" ? window.location.origin : SHOWCASE_PUBLIC_ORIGIN);
+    if (
+      u.pathname.startsWith("/video-showcases/") ||
+      u.pathname.startsWith("/image-showcases/")
+    ) {
+      return `${SHOWCASE_PUBLIC_ORIGIN}${u.pathname}${u.search}`;
+    }
+  } catch {
+    /* keep original */
+  }
+  return t;
+}
+
 function extensionForUploadedBlob(blob: Blob): string {
   const mt = (blob.type || "").toLowerCase();
   if (mt.includes("jpeg") || mt === "image/jpg") return "jpg";
@@ -152,6 +179,9 @@ export async function resolvePublicHttpsMediaUrl(
   if (!url) return null;
   let t = url.trim();
   if (!t) return null;
+
+  // Prefer production showcase URLs before localhost rewrite/upload.
+  t = rewriteShowcaseAssetUrlForAtlas(t);
 
   if (t.startsWith("/")) {
     if (typeof window === "undefined") return null;

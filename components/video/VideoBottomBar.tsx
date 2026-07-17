@@ -86,7 +86,7 @@ import {
   parseVideoSpeedTierFromUiLabel,
   videoComposerSupportsSpeedTier
 } from "@/lib/atlas-video-model-ids";
-import { AUDIO_TO_VIDEO_RESOLUTION_OPTIONS } from "@/lib/atlas-audio-to-video";
+import { audioToVideoResolutionOptions } from "@/lib/atlas-audio-to-video";
 import { isViduQ3ComposerId, isViduQ3ProComposerId, VIDU_Q3_PRO_RESOLUTION_OPTIONS, VIDU_Q3_REFERENCE_RESOLUTION_OPTIONS } from "@/lib/atlas-vidu-video";
 
 import { ActionTabsRow, type ActionTab } from "@/components/video/ActionTabsRow";
@@ -581,7 +581,7 @@ export function VideoBottomBar({
     : showGeminiLayout
     ? [...GEMINI_OMNI_FLASH_RESOLUTION_OPTIONS]
     : showAudioToVideoLayout
-    ? [...AUDIO_TO_VIDEO_RESOLUTION_OPTIONS]
+    ? audioToVideoResolutionOptions(composerModelId)
     : isSeedance20ComposerId(composerModelId)
     ? seedance20ResolutionOptionsForTab(actionTab, speedTier)
     : showVeo31Layout

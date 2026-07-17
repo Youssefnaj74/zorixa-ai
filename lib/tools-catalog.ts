@@ -76,7 +76,8 @@ const VIDEO_LABELS: Record<string, string> = {
   "vidu-q3-pro": "Vidu Q3-Pro",
   infinitetalk: "InfiniteTalk",
   "veed-fabric-1": "VEED Fabric 1.0",
-  "veed-fabric-1-fast": "VEED Fabric 1.0 Fast"
+  "veed-fabric-1-fast": "VEED Fabric 1.0 Fast",
+  "omni-human-1-5": "OmniHuman 1.5"
 };
 
 const CREDITS_PLACEHOLDER = "Credits TBD";
@@ -304,7 +305,11 @@ export function buildToolsCatalog(): ToolCatalogSection[] {
         previewSrc: previewFor("audio-to-video", id),
         wired: true,
         badge:
-          id === "veed-fabric-1" || id === "veed-fabric-1-fast" ? ("NEW" as const) : undefined
+          id === "veed-fabric-1" ||
+          id === "veed-fabric-1-fast" ||
+          id === "omni-human-1-5"
+            ? ("NEW" as const)
+            : undefined
       }))
     }
   ];

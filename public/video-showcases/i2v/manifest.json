@@ -1,8 +1,8 @@
 {
   "generatedAt": "2026-06-06T14:36:18.149Z",
   "shared": {
-    "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/e1498c52-69aa-41d6-8891-8173e58d87fd.png",
-    "endFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/725729e7-4d37-4313-afbb-55d8b0fc178d.png",
+    "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/_shared/start-frame.png",
+    "endFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/_shared/end-frame.png",
     "startFramePath": "/video-showcases/i2v/_shared/start-frame.png",
     "endFramePath": "/video-showcases/i2v/_shared/end-frame.png"
   },
@@ -16,7 +16,7 @@
       "resolution": "480p",
       "timeSeconds": 5,
       "startFramePath": "/video-showcases/i2v/grok-imagine-video-i2v-15-start.png",
-      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/2bcf8386-4338-45c6-ae5a-86b1fe497cbb.png",
+      "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/grok-imagine-video-i2v-15-start.png",
       "publicPath": "/video-showcases/i2v/grok-imagine-video-i2v-15.mp4",
       "atlasOutputUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/videos/823bc33c-ca0d-4f36-9c40-5e4cb6b869f1.mp4"
     },
@@ -29,7 +29,7 @@
       "resolution": "720p",
       "timeSeconds": 6,
       "startFramePath": "/video-showcases/i2v/gemini-omni-flash-i2v-start.png",
-      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/1ab06811-7357-4cf9-981e-a7a8366c6e60.png",
+      "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/gemini-omni-flash-i2v-start.png",
       "publicPath": "/video-showcases/i2v/gemini-omni-flash-i2v.mp4",
       "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/41d2ca30-7731-413b-a16e-68ba97c797e1.mp4"
     },
@@ -42,7 +42,7 @@
       "resolution": "720p",
       "timeSeconds": 5,
       "startFramePath": "/video-showcases/i2v/kling-3-pro-start.png",
-      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/ee59e2e5-f213-46f9-94e3-616db1aef5e6.png",
+      "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/kling-3-pro-start.png",
       "publicPath": "/video-showcases/i2v/kling-3-pro.mp4",
       "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/fda30cae-51de-4425-94a6-33815c2b3055.mp4"
     },
@@ -55,7 +55,7 @@
       "resolution": "720p",
       "timeSeconds": 5,
       "startFramePath": "/video-showcases/i2v/seedance-1-5-start.png",
-      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/24e75942-aee4-4a39-a8e1-2e01874b94d6.png",
+      "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/seedance-1-5-start.png",
       "publicPath": "/video-showcases/i2v/seedance-1-5.mp4",
       "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/cgt-20260606053500-dtsb6-0.mp4"
     },
@@ -68,7 +68,7 @@
       "resolution": "720p",
       "timeSeconds": 5,
       "startFramePath": "/video-showcases/i2v/wan-2-6-start.png",
-      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/65f9a2fc-dd24-42be-b866-07a739e84a9b.png",
+      "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/wan-2-6-start.png",
       "publicPath": "/video-showcases/i2v/wan-2-6.mp4",
       "atlasOutputUrl": "https://dashscope-463f.oss-accelerate.aliyuncs.com/1d/4b/20260606/95ec0949/59036906-7a41-4bb1-abba-602c6c068f34.mp4?Expires=1780781850&OSSAccessKeyId=LTAI5t7xkDxYoFdeAc4nqUeU&Signature=xSm5ADcK6LXAFz8Nce7Of9Wbz2w%3D"
     },
@@ -81,7 +81,7 @@
       "resolution": "720p",
       "timeSeconds": 5,
       "startFramePath": "/video-showcases/i2v/wan-2-7-start.png",
-      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/ee44b623-30ce-4b7e-8ee0-05ee6e45bd89.png",
+      "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/wan-2-7-start.png",
       "publicPath": "/video-showcases/i2v/wan-2-7.mp4",
       "atlasOutputUrl": "https://dashscope-463f.oss-accelerate.aliyuncs.com/1d/ce/20260606/773ecfda/78604552-metadata_user_287cbebe4612e655.mp4?Expires=1780782123&OSSAccessKeyId=LTAI5t7xkDxYoFdeAc4nqUeU&Signature=h6FX9zMElPtr2%2BvwDK%2Bqs8CP6gg%3D"
     },
@@ -94,7 +94,7 @@
       "resolution": "720p",
       "timeSeconds": 5,
       "startFramePath": "/video-showcases/i2v/happyhorse-1-start.png",
-      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/c5c0e61a-1fd8-4a5d-ad84-7c5dc705e353.png",
+      "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/happyhorse-1-start.png",
       "publicPath": "/video-showcases/i2v/happyhorse-1.mp4",
       "atlasOutputUrl": "https://dashscope-463f.oss-accelerate.aliyuncs.com/1d/b1/20260606/3419032b/46929878-metadata_video_720p_2a9538fe-0dae-4699-a2ee-eac650e6d675_refiner.mp4?Expires=1780782259&OSSAccessKeyId=LTAI5t6ybWkD6u9sDryNkdo6&Signature=RnJ1BjK0OhftIm4LTpA9kqs88oo%3D"
     },
@@ -107,7 +107,7 @@
       "resolution": "720p",
       "timeSeconds": 6,
       "startFramePath": "/video-showcases/i2v/hailuo-2-3-start.png",
-      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/b06a33a1-5d8c-4dac-97e1-9eecf479f961.png",
+      "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/hailuo-2-3-start.png",
       "publicPath": "/video-showcases/i2v/hailuo-2-3.mp4",
       "atlasOutputUrl": "https://video-product.cdn.minimax.io/inference_output/video/2026-06-06/b6f75039-ec48-4db8-9dae-187ff56a4e82/output.mp4"
     },
@@ -120,7 +120,7 @@
       "resolution": "720p",
       "timeSeconds": 6,
       "startFramePath": "/video-showcases/i2v/google-veo-3-1-start.png",
-      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/2b7b9b95-64ef-4250-bbe1-be03b8abe54b.png",
+      "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/google-veo-3-1-start.png",
       "publicPath": "/video-showcases/i2v/google-veo-3-1.mp4",
       "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/8754f774-ba2f-4efc-9b49-799d5662d608.mp4"
     },
@@ -133,7 +133,7 @@
       "resolution": "720p",
       "timeSeconds": 5,
       "startFramePath": "/video-showcases/i2v/vidu-q3-start.png",
-      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/8080f2ab-0f53-4ff7-b846-2a29c305c75b.png",
+      "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/vidu-q3-start.png",
       "publicPath": "/video-showcases/i2v/vidu-q3.mp4",
       "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/9ca75d52-3363-4613-9c13-8aadac2136bc.mp4"
     },
@@ -146,7 +146,7 @@
       "resolution": "720p",
       "timeSeconds": 5,
       "startFramePath": "/video-showcases/i2v/vidu-q3-pro-start.png",
-      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/1f8fde31-eeb3-4915-8638-14ba1b0f0723.png",
+      "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/vidu-q3-pro-start.png",
       "publicPath": "/video-showcases/i2v/vidu-q3-pro.mp4",
       "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/3e29affb-4e27-47da-a2d6-691446d10827.mp4"
     },
@@ -159,7 +159,7 @@
       "resolution": "720p",
       "timeSeconds": 5,
       "startFramePath": "/video-showcases/i2v/seedance-2-start.png",
-      "startFrameUrl": "https://atlas-img.oss-us-west-1.aliyuncs.com/images/5ecd313a-43d2-459f-85d3-2f0c84586b08.png",
+      "startFrameUrl": "https://www.zorixaai.com/video-showcases/i2v/seedance-2-start.png",
       "publicPath": "/video-showcases/i2v/seedance-2.mp4",
       "atlasOutputUrl": "https://atlas-media.oss-us-west-1.aliyuncs.com/videos/cgt-20260606223406-dxjwx-0.mp4"
     }

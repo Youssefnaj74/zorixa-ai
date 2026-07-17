@@ -10,6 +10,7 @@ import { NavbarExplorePromptsLink } from "@/components/layout/NavbarExplorePromp
 import { NavbarToolsLink } from "@/components/layout/NavbarToolsLink";
 import { SiteAnnouncementBanner } from "@/components/layout/SiteAnnouncementBanner";
 import { ZorixaLogo } from "@/components/layout/ZorixaLogo";
+import { useCredits } from "@/lib/hooks/use-credits";
 import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getBrowserUserSafe } from "@/lib/supabase/auth-client";
@@ -270,7 +271,7 @@ export function Navbar({
   dashboardAuthBar?: boolean;
 } = {}) {
   const scheduleNavigation = useScheduledAppRouterNavigation();
-  const [credits, setCredits] = useState(0);
+  const { credits } = useCredits();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -284,7 +285,6 @@ export function Navbar({
       if (cancelled) return;
 
       if (!user) {
-        setCredits(0);
         setUserEmail(null);
         setDisplayName(null);
         setAvatarUrl(null);
@@ -295,31 +295,16 @@ export function Navbar({
       const meta = user.user_metadata as { avatar_url?: string; full_name?: string; name?: string } | undefined;
       setAvatarUrl(typeof meta?.avatar_url === "string" ? meta.avatar_url : null);
 
-      let balance = 0;
-      let profileName: string | null = null;
-
-      const res = await fetch("/api/credits", { credentials: "include" });
-      if (res.ok) {
-        const body = (await res.json()) as { credits_balance?: number };
-        balance = body.credits_balance ?? 0;
-      }
-
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from("users_profiles")
-        .select("credits_balance, full_name")
+        .select("full_name")
         .eq("id", user.id)
         .single();
 
-      if (!profileError && profile) {
-        if (!res.ok) balance = profile.credits_balance ?? 0;
-        profileName = profile.full_name ?? null;
-      }
-
       if (cancelled) return;
 
-      setCredits(balance);
       setDisplayName(
-        profileName ??
+        profile?.full_name ??
           (typeof meta?.full_name === "string" ? meta.full_name : null) ??
           (typeof meta?.name === "string" ? meta.name : null)
       );

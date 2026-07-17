@@ -172,6 +172,38 @@ export async function refundAtlasPendingCharge(args: {
   return { ok: row?.ok === true || row?.already_refunded === true };
 }
 
+/**
+ * Refund a finalized `atlas:{predictionId}` charge after Atlas/BytePlus reports failed.
+ * Idempotent via `refund:{ref}` unique key inside `refund_credits`.
+ */
+export async function refundAtlasPredictionCharge(predictionId: string): Promise<{
+  ok: boolean;
+  userId?: string;
+}> {
+  const id = predictionId.trim();
+  if (!id) return { ok: false };
+  const refKey = `atlas:${id}`;
+
+  const { data: usage, error } = await supabaseAdmin
+    .from("transactions")
+    .select("user_id")
+    .eq("lemonsqueezy_order_id", refKey)
+    .eq("type", "usage")
+    .maybeSingle();
+
+  if (error) {
+    console.error("[credits-charge] lookup atlas usage for refund failed", error.message);
+    return { ok: false };
+  }
+  if (!usage?.user_id) return { ok: false };
+
+  const refunded = await refundAtlasPendingCharge({
+    userId: usage.user_id,
+    pendingRef: refKey
+  });
+  return { ok: refunded.ok, userId: usage.user_id };
+}
+
 export type AtlasChargeSession = {
   pendingRef: string;
   creditsSpent: number;

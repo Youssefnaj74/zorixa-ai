@@ -30,7 +30,8 @@ export function resolveModelBrand(composerId: string): ModelBrandId {
   }
   if (id.includes("grok")) return "grok";
   if (id === "zorixa" || id.includes("qwen")) return "qwen";
-  if (id.includes("seedream") || id.includes("seedance")) return "seedance";
+  if (id.includes("seedream") || id.includes("seedance") || id.includes("omni-human"))
+    return "seedance";
   if (id.includes("flux")) return "flux";
   if (id.includes("wan")) return "wan";
   if (id.includes("kling")) return "kling";

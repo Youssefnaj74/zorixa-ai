@@ -117,6 +117,11 @@ const V2V_DEFAULTS = v2vRecipes.defaults as {
 
 const V2V_RECIPES = v2vRecipes.models as Record<string, V2vRecipe>;
 
+/**
+ * Resolve a studio showcase asset for the browser (preview / form).
+ * Keep same-origin on localhost — page CSP `media-src 'self'` blocks cross-origin MP4s.
+ * Atlas-facing URLs are normalized separately in `prepareHailuo23I2vImageUrl`.
+ */
 export function showcaseVideoAssetUrl(path: string, origin = ""): string {
   const p = path.trim();
   if (!p) return p;
