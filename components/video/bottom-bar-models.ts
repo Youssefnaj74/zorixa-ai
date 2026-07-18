@@ -516,6 +516,7 @@ export {
 } from "@/lib/atlas-wan-26-video";
 export {
   isKling30ProComposerId,
+  KLING_V3_BILLING_RESOLUTION,
   kling30ProComposerSupportsEndFrame,
   kling30ProComposerSupportsShotType,
   klingV3AspectOptionsForUi,

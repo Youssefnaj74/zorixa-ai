@@ -106,6 +106,7 @@ import {
   grokImagineVideoAspectFromUi,
   isGeminiOmniFlashComposerId,
   isGrokImagineVideoComposerId,
+  KLING_V3_BILLING_RESOLUTION,
   klingV3AspectFromUi,
   normalizeKlingV3DurationSeconds,
   normalizeGeminiOmniFlashDurationSeconds,
@@ -1240,6 +1241,7 @@ export function VideoGenerationPage() {
       setActionTab("Text to Video");
       setTimeSeconds((t) => normalizeKlingV3DurationSeconds(t));
       setAspect(klingV3AspectFromUi(aspect));
+      setResolution(KLING_V3_BILLING_RESOLUTION);
     }
     if (isViduQ3ProComposerId(id)) {
       if (resolution === "480p") setResolution("540p");
@@ -1523,6 +1525,7 @@ export function VideoGenerationPage() {
     setTimeSeconds((t) => normalizeKlingV3DurationSeconds(t));
     if (actionTab === "Text to Video" || actionTab === "Image to Video") {
       setAspect((a) => klingV3AspectFromUi(a));
+      setResolution(KLING_V3_BILLING_RESOLUTION);
     }
   }, [composerModelId, actionTab]);
 
@@ -1752,7 +1755,11 @@ export function VideoGenerationPage() {
             }
           : null;
         const atlasAspect = veoT2vI2vSettings?.aspect ?? aspectRatio;
-        const atlasResolution = veoT2vI2vSettings?.resolution ?? resTier;
+        const atlasResolution =
+          videoModel === KLING_30_PRO_MODEL_ID &&
+          (generationTab === "Text to Video" || generationTab === "Image to Video")
+            ? KLING_V3_BILLING_RESOLUTION
+            : (veoT2vI2vSettings?.resolution ?? resTier);
         const atlasDuration =
           hailuoSettings?.timeSeconds ?? veoT2vI2vSettings?.timeSeconds ?? duration;
 
@@ -1803,9 +1810,7 @@ export function VideoGenerationPage() {
                 ? { duration: atlasDurationForPayload }
                 : {
                     aspectRatio: atlasAspectForPayload,
-                    ...(videoModel === KLING_30_PRO_MODEL_ID
-                      ? {}
-                      : { resolution: atlasResolution }),
+                    resolution: atlasResolution,
                     duration: atlasDurationForPayload
                   }),
               speed_tier,
@@ -1854,9 +1859,8 @@ export function VideoGenerationPage() {
               ...(isHailuo23ComposerId(videoModel)
                 ? { duration: atlasDurationForPayload }
                 : {
-                    ...(videoModel === KLING_30_PRO_MODEL_ID
-                      ? { aspectRatio: atlasAspectForPayload }
-                      : { aspectRatio: atlasAspectForPayload, resolution: atlasResolution }),
+                    aspectRatio: atlasAspectForPayload,
+                    resolution: atlasResolution,
                     duration: atlasDurationForPayload
                   }),
               speed_tier,

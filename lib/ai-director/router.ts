@@ -8,6 +8,10 @@ import type {
   DirectorResolvedStyle,
   DirectorStyleInput
 } from "@/lib/ai-director/types";
+import {
+  KLING_V3_BILLING_RESOLUTION,
+  KLING_V3_COMPOSER_ID
+} from "@/lib/atlas-kling-v3-video";
 
 function pickModelForQuality(
   styleResolved: DirectorResolvedStyle,
@@ -46,6 +50,8 @@ export function resolveDirectorRoute(args: {
 
   const modelChain = buildModelChain(stylePrimaryModelId, slot.fallbacks);
   const info = getDirectorModelInfo(modelId);
+  const resolution =
+    modelId === KLING_V3_COMPOSER_ID ? KLING_V3_BILLING_RESOLUTION : routeResolution;
 
   return {
     styleRequested: args.style,
@@ -57,7 +63,7 @@ export function resolveDirectorRoute(args: {
     modelChain,
     routeAction,
     actionTab: args.hasStartImage ? "Image to Video" : "Text to Video",
-    resolution: routeResolution,
+    resolution,
     modelSummary: info.summary,
     whyBullets: info.whyBullets
   };

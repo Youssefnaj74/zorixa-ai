@@ -29,6 +29,10 @@ import {
   GROK_IMAGINE_VIDEO_R2V_COMPOSER_ID,
   GROK_IMAGINE_VIDEO_T2V_COMPOSER_ID
 } from "@/lib/atlas-grok-video";
+import {
+  KLING_V3_BILLING_RESOLUTION,
+  KLING_V3_COMPOSER_ID
+} from "@/lib/atlas-kling-v3-video";
 
 /** Atlas wholesale: $0.001 per credit unit (1,000 units ≈ $1 API spend at cost). */
 export const ATLAS_CREDIT_USD = 0.001;
@@ -299,7 +303,10 @@ export function atlasVideoUsdForOptions(
   }
 
   const duration = normalizeVideoDurationSeconds(opts.durationSeconds);
-  const resolution = normalizeVideoResolutionTier(opts.resolution);
+  const resolution =
+    composerModelId === KLING_V3_COMPOSER_ID
+      ? KLING_V3_BILLING_RESOLUTION
+      : normalizeVideoResolutionTier(opts.resolution);
   const speedTier = normalizeVideoSpeedTier(opts.speedTier);
   const card = ATLAS_VIDEO_RATE_CARDS[composerModelId];
 

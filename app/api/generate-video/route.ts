@@ -71,6 +71,7 @@ import {
 import {
   buildKlingV3AtlasBody,
   isKlingV3AtlasModel,
+  KLING_V3_BILLING_RESOLUTION,
   klingV3AspectFromUi,
   normalizeKlingV3DurationSeconds,
   normalizeKlingV3ShotMode
@@ -1172,6 +1173,7 @@ async function handleGenerateVideoPost(request: Request) {
     durationSec = KLING_MOTION_CREDIT_ESTIMATE_SECONDS;
   } else if (isKlingV3AtlasModel(model)) {
     durationSec = normalizeKlingV3DurationSeconds(durationSec);
+    resolution = KLING_V3_BILLING_RESOLUTION;
   } else if (isAtlasKlingModelSlug(model)) {
     durationSec = normalizeAtlasKlingDurationSeconds(durationSec);
   } else if (action === "reference" && isViduReferenceToVideoModel(model)) {

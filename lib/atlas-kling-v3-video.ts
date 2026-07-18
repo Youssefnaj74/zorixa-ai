@@ -6,6 +6,12 @@
 
 export const KLING_V3_COMPOSER_ID = "kling-3-pro" as const;
 
+/**
+ * Kling 3.0 Pro is marketed and billed as 1080p. The composer hides the resolution
+ * control for T2V/I2V, so pricing must not follow leftover UI state (e.g. 720p).
+ */
+export const KLING_V3_BILLING_RESOLUTION = "1080p" as const;
+
 export const KLING_V3_ASPECT_OPTIONS = ["16:9", "9:16", "1:1"] as const;
 
 /** Atlas Cloud playground — 3s through 15s (T2V + I2V). */
