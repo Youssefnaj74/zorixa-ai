@@ -38,6 +38,7 @@ import {
   extractStudioAction,
   type ZorixaStudioAction
 } from "@/lib/zorixa-assistant-studio-action";
+import type { ZorixaAssistantClientContext } from "@/lib/zorixa-assistant-types";
 import { cn } from "@/lib/utils";
 
 type ChatRole = "user" | "assistant";
@@ -136,7 +137,7 @@ function writeStoredPos(key: string, pos: PanelPos) {
 async function streamAssistantReply(input: {
   message: string;
   history: Array<{ role: ChatRole; content: string }>;
-  context: Record<string, string | null>;
+  context: ZorixaAssistantClientContext;
   onDelta: (text: string) => void;
   signal?: AbortSignal;
 }): Promise<{ reply: string; error?: string }> {
