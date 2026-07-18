@@ -340,7 +340,14 @@ export function ZorixaAssistantWidget() {
       selectedDuration: studio.selectedDuration,
       selectedQuality: studio.selectedQuality,
       selectedAspectRatio: studio.selectedAspectRatio,
-      draftPrompt: studio.draftPrompt
+      draftPrompt: studio.draftPrompt,
+      actionTab: studio.actionTab,
+      speedTier: studio.speedTier,
+      soundtrackOn: studio.soundtrackOn,
+      uiEstimatedCredits: studio.uiEstimatedCredits,
+      backendCreditsRequired: studio.backendCreditsRequired,
+      backendCreditsBalance: studio.backendCreditsBalance,
+      lastGenerateError: studio.lastGenerateError
     };
   }
 

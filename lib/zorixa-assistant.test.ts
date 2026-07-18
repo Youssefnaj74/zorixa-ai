@@ -5,10 +5,13 @@ import { buildMcpModelsCatalog } from "@/lib/mcp-models-catalog";
 import { PUBLIC_FAQ_ITEMS } from "@/data/public-faq";
 import { composerModelDisplayLabel } from "@/lib/composer-model-label";
 import type { ZorixaAssistantGrounding } from "@/lib/zorixa-assistant-types";
+import { buildStaticAssistantGrounding } from "@/lib/zorixa-assistant-grounding";
 import { buildZorixaAssistantSystemPrompt } from "@/lib/zorixa-assistant-prompt";
 import {
+  ASSISTANT_INSUFFICIENT_LIVE_INFO_REPLY,
   ASSISTANT_MISSING_INFO_REPLY,
   ASSISTANT_OFF_TOPIC_REPLY,
+  ASSISTANT_PRICING_MISMATCH_REPLY,
   buildGroundingFacts,
   findAssistantHallucination,
   guardAssistantReply,
@@ -59,7 +62,17 @@ function fixtureGrounding(
       selectedDuration: "5s",
       selectedQuality: "Best",
       selectedAspectRatio: null,
-      draftPrompt: null
+      draftPrompt: null,
+      actionTab: "Text to Video",
+      speedTier: "Standard",
+      soundtrackOn: false
+    },
+    liveGeneration: {
+      uiEstimatedCredits: null,
+      backendCreditsRequired: null,
+      backendCreditsBalance: null,
+      pricingMismatch: false,
+      lastGenerateError: null
     },
     ...overrides
   };
@@ -71,6 +84,17 @@ describe("ZorixaAI Assistant system prompt", () => {
     expect(prompt).toContain(ASSISTANT_MISSING_INFO_REPLY);
     expect(prompt).toContain("NEVER invent, guess, or approximate");
     expect(prompt).not.toContain('say exactly: "I don\'t have that information."');
+  });
+
+  it("requires product-expert and prompt-engineer behavior", () => {
+    const prompt = buildZorixaAssistantSystemPrompt(fixtureGrounding());
+    expect(prompt).toContain("ZorixaAI Product Expert");
+    expect(prompt).toContain("Respect the user's chosen model");
+    expect(prompt).toContain("Prompt Engineer mode");
+    expect(prompt).toContain("Score /10");
+    expect(prompt).toContain("Be opinionated");
+    expect(prompt).toContain(ASSISTANT_INSUFFICIENT_LIVE_INFO_REPLY);
+    expect(prompt).toContain("model-aware");
   });
 
   it("requires the exact off-topic specialized-assistant reply", () => {
@@ -98,6 +122,47 @@ describe("ZorixaAI Assistant system prompt", () => {
     expect(prompt).toContain("Hailuo 2.3");
     expect(prompt).not.toMatch(/\bmidjourney\b.*\bavailable in (?:our|the) studio/i);
   });
+
+  it("includes live generation pricing rules and mismatch guidance", () => {
+    const grounding = fixtureGrounding({
+      liveGeneration: {
+        uiEstimatedCredits: 271,
+        backendCreditsRequired: 433,
+        backendCreditsBalance: 377,
+        pricingMismatch: true,
+        lastGenerateError: "Not enough credits (need 433, you have 377). View plans."
+      }
+    });
+    const prompt = buildZorixaAssistantSystemPrompt(grounding);
+    expect(prompt).toContain("NEVER calculate credits manually");
+    expect(prompt).toContain("UI Generate button credits: 271");
+    expect(prompt).toContain("Backend credits required");
+    expect(prompt).toContain("433");
+    expect(prompt).toContain("Pricing mismatch (UI != backend required): YES");
+    expect(prompt).toContain(ASSISTANT_PRICING_MISMATCH_REPLY);
+    expect(prompt).toContain("Reference catalog defaults (NOT the live Generate price)");
+  });
+});
+
+describe("buildStaticAssistantGrounding live pricing", () => {
+  it("flags pricing mismatch from live UI vs backend credits", () => {
+    const grounding = buildStaticAssistantGrounding({
+      client: {
+        page: "Video Studio",
+        selectedModel: "kling-3-pro",
+        uiEstimatedCredits: 271,
+        backendCreditsRequired: 433,
+        backendCreditsBalance: 377,
+        soundtrackOn: true,
+        selectedDuration: "10s",
+        selectedQuality: "1080p"
+      }
+    });
+    expect(grounding.liveGeneration.pricingMismatch).toBe(true);
+    expect(grounding.client.soundtrackOn).toBe(true);
+    expect(grounding.liveGeneration.uiEstimatedCredits).toBe(271);
+    expect(grounding.liveGeneration.backendCreditsRequired).toBe(433);
+  });
 });
 
 describe("isLikelyOffTopicAssistantQuery", () => {
@@ -116,12 +181,23 @@ describe("isLikelyOffTopicAssistantQuery", () => {
 });
 
 describe("guardAssistantReply — anti-hallucination", () => {
-  const grounding = fixtureGrounding();
+  const grounding = fixtureGrounding({
+    liveGeneration: {
+      uiEstimatedCredits: 271,
+      backendCreditsRequired: 433,
+      backendCreditsBalance: 377,
+      pricingMismatch: true,
+      lastGenerateError: "Not enough credits (need 433, you have 377). View plans."
+    }
+  });
   const facts = buildGroundingFacts({
     models: grounding.models,
     packs: grounding.pricing.packs,
     pricingModels: grounding.pricing.models,
-    userCredits: grounding.user?.credits ?? null
+    userCredits: grounding.user?.credits ?? null,
+    uiEstimatedCredits: grounding.liveGeneration.uiEstimatedCredits,
+    backendCreditsRequired: grounding.liveGeneration.backendCreditsRequired,
+    backendCreditsBalance: grounding.liveGeneration.backendCreditsBalance
   });
 
   it("allows grounded model and pricing answers", () => {
@@ -134,6 +210,19 @@ describe("guardAssistantReply — anti-hallucination", () => {
       reason: null,
       kind: null
     });
+  });
+
+  it("allows live UI vs backend mismatch answers", () => {
+    const reply =
+      "The Generate button currently shows 271 Credits, but the backend requires 433 Credits. This indicates a pricing mismatch.";
+    expect(findAssistantHallucination(reply, facts)).toBeNull();
+  });
+
+  it("blocks invented credit arithmetic", () => {
+    const reply = "Kling costs about 169 × 2 = 338 credits for 10 seconds.";
+    const guarded = guardAssistantReply(reply, facts);
+    expect(guarded.guarded).toBe(true);
+    expect(guarded.kind).toBe("credits");
   });
 
   it("blocks invented model ids", () => {

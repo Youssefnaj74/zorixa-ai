@@ -105,7 +105,10 @@ async function answerQuestion(question: EvalQuestion): Promise<{
     models: grounding.models,
     packs: grounding.pricing.packs,
     pricingModels: grounding.pricing.models,
-    userCredits: grounding.user?.credits ?? null
+    userCredits: grounding.user?.credits ?? null,
+    uiEstimatedCredits: grounding.liveGeneration.uiEstimatedCredits,
+    backendCreditsRequired: grounding.liveGeneration.backendCreditsRequired,
+    backendCreditsBalance: grounding.liveGeneration.backendCreditsBalance
   });
 
   const completion = await atlasChatCompletion({

@@ -7,12 +7,27 @@ export type ZorixaAssistantClientContext = {
   selectedQuality?: string | null;
   selectedAspectRatio?: string | null;
   draftPrompt?: string | null;
+  actionTab?: string | null;
+  speedTier?: string | null;
+  soundtrackOn?: boolean | null;
+  uiEstimatedCredits?: number | null;
+  backendCreditsRequired?: number | null;
+  backendCreditsBalance?: number | null;
+  lastGenerateError?: string | null;
 };
 
 export type ZorixaAssistantUserSnapshot = {
   credits: number;
   plan: string;
   isPremium: boolean;
+};
+
+export type ZorixaAssistantLiveGenerationPricing = {
+  uiEstimatedCredits: number | null;
+  backendCreditsRequired: number | null;
+  backendCreditsBalance: number | null;
+  pricingMismatch: boolean;
+  lastGenerateError: string | null;
 };
 
 export type ZorixaAssistantGrounding = {
@@ -46,5 +61,10 @@ export type ZorixaAssistantGrounding = {
     selectedQuality: string | null;
     selectedAspectRatio: string | null;
     draftPrompt: string | null;
+    actionTab: string | null;
+    speedTier: string | null;
+    soundtrackOn: boolean | null;
   };
+  /** Authoritative live Generate pricing from the current studio page + last API error. */
+  liveGeneration: ZorixaAssistantLiveGenerationPricing;
 };

@@ -9,6 +9,14 @@ export const ASSISTANT_MISSING_INFO_REPLY =
 export const ASSISTANT_OFF_TOPIC_REPLY =
   "I'm specialized in ZorixaAI only — models, pricing, credits, studio workflows, and product help. For topics unrelated to ZorixaAI, please use a general AI assistant.";
 
+/** Live pricing / settings / provider behavior not present in the current session. */
+export const ASSISTANT_INSUFFICIENT_LIVE_INFO_REPLY =
+  "I don't have enough live information to confirm that.";
+
+/** Shown when live UI Generate credits disagree with the last backend required credits. */
+export const ASSISTANT_PRICING_MISMATCH_REPLY =
+  "There appears to be a pricing mismatch between the displayed credits and the backend calculation. This is likely a bug. Please refresh the page or contact support if it persists.";
+
 export type HallucinationKind =
   | "models"
   | "pricing"
@@ -68,6 +76,8 @@ export type AssistantGroundingFacts = {
   packNames: Set<string>;
   allowedCredits: Set<number>;
   userCredits: number | null;
+  uiEstimatedCredits: number | null;
+  backendCreditsRequired: number | null;
 };
 
 export function buildGroundingFacts(input: {
@@ -75,6 +85,9 @@ export function buildGroundingFacts(input: {
   packs: Array<{ name: string; monthlyUsd: number; yearlyUsd?: number; credits: number }>;
   pricingModels: Array<{ creditsCharged: number }>;
   userCredits?: number | null;
+  uiEstimatedCredits?: number | null;
+  backendCreditsRequired?: number | null;
+  backendCreditsBalance?: number | null;
 }): AssistantGroundingFacts {
   const modelIds = new Set(input.models.map((m) => m.id.toLowerCase()));
   const modelLabels = new Set(input.models.map((m) => m.label.toLowerCase()));
@@ -97,7 +110,35 @@ export function buildGroundingFacts(input: {
       ? input.userCredits
       : null;
   if (userCredits !== null) allowedCredits.add(userCredits);
-  return { modelIds, modelLabels, packPricesUsd, packNames, allowedCredits, userCredits };
+
+  const uiEstimatedCredits =
+    typeof input.uiEstimatedCredits === "number" && Number.isFinite(input.uiEstimatedCredits)
+      ? input.uiEstimatedCredits
+      : null;
+  const backendCreditsRequired =
+    typeof input.backendCreditsRequired === "number" &&
+    Number.isFinite(input.backendCreditsRequired)
+      ? input.backendCreditsRequired
+      : null;
+  const backendCreditsBalance =
+    typeof input.backendCreditsBalance === "number" && Number.isFinite(input.backendCreditsBalance)
+      ? input.backendCreditsBalance
+      : null;
+
+  if (uiEstimatedCredits !== null) allowedCredits.add(uiEstimatedCredits);
+  if (backendCreditsRequired !== null) allowedCredits.add(backendCreditsRequired);
+  if (backendCreditsBalance !== null) allowedCredits.add(backendCreditsBalance);
+
+  return {
+    modelIds,
+    modelLabels,
+    packPricesUsd,
+    packNames,
+    allowedCredits,
+    userCredits,
+    uiEstimatedCredits,
+    backendCreditsRequired
+  };
 }
 
 function normalizePriceToken(raw: string): string {
@@ -195,6 +236,33 @@ export function findAssistantHallucination(
       if (facts.userCredits !== null && n === facts.userCredits) continue;
       if (facts.allowedCredits.has(n)) continue;
       return `unknown_credit_balance:${n}`;
+    }
+  }
+
+  // Never allow invented credit arithmetic (e.g. "169 × 2 = 338").
+  if (
+    /\b\d{2,5}\s*[×x*]\s*\d{1,5}\b/i.test(text) &&
+    /\bcredits?\b/i.test(text)
+  ) {
+    return "unknown_credit_amount:manual_calculation";
+  }
+
+  // "need N" / "requires N credits" must match live UI estimate, backend required, packs, or catalog.
+  const needPatterns = [
+    /\bneed(?:s)?\s+([\d,]+)\s+credits?\b/gi,
+    /\brequires?\s+([\d,]+)\s+credits?\b/gi,
+    /\bshows?\s+([\d,]+)\s+credits?\b/gi,
+    /\b(?:ui|generate button|displayed)\s*[:\-]?\s*([\d,]+)\s+credits?\b/gi,
+    /\b(?:backend|api)\s*[:\-]?\s*([\d,]+)\s+credits?\b/gi
+  ];
+  for (const re of needPatterns) {
+    re.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(text)) !== null) {
+      const n = Number(match[1]!.replace(/,/g, ""));
+      if (!Number.isFinite(n)) continue;
+      if (facts.allowedCredits.has(n)) continue;
+      return `unknown_credit_amount:${n}`;
     }
   }
 

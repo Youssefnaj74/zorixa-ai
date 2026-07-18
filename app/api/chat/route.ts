@@ -49,6 +49,13 @@ function cleanText(value: unknown, maxLen: number): string | null {
   return trimmed.slice(0, maxLen);
 }
 
+function parseOptionalNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return Math.round(value);
+  }
+  return null;
+}
+
 function parseClientContext(raw: unknown): ZorixaAssistantClientContext | null {
   if (!raw || typeof raw !== "object") return null;
   const c = raw as Record<string, unknown>;
@@ -58,7 +65,14 @@ function parseClientContext(raw: unknown): ZorixaAssistantClientContext | null {
     selectedDuration: typeof c.selectedDuration === "string" ? c.selectedDuration : null,
     selectedQuality: typeof c.selectedQuality === "string" ? c.selectedQuality : null,
     selectedAspectRatio: typeof c.selectedAspectRatio === "string" ? c.selectedAspectRatio : null,
-    draftPrompt: typeof c.draftPrompt === "string" ? c.draftPrompt : null
+    draftPrompt: typeof c.draftPrompt === "string" ? c.draftPrompt : null,
+    actionTab: typeof c.actionTab === "string" ? c.actionTab : null,
+    speedTier: typeof c.speedTier === "string" ? c.speedTier : null,
+    soundtrackOn: typeof c.soundtrackOn === "boolean" ? c.soundtrackOn : null,
+    uiEstimatedCredits: parseOptionalNumber(c.uiEstimatedCredits),
+    backendCreditsRequired: parseOptionalNumber(c.backendCreditsRequired),
+    backendCreditsBalance: parseOptionalNumber(c.backendCreditsBalance),
+    lastGenerateError: typeof c.lastGenerateError === "string" ? c.lastGenerateError : null
   };
 }
 
@@ -185,7 +199,10 @@ export async function POST(request: Request) {
     models: grounding.models,
     packs: grounding.pricing.packs,
     pricingModels: grounding.pricing.models,
-    userCredits: grounding.user?.credits ?? null
+    userCredits: grounding.user?.credits ?? null,
+    uiEstimatedCredits: grounding.liveGeneration.uiEstimatedCredits,
+    backendCreditsRequired: grounding.liveGeneration.backendCreditsRequired,
+    backendCreditsBalance: grounding.liveGeneration.backendCreditsBalance
   });
   const llmMessages: AtlasChatMessage[] = [
     { role: "system", content: systemPrompt },

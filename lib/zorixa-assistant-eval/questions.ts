@@ -70,7 +70,8 @@ export const ASSISTANT_EVAL_QUESTIONS: EvalQuestion[] = [
     mustIncludeAny: ["grok", "hailuo", "ugc"]
   }),
   item("m03", "model_recommendations", "What model is best for cinematic commercials?", "grounded", {
-    mustIncludeAny: ["seedance", "kling", "cinematic"]
+    mustIncludeAny: ["seedance", "kling"],
+    mustIncludeAll: ["cinematic"]
   }),
   item("m04", "model_recommendations", "Recommend a model for product showcase videos.", "grounded", {
     mustIncludeAny: ["vidu", "product", "kling"]
@@ -171,8 +172,26 @@ export const ASSISTANT_EVAL_QUESTIONS: EvalQuestion[] = [
       draftPrompt: "girl walking"
     },
     expectPromptLike: true,
-    mustIncludeAny: ["walk", "girl", "camera", "light"]
+    mustIncludeAll: ["/10"],
+    mustIncludeAny: ["walk", "girl", "hailuo"]
   }),
+  item(
+    "pi07",
+    "prompt_improvement",
+    "Optimize this prompt for Grok Imagine.",
+    "grounded",
+    {
+      client: {
+        page: "Video Studio",
+        selectedModel: "grok-imagine-video-t2v",
+        draftPrompt:
+          "Ultra cinematic orbit then push in then pull back then rack focus on a woman in rain"
+      },
+      expectPromptLike: true,
+      mustIncludeAll: ["/10", "grok"],
+      mustNotInclude: ["kling is better", "use kling instead", "switch to kling"]
+    }
+  ),
   item("pi02", "prompt_improvement", "Make this prompt more cinematic.", "grounded", {
     client: { selectedModel: "seedance-2", draftPrompt: "car on a road" },
     expectPromptLike: true,
@@ -397,7 +416,22 @@ export const ASSISTANT_EVAL_QUESTIONS: EvalQuestion[] = [
 
   // —— Generation failures (7) ——
   item("gf01", "generation_failures", "Why can't I generate videos? It says not enough credits.", "grounded", {
-    mustIncludeAny: ["credit", "pricing", "plan"]
+    client: {
+      page: "Video Studio",
+      selectedModel: "kling-3-pro",
+      selectedDuration: "10s",
+      selectedQuality: "1080p",
+      selectedAspectRatio: "9:16",
+      actionTab: "Text to Video",
+      speedTier: "Standard",
+      soundtrackOn: true,
+      uiEstimatedCredits: 433,
+      backendCreditsRequired: 433,
+      backendCreditsBalance: 377,
+      lastGenerateError: "Not enough credits (need 433, you have 377). View plans."
+    },
+    userCredits: 377,
+    mustIncludeAny: ["433", "377", "credit"]
   }),
   item("gf02", "generation_failures", "My prompt was blocked for content policy. What does that mean?", "grounded", {
     mustIncludeAny: ["content policy", "sexual", "explicit", "policy"]
@@ -406,7 +440,19 @@ export const ASSISTANT_EVAL_QUESTIONS: EvalQuestion[] = [
     mustIncludeAny: ["retry", "history", "support", "prompt", "audio"]
   }),
   item("gf04", "generation_failures", "I see 'Not enough credits (need X, you have Y)'. What now?", "grounded", {
-    mustIncludeAny: ["pricing", "credit", "buy", "plan"]
+    client: {
+      page: "Video Studio",
+      selectedModel: "kling-3-pro",
+      selectedDuration: "10s",
+      selectedQuality: "1080p",
+      soundtrackOn: true,
+      uiEstimatedCredits: 271,
+      backendCreditsRequired: 433,
+      backendCreditsBalance: 377,
+      lastGenerateError: "Not enough credits (need 433, you have 377). View plans."
+    },
+    userCredits: 377,
+    mustIncludeAny: ["271", "433", "mismatch", "credit"]
   }),
   item("gf05", "generation_failures", "Video soundtrack keeps failing — any tip?", "grounded", {
     mustIncludeAny: ["audio off", "audio", "soundtrack"]
@@ -504,7 +550,13 @@ export const ASSISTANT_EVAL_QUESTIONS: EvalQuestion[] = [
     "mi07",
     "missing_information",
     "What is the exact credit cost for OmniHuman 1.5 at 4K for 12 seconds with multi-shot?",
-    "missing_info"
+    "grounded",
+    {
+      mustIncludeAny: [
+        "I don't have enough live information to confirm that",
+        "don't have enough live information"
+      ]
+    }
   ),
   item(
     "mi08",

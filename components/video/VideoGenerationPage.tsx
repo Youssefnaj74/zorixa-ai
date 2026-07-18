@@ -368,19 +368,14 @@ export function VideoGenerationPage() {
   const [prompt, setPrompt] = useState("");
   const [generateError, setGenerateError] = useState<string | null>(null);
 
-  useEffect(() => {
-    publishAssistantStudioSnapshot({
-      page: "Video Studio",
-      selectedModel: composerModelId,
-      selectedDuration: `${timeSeconds}s`,
-      selectedQuality: resolution,
-      selectedAspectRatio: aspect,
-      draftPrompt: prompt || null
-    });
-  }, [aspect, composerModelId, prompt, resolution, timeSeconds]);
   const [insufficientCredits, setInsufficientCredits] = useState<InsufficientCreditsState>(
     CLOSED_INSUFFICIENT_CREDITS
   );
+  /** Sticky backend pricing for the assistant (survives modal close). */
+  const [lastBackendCreditsRequired, setLastBackendCreditsRequired] = useState<number | null>(
+    null
+  );
+  const [lastBackendCreditsBalance, setLastBackendCreditsBalance] = useState<number | null>(null);
   const [authRequiredOpen, setAuthRequiredOpen] = useState(false);
 
   const [promptImageUrl, setPromptImageUrl] = useState<string | null>(null);
@@ -897,55 +892,106 @@ export function VideoGenerationPage() {
 
   const directorExamples = useMemo(() => getDirectorExamples(), []);
 
+  const estimatedCredits = useMemo(() => {
+    const billingModelId =
+      actionTab === "AI Director" && directorPreviewRoute
+        ? directorPreviewRoute.modelId
+        : composerModelId;
+    const billingActionTab =
+      actionTab === "AI Director" && directorPreviewRoute
+        ? directorPreviewRoute.actionTab
+        : actionTab;
+    const supportsNativeAudio =
+      videoComposerSupportsGenerateAudio(billingModelId) &&
+      (billingActionTab === "Text to Video" ||
+        billingActionTab === "Image to Video" ||
+        billingActionTab === "Reference to Video" ||
+        (billingActionTab === "Video to Video" &&
+          videoToVideoTabUsesViduStartEnd(billingModelId)));
+    const directorDuration =
+      actionTab === "Video to Video" && videoToVideoTabUsesKlingMotion(composerModelId)
+        ? KLING_MOTION_CREDIT_ESTIMATE_SECONDS
+        : actionTab === "AI Director"
+          ? directorDurationSec
+          : timeSeconds;
+    const directorResolution =
+      actionTab === "AI Director" && directorPreviewRoute
+        ? directorPreviewRoute.resolution
+        : resolution;
+    return creditsChargedForVideoModel(billingModelId, {
+      durationSeconds: directorDuration,
+      resolution: directorResolution,
+      speedTier: videoComposerSupportsSpeedTier(billingModelId)
+        ? normalizeAtlasVideoSpeedTier(durationStandard)
+        : "standard",
+      generateAudio: supportsNativeAudio && generateAudioOn,
+      routeAction: videoPricingRouteAction(billingActionTab)
+    });
+  }, [
+    actionTab,
+    composerModelId,
+    directorDurationSec,
+    directorPreviewRoute,
+    durationStandard,
+    generateAudioOn,
+    resolution,
+    timeSeconds
+  ]);
+
   const creditsLine = useMemo(
-    () => {
-      const billingModelId =
-        actionTab === "AI Director" && directorPreviewRoute
-          ? directorPreviewRoute.modelId
-          : composerModelId;
-      const billingActionTab =
-        actionTab === "AI Director" && directorPreviewRoute
-          ? directorPreviewRoute.actionTab
-          : actionTab;
-      const supportsNativeAudio =
-        videoComposerSupportsGenerateAudio(billingModelId) &&
-        (billingActionTab === "Text to Video" ||
-          billingActionTab === "Image to Video" ||
-          billingActionTab === "Reference to Video" ||
-          (billingActionTab === "Video to Video" &&
-            videoToVideoTabUsesViduStartEnd(billingModelId)));
-      const directorDuration =
-        actionTab === "Video to Video" && videoToVideoTabUsesKlingMotion(composerModelId)
-          ? KLING_MOTION_CREDIT_ESTIMATE_SECONDS
-          : actionTab === "AI Director"
-            ? directorDurationSec
-            : timeSeconds;
-      const directorResolution =
-        actionTab === "AI Director" && directorPreviewRoute
-          ? directorPreviewRoute.resolution
-          : resolution;
-      return formatGenerationCreditsLine(
-        creditsChargedForVideoModel(billingModelId, {
-          durationSeconds: directorDuration,
-          resolution: directorResolution,
-          speedTier: videoComposerSupportsSpeedTier(billingModelId)
-            ? normalizeAtlasVideoSpeedTier(durationStandard)
-            : "standard",
-          generateAudio: supportsNativeAudio && generateAudioOn,
-          routeAction: videoPricingRouteAction(billingActionTab)
-        })
-      );
-    },
-    [
-      actionTab,
-      composerModelId,
-      directorPreviewRoute,
-      durationStandard,
-      generateAudioOn,
-      resolution,
-      timeSeconds
-    ]
+    () => formatGenerationCreditsLine(estimatedCredits),
+    [estimatedCredits]
   );
+
+  const uiEstimatedCreditsForAssistant =
+    actionTab === "AI Director" ? directorEstimatedCredits : estimatedCredits;
+
+  const soundtrackOnForAssistant =
+    actionTab === "AI Director" ? directorSoundtrackOn : generateAudioOn;
+
+  useEffect(() => {
+    const qualityForAssistant =
+      actionTab === "AI Director" && directorPreviewRoute
+        ? directorPreviewRoute.resolution
+        : resolution;
+    const durationForAssistant =
+      actionTab === "AI Director" ? `${directorDurationSec}s` : `${timeSeconds}s`;
+    const modelForAssistant =
+      actionTab === "AI Director" && directorPreviewRoute
+        ? directorPreviewRoute.modelId
+        : composerModelId;
+
+    publishAssistantStudioSnapshot({
+      page: "Video Studio",
+      selectedModel: modelForAssistant,
+      selectedDuration: durationForAssistant,
+      selectedQuality: qualityForAssistant,
+      selectedAspectRatio: aspect,
+      draftPrompt: prompt || null,
+      actionTab,
+      speedTier: durationStandard,
+      soundtrackOn: soundtrackOnForAssistant,
+      uiEstimatedCredits: uiEstimatedCreditsForAssistant,
+      backendCreditsRequired: lastBackendCreditsRequired,
+      backendCreditsBalance: lastBackendCreditsBalance,
+      lastGenerateError: generateError
+    });
+  }, [
+    actionTab,
+    aspect,
+    composerModelId,
+    directorDurationSec,
+    directorPreviewRoute,
+    durationStandard,
+    generateError,
+    lastBackendCreditsBalance,
+    lastBackendCreditsRequired,
+    prompt,
+    resolution,
+    soundtrackOnForAssistant,
+    timeSeconds,
+    uiEstimatedCreditsForAssistant
+  ]);
 
   const handleBottomBarHeight = useCallback((height: number) => {
     setBottomBarHeight(height);
@@ -2192,6 +2238,8 @@ export function VideoGenerationPage() {
         });
         if (shouldBlockForInsufficientCredits(credits, requiredCredits, "video")) {
           setInsufficientCredits({ open: true, required: requiredCredits, balance: credits });
+          setLastBackendCreditsRequired(requiredCredits);
+          setLastBackendCreditsBalance(credits);
           return;
         }
 
@@ -2237,11 +2285,15 @@ export function VideoGenerationPage() {
           }
           if (res.status === 402) {
             if (typeof data.credits_balance === "number") applyBalance(data.credits_balance);
+            const backendRequired = data.credits_required ?? requiredCredits;
+            const backendBalance = data.credits_balance ?? credits;
             setInsufficientCredits({
               open: true,
-              required: data.credits_required ?? requiredCredits,
-              balance: data.credits_balance ?? credits
+              required: backendRequired,
+              balance: backendBalance
             });
+            setLastBackendCreditsRequired(backendRequired);
+            setLastBackendCreditsBalance(backendBalance);
             setGenerateError(insufficientCreditsMessage(data));
             return;
           }
@@ -2256,6 +2308,8 @@ export function VideoGenerationPage() {
           return;
         }
 
+        setLastBackendCreditsRequired(null);
+        setLastBackendCreditsBalance(null);
         const creditsSpent = data.credits_spent ?? 0;
         if (directorRoute) {
           setDirectorLastCreditsSpent(creditsSpent);
@@ -2762,11 +2816,17 @@ export function VideoGenerationPage() {
             error?: string;
           };
           if (typeof body.credits_balance === "number") applyBalance(body.credits_balance);
+          const backendRequired = body.credits_required ?? 0;
+          const backendBalance = body.credits_balance ?? credits;
           setInsufficientCredits({
             open: true,
-            required: body.credits_required ?? 0,
-            balance: body.credits_balance ?? credits
+            required: backendRequired,
+            balance: backendBalance
           });
+          if (backendRequired > 0) {
+            setLastBackendCreditsRequired(backendRequired);
+            setLastBackendCreditsBalance(backendBalance);
+          }
           setGenerateError(insufficientCreditsMessage(body));
           return;
         }
@@ -2780,6 +2840,8 @@ export function VideoGenerationPage() {
         return;
       }
 
+      setLastBackendCreditsRequired(null);
+      setLastBackendCreditsBalance(null);
       if (typeof data.credits_balance === "number") {
         applyBalance(data.credits_balance as number);
       } else {

@@ -295,23 +295,16 @@ export function ImageGenerationPage() {
   const [upscaleBeforeUrl, setUpscaleBeforeUrl] = useState<string | null>(null);
   const [outscale, setOutscale] = useState<AtlasImageUpscalerOutscale>(4);
 
-  useEffect(() => {
-    publishAssistantStudioSnapshot({
-      page: "Image Studio",
-      selectedModel: modelId,
-      selectedDuration: null,
-      selectedQuality: resolution,
-      selectedAspectRatio: aspect === "Auto" ? null : aspect,
-      draftPrompt: prompt || null
-    });
-  }, [aspect, modelId, prompt, resolution]);
-
   const [loading, setLoading] = useState(false);
   const [outputUrls, setOutputUrls] = useState<string[]>([]);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [insufficientCredits, setInsufficientCredits] = useState<InsufficientCreditsState>(
     CLOSED_INSUFFICIENT_CREDITS
   );
+  const [lastBackendCreditsRequired, setLastBackendCreditsRequired] = useState<number | null>(
+    null
+  );
+  const [lastBackendCreditsBalance, setLastBackendCreditsBalance] = useState<number | null>(null);
   const [authRequiredOpen, setAuthRequiredOpen] = useState(false);
   const [hasUserGenerated, setHasUserGenerated] = useState(false);
   /** User dismissed the studio example so they can enter their own prompt/images. */
@@ -366,19 +359,48 @@ export function ImageGenerationPage() {
     return [exampleEntry, ...history];
   }, [history, modelShowcase, showingModelShowcase, showingUpscalerShowcase]);
 
-  const creditsLine = useMemo(() => {
+  const estimatedCredits = useMemo(() => {
     if (actionTab === "Image Upscaler") {
-      return formatGenerationCreditsLine(
-        creditsChargedForImageModel(ATLAS_IMAGE_UPSCALER_COMPOSER_ID, 1)
-      );
+      return creditsChargedForImageModel(ATLAS_IMAGE_UPSCALER_COMPOSER_ID, 1);
     }
-    return formatGenerationCreditsLine(
-      creditsChargedForImageModel(modelId, batchCount, {
-        resolution,
-        isEdit: actionTab === "Image to Image"
-      })
-    );
+    return creditsChargedForImageModel(modelId, batchCount, {
+      resolution,
+      isEdit: actionTab === "Image to Image"
+    });
   }, [actionTab, batchCount, modelId, resolution]);
+
+  const creditsLine = useMemo(
+    () => formatGenerationCreditsLine(estimatedCredits),
+    [estimatedCredits]
+  );
+
+  useEffect(() => {
+    publishAssistantStudioSnapshot({
+      page: "Image Studio",
+      selectedModel: modelId,
+      selectedDuration: null,
+      selectedQuality: resolution,
+      selectedAspectRatio: aspect === "Auto" ? null : aspect,
+      draftPrompt: prompt || null,
+      actionTab,
+      speedTier: null,
+      soundtrackOn: null,
+      uiEstimatedCredits: estimatedCredits,
+      backendCreditsRequired: lastBackendCreditsRequired,
+      backendCreditsBalance: lastBackendCreditsBalance,
+      lastGenerateError: generateError
+    });
+  }, [
+    actionTab,
+    aspect,
+    estimatedCredits,
+    generateError,
+    lastBackendCreditsBalance,
+    lastBackendCreditsRequired,
+    modelId,
+    prompt,
+    resolution
+  ]);
 
   useEffect(() => {
     setBatchCount((c) => clampImageBatchCount(modelId, c));
@@ -560,6 +582,8 @@ export function ImageGenerationPage() {
       });
       if (shouldBlockForInsufficientCredits(credits, requiredCredits, "image")) {
         setInsufficientCredits({ open: true, required: requiredCredits, balance: credits });
+        setLastBackendCreditsRequired(requiredCredits);
+        setLastBackendCreditsBalance(credits);
         return;
       }
 
@@ -619,11 +643,15 @@ export function ImageGenerationPage() {
           }
           if (res.status === 402) {
             if (typeof data.credits_balance === "number") applyBalance(data.credits_balance);
+            const backendRequired = data.credits_required ?? requiredCredits;
+            const backendBalance = data.credits_balance ?? credits;
             setInsufficientCredits({
               open: true,
-              required: data.credits_required ?? requiredCredits,
-              balance: data.credits_balance ?? credits
+              required: backendRequired,
+              balance: backendBalance
             });
+            setLastBackendCreditsRequired(backendRequired);
+            setLastBackendCreditsBalance(backendBalance);
             setGenerateError(insufficientCreditsMessage(data));
             return;
           }
@@ -633,6 +661,8 @@ export function ImageGenerationPage() {
           return;
         }
 
+        setLastBackendCreditsRequired(null);
+        setLastBackendCreditsBalance(null);
         if (typeof data.credits_balance === "number") {
           applyBalance(data.credits_balance);
         } else {
@@ -906,11 +936,17 @@ export function ImageGenerationPage() {
       }
       if (res.status === 402) {
         if (typeof data.credits_balance === "number") applyBalance(data.credits_balance);
+        const backendRequired = data.credits_required ?? 0;
+        const backendBalance = data.credits_balance ?? credits;
         setInsufficientCredits({
           open: true,
-          required: data.credits_required ?? 0,
-          balance: data.credits_balance ?? credits
+          required: backendRequired,
+          balance: backendBalance
         });
+        if (backendRequired > 0) {
+          setLastBackendCreditsRequired(backendRequired);
+          setLastBackendCreditsBalance(backendBalance);
+        }
         setGenerateError(insufficientCreditsMessage(data));
         return;
       }
@@ -1023,11 +1059,17 @@ export function ImageGenerationPage() {
         }
         if (res.status === 402) {
           if (typeof data.credits_balance === "number") applyBalance(data.credits_balance);
+          const backendRequired = data.credits_required ?? 0;
+          const backendBalance = data.credits_balance ?? credits;
           setInsufficientCredits({
             open: true,
-            required: data.credits_required ?? 0,
-            balance: data.credits_balance ?? credits
+            required: backendRequired,
+            balance: backendBalance
           });
+          if (backendRequired > 0) {
+            setLastBackendCreditsRequired(backendRequired);
+            setLastBackendCreditsBalance(backendBalance);
+          }
           setGenerateError(insufficientCreditsMessage(data));
           return;
         }

@@ -5,6 +5,20 @@ export type AssistantStudioSnapshot = {
   selectedQuality: string | null;
   selectedAspectRatio: string | null;
   draftPrompt: string | null;
+  /** Active studio tab / route (e.g. Text to Video, AI Director). */
+  actionTab: string | null;
+  /** Speed tier label shown in the studio (e.g. Standard / Fast). */
+  speedTier: string | null;
+  /** Native soundtrack toggle when the current model supports it. */
+  soundtrackOn: boolean | null;
+  /** Credits shown next to Generate for the current configuration. */
+  uiEstimatedCredits: number | null;
+  /** Credits the API last required (402 / insufficient-credits response). */
+  backendCreditsRequired: number | null;
+  /** Balance reported with the last backend insufficient-credits response. */
+  backendCreditsBalance: number | null;
+  /** Last generation error string shown on the page. */
+  lastGenerateError: string | null;
 };
 
 const EMPTY: AssistantStudioSnapshot = {
@@ -13,7 +27,14 @@ const EMPTY: AssistantStudioSnapshot = {
   selectedDuration: null,
   selectedQuality: null,
   selectedAspectRatio: null,
-  draftPrompt: null
+  draftPrompt: null,
+  actionTab: null,
+  speedTier: null,
+  soundtrackOn: null,
+  uiEstimatedCredits: null,
+  backendCreditsRequired: null,
+  backendCreditsBalance: null,
+  lastGenerateError: null
 };
 
 let snapshot: AssistantStudioSnapshot = EMPTY;

@@ -36,6 +36,41 @@ Commercial use: users retain ownership of content they create (see Terms). Users
 Zorixa AI was built by an independent founder focused on practical creator workflows: fast iteration, clear pricing, and access to premium video models without juggling many separate APIs.
 Zorixa AI operates as a remote-first product.
 
+## Model strengths for prompt engineering (Zorixa video)
+Use these when optimizing prompts or explaining model choice. Respect the user's selected/named model first.
+
+Grok Imagine Video (ids: grok-imagine-video-t2v, grok-imagine-video-i2v-15, grok-imagine-video-r2v):
+- Simple camera movement; one primary camera motion
+- Natural language; UGC / social content
+- Talking-head and creator-style clips with native audio
+
+Kling 3.0 Pro (id: kling-3-pro):
+- Complex camera choreography: orbit, push in, pull back, dolly, rack focus
+- Cinematic lighting and multi-shot / linked camera beats
+- Premium ads and hero shots
+
+Seedance 2.0 (id: seedance-2):
+- Strong character consistency
+- Beautiful facial details
+- Emotional cinematic scenes; reference-driven work
+
+Seedance 1.5 Pro (id: seedance-1-5):
+- Stylized / anime / fantasy motion
+- Expressive movement
+
+Hailuo 2.3 (id: hailuo-2-3):
+- UGC, talking people, product reviews, selfie camera energy
+- Fast social-native motion (silent / no native soundtrack on Zorixa)
+
+Wan (ids: wan-2-6, wan-2-7, and related Wan tools):
+- Stylized looks, anime-leaning creative motion, inventive camera energy
+
+Vidu Q3 / Q3-Pro (ids: vidu-q3, vidu-q3-pro):
+- Product-focused clips, clean motion, ad-ready polish
+
+Google Veo 3.1 (id: google-veo-3-1):
+- Premium cinematic / high-fidelity clips when the brief calls for Veo-class output
+
 ## Studios
 Image Studio (/image) tabs:
 - Text to Image
@@ -83,7 +118,8 @@ UGC fallbacks include Hailuo 2.3 (id: hailuo-2-3).
 - Atlas API keys stay on the server; customers only need a Zorixa API key.
 
 ## Common generation failures
-- Not enough credits: message like "Not enough credits (need X, you have Y). View plans." — buy credits on /pricing.
+- Not enough credits: message like "Not enough credits (need X, you have Y). View plans." — when answering, quote need/have from the live session / last generation error when present; otherwise direct the user to the credits next to Generate and /pricing. Never invent need/have numbers or manually recalculate costs.
+- Pricing mismatch: if the Generate button credits differ from the backend required credits in the live session, say there is a pricing mismatch between the displayed credits and the backend calculation (likely a bug). Ask the user to refresh or contact support. Do not invent a root cause unless that cause is confirmed in live session fields.
 - Content policy: "This prompt can't be used — it violates ZorixaAI's content policy. Please try a different description without explicit or sexual content."
 - Provider/Atlas failures: retry, simplify the prompt, try Audio Off for video soundtrack issues, or check generation History. For account-specific failures, contact support@zorixaai.com.
 - Credits are generally non-refundable once purchased (see FAQ), except where required by law.
