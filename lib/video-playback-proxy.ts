@@ -26,7 +26,11 @@ export function isAllowedVideoPlaybackHost(hostname: string): boolean {
     /** Atlas / ByteDance outputs often land on Aliyun OSS */
     h.endsWith(".aliyuncs.com") ||
     /** BytePlus Seedance outputs (Volcengine TOS) */
-    h.endsWith(".volces.com")
+    h.endsWith(".volces.com") ||
+    /** MiniMax Hailuo video downloads (expire ~1h; must stream via our proxy) */
+    h.endsWith(".cdn.minimax.io") ||
+    h === "cdn.minimax.io" ||
+    h.endsWith(".minimax.chat")
   );
 }
 
