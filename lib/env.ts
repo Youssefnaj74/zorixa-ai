@@ -56,6 +56,8 @@ export const env = {
   zorixaMcpApiKey: envTrim("ZORIXA_MCP_API_KEY"),
   /** Trimmed `MINIMAX_API_KEY` (empty if unset). Prefer `requireMinimaxApiKey()` when required. */
   minimaxApiKey: envTrim("MINIMAX_API_KEY"),
+  /** When true, Hailuo 2.3 T2V/I2V uses MiniMax first with Atlas Cloud fallback. */
+  minimaxHailuoVideoEnabled: envBool("MINIMAX_HAILUO_VIDEO_ENABLED"),
   supabase: {
     url: envTrim("NEXT_PUBLIC_SUPABASE_URL"),
     anonKey: envTrim("NEXT_PUBLIC_SUPABASE_ANON_KEY"),

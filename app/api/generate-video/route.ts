@@ -13,6 +13,16 @@ import {
   submitBytePlusSeedanceTask
 } from "@/lib/byteplus-seedance";
 import {
+  buildMinimaxHailuoVideoBody,
+  diagnoseMinimaxHailuoRouting,
+  logMinimaxHailuoRoutingDiagnostic,
+  submitMinimaxHailuoVideoTask
+} from "@/lib/minimax-hailuo-video";
+import {
+  decodeMinimaxVideoPredictionId,
+  fetchMinimaxVideoTask
+} from "@/lib/minimax-video-api";
+import {
   applyAtlasNativeAudioFields,
   atlasModelSupportsGenerateAudio,
   isAtlasKlingModelSlug,
@@ -436,6 +446,68 @@ export async function GET(request: Request) {
       }
 
       console.error("[generate-video GET] BytePlus poll error", { predictionId, msg });
+
+      return NextResponse.json({
+        status: "failed",
+        video_url: null,
+        outputs: null,
+        output: null,
+        error: msg,
+        atlas_error: msg,
+        prediction_id: predictionId,
+        poll_interval_ms: CLIENT_POLL_HINT_MS
+      });
+    }
+  }
+
+  const minimaxVideoTaskId = decodeMinimaxVideoPredictionId(predictionId);
+  if (minimaxVideoTaskId) {
+    try {
+      const poll = await fetchMinimaxVideoTask(minimaxVideoTaskId);
+      const statusNorm = poll.status.toLowerCase();
+      const terminalSuccess = isAtlasVideoTerminalSuccessStatus(poll.status);
+
+      if (statusNorm === "failed") {
+        console.error("[generate-video GET] MiniMax Hailuo task failed", {
+          predictionId,
+          minimaxError: poll.error,
+          rawStatus: poll.rawStatus
+        });
+        void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
+        void refundAtlasPredictionCharge(predictionId);
+      } else if (terminalSuccess && poll.outputUrl) {
+        void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
+      }
+
+      return NextResponse.json({
+        status: poll.status,
+        video_url: terminalSuccess ? poll.outputUrl : null,
+        outputs: null,
+        output: null,
+        error:
+          statusNorm === "failed"
+            ? formatAtlasVideoFailureForUi(poll.error, {
+                generateAudio: pollGenerateAudio,
+                hostIsProduction: process.env.VERCEL_ENV === "production",
+                action: pollAction
+              })
+            : null,
+        atlas_error: statusNorm === "failed" ? poll.error : null,
+        prediction_id: predictionId,
+        poll_interval_ms: CLIENT_POLL_HINT_MS
+      });
+    } catch (e) {
+      const msg =
+        e instanceof Error ? e.message : "MiniMax video prediction poll failed";
+
+      if (msg.includes("MINIMAX_API_KEY") || msg.includes("Missing MINIMAX")) {
+        return NextResponse.json(
+          { error: "Server missing MINIMAX_API_KEY in environment" },
+          { status: 503 }
+        );
+      }
+
+      console.error("[generate-video GET] MiniMax poll error", { predictionId, msg });
 
       return NextResponse.json({
         status: "failed",
@@ -1686,7 +1758,16 @@ async function handleGenerateVideoPost(request: Request) {
 
   const seedanceBytePlusEligible = bytePlusRoutingDiagnostic.seedanceBytePlusEligible;
 
+  const minimaxHailuoRoutingDiagnostic = diagnoseMinimaxHailuoRouting({
+    videoModel,
+    action
+  });
+  logMinimaxHailuoRoutingDiagnostic("request + gate", minimaxHailuoRoutingDiagnostic);
+
+  const hailuoMinimaxEligible = minimaxHailuoRoutingDiagnostic.hailuoMinimaxEligible;
+
   let bytePlusFallbackReason: string | null = null;
+  let minimaxFallbackReason: string | null = null;
 
   const economicsBase = {
     userId: actor.userId,
@@ -1815,11 +1896,98 @@ async function handleGenerateVideoPost(request: Request) {
     });
   }
 
+  if (hailuoMinimaxEligible) {
+    try {
+      const minimaxBody = buildMinimaxHailuoVideoBody({
+        action: action === "image" ? "image" : "text",
+        prompt,
+        durationSec,
+        imageUrl: action === "image" ? image_url || undefined : undefined,
+        promptOptimizer:
+          typeof body.enable_prompt_expansion === "boolean"
+            ? body.enable_prompt_expansion
+            : undefined
+      });
+
+      console.log(
+        "[generate-video] MiniMax Hailuo create — videoModel:",
+        videoModel,
+        "action:",
+        action,
+        "duration:",
+        minimaxBody.duration,
+        "resolution:",
+        minimaxBody.resolution
+      );
+      logMinimaxHailuoRoutingDiagnostic("attempting MiniMax", minimaxHailuoRoutingDiagnostic, {
+        minimaxModel: minimaxBody.model,
+        duration: minimaxBody.duration,
+        resolution: minimaxBody.resolution
+      });
+
+      const minimaxResult = await submitMinimaxHailuoVideoTask(minimaxBody);
+      if (minimaxResult.ok) {
+        const predictionId = minimaxResult.predictionId;
+        const finalized = await completeAtlasCharge({
+          userId: actor.userId,
+          session: chargeBegin.session,
+          predictionId
+        });
+        if (!finalized.ok) {
+          await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
+          return NextResponse.json({ error: "Could not finalize credit charge" }, { status: 500 });
+        }
+        scheduleGenerationEconomics({
+          ...economicsBase,
+          predictionId,
+          providerUsed: "minimax",
+          status: "pending"
+        });
+        return NextResponse.json({
+          pending: true,
+          prediction_id: predictionId,
+          poll_interval_ms: CLIENT_POLL_HINT_MS,
+          atlas_model: model,
+          provider: "minimax",
+          credits_spent: chargeBegin.session.creditsSpent,
+          credits_balance: chargeBegin.session.balanceAfter
+        });
+      }
+
+      console.warn("[generate-video] MiniMax Hailuo create failed, falling back to Atlas", {
+        error: minimaxResult.error,
+        videoModel,
+        action
+      });
+      minimaxFallbackReason = minimaxResult.error;
+    } catch (e) {
+      console.warn("[generate-video] MiniMax Hailuo path error, falling back to Atlas", e);
+      minimaxFallbackReason = e instanceof Error ? e.message : "MiniMax Hailuo path error";
+    }
+  } else if (isHailuo23ComposerId(videoModel)) {
+    logMinimaxHailuoRoutingDiagnostic("skipped MiniMax → using Atlas", minimaxHailuoRoutingDiagnostic, {
+      atlasReason: "hailuoMinimaxEligible=false",
+      skipReasons: minimaxHailuoRoutingDiagnostic.skipReasons
+    });
+  }
+
   if (bytePlusFallbackReason) {
     logBytePlusSeedanceRoutingDiagnostic("BytePlus failed → Atlas fallback", bytePlusRoutingDiagnostic, {
       bytePlusFallbackReason
     });
   }
+  if (minimaxFallbackReason) {
+    logMinimaxHailuoRoutingDiagnostic("MiniMax failed → Atlas fallback", minimaxHailuoRoutingDiagnostic, {
+      minimaxFallbackReason
+    });
+  }
+
+  const providerFallbackReason = bytePlusFallbackReason ?? minimaxFallbackReason;
+  const providerAttempted = bytePlusFallbackReason
+    ? ("byteplus" as const)
+    : minimaxFallbackReason
+      ? ("minimax" as const)
+      : null;
 
   const createRes = await fetch(`${ATLAS_BASE}/generateVideo`, {
     method: "POST",
@@ -1883,10 +2051,10 @@ async function handleGenerateVideoPost(request: Request) {
     ...economicsBase,
     predictionId,
     providerUsed: "atlas",
-    providerAttempted: bytePlusFallbackReason ? "byteplus" : null,
-    fallbackUsed: Boolean(bytePlusFallbackReason),
-    fallbackReason: bytePlusFallbackReason,
-    status: bytePlusFallbackReason ? "fallback_to_atlas" : "pending",
+    providerAttempted,
+    fallbackUsed: Boolean(providerFallbackReason),
+    fallbackReason: providerFallbackReason,
+    status: providerFallbackReason ? "fallback_to_atlas" : "pending",
     creditsCharged: creditsSpent
   });
 

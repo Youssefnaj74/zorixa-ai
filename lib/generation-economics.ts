@@ -10,9 +10,12 @@ import {
 } from "@/lib/byteplus-pricing-catalog";
 import { detectBytePlusSeedanceWorkflow } from "@/lib/byteplus-seedance";
 import { isBytePlusPredictionId } from "@/lib/byteplus-api";
+import { HAILUO_23_COMPOSER_ID } from "@/lib/atlas-hailuo-video";
+import { minimaxHailuo23UsdForOptions } from "@/lib/minimax-hailuo-pricing";
+import { isMinimaxVideoPredictionId } from "@/lib/minimax-video-api";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-export type VideoProvider = "byteplus" | "atlas";
+export type VideoProvider = "byteplus" | "atlas" | "minimax";
 
 export type GenerationEconomicsStatus =
   | "pending"
@@ -75,6 +78,7 @@ function modelLabel(composerModelId: string, speedTier?: string): string {
     return speedTier === "fast" ? "Seedance 2.0 Fast" : "Seedance 2.0";
   }
   if (composerModelId === "seedance-1-5") return "Seedance 1.5 Pro";
+  if (composerModelId === HAILUO_23_COMPOSER_ID) return "Hailuo 2.3";
   return composerModelId;
 }
 
@@ -103,6 +107,10 @@ function providerCostUsd(input: GenerationEconomicsInput): number {
       ...pricingOpts,
       workflow: bytePlusWorkflowFromAction(input.routeAction, input)
     });
+  }
+
+  if (input.providerUsed === "minimax" && input.composerModelId === HAILUO_23_COMPOSER_ID) {
+    return minimaxHailuo23UsdForOptions(pricingOpts);
   }
 
   return atlasVideoUsdForOptions(input.composerModelId, pricingOpts);
@@ -139,6 +147,7 @@ function roundPct(n: number): number {
 
 export function inferProviderFromPredictionId(predictionId: string | null | undefined): VideoProvider {
   if (predictionId && isBytePlusPredictionId(predictionId)) return "byteplus";
+  if (predictionId && isMinimaxVideoPredictionId(predictionId)) return "minimax";
   return "atlas";
 }
 

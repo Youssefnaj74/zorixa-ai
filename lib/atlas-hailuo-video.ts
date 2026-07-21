@@ -1,5 +1,7 @@
 /**
- * MiniMax Hailuo 2.3 on Atlas Cloud — T2V Pro (flat 5s) and I2V Standard (6s / 10s).
+ * MiniMax Hailuo 2.3 — Atlas Cloud fallback bodies (T2V Pro flat 5s, I2V Standard 6s/10s).
+ * Primary path: MiniMax direct API (`lib/minimax-hailuo-video.ts`) when
+ * `MINIMAX_HAILUO_VIDEO_ENABLED` + `MINIMAX_API_KEY` are set; Atlas on create failure.
  * @see https://www.atlascloud.ai/models/minimax/hailuo-2.3/t2v-pro
  * @see https://www.atlascloud.ai/models/minimax/hailuo-2.3/i2v-standard
  */
