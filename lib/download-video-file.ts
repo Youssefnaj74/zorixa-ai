@@ -94,9 +94,15 @@ export async function downloadVideoFile(
   }
 
   const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
-  if (contentType.includes("xml") || contentType.includes("application/json")) {
+  if (
+    contentType.includes("xml") ||
+    contentType.includes("application/json") ||
+    contentType.includes("text/html")
+  ) {
     throw new Error(
-      "Video host blocked the download. Sign in on Zorixa and try again."
+      contentType.includes("text/html")
+        ? "Download returned an error page instead of the video. Refresh and try again while signed in."
+        : "Video host blocked the download. Sign in on Zorixa and try again."
     );
   }
 

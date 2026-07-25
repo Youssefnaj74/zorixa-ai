@@ -157,7 +157,7 @@ export async function spendCreditsBeforeAtlas(args: {
 export async function refundAtlasPendingCharge(args: {
   userId: string;
   pendingRef: string;
-}): Promise<{ ok: boolean }> {
+}): Promise<{ ok: boolean; balanceAfter?: number; refunded?: number; alreadyRefunded?: boolean }> {
   const { data, error } = await supabaseAdmin.rpc("refund_credits", {
     p_user_id: args.userId,
     p_ref_key: args.pendingRef
@@ -168,8 +168,19 @@ export async function refundAtlasPendingCharge(args: {
     return { ok: false };
   }
 
-  const row = data as { ok?: boolean; already_refunded?: boolean } | null;
-  return { ok: row?.ok === true || row?.already_refunded === true };
+  const row = data as {
+    ok?: boolean;
+    already_refunded?: boolean;
+    balance_after?: number;
+    refunded?: number;
+  } | null;
+  const ok = row?.ok === true || row?.already_refunded === true;
+  return {
+    ok,
+    alreadyRefunded: row?.already_refunded === true,
+    balanceAfter: typeof row?.balance_after === "number" ? row.balance_after : undefined,
+    refunded: typeof row?.refunded === "number" ? row.refunded : undefined
+  };
 }
 
 /**
@@ -179,6 +190,9 @@ export async function refundAtlasPendingCharge(args: {
 export async function refundAtlasPredictionCharge(predictionId: string): Promise<{
   ok: boolean;
   userId?: string;
+  balanceAfter?: number;
+  refunded?: number;
+  alreadyRefunded?: boolean;
 }> {
   const id = predictionId.trim();
   if (!id) return { ok: false };
@@ -201,7 +215,17 @@ export async function refundAtlasPredictionCharge(predictionId: string): Promise
     userId: usage.user_id,
     pendingRef: refKey
   });
-  return { ok: refunded.ok, userId: usage.user_id };
+  let balanceAfter = refunded.balanceAfter;
+  if (refunded.ok && balanceAfter === undefined) {
+    balanceAfter = (await getCreditsBalance(usage.user_id)) ?? undefined;
+  }
+  return {
+    ok: refunded.ok,
+    userId: usage.user_id,
+    balanceAfter,
+    refunded: refunded.refunded,
+    alreadyRefunded: refunded.alreadyRefunded
+  };
 }
 
 export type AtlasChargeSession = {

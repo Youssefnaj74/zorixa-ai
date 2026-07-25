@@ -195,7 +195,20 @@ export async function fetchAtlasPrediction(predictionId: string): Promise<AtlasP
     cache: "no-store"
   });
 
-  const json = (await res.json()) as AtlasEnvelope;
+  const raw = await res.text();
+  let json: AtlasEnvelope;
+  try {
+    json = JSON.parse(raw) as AtlasEnvelope;
+  } catch {
+    const looksHtml = /^\s*</.test(raw) || /<!DOCTYPE/i.test(raw);
+    throw new AtlasApiError(
+      looksHtml
+        ? `Atlas temporarily returned an HTML error page instead of JSON (${res.status}). Retry polling.`
+        : `Atlas prediction poll returned non-JSON (${res.status})`,
+      res.status >= 400 ? res.status : 502
+    );
+  }
+
   if (!res.ok) {
     const msg = json.message ?? `Atlas prediction poll failed (${res.status})`;
     throw new AtlasApiError(msg, res.status >= 400 ? res.status : 502);

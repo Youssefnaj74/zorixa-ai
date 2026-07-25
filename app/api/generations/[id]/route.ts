@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { decodeBytePlusPredictionId, fetchBytePlusVideoTask } from "@/lib/byteplus-api";
 import { fetchAtlasPrediction } from "@/lib/atlas-api";
+import { refundAtlasPredictionCharge } from "@/lib/credits-charge";
 import { extractFirstUrl, getPrediction } from "@/lib/replicate-api";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -66,6 +67,7 @@ export async function GET(
         } else if (poll.status === "failed") {
           await supabaseAdmin.from("generations").update({ status: "failed" }).eq("id", gen.id);
           gen.status = "failed";
+          await refundAtlasPredictionCharge(gen.provider_prediction_id);
         }
       } catch {
         // If polling fails transiently, return current state; client will retry.
@@ -89,6 +91,7 @@ export async function GET(
       } else if (poll.status === "failed") {
         await supabaseAdmin.from("generations").update({ status: "failed" }).eq("id", gen.id);
         gen.status = "failed";
+        await refundAtlasPredictionCharge(gen.provider_prediction_id);
       }
     } catch {
       // If polling fails transiently, return current state; client will retry.

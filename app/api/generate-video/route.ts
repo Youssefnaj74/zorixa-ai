@@ -374,6 +374,18 @@ type AtlasEnvelope = {
   message?: string;
 };
 
+/** Await refund so serverless does not freeze the RPC before credits return. */
+async function refundCreditsForFailedPrediction(predictionId: string): Promise<{
+  credits_refunded: boolean;
+  credits_balance: number | null;
+}> {
+  const result = await refundAtlasPredictionCharge(predictionId);
+  return {
+    credits_refunded: result.ok,
+    credits_balance: typeof result.balanceAfter === "number" ? result.balanceAfter : null
+  };
+}
+
 /**
  * Poll Atlas prediction status once. Use from the browser in a loop — not from a long-lived POST
  * (Vercel/serverless timeouts would kill the request while Atlas still runs).
@@ -405,34 +417,45 @@ export async function GET(request: Request) {
       const statusNorm = poll.status.toLowerCase();
       const terminalSuccess = isAtlasVideoTerminalSuccessStatus(poll.status);
 
-      if (statusNorm === "failed") {
+      let refundMeta: { credits_refunded: boolean; credits_balance: number | null } | null =
+        null;
+      if (statusNorm === "failed" || (terminalSuccess && !poll.outputUrl)) {
         console.error("[generate-video GET] BytePlus task failed", {
           predictionId,
           bytePlusError: poll.error,
-          generateAudio: pollGenerateAudio
+          generateAudio: pollGenerateAudio,
+          terminalSuccessNoUrl: terminalSuccess && !poll.outputUrl
         });
         void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
-        void refundAtlasPredictionCharge(predictionId);
+        refundMeta = await refundCreditsForFailedPrediction(predictionId);
       } else if (terminalSuccess && poll.outputUrl) {
         void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
       }
 
+      const failed = statusNorm === "failed" || (terminalSuccess && !poll.outputUrl);
       return NextResponse.json({
-        status: poll.status,
-        video_url: terminalSuccess ? poll.outputUrl : null,
+        status: failed ? "failed" : poll.status,
+        video_url: terminalSuccess && poll.outputUrl ? poll.outputUrl : null,
         outputs: null,
         output: null,
-        error:
-          statusNorm === "failed"
-            ? formatAtlasVideoFailureForUi(poll.error, {
+        error: failed
+          ? formatAtlasVideoFailureForUi(
+              poll.error ??
+                (terminalSuccess && !poll.outputUrl
+                  ? "Generation finished but no video URL was returned."
+                  : null),
+              {
                 generateAudio: pollGenerateAudio,
                 hostIsProduction: process.env.VERCEL_ENV === "production",
                 action: pollAction
-              })
-            : null,
-        atlas_error: statusNorm === "failed" ? poll.error : null,
+              }
+            )
+          : null,
+        atlas_error: failed ? poll.error : null,
         prediction_id: predictionId,
-        poll_interval_ms: CLIENT_POLL_HINT_MS
+        poll_interval_ms: CLIENT_POLL_HINT_MS,
+        credits_refunded: refundMeta?.credits_refunded ?? false,
+        credits_balance: refundMeta?.credits_balance ?? null
       });
     } catch (e) {
       const msg =
@@ -447,13 +470,15 @@ export async function GET(request: Request) {
 
       console.error("[generate-video GET] BytePlus poll error", { predictionId, msg });
 
+      // Transient gateway/HTML errors — keep client polling; do not mark failed or refund.
       return NextResponse.json({
-        status: "failed",
+        status: "processing",
         video_url: null,
         outputs: null,
         output: null,
-        error: msg,
-        atlas_error: msg,
+        error: null,
+        atlas_error: null,
+        poll_warning: msg,
         prediction_id: predictionId,
         poll_interval_ms: CLIENT_POLL_HINT_MS
       });
@@ -467,34 +492,45 @@ export async function GET(request: Request) {
       const statusNorm = poll.status.toLowerCase();
       const terminalSuccess = isAtlasVideoTerminalSuccessStatus(poll.status);
 
-      if (statusNorm === "failed") {
+      let refundMeta: { credits_refunded: boolean; credits_balance: number | null } | null =
+        null;
+      if (statusNorm === "failed" || (terminalSuccess && !poll.outputUrl)) {
         console.error("[generate-video GET] MiniMax Hailuo task failed", {
           predictionId,
           minimaxError: poll.error,
-          rawStatus: poll.rawStatus
+          rawStatus: poll.rawStatus,
+          terminalSuccessNoUrl: terminalSuccess && !poll.outputUrl
         });
         void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
-        void refundAtlasPredictionCharge(predictionId);
+        refundMeta = await refundCreditsForFailedPrediction(predictionId);
       } else if (terminalSuccess && poll.outputUrl) {
         void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
       }
 
+      const failed = statusNorm === "failed" || (terminalSuccess && !poll.outputUrl);
       return NextResponse.json({
-        status: poll.status,
-        video_url: terminalSuccess ? poll.outputUrl : null,
+        status: failed ? "failed" : poll.status,
+        video_url: terminalSuccess && poll.outputUrl ? poll.outputUrl : null,
         outputs: null,
         output: null,
-        error:
-          statusNorm === "failed"
-            ? formatAtlasVideoFailureForUi(poll.error, {
+        error: failed
+          ? formatAtlasVideoFailureForUi(
+              poll.error ??
+                (terminalSuccess && !poll.outputUrl
+                  ? "Generation finished but no video URL was returned."
+                  : null),
+              {
                 generateAudio: pollGenerateAudio,
                 hostIsProduction: process.env.VERCEL_ENV === "production",
                 action: pollAction
-              })
-            : null,
-        atlas_error: statusNorm === "failed" ? poll.error : null,
+              }
+            )
+          : null,
+        atlas_error: failed ? poll.error : null,
         prediction_id: predictionId,
-        poll_interval_ms: CLIENT_POLL_HINT_MS
+        poll_interval_ms: CLIENT_POLL_HINT_MS,
+        credits_refunded: refundMeta?.credits_refunded ?? false,
+        credits_balance: refundMeta?.credits_balance ?? null
       });
     } catch (e) {
       const msg =
@@ -510,12 +546,13 @@ export async function GET(request: Request) {
       console.error("[generate-video GET] MiniMax poll error", { predictionId, msg });
 
       return NextResponse.json({
-        status: "failed",
+        status: "processing",
         video_url: null,
         outputs: null,
         output: null,
-        error: msg,
-        atlas_error: msg,
+        error: null,
+        atlas_error: null,
+        poll_warning: msg,
         prediction_id: predictionId,
         poll_interval_ms: CLIENT_POLL_HINT_MS
       });
@@ -527,34 +564,44 @@ export async function GET(request: Request) {
     const statusNorm = poll.status.toLowerCase();
     const terminalSuccess = isAtlasVideoTerminalSuccessStatus(poll.status);
 
-    if (statusNorm === "failed") {
+    let refundMeta: { credits_refunded: boolean; credits_balance: number | null } | null = null;
+    if (statusNorm === "failed" || (terminalSuccess && !poll.outputUrl)) {
       console.error("[generate-video GET] Atlas task failed", {
         predictionId,
         atlasError: poll.error,
-        generateAudio: pollGenerateAudio
+        generateAudio: pollGenerateAudio,
+        terminalSuccessNoUrl: terminalSuccess && !poll.outputUrl
       });
       void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
-      void refundAtlasPredictionCharge(predictionId);
+      refundMeta = await refundCreditsForFailedPrediction(predictionId);
     } else if (terminalSuccess && poll.outputUrl) {
       void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
     }
 
+    const failed = statusNorm === "failed" || (terminalSuccess && !poll.outputUrl);
     return NextResponse.json({
-      status: poll.status,
-      video_url: terminalSuccess ? poll.outputUrl : null,
+      status: failed ? "failed" : poll.status,
+      video_url: terminalSuccess && poll.outputUrl ? poll.outputUrl : null,
       outputs: null,
       output: null,
-      error:
-        statusNorm === "failed"
-          ? formatAtlasVideoFailureForUi(poll.error, {
+      error: failed
+        ? formatAtlasVideoFailureForUi(
+            poll.error ??
+              (terminalSuccess && !poll.outputUrl
+                ? "Generation finished but no video URL was returned."
+                : null),
+            {
               generateAudio: pollGenerateAudio,
               hostIsProduction: process.env.VERCEL_ENV === "production",
               action: pollAction
-            })
-          : null,
-      atlas_error: statusNorm === "failed" ? poll.error : null,
+            }
+          )
+        : null,
+      atlas_error: failed ? poll.error : null,
       prediction_id: predictionId,
-      poll_interval_ms: CLIENT_POLL_HINT_MS
+      poll_interval_ms: CLIENT_POLL_HINT_MS,
+      credits_refunded: refundMeta?.credits_refunded ?? false,
+      credits_balance: refundMeta?.credits_balance ?? null
     });
   } catch (e) {
     const msg =
@@ -573,14 +620,15 @@ export async function GET(request: Request) {
 
     console.error("[generate-video GET] poll error", { predictionId, msg });
 
-    /** 200 + failed — UI shows Atlas error without red 500 spam in console. */
+    /** Transient provider/gateway errors — keep polling; never treat as terminal failed. */
     return NextResponse.json({
-      status: "failed",
+      status: "processing",
       video_url: null,
       outputs: null,
       output: null,
-      error: msg,
-      atlas_error: msg,
+      error: null,
+      atlas_error: null,
+      poll_warning: msg,
       prediction_id: predictionId,
       poll_interval_ms: CLIENT_POLL_HINT_MS
     });
@@ -661,7 +709,20 @@ async function handleVideoUpscalePost(
     body: JSON.stringify(atlasBody)
   });
 
-  const createJson = (await createRes.json()) as AtlasEnvelope;
+  const createRaw = await createRes.text();
+  let createJson: AtlasEnvelope;
+  try {
+    createJson = JSON.parse(createRaw) as AtlasEnvelope;
+  } catch {
+    await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
+    return NextResponse.json(
+      {
+        error: `Atlas video upscaler returned non-JSON (${createRes.status}). Credits were not kept.`
+      },
+      { status: 502 }
+    );
+  }
+
   if (!createRes.ok) {
     await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
     return NextResponse.json(
@@ -1998,7 +2059,28 @@ async function handleGenerateVideoPost(request: Request) {
     body: JSON.stringify(atlasBody)
   });
 
-  const createJson = (await createRes.json()) as AtlasEnvelope;
+  const createRaw = await createRes.text();
+  let createJson: AtlasEnvelope;
+  try {
+    createJson = JSON.parse(createRaw) as AtlasEnvelope;
+  } catch {
+    await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
+    const looksHtml = /^\s*</.test(createRaw) || /<!DOCTYPE/i.test(createRaw);
+    console.error("[generate-video POST] Atlas generateVideo non-JSON", {
+      httpStatus: createRes.status,
+      looksHtml,
+      preview: createRaw.slice(0, 180)
+    });
+    return NextResponse.json(
+      {
+        error: looksHtml
+          ? `Atlas temporarily returned an HTML error page instead of JSON (${createRes.status}). Credits were not kept — try again.`
+          : `Atlas generateVideo returned non-JSON (${createRes.status})`
+      },
+      { status: 502 }
+    );
+  }
+
   if (!createRes.ok) {
     await abortAtlasCharge({ userId: actor.userId, session: chargeBegin.session });
     console.error("[generate-video POST] Atlas generateVideo HTTP error", {
@@ -2070,8 +2152,15 @@ async function handleGenerateVideoPost(request: Request) {
         credits_balance: balanceAfter
       });
     }
+    void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
+    const refundMeta = await refundCreditsForFailedPrediction(predictionId);
     return NextResponse.json(
-      { error: "Atlas returned completed without an output URL" },
+      {
+        error: "Atlas returned completed without an output URL",
+        prediction_id: predictionId,
+        credits_refunded: refundMeta.credits_refunded,
+        credits_balance: refundMeta.credits_balance
+      },
       { status: 502 }
     );
   }
@@ -2093,9 +2182,16 @@ async function handleGenerateVideoPost(request: Request) {
         action === "image" ? "image" : action === "reference" ? "reference" : "text"
     });
     void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
-    void refundAtlasPredictionCharge(predictionId);
+    const refundMeta = await refundCreditsForFailedPrediction(predictionId);
     return NextResponse.json(
-      { error: err, atlas_error: atlasRaw, atlas_model: model, prediction_id: predictionId },
+      {
+        error: err,
+        atlas_error: atlasRaw,
+        atlas_model: model,
+        prediction_id: predictionId,
+        credits_refunded: refundMeta.credits_refunded,
+        credits_balance: refundMeta.credits_balance
+      },
       { status: 502 }
     );
   }

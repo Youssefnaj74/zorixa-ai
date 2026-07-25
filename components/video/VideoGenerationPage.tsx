@@ -179,6 +179,7 @@ import {
   formatAtlasVideoFailureForUi,
   isAtlasRealPersonImageError
 } from "@/lib/atlas-video-failure-message";
+import { isTransientProviderPollError } from "@/lib/transient-provider-poll-error";
 import { parseVideoResolutionFromQuery, resolveVideoStudioFromQuery } from "@/lib/studio-catalog-link";
 import {
   appendSeedanceReferenceTokenToPrompt,
@@ -2260,8 +2261,9 @@ export function VideoGenerationPage() {
           predictionId?: string;
           poll_interval_ms?: number;
           credits_spent?: number;
-          credits_balance?: number;
+          credits_balance?: number | null;
           credits_required?: number;
+          credits_refunded?: boolean;
           error?: string;
           atlas_request?: {
             width?: number;
@@ -2274,6 +2276,7 @@ export function VideoGenerationPage() {
           data = (await res.json()) as typeof data;
         } catch {
           setGenerateError(`Generation failed (${res.status})`);
+          void refreshCredits();
           return;
         }
 
@@ -2297,13 +2300,22 @@ export function VideoGenerationPage() {
             setGenerateError(insufficientCreditsMessage(data));
             return;
           }
-          setGenerateError(
+          if (typeof data.credits_balance === "number") {
+            applyBalance(data.credits_balance);
+          } else {
+            void refreshCredits();
+          }
+          const baseMsg =
             formatAtlasVideoFailureForUi(data.error, {
               generateAudio: wantGenerateAudio,
               hostIsProduction:
                 typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
               action: atlasPollActionForTab(generationTab)
-            }) || `Generation failed (${res.status})`
+            }) || `Generation failed (${res.status})`;
+          setGenerateError(
+            data.credits_refunded === true
+              ? `${baseMsg}\n\nCredits for this failed run were returned to your balance.`
+              : baseMsg
           );
           return;
         }
@@ -2371,14 +2383,24 @@ export function VideoGenerationPage() {
               atlas_error?: string | null;
               prediction_id?: string;
               poll_interval_ms?: number;
+              credits_balance?: number | null;
+              credits_refunded?: boolean;
             } = {};
             try {
               pd = (await pr.json()) as typeof pd;
             } catch {
-              setGenerateError(`Status check failed (${pr.status})`);
-              return;
+              // Vercel/CDN sometimes returns HTML — keep polling.
+              continue;
             }
             if (!pr.ok) {
+              if (pr.status === 401) {
+                setAuthRequiredOpen(true);
+                setGenerateError(GENERATION_AUTH_MESSAGE);
+                return;
+              }
+              if (pr.status >= 500 || pr.status === 429) {
+                continue;
+              }
               setGenerateError(pd.error ?? `Status check failed (${pr.status})`);
               return;
             }
@@ -2403,37 +2425,104 @@ export function VideoGenerationPage() {
             }
             if (statusNorm === "failed") {
               const rawErr = pd.atlas_error ?? pd.error ?? null;
+              // Legacy/misclassified gateway HTML errors — keep waiting for a real terminal status.
+              if (isTransientProviderPollError(rawErr)) {
+                continue;
+              }
               const pollId = pd.prediction_id ?? predictionId;
               if (process.env.NODE_ENV === "development") {
                 console.warn("[VideoGenerationPage] Atlas poll failed", {
                   status: pd.status,
                   atlas_error: rawErr,
-                  prediction_id: pollId
+                  prediction_id: pollId,
+                  credits_refunded: pd.credits_refunded
                 });
               }
-              // Server may refund on failed polls — keep navbar balance live.
-              void refreshCredits();
+              if (typeof pd.credits_balance === "number") {
+                applyBalance(pd.credits_balance);
+              } else {
+                void refreshCredits();
+              }
               const msg = formatAtlasVideoFailureForUi(rawErr, {
                 generateAudio: wantGenerateAudio,
                 hostIsProduction:
                   typeof window !== "undefined" && !window.location.hostname.includes("localhost"),
                 action: atlasPollActionForTab(generationTab)
               });
+              const refundNote =
+                pd.credits_refunded === true
+                  ? "\n\nCredits for this failed run were returned to your balance."
+                  : "";
               setGenerateError(
                 pollId && !isAtlasRealPersonImageError(rawErr)
-                  ? `${msg}\n\n(prediction: ${pollId.slice(0, 12)}…)`
-                  : msg
+                  ? `${msg}${refundNote}\n\n(prediction: ${pollId.slice(0, 12)}…)`
+                  : `${msg}${refundNote}`
               );
               return;
             }
             if (isAtlasVideoTerminalSuccessStatus(pd.status) && !polledUrl) {
-              setGenerateError("Generation finished but no video URL was returned.");
+              if (typeof pd.credits_balance === "number") {
+                applyBalance(pd.credits_balance);
+              } else {
+                void refreshCredits();
+              }
+              setGenerateError(
+                pd.credits_refunded === true
+                  ? "Generation finished but no video URL was returned. Credits were refunded."
+                  : "Generation finished but no video URL was returned."
+              );
               return;
             }
           }
           if (!finalVideoUrl) {
-            setGenerateError("Video generation timed out. Check your connection and try again.");
-            return;
+            // Final status check — refunds if Atlas already marked the job failed.
+            try {
+              const pollQs = new URLSearchParams({ predictionId });
+              if (wantGenerateAudio) pollQs.set("generate_audio", "1");
+              const pollAction = atlasPollActionForTab(generationTab);
+              if (pollAction !== "text") pollQs.set("action", pollAction);
+              const pr = await fetch(`/api/generate-video?${pollQs.toString()}`, {
+                cache: "no-store",
+                signal: abortSignal
+              });
+              const pd = (await pr.json().catch(() => ({}))) as {
+                status?: string;
+                credits_balance?: number | null;
+                credits_refunded?: boolean;
+                video_url?: string | null;
+                error?: string | null;
+              };
+              const lateUrl = pickVideoUrlFromPollBody(pd as Record<string, unknown>);
+              if (lateUrl && isAtlasVideoTerminalSuccessStatus(pd.status)) {
+                finalVideoUrl = normalizeAtlasVideoUrlForPlayback(lateUrl);
+                setVideoDownloadUrl(finalVideoUrl);
+                setVideoUrl(toBrowserVideoSrc(finalVideoUrl));
+              } else {
+                if (typeof pd.credits_balance === "number") {
+                  applyBalance(pd.credits_balance);
+                } else {
+                  void refreshCredits();
+                }
+                const timedOutFailed = (pd.status ?? "").toLowerCase() === "failed";
+                setGenerateError(
+                  timedOutFailed
+                    ? `${pd.error ?? "Video generation failed."}${
+                        pd.credits_refunded
+                          ? "\n\nCredits for this failed run were returned to your balance."
+                          : ""
+                      }`
+                    : "Video generation timed out. Check History in a few minutes — if it failed, credits are refunded automatically."
+                );
+                if (!finalVideoUrl) return;
+              }
+            } catch {
+              void refreshCredits();
+              setGenerateError(
+                "Video generation timed out. Check History in a few minutes — if it failed, credits are refunded automatically."
+              );
+              return;
+            }
+            if (!finalVideoUrl) return;
           }
         } else {
           setGenerateError("No video URL or job id was returned.");
@@ -2880,7 +2969,13 @@ export function VideoGenerationPage() {
         try {
           pd = (await pr.json()) as Record<string, unknown>;
         } catch {
-          setGenerateError(`Upscale status check failed (${pr.status})`);
+          continue;
+        }
+        if (!pr.ok) {
+          if (pr.status >= 500 || pr.status === 429) continue;
+          setGenerateError(
+            typeof pd.error === "string" ? pd.error : `Upscale status check failed (${pr.status})`
+          );
           return;
         }
         const polledUrl = pickVideoUrlFromPollBody(pd);
@@ -2896,8 +2991,12 @@ export function VideoGenerationPage() {
         }
         const status = pollStatus.toLowerCase();
         if (status === "failed") {
+          const rawErr = String(pd.error ?? pd.atlas_error ?? "");
+          if (isTransientProviderPollError(rawErr)) {
+            continue;
+          }
           setGenerateError(
-            formatAtlasVideoFailureForUi(String(pd.error ?? pd.atlas_error ?? ""), {
+            formatAtlasVideoFailureForUi(rawErr, {
               generateAudio: false,
               hostIsProduction:
                 typeof window !== "undefined" && !window.location.hostname.includes("localhost")

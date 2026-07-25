@@ -68,6 +68,16 @@ function atlasVideoFailureHint(message: string): string | null {
     return null;
   }
 
+  if (
+    lower.includes("unexpected token") ||
+    lower.includes("<!doctype") ||
+    lower.includes("not valid json") ||
+    lower.includes("html error page") ||
+    lower.includes("non-json")
+  ) {
+    return "Provider briefly returned an error page instead of status JSON. Wait a moment and Generate again — your credits are refunded if the job truly failed.";
+  }
+
   if (lower.includes("nsfw") || lower.includes("safety") || lower.includes("moderation")) {
     return "Atlas content filter rejected this input. Try a different image or prompt.";
   }

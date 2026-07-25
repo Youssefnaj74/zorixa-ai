@@ -441,7 +441,14 @@ export function creditsChargedForVideoModel(
   opts: VideoPricingOptions = {}
 ): number {
   const usd = atlasVideoUsdForOptions(composerModelId, opts);
-  const margin = videoMarginForModel(composerModelId, usd);
+  // Pick margin from the silent base cost. Soundtrack multiplies USD (~1.15×) and can
+  // push a run across the $1 "expensive" margin cliff (65% → 50%), which previously
+  // made Kling 3 Pro I2V with audio cheaper in credits than without — invert that.
+  const marginBasisUsd =
+    opts.generateAudio === true
+      ? atlasVideoUsdForOptions(composerModelId, { ...opts, generateAudio: false })
+      : usd;
+  const margin = videoMarginForModel(composerModelId, marginBasisUsd);
   return atlasUsdToCreditsForGrossMargin(usd * ZORIXA_FAILURE_BUFFER_MULTIPLIER, margin);
 }
 
