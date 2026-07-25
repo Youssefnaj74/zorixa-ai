@@ -2261,7 +2261,7 @@ export function VideoGenerationPage() {
           predictionId?: string;
           poll_interval_ms?: number;
           credits_spent?: number;
-          credits_balance?: number | null;
+          credits_balance?: number;
           credits_required?: number;
           credits_refunded?: boolean;
           error?: string;
@@ -2383,7 +2383,7 @@ export function VideoGenerationPage() {
               atlas_error?: string | null;
               prediction_id?: string;
               poll_interval_ms?: number;
-              credits_balance?: number | null;
+              credits_balance?: number;
               credits_refunded?: boolean;
             } = {};
             try {
@@ -2487,7 +2487,7 @@ export function VideoGenerationPage() {
               });
               const pd = (await pr.json().catch(() => ({}))) as {
                 status?: string;
-                credits_balance?: number | null;
+                credits_balance?: number;
                 credits_refunded?: boolean;
                 video_url?: string | null;
                 error?: string | null;
