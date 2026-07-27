@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
 import { requestIp } from "@/lib/content-moderation";
-import { env } from "@/lib/env";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
 import { rateLimitResponse } from "@/lib/rate-limit";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isTurnstileConfigured, verifyTurnstileToken } from "@/lib/turnstile";
 
 type Body = {
@@ -56,15 +55,9 @@ export async function POST(request: Request) {
     }
   }
 
-  const url = env.supabase.url;
-  const anon = env.supabase.anonKey;
-  if (!url || !anon) {
-    return NextResponse.json({ error: "Auth is not configured." }, { status: 503 });
-  }
-
-  const supabase = createClient(url, anon, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
+  // SSR client writes auth cookies onto the response so the browser is logged in
+  // immediately when Supabase returns a session (email confirm disabled).
+  const supabase = await createSupabaseServerClient();
 
   const emailRedirectTo = `${getPublicSiteUrl()}/auth/callback?signup=1&redirect=${encodeURIComponent("/dashboard")}`;
 
@@ -89,6 +82,9 @@ export async function POST(request: Request) {
     userId,
     /** When false, Supabase requires email confirmation before a session exists. */
     session: hasSession,
-    needsEmailConfirmation: !hasSession
+    needsEmailConfirmation: !hasSession,
+    /** Browser must call setSession — SSR cookies alone are not always applied on JSON responses. */
+    access_token: data.session?.access_token ?? null,
+    refresh_token: data.session?.refresh_token ?? null
   });
 }

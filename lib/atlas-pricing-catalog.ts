@@ -501,7 +501,7 @@ export type StarterPassOffer = {
 export const STARTER_PASS: StarterPassOffer = {
   id: "starter-pass",
   name: "Starter Pass",
-  priceUsd: 0.99,
+  priceUsd: 1.1,
   credits: 250,
   tagline: "For new users only · No auto-renewal",
   highlights: [

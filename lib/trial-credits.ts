@@ -1,5 +1,5 @@
 /**
- * Free trial credits are disabled — replaced by the one-time Starter Pass ($0.99).
+ * Free trial credits are disabled — replaced by the one-time Starter Pass ($1.10).
  * Kept as a no-op so older call sites / RPC remain harmless.
  */
 

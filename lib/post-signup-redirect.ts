@@ -4,6 +4,23 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export const PRICING_WELCOME_PATH = "/pricing?welcome=1";
 
+/** After login, land on pricing and immediately start Starter Pass checkout. */
+export const STARTER_PASS_CHECKOUT_PATH = "/pricing?welcome=1&checkout=starter-pass";
+
+/** Apply tokens from POST /api/auth/signup so the browser is actually logged in. */
+export async function establishBrowserSessionFromSignup(tokens: {
+  access_token?: string | null;
+  refresh_token?: string | null;
+}): Promise<boolean> {
+  const access_token = tokens.access_token?.trim();
+  const refresh_token = tokens.refresh_token?.trim();
+  if (!access_token || !refresh_token) return false;
+
+  const supabase = createSupabaseBrowserClient();
+  const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+  return !error;
+}
+
 /** After signup, send users with no credits to pricing welcome. */
 export async function resolvePostSignupDestination(): Promise<string> {
   try {

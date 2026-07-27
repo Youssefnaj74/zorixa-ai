@@ -4,7 +4,7 @@ alter table public.users_profiles
   add column if not exists starter_pass_purchased_at timestamptz;
 
 comment on column public.users_profiles.starter_pass_purchased_at is
-  'Set when the one-time $0.99 Starter Pass was purchased (new users only).';
+  'Set when the one-time $1.10 Starter Pass was purchased (new users only).';
 
 create or replace function public.protect_billing_columns()
 returns trigger

@@ -178,7 +178,7 @@ export function LandingPage() {
               </Link>
             </motion.div>
             <motion.p variants={heroReveal} className="mt-3 text-sm text-white/40">
-              New users: claim the $0.99 Starter Pass for 250 credits — or subscribe on Pricing.
+              New users: claim the $1.10 Starter Pass for 250 credits — or subscribe on Pricing.
             </motion.p>
 
             <motion.div variants={heroReveal} className="mt-8">

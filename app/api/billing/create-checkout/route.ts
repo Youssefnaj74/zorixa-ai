@@ -132,7 +132,9 @@ export async function POST(request: Request) {
       environment: dodoPaymentsEnvironment()
     });
 
-    const session = await client.checkoutSessions.create({
+    // Tax is location-based (Dodo MoR). We intentionally do not set billing_address,
+    // billing_currency, or amount overrides — those would be the only ways to alter tax.
+    const checkoutPayload = {
       product_cart: [{ product_id: productId, quantity: 1 }],
       customer: {
         email: customerEmail,
@@ -147,6 +149,24 @@ export async function POST(request: Request) {
       return_url: getDodoReturnUrl(),
       minimal_address: true,
       feature_flags: checkoutFeatureFlags()
+    };
+
+    console.info("[billing/create-checkout] payload", {
+      environment: dodoPaymentsEnvironment(),
+      pack_id: offer.id,
+      product_id: productId,
+      minimal_address: checkoutPayload.minimal_address,
+      feature_flags: checkoutPayload.feature_flags,
+      metadata: checkoutPayload.metadata,
+      return_url: checkoutPayload.return_url
+    });
+
+    const session = await client.checkoutSessions.create(checkoutPayload);
+
+    console.info("[billing/create-checkout] response", {
+      session_id: session.session_id,
+      checkout_url: session.checkout_url,
+      response_keys: Object.keys(session)
     });
 
     return NextResponse.json({ checkout_url: session.checkout_url });

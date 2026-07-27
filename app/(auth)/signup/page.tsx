@@ -8,7 +8,7 @@ import { TurnstileField } from "@/components/auth/TurnstileField";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
-import { completeSignupNavigation } from "@/lib/post-signup-redirect";
+import { completeSignupNavigation, establishBrowserSessionFromSignup } from "@/lib/post-signup-redirect";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
 import { turnstileSiteKey } from "@/lib/turnstile-public";
 
@@ -69,6 +69,8 @@ export default function SignupPage() {
         error?: string;
         session?: boolean;
         needsEmailConfirmation?: boolean;
+        access_token?: string | null;
+        refresh_token?: string | null;
       };
 
       if (!res.ok) {
@@ -78,6 +80,12 @@ export default function SignupPage() {
 
       if (data.needsEmailConfirmation || !data.session) {
         setConfirmEmailSent(true);
+        return;
+      }
+
+      const sessionOk = await establishBrowserSessionFromSignup(data);
+      if (!sessionOk) {
+        setError("Account created, but sign-in failed. Please log in to continue.");
         return;
       }
 
@@ -98,7 +106,7 @@ export default function SignupPage() {
 
         <h1 className="mt-8 text-2xl font-semibold tracking-tight">Create your account</h1>
         <p className="mt-2 text-sm text-zinc-300">
-          Create an account, then claim the $0.99 Starter Pass (250 credits) or subscribe on Pricing.
+          Create an account, then claim the $1.10 Starter Pass (250 credits) or subscribe on Pricing.
         </p>
 
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6">

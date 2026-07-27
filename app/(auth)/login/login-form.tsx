@@ -11,7 +11,7 @@ import { ZorixaLogo } from "@/components/layout/ZorixaLogo";
 import loginShowcase from "@/data/login-showcase.json";
 import { dashboardFeatureAlt } from "@/lib/image-alt-text";
 import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
-import { completeSignupNavigation } from "@/lib/post-signup-redirect";
+import { completeSignupNavigation, establishBrowserSessionFromSignup } from "@/lib/post-signup-redirect";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { turnstileSiteKey } from "@/lib/turnstile-public";
@@ -171,6 +171,8 @@ export function LoginForm() {
         error?: string;
         session?: boolean;
         needsEmailConfirmation?: boolean;
+        access_token?: string | null;
+        refresh_token?: string | null;
       };
 
       if (!res.ok) {
@@ -180,6 +182,12 @@ export function LoginForm() {
 
       if (data.needsEmailConfirmation || !data.session) {
         setConfirmEmailSent(true);
+        return;
+      }
+
+      const sessionOk = await establishBrowserSessionFromSignup(data);
+      if (!sessionOk) {
+        setError("Account created, but sign-in failed. Please log in to continue.");
         return;
       }
 
@@ -241,7 +249,7 @@ export function LoginForm() {
             </h1>
             <p className="mt-2 text-sm text-white/45">
               {isSignup
-                ? "Create an account, then claim the $0.99 Starter Pass or subscribe on Pricing."
+                ? "Create an account, then claim the $1.10 Starter Pass or subscribe on Pricing."
                 : "Sign in to your studio — credits, tools, and generations."}
             </p>
 

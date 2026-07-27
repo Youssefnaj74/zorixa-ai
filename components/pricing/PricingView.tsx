@@ -20,11 +20,12 @@ import {
   PRICING_CATALOG_SECTIONS,
   PRICING_CREDIT_VARIANCE_NOTE
 } from "@/lib/atlas-pricing-catalog";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { DodoPackId } from "@/lib/dodo-payments/config";
 import { startDodoCheckout } from "@/lib/dodo-payments/start-checkout";
 import { formatInteger } from "@/lib/format-number";
 import { usePricingViewed } from "@/lib/hooks/use-pricing-viewed";
+import { STARTER_PASS_CHECKOUT_PATH } from "@/lib/post-signup-redirect";
+import { getBrowserUserSafe } from "@/lib/supabase/auth-client";
 import { cn } from "@/lib/utils";
 
 const STUDIO_WORKFLOWS = [
@@ -73,21 +74,24 @@ function packCreditValueLabel(
 export function PricingView() {
   const searchParams = useSearchParams();
   const showWelcome = searchParams.get("welcome") === "1";
+  const autoCheckoutStarterPass = searchParams.get("checkout") === STARTER_PASS.id;
   usePricingViewed(showWelcome ? "signup_welcome" : "pricing_page");
 
   const [openSection, setOpenSection] = useState<string>("image");
   const [userId, setUserId] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [starterPassAvailable, setStarterPassAvailable] = useState(false);
   const [eligibilityReady, setEligibilityReady] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
   const [giftDismissed, setGiftDismissed] = useState(false);
   const [checkoutBusy, setCheckoutBusy] = useState<DodoPackId | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [autoCheckoutAttempted, setAutoCheckoutAttempted] = useState(false);
 
   useEffect(() => {
-    void createSupabaseBrowserClient()
-      .auth.getUser()
-      .then(({ data: { user } }) => setUserId(user?.id ?? null));
+    void getBrowserUserSafe()
+      .then((user) => setUserId(user?.id ?? null))
+      .finally(() => setAuthReady(true));
   }, []);
 
   useEffect(() => {
@@ -117,7 +121,8 @@ export function PricingView() {
             ? body.starter_pass_available
             : !body.is_premium && !body.starter_pass_purchased_at;
         setStarterPassAvailable(available);
-        if (available && !dismissed) {
+        // Deep-link checkout skips the gift modal and opens Dodo directly.
+        if (available && !dismissed && !autoCheckoutStarterPass) {
           setGiftOpen(true);
         }
       })
@@ -125,11 +130,13 @@ export function PricingView() {
         setStarterPassAvailable(false);
       })
       .finally(() => setEligibilityReady(true));
-  }, [userId]);
+  }, [userId, autoCheckoutStarterPass]);
 
   async function onCheckout(packId: DodoPackId, billing: "monthly" | "one_time") {
     if (!userId) {
-      window.location.href = "/login?redirect=/pricing";
+      const redirect =
+        packId === STARTER_PASS.id ? STARTER_PASS_CHECKOUT_PATH : "/pricing";
+      window.location.href = `/login?redirect=${encodeURIComponent(redirect)}`;
       return;
     }
     setCheckoutError(null);
@@ -141,6 +148,31 @@ export function PricingView() {
       setCheckoutBusy(null);
     }
   }
+
+  useEffect(() => {
+    if (!autoCheckoutStarterPass || autoCheckoutAttempted || !authReady) return;
+    if (!userId) {
+      window.location.href = `/login?redirect=${encodeURIComponent(STARTER_PASS_CHECKOUT_PATH)}`;
+      return;
+    }
+    if (!eligibilityReady || checkoutBusy) return;
+    if (!starterPassAvailable) {
+      setAutoCheckoutAttempted(true);
+      setCheckoutError("Starter Pass is not available on this account.");
+      return;
+    }
+    setAutoCheckoutAttempted(true);
+    void onCheckout(STARTER_PASS.id, "one_time");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- start once when eligibility is ready
+  }, [
+    autoCheckoutStarterPass,
+    autoCheckoutAttempted,
+    authReady,
+    userId,
+    eligibilityReady,
+    starterPassAvailable,
+    checkoutBusy
+  ]);
 
   function onDismissGift() {
     dismissStarterPassGift();
@@ -157,6 +189,7 @@ export function PricingView() {
       <StarterPassGiftModal
         open={Boolean(userId) && eligibilityReady && starterPassAvailable && giftOpen}
         busy={checkoutBusy === STARTER_PASS.id}
+        error={checkoutBusy === STARTER_PASS.id || giftOpen ? checkoutError : null}
         onClaim={() => void onCheckout(STARTER_PASS.id, "one_time")}
         onDismiss={onDismissGift}
       />
@@ -191,7 +224,7 @@ export function PricingView() {
               Credits &amp; model pricing
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/45">
-              New users can claim a one-time $0.99 Starter Pass, or subscribe monthly for more
+              New users can claim a one-time $1.10 Starter Pass, or subscribe monthly for more
               credits. Credits stack until you use them. Yearly billing is not available yet.
             </p>
 
@@ -248,7 +281,7 @@ export function PricingView() {
                 className="mb-2 w-full rounded-full bg-emerald-400 py-3 text-sm font-bold text-black transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {!userId
-                  ? "Sign in to subscribe"
+                  ? "Sign in to unlock"
                   : checkoutBusy === STARTER_PASS.id
                     ? "Opening checkout…"
                     : !starterPassAvailable

@@ -55,11 +55,13 @@ const CONFETTI = [
 export function StarterPassGiftModal({
   open,
   busy,
+  error,
   onClaim,
   onDismiss
 }: {
   open: boolean;
   busy?: boolean;
+  error?: string | null;
   onClaim: () => void;
   onDismiss: () => void;
 }) {
@@ -174,6 +176,12 @@ export function StarterPassGiftModal({
             : `Unlock Starter Pass — $${STARTER_PASS.priceUsd.toFixed(2)}`}
           {!busy ? <ArrowRight className="size-4" aria-hidden /> : null}
         </button>
+
+        {error ? (
+          <p className="mt-2 text-center text-sm leading-relaxed text-red-300" role="alert">
+            {error}
+          </p>
+        ) : null}
 
         <p className="mt-2 text-center text-[11px] leading-relaxed text-white/45">
           One-time purchase · New users only · No subscription

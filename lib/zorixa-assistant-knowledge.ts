@@ -127,7 +127,7 @@ UGC fallbacks include Hailuo 2.3 (id: hailuo-2-3).
 ## Billing notes
 - Yearly billing is not available yet — only monthly subscriptions on /pricing.
 - Paid packs and the Starter Pass set is_premium and unlock premium models (Kling, Veo, Hailuo, Seedance 2, Vidu Q3, etc.). Without a purchase, only cheaper catalog models are available.
-- There is no free credit grant. New users can buy a one-time Starter Pass for $0.99 (250 credits, no auto-renewal, new accounts only) on /pricing, or subscribe to a monthly pack (Starter/Pro/Creator/Ultra).
+- There is no free credit grant. New users can buy a one-time Starter Pass for $1.10 (250 credits, no auto-renewal, new accounts only) on /pricing, or subscribe to a monthly pack (Starter/Pro/Creator/Ultra).
 
 ## Account
 - Credits balance appears in the navbar and in the current user session when signed in.
