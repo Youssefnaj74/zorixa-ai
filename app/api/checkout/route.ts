@@ -1,31 +1,26 @@
-import { Checkout } from "@dodopayments/nextjs";
+import { NextResponse } from "next/server";
 
-import { dodoPaymentsEnvironment, getDodoApiKey, getDodoReturnUrl } from "@/lib/dodo-payments/config";
+/**
+ * Legacy unauthenticated Dodo Checkout SDK surface.
+ * Disabled: payments without user_id metadata never grant credits.
+ * Use POST /api/billing/create-checkout (authenticated) instead.
+ */
+export async function GET() {
+  return NextResponse.json(
+    {
+      error:
+        "This checkout endpoint is disabled. Sign in and use /api/billing/create-checkout."
+    },
+    { status: 410 }
+  );
+}
 
-const apiKey = getDodoApiKey();
-
-export const GET = apiKey
-  ? Checkout({
-      bearerToken: apiKey,
-      returnUrl: getDodoReturnUrl(),
-      environment: dodoPaymentsEnvironment(),
-      type: "static"
-    })
-  : async () =>
-      new Response(JSON.stringify({ error: "DODO_PAYMENTS_API_KEY is not set" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      });
-
-export const POST = apiKey
-  ? Checkout({
-      bearerToken: apiKey,
-      returnUrl: getDodoReturnUrl(),
-      environment: dodoPaymentsEnvironment(),
-      type: "session"
-    })
-  : async () =>
-      new Response(JSON.stringify({ error: "DODO_PAYMENTS_API_KEY is not set" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      });
+export async function POST() {
+  return NextResponse.json(
+    {
+      error:
+        "This checkout endpoint is disabled. Sign in and use /api/billing/create-checkout."
+    },
+    { status: 410 }
+  );
+}

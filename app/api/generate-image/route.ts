@@ -25,7 +25,8 @@ import {
   completeAtlasCharge,
   creditsForImageModel,
   insufficientCreditsResponse,
-  lookupCreditsSpentForAtlasPrediction
+  lookupCreditsSpentForAtlasPrediction,
+  userOwnsAtlasPrediction
 } from "@/lib/credits-charge";
 import { env } from "@/lib/env";
 import {
@@ -37,8 +38,10 @@ import {
   enforceMediaContentPolicy,
   requestIp
 } from "@/lib/content-moderation";
+import { rateLimitResponse } from "@/lib/rate-limit";
+import { captureException } from "@/lib/report-error";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
-import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
+import { resolveZorixaActor, unauthorizedApiResponse } from "@/lib/zorixa-mcp-auth";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
 const CLIENT_POLL_HINT_MS = 3000;
@@ -116,6 +119,19 @@ async function fetchAtlasPredictionOnce(
 }
 
 export async function GET(request: Request) {
+  const actor = await resolveZorixaActor(request);
+  if (!actor) {
+    return unauthorizedApiResponse();
+  }
+
+  const pollLimited = await rateLimitResponse({
+    key: `generate-image-poll:${actor.userId}`,
+    limit: 120,
+    windowMs: 60_000,
+    message: "Too many status checks. Wait a moment and try again."
+  });
+  if (pollLimited) return pollLimited;
+
   const apiKey = env.atlasCloudApiKey;
   if (!apiKey) {
     return NextResponse.json(
@@ -138,6 +154,11 @@ export async function GET(request: Request) {
       { error: "Missing predictionId or prediction_id query parameter" },
       { status: 400 }
     );
+  }
+
+  const owns = await userOwnsAtlasPrediction(actor.userId, predictionId);
+  if (!owns) {
+    return NextResponse.json({ error: "Prediction not found" }, { status: 404 });
   }
 
   const pollJson = await fetchAtlasPredictionOnce(predictionId, apiKey);
@@ -167,24 +188,21 @@ export async function GET(request: Request) {
         : [];
 
   if (urlsToLog.length > 0) {
-    const actor = await resolveZorixaActor(request);
-    if (actor) {
-      const creditsSpent = await lookupCreditsSpentForAtlasPrediction(actor.userId, predictionId);
-      const creditsPerImage =
-        creditsSpent > 0 && urlsToLog.length > 1
-          ? Math.max(1, Math.round(creditsSpent / urlsToLog.length))
-          : creditsSpent;
-      for (const outputUrl of urlsToLog) {
-        void logAtlasImageGenerationIfNew({
-          userId: actor.userId,
-          outputUrl,
-          predictionId,
-          composerModelId,
-          prompt: pollPrompt,
-          requireTerminalStatus: status,
-          creditsSpent: creditsPerImage
-        });
-      }
+    const creditsSpent = await lookupCreditsSpentForAtlasPrediction(actor.userId, predictionId);
+    const creditsPerImage =
+      creditsSpent > 0 && urlsToLog.length > 1
+        ? Math.max(1, Math.round(creditsSpent / urlsToLog.length))
+        : creditsSpent;
+    for (const outputUrl of urlsToLog) {
+      void logAtlasImageGenerationIfNew({
+        userId: actor.userId,
+        outputUrl,
+        predictionId,
+        composerModelId,
+        prompt: pollPrompt,
+        requireTerminalStatus: status,
+        creditsSpent: creditsPerImage
+      });
     }
   }
 
@@ -201,6 +219,16 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const actorForLimit = await resolveZorixaActor(request);
+    const ip = requestIp(request);
+    const limited = await rateLimitResponse({
+      key: `generate-image:${actorForLimit?.userId ?? ip}`,
+      limit: 24,
+      windowMs: 60_000,
+      message: "Too many image generations. Please wait a minute and try again."
+    });
+    if (limited) return limited;
+
     let body: ClientBody;
     try {
       body = (await request.json()) as ClientBody;
@@ -215,6 +243,7 @@ export async function POST(request: Request) {
     return await handleGenerateImagePost(request, body);
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Image generation failed";
+    captureException(e, { route: "/api/generate-image" });
     if (process.env.NODE_ENV === "development") {
       console.error("[generate-image] unhandled", e);
     }

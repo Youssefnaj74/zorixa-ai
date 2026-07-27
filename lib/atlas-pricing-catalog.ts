@@ -502,8 +502,8 @@ export const CREDIT_PACKS: CreditPack[] = [
     credits: 1000,
     tagline: "Perfect for trying ZorixaAI",
     highlights: [
-      "All image models (Flux, GPT Image 2, Seedream…)",
-      "Video: Seedance, Wan, Hailuo, HappyHorse",
+      "Access to all studio models (image & video)",
+      "Enough credits to try UGC and cinema workflows",
       "Text-to-speech studio",
       "History & dashboard"
     ]
@@ -516,11 +516,10 @@ export const CREDIT_PACKS: CreditPack[] = [
     credits: 3200,
     tagline: "For creators generating weekly content",
     highlights: [
-      "Everything in Starter",
-      "Kling 3.0 Pro & Seedance 2.0 Reference",
-      "Google Veo 3.1 & Vidu Q3",
-      "Nano Banana Pro & Wan 2.7 Pro images",
-      "Character swap & audio-to-video"
+      "3.2× more credits than Starter",
+      "Room for premium models (Kling, Veo, Vidu…)",
+      "Character swap & audio-to-video",
+      "Same model catalog — more monthly volume"
     ]
   },
   {
@@ -532,10 +531,10 @@ export const CREDIT_PACKS: CreditPack[] = [
     tagline: "Best value for active creators",
     popular: true,
     highlights: [
-      "Everything in Pro",
+      "5.6× more credits than Starter",
       "More room for 1080p video generations",
-      "Great value for active creators",
-      "Best balance of price and volume"
+      "Best balance of price and volume",
+      "Same model catalog — higher monthly volume"
     ]
   },
   {
@@ -546,10 +545,10 @@ export const CREDIT_PACKS: CreditPack[] = [
     credits: 10000,
     tagline: "Built for agencies and power users",
     highlights: [
-      "Everything in Pro",
+      "10× more credits than Starter",
       "Highest credit volume",
-      "Priority support",
-      "Best for teams & heavy video workflows"
+      "Best for teams & heavy video workflows",
+      "Same model catalog — maximum monthly volume"
     ]
   }
 ];

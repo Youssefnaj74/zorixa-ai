@@ -309,6 +309,17 @@ export function LoginForm() {
                     />
                   </label>
 
+                  {!isSignup ? (
+                    <div className="-mt-1 text-right">
+                      <Link
+                        href="/forgot-password"
+                        className="text-xs font-semibold text-[#00e5ff] hover:text-white"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                  ) : null}
+
                   {error ? (
                     <div className="rounded-xl border border-red-500/30 bg-red-950/30 px-4 py-3 text-xs leading-snug text-red-100">
                       {error}

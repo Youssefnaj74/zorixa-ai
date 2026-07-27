@@ -125,11 +125,13 @@ UGC fallbacks include Hailuo 2.3 (id: hailuo-2-3).
 - Credits are generally non-refundable once purchased (see FAQ), except where required by law.
 
 ## Billing notes
-- Yearly billing is available at a discount on /pricing.
-- Example yearly monthly-equivalents: Starter ~$8.99/mo, Pro ~$23.39/mo, Creator ~$38.69/mo, Ultra ~$62.99/mo (billed yearly).
+- Yearly billing is not available yet — only monthly subscriptions on /pricing.
+- All paid packs unlock the same model catalog; higher packs simply include more monthly credits.
+- New signups receive a small starter credit balance (about 100 credits) to try the studio before buying a pack.
 
 ## Account
 - Credits balance appears in the navbar and in the current user session when signed in.
 - Unused credits stay on the account.
-- For login, email changes, or payment disputes, contact support@zorixaai.com or billing@zorixaai.com.
-- Questions about SOC 2 reports, employee headcount, invoice numbers, password resets, account deletion, wholesale Atlas costs, or unannounced roadmap dates are not available in this context — use the missing-information support reply.`;
+- Password reset: use /forgot-password (also linked from the sign-in form). After the email link, set a new password on /reset-password.
+- For login issues beyond reset, email changes, or payment disputes, contact support@zorixaai.com or billing@zorixaai.com.
+- Questions about SOC 2 reports, employee headcount, invoice numbers, account deletion, wholesale Atlas costs, or unannounced roadmap dates are not available in this context — use the missing-information support reply.`;

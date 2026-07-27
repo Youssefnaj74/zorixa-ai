@@ -2,7 +2,8 @@ import {
   grantPackCredits,
   resolveGrantFromPaymentData,
   resolveGrantFromSubscriptionActiveData,
-  resolveGrantFromSubscriptionRenewedData
+  resolveGrantFromSubscriptionRenewedData,
+  type ResolveGrantResult
 } from "@/lib/dodo-payments/grant-pack-credits";
 
 function asRecord(data: unknown): Record<string, unknown> | null {
@@ -10,63 +11,59 @@ function asRecord(data: unknown): Record<string, unknown> | null {
   return data as Record<string, unknown>;
 }
 
-export async function handleDodoPaymentSucceeded(payload: { data?: unknown }) {
-  const data = asRecord(payload.data);
-  if (!data) return;
-
-  const grant = resolveGrantFromPaymentData(data);
-  if (!grant) {
-    console.warn("[dodo webhook] payment.succeeded — could not resolve grant", {
-      payment_id: data.payment_id,
-      subscription_id: data.subscription_id
-    });
+async function processResolvedGrant(label: string, resolved: ResolveGrantResult) {
+  if (resolved.status === "skip") {
+    console.info(`[dodo webhook] ${label}: skip`, { reason: resolved.reason });
     return;
   }
 
-  const result = await grantPackCredits(grant);
-  console.log("[dodo webhook] payment.succeeded", {
-    orderRef: grant.orderRef,
-    credits: grant.credits,
-    duplicate: result.duplicate
+  if (resolved.status === "error") {
+    console.error(`[dodo webhook] ${label}: unresolved grant`, { reason: resolved.reason });
+    throw new Error(`[dodo webhook] ${label}: unresolved grant (${resolved.reason})`);
+  }
+
+  const result = await grantPackCredits(resolved.grant);
+  console.log(`[dodo webhook] ${label}`, {
+    orderRef: resolved.grant.orderRef,
+    credits: resolved.grant.credits,
+    duplicate: result.duplicate,
+    granted: result.granted
   });
+
+  if (result.duplicate) return;
+  if (!result.granted) {
+    throw new Error(
+      `[dodo webhook] ${label}: grant failed for ${resolved.grant.orderRef}`
+    );
+  }
+}
+
+export async function handleDodoPaymentSucceeded(payload: { data?: unknown }) {
+  const data = asRecord(payload.data);
+  if (!data) {
+    throw new Error("[dodo webhook] payment.succeeded: invalid payload data");
+  }
+  await processResolvedGrant("payment.succeeded", resolveGrantFromPaymentData(data));
 }
 
 export async function handleDodoSubscriptionActive(payload: { data?: unknown }) {
   const data = asRecord(payload.data);
-  if (!data) return;
-
-  const grant = resolveGrantFromSubscriptionActiveData(data);
-  if (!grant) {
-    console.warn("[dodo webhook] subscription.active — could not resolve grant", {
-      subscription_id: data.subscription_id
-    });
-    return;
+  if (!data) {
+    throw new Error("[dodo webhook] subscription.active: invalid payload data");
   }
-
-  const result = await grantPackCredits(grant);
-  console.log("[dodo webhook] subscription.active", {
-    orderRef: grant.orderRef,
-    credits: grant.credits,
-    duplicate: result.duplicate
-  });
+  await processResolvedGrant(
+    "subscription.active",
+    resolveGrantFromSubscriptionActiveData(data)
+  );
 }
 
 export async function handleDodoSubscriptionRenewed(payload: { data?: unknown }) {
   const data = asRecord(payload.data);
-  if (!data) return;
-
-  const grant = resolveGrantFromSubscriptionRenewedData(data);
-  if (!grant) {
-    console.warn("[dodo webhook] subscription.renewed — could not resolve grant", {
-      subscription_id: data.subscription_id
-    });
-    return;
+  if (!data) {
+    throw new Error("[dodo webhook] subscription.renewed: invalid payload data");
   }
-
-  const result = await grantPackCredits(grant);
-  console.log("[dodo webhook] subscription.renewed", {
-    orderRef: grant.orderRef,
-    credits: grant.credits,
-    duplicate: result.duplicate
-  });
+  await processResolvedGrant(
+    "subscription.renewed",
+    resolveGrantFromSubscriptionRenewedData(data)
+  );
 }

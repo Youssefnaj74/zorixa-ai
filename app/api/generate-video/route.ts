@@ -160,7 +160,8 @@ import {
   completeAtlasCharge,
   creditsForVideoModel,
   insufficientCreditsResponse,
-  refundAtlasPredictionCharge
+  refundAtlasPredictionCharge,
+  userOwnsAtlasPrediction
 } from "@/lib/credits-charge";
 import { env } from "@/lib/env";
 import { extractAtlasVideoOutputUrl } from "@/lib/extract-atlas-video-output-url";
@@ -197,9 +198,11 @@ import {
   finalizeGenerationEconomicsStatus,
   scheduleGenerationEconomics
 } from "@/lib/generation-economics";
+import { rateLimitResponse } from "@/lib/rate-limit";
+import { captureException } from "@/lib/report-error";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
 import { isAtlasVideoTerminalSuccessStatus } from "@/lib/atlas-video-terminal-status";
-import { resolveZorixaActor } from "@/lib/zorixa-mcp-auth";
+import { resolveZorixaActor, unauthorizedApiResponse } from "@/lib/zorixa-mcp-auth";
 
 const ATLAS_BASE = "https://api.atlascloud.ai/api/v1/model";
 /** Client polls `GET ?predictionId=` this often (serverless POST cannot block for minutes). */
@@ -375,11 +378,14 @@ type AtlasEnvelope = {
 };
 
 /** Await refund so serverless does not freeze the RPC before credits return. */
-async function refundCreditsForFailedPrediction(predictionId: string): Promise<{
+async function refundCreditsForFailedPrediction(
+  predictionId: string,
+  requiredUserId: string
+): Promise<{
   credits_refunded: boolean;
   credits_balance: number | null;
 }> {
-  const result = await refundAtlasPredictionCharge(predictionId);
+  const result = await refundAtlasPredictionCharge(predictionId, { requiredUserId });
   return {
     credits_refunded: result.ok,
     credits_balance: typeof result.balanceAfter === "number" ? result.balanceAfter : null
@@ -391,6 +397,19 @@ async function refundCreditsForFailedPrediction(predictionId: string): Promise<{
  * (Vercel/serverless timeouts would kill the request while Atlas still runs).
  */
 export async function GET(request: Request) {
+  const actor = await resolveZorixaActor(request);
+  if (!actor) {
+    return unauthorizedApiResponse();
+  }
+
+  const pollLimited = await rateLimitResponse({
+    key: `generate-video-poll:${actor.userId}`,
+    limit: 120,
+    windowMs: 60_000,
+    message: "Too many status checks. Wait a moment and try again."
+  });
+  if (pollLimited) return pollLimited;
+
   const searchParams = new URL(request.url).searchParams;
   const predictionId = (searchParams.get("predictionId") ?? searchParams.get("prediction_id"))?.trim();
   const pollGenerateAudio =
@@ -410,6 +429,11 @@ export async function GET(request: Request) {
     );
   }
 
+  const owns = await userOwnsAtlasPrediction(actor.userId, predictionId);
+  if (!owns) {
+    return NextResponse.json({ error: "Prediction not found" }, { status: 404 });
+  }
+
   const bytePlusTaskId = decodeBytePlusPredictionId(predictionId);
   if (bytePlusTaskId) {
     try {
@@ -427,7 +451,7 @@ export async function GET(request: Request) {
           terminalSuccessNoUrl: terminalSuccess && !poll.outputUrl
         });
         void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
-        refundMeta = await refundCreditsForFailedPrediction(predictionId);
+        refundMeta = await refundCreditsForFailedPrediction(predictionId, actor.userId);
       } else if (terminalSuccess && poll.outputUrl) {
         void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
       }
@@ -502,7 +526,7 @@ export async function GET(request: Request) {
           terminalSuccessNoUrl: terminalSuccess && !poll.outputUrl
         });
         void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
-        refundMeta = await refundCreditsForFailedPrediction(predictionId);
+        refundMeta = await refundCreditsForFailedPrediction(predictionId, actor.userId);
       } else if (terminalSuccess && poll.outputUrl) {
         void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
       }
@@ -573,7 +597,7 @@ export async function GET(request: Request) {
         terminalSuccessNoUrl: terminalSuccess && !poll.outputUrl
       });
       void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
-      refundMeta = await refundCreditsForFailedPrediction(predictionId);
+      refundMeta = await refundCreditsForFailedPrediction(predictionId, actor.userId);
     } else if (terminalSuccess && poll.outputUrl) {
       void finalizeGenerationEconomicsStatus({ predictionId, status: "success" });
     }
@@ -637,9 +661,20 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const actorForLimit = await resolveZorixaActor(request);
+    const ip = requestIp(request);
+    const limited = await rateLimitResponse({
+      key: `generate-video:${actorForLimit?.userId ?? ip}`,
+      limit: 12,
+      windowMs: 60_000,
+      message: "Too many video generations. Please wait a minute and try again."
+    });
+    if (limited) return limited;
+
     return await handleGenerateVideoPost(request);
   } catch (e) {
     console.error("[generate-video POST] unhandled", e);
+    captureException(e, { route: "/api/generate-video" });
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Video generation failed" },
       { status: 500 }
@@ -2153,7 +2188,7 @@ async function handleGenerateVideoPost(request: Request) {
       });
     }
     void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
-    const refundMeta = await refundCreditsForFailedPrediction(predictionId);
+    const refundMeta = await refundCreditsForFailedPrediction(predictionId, actor.userId);
     return NextResponse.json(
       {
         error: "Atlas returned completed without an output URL",
@@ -2182,7 +2217,7 @@ async function handleGenerateVideoPost(request: Request) {
         action === "image" ? "image" : action === "reference" ? "reference" : "text"
     });
     void finalizeGenerationEconomicsStatus({ predictionId, status: "failed" });
-    const refundMeta = await refundCreditsForFailedPrediction(predictionId);
+    const refundMeta = await refundCreditsForFailedPrediction(predictionId, actor.userId);
     return NextResponse.json(
       {
         error: err,

@@ -13,6 +13,7 @@ export async function GET(request: Request) {
   const safePath =
     redirectTo.startsWith("/") && !redirectTo.startsWith("//") ? redirectTo : "/dashboard";
   const isSignupFlow = url.searchParams.get("signup") === "1";
+  const authType = url.searchParams.get("type");
 
   if (oauthError) {
     const login = new URL("/login", url.origin);
@@ -27,9 +28,19 @@ export async function GET(request: Request) {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
-      const login = new URL("/login", url.origin);
+      const login = new URL(
+        authType === "recovery" || safePath === "/reset-password"
+          ? "/forgot-password"
+          : "/login",
+        url.origin
+      );
       login.searchParams.set("error", error.message);
       return NextResponse.redirect(login);
+    }
+
+    // Password recovery links should land on the reset form, not the dashboard.
+    if (authType === "recovery" || safePath === "/reset-password") {
+      return NextResponse.redirect(new URL("/reset-password", url.origin));
     }
 
     let destination = safePath;

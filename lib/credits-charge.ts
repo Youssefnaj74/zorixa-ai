@@ -184,10 +184,53 @@ export async function refundAtlasPendingCharge(args: {
 }
 
 /**
+ * True when this user owns the Atlas/provider charge (or generation row) for predictionId.
+ * Used to gate poll endpoints so prediction IDs cannot leak media or trigger refunds.
+ */
+export async function userOwnsAtlasPrediction(
+  userId: string,
+  predictionId: string
+): Promise<boolean> {
+  const id = predictionId.trim();
+  if (!userId || !id) return false;
+  const refKey = `atlas:${id}`;
+
+  const { data: usage } = await supabaseAdmin
+    .from("transactions")
+    .select("user_id")
+    .eq("user_id", userId)
+    .eq("lemonsqueezy_order_id", refKey)
+    .maybeSingle();
+  if (usage?.user_id) return true;
+
+  const { data: gen } = await supabaseAdmin
+    .from("generations")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("provider_prediction_id", id)
+    .limit(1)
+    .maybeSingle();
+  if (gen?.id) return true;
+
+  const { data: econ } = await supabaseAdmin
+    .from("generation_economics")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("prediction_id", id)
+    .limit(1)
+    .maybeSingle();
+  return Boolean(econ?.id);
+}
+
+/**
  * Refund a finalized `atlas:{predictionId}` charge after Atlas/BytePlus reports failed.
  * Idempotent via `refund:{ref}` unique key inside `refund_credits`.
+ * When `requiredUserId` is set, only that owner may receive the refund.
  */
-export async function refundAtlasPredictionCharge(predictionId: string): Promise<{
+export async function refundAtlasPredictionCharge(
+  predictionId: string,
+  opts?: { requiredUserId?: string }
+): Promise<{
   ok: boolean;
   userId?: string;
   balanceAfter?: number;
@@ -210,6 +253,13 @@ export async function refundAtlasPredictionCharge(predictionId: string): Promise
     return { ok: false };
   }
   if (!usage?.user_id) return { ok: false };
+  if (opts?.requiredUserId && usage.user_id !== opts.requiredUserId) {
+    console.error("[credits-charge] refund denied — prediction not owned by requester", {
+      predictionId: id,
+      requiredUserId: opts.requiredUserId
+    });
+    return { ok: false };
+  }
 
   const refunded = await refundAtlasPendingCharge({
     userId: usage.user_id,

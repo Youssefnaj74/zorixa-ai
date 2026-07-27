@@ -87,7 +87,7 @@ function StickyNav() {
             href="/login?mode=signup"
             className="inline-flex h-10 items-center justify-center rounded-full bg-[#00d1ff] px-5 text-sm font-semibold text-black shadow-[0_0_0_1px_rgba(0,209,255,0.35),0_0_28px_rgba(0,209,255,0.35)] transition-transform hover:scale-[1.02]"
           >
-            Start Free Account
+            Create account
             <ArrowRight className="ml-2 size-4" aria-hidden />
           </Link>
         </div>
@@ -167,7 +167,7 @@ export function LandingPage() {
                 href="/login?mode=signup"
                 className="inline-flex h-12 items-center justify-center rounded-full bg-[#00d1ff] px-8 text-sm font-bold text-black shadow-[0_0_0_1px_rgba(0,209,255,0.35),0_0_32px_rgba(0,209,255,0.42)] transition-transform hover:scale-[1.02]"
               >
-                Start Free Account
+                Create account
                 <ArrowRight className="ml-2 size-4" aria-hidden />
               </Link>
               <Link
@@ -177,6 +177,9 @@ export function LandingPage() {
                 View plans
               </Link>
             </motion.div>
+            <motion.p variants={heroReveal} className="mt-3 text-sm text-white/40">
+              New accounts include starter credits to try the studio — no card required.
+            </motion.p>
 
             <motion.div variants={heroReveal} className="mt-8">
               <ProductHuntBadge />
@@ -364,7 +367,7 @@ export function LandingPage() {
                 href="/login?mode=signup"
                 className="inline-flex h-12 items-center justify-center rounded-full bg-[#00e6c8] px-8 text-sm font-bold text-black shadow-[0_0_0_1px_rgba(0,230,200,0.35),0_0_34px_rgba(0,230,200,0.38)] transition-transform hover:scale-[1.02]"
               >
-                Start Free Account →
+                Create account →
               </Link>
             </motion.div>
           </motion.div>

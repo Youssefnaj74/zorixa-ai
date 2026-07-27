@@ -30,19 +30,14 @@ const STUDIO_WORKFLOWS = [
   "Audio to Video"
 ] as const;
 
-function perCreditSavingsPercent(
-  packCredits: number,
-  price: number,
-  billing: "monthly" | "yearly"
-): number | null {
+function perCreditSavingsPercent(packCredits: number, price: number): number | null {
   const starter = CREDIT_PACKS.find((pack) => pack.id === "starter");
   if (!starter || packCredits <= 0 || price <= 0) return null;
 
-  const starterPrice = billing === "monthly" ? starter.monthly : starter.yearly * 12;
-  const starterCredits = billing === "monthly" ? starter.credits : starter.credits * 12;
+  const starterCredits = starter.credits;
   if (starterCredits <= 0) return null;
 
-  const starterUnit = starterPrice / starterCredits;
+  const starterUnit = starter.monthly / starterCredits;
   const unit = price / packCredits;
   const savings = Math.round((1 - unit / starterUnit) * 100);
   return savings > 0 ? savings : null;
@@ -74,7 +69,6 @@ export function PricingView() {
   const showWelcome = searchParams.get("welcome") === "1";
   usePricingViewed(showWelcome ? "signup_welcome" : "pricing_page");
 
-  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [openSection, setOpenSection] = useState<string>("image");
   const [userId, setUserId] = useState<string | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState<DodoPackId | null>(null);
@@ -94,7 +88,7 @@ export function PricingView() {
     setCheckoutError(null);
     setCheckoutBusy(packId);
     try {
-      await startDodoCheckout(packId, billing);
+      await startDodoCheckout(packId, "monthly");
     } catch (err) {
       setCheckoutError(err instanceof Error ? err.message : "Could not start checkout.");
       setCheckoutBusy(null);
@@ -115,34 +109,10 @@ export function PricingView() {
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/45">
               Monthly credit subscriptions — credits stack in your balance until you use them. Each
-              generation deducts credits from your balance — rates below are per run.
+              generation deducts credits from your balance — rates below are per run. Yearly billing
+              is not available yet.
             </p>
 
-            <div className="mt-6 inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] p-1">
-              <button
-                type="button"
-                onClick={() => setBilling("monthly")}
-                className={cn(
-                  "rounded-full px-6 py-2 text-sm font-bold transition-all",
-                  billing === "monthly" ? "bg-[#00e5ff] text-black" : "text-white/45"
-                )}
-              >
-                Monthly
-              </button>
-              <button
-                type="button"
-                onClick={() => setBilling("yearly")}
-                className={cn(
-                  "flex items-center gap-2 rounded-full px-6 py-2 text-sm font-bold transition-all",
-                  billing === "yearly" ? "bg-[#00e5ff] text-black" : "text-white/45"
-                )}
-              >
-                Yearly
-                <span className="rounded-full bg-emerald-950/80 px-2 py-0.5 text-[10px] font-extrabold text-emerald-400">
-                  −10%
-                </span>
-              </button>
-            </div>
             {checkoutError ? (
               <p className="mx-auto mt-4 max-w-lg text-center text-sm text-red-300">{checkoutError}</p>
             ) : null}
@@ -151,12 +121,9 @@ export function PricingView() {
           {/* Credit packs */}
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {CREDIT_PACKS.map((pack) => {
-              const isYearly = billing === "yearly";
-              const displayPrice = isYearly
-                ? Math.round(pack.yearly * 12 * 100) / 100
-                : pack.monthly;
-              const displayCredits = isYearly ? pack.credits * 12 : pack.credits;
-              const savingsPercent = perCreditSavingsPercent(displayCredits, displayPrice, billing);
+              const displayPrice = pack.monthly;
+              const displayCredits = pack.credits;
+              const savingsPercent = perCreditSavingsPercent(displayCredits, displayPrice);
               return (
                 <div
                   key={pack.id}
@@ -189,7 +156,7 @@ export function PricingView() {
 
                   <div className="mt-4 flex items-baseline gap-1">
                     <span className="text-4xl font-extrabold">${formatPlanPrice(displayPrice)}</span>
-                    <span className="text-sm text-white/40">{isYearly ? "/year" : "/month"}</span>
+                    <span className="text-sm text-white/40">/month</span>
                   </div>
 
                   <div className="mb-4 mt-3 border-b border-white/10 pb-4">
@@ -234,9 +201,7 @@ export function PricingView() {
                       ? "Sign in to subscribe"
                       : checkoutBusy === pack.id
                         ? "Opening checkout…"
-                        : billing === "yearly"
-                          ? "Subscribe yearly (soon)"
-                          : "Subscribe now"}
+                        : "Subscribe now"}
                   </button>
 
                   <p className="mb-3 text-[11px] uppercase tracking-widest text-white/35">Includes</p>

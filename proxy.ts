@@ -98,11 +98,16 @@ export async function proxy(request: NextRequest) {
   }
 
   const { response, user } = await updateSession(request);
-  const isAuthRoute = pathname === "/login" || pathname === "/signup";
+  const isAuthRoute =
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/forgot-password";
   const isProtected =
     pathname.startsWith("/dashboard") ||
     pathname === "/image" ||
     pathname === "/video" ||
+    pathname === "/audio" ||
+    pathname.startsWith("/audio/") ||
     pathname === "/tools";
 
   if (isAuthRoute && user) {
