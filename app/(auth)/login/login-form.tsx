@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Mail } from "lucide-react";
 
+import { TurnstileField } from "@/components/auth/TurnstileField";
 import { ZorixaLogo } from "@/components/layout/ZorixaLogo";
 import loginShowcase from "@/data/login-showcase.json";
 import { dashboardFeatureAlt } from "@/lib/image-alt-text";
@@ -13,6 +14,7 @@ import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-r
 import { completeSignupNavigation } from "@/lib/post-signup-redirect";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { turnstileSiteKey } from "@/lib/turnstile-public";
 import { cn } from "@/lib/utils";
 
 const SHOWCASE = loginShowcase.slides;
@@ -110,6 +112,9 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(urlError);
   const [showEmail, setShowEmail] = useState(initialMode === "signup");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [confirmEmailSent, setConfirmEmailSent] = useState(false);
+  const turnstileRequired = Boolean(turnstileSiteKey());
 
   const isSignup = mode === "signup";
 
@@ -117,6 +122,8 @@ export function LoginForm() {
     setMode(next);
     setError(null);
     setShowEmail(next === "signup");
+    setConfirmEmailSent(false);
+    setTurnstileToken(null);
   }
 
   async function onEmailPasswordLogin(e: React.FormEvent) {
@@ -141,24 +148,47 @@ export function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setConfirmEmailSent(false);
 
-    const supabase = createSupabaseBrowserClient();
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName }
-      }
-    });
-
-    setLoading(false);
-
-    if (signUpError) {
-      setError(signUpError.message);
+    if (turnstileRequired && !turnstileToken) {
+      setLoading(false);
+      setError("Complete the human verification challenge.");
       return;
     }
 
-    await completeSignupNavigation((path, opts) => scheduleNavigation(path, opts));
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          turnstileToken
+        })
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        session?: boolean;
+        needsEmailConfirmation?: boolean;
+      };
+
+      if (!res.ok) {
+        setError(data.error ?? `Signup failed (${res.status})`);
+        return;
+      }
+
+      if (data.needsEmailConfirmation || !data.session) {
+        setConfirmEmailSent(true);
+        return;
+      }
+
+      await completeSignupNavigation((path, opts) => scheduleNavigation(path, opts));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Signup failed.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function onGoogleLogin() {
@@ -211,7 +241,7 @@ export function LoginForm() {
             </h1>
             <p className="mt-2 text-sm text-white/45">
               {isSignup
-                ? "Paid credits — choose a plan to unlock image, video, and speech generation."
+                ? "Verify your email to unlock 100 starter credits. Premium models unlock with a paid plan."
                 : "Sign in to your studio — credits, tools, and generations."}
             </p>
 
@@ -320,6 +350,15 @@ export function LoginForm() {
                     </div>
                   ) : null}
 
+                  {isSignup ? <TurnstileField onToken={setTurnstileToken} /> : null}
+
+                  {confirmEmailSent ? (
+                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-xs leading-snug text-emerald-100">
+                      Check your inbox to verify <span className="font-semibold">{email.trim()}</span>.
+                      Your 100 starter credits unlock after verification.
+                    </div>
+                  ) : null}
+
                   {error ? (
                     <div className="rounded-xl border border-red-500/30 bg-red-950/30 px-4 py-3 text-xs leading-snug text-red-100">
                       {error}
@@ -328,7 +367,7 @@ export function LoginForm() {
 
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || (isSignup && confirmEmailSent)}
                     className="h-12 w-full rounded-2xl bg-[#00e5ff] text-sm font-bold text-black shadow-[0_0_32px_rgba(0,229,255,0.2)] transition hover:brightness-110 disabled:opacity-45"
                   >
                     {loading

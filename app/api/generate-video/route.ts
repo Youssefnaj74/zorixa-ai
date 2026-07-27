@@ -198,6 +198,7 @@ import {
   finalizeGenerationEconomicsStatus,
   scheduleGenerationEconomics
 } from "@/lib/generation-economics";
+import { assertPremiumModelAccess } from "@/lib/premium-model-access";
 import { rateLimitResponse } from "@/lib/rate-limit";
 import { captureException } from "@/lib/report-error";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
@@ -1401,6 +1402,13 @@ async function handleGenerateVideoPost(request: Request) {
   } else if (viduNativeAudio) {
     generateAudio = resolveViduGenerateAudioFlag(body.generate_audio);
   }
+
+  const premiumBlock = await assertPremiumModelAccess({
+    userId: actor.userId,
+    composerModelId: videoModel,
+    kind: "video"
+  });
+  if (premiumBlock) return premiumBlock;
 
   const creditCost = creditsForVideoModel(videoModel, {
     durationSeconds: durationSec,

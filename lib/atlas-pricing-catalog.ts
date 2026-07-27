@@ -517,9 +517,9 @@ export const CREDIT_PACKS: CreditPack[] = [
     tagline: "For creators generating weekly content",
     highlights: [
       "3.2× more credits than Starter",
-      "Room for premium models (Kling, Veo, Vidu…)",
+      "Unlocks premium models (Kling, Veo, Vidu…)",
       "Character swap & audio-to-video",
-      "Same model catalog — more monthly volume"
+      "Higher monthly volume for weekly creators"
     ]
   },
   {

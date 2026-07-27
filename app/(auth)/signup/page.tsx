@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { UserPlus } from "lucide-react";
 
+import { TurnstileField } from "@/components/auth/TurnstileField";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useScheduledAppRouterNavigation } from "@/lib/hooks/use-scheduled-app-router-navigation";
 import { completeSignupNavigation } from "@/lib/post-signup-redirect";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
+import { turnstileSiteKey } from "@/lib/turnstile-public";
 
 export default function SignupPage() {
   const scheduleNavigation = useScheduledAppRouterNavigation();
@@ -18,6 +20,9 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [confirmEmailSent, setConfirmEmailSent] = useState(false);
+  const turnstileRequired = Boolean(turnstileSiteKey());
 
   async function onGoogleSignup() {
     setLoading(true);
@@ -37,28 +42,51 @@ export default function SignupPage() {
     }
   }
 
-  async function onSignup(e: React.FormEvent) {
+  async function onSignup(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setConfirmEmailSent(false);
 
-    const supabase = createSupabaseBrowserClient();
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName }
-      }
-    });
-
-    setLoading(false);
-
-    if (signUpError) {
-      setError(signUpError.message);
+    if (turnstileRequired && !turnstileToken) {
+      setLoading(false);
+      setError("Complete the human verification challenge.");
       return;
     }
 
-    await completeSignupNavigation(scheduleNavigation);
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          turnstileToken
+        })
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        session?: boolean;
+        needsEmailConfirmation?: boolean;
+      };
+
+      if (!res.ok) {
+        setError(data.error ?? `Signup failed (${res.status})`);
+        return;
+      }
+
+      if (data.needsEmailConfirmation || !data.session) {
+        setConfirmEmailSent(true);
+        return;
+      }
+
+      await completeSignupNavigation(scheduleNavigation);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Signup failed.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -69,7 +97,9 @@ export default function SignupPage() {
         </Link>
 
         <h1 className="mt-8 text-2xl font-semibold tracking-tight">Create your account</h1>
-        <p className="mt-2 text-sm text-zinc-300">Credit-based studio — subscribe to add credits and start generating.</p>
+        <p className="mt-2 text-sm text-zinc-300">
+          Verify your email to unlock 100 starter credits. Premium models unlock with a paid plan.
+        </p>
 
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6">
           <button
@@ -144,6 +174,15 @@ export default function SignupPage() {
               />
             </label>
 
+            <TurnstileField onToken={setTurnstileToken} />
+
+            {confirmEmailSent ? (
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+                Check your inbox to verify <span className="font-semibold">{email.trim()}</span>. Your
+                100 starter credits unlock after verification.
+              </div>
+            ) : null}
+
             {error ? (
               <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
                 {error}
@@ -153,7 +192,7 @@ export default function SignupPage() {
             <Button
               type="submit"
               className="w-full bg-violet-500 hover:bg-violet-400 focus-visible:ring-violet-300"
-              disabled={loading}
+              disabled={loading || confirmEmailSent}
             >
               <UserPlus className="mr-2 size-4" />
               Create account
@@ -171,4 +210,3 @@ export default function SignupPage() {
     </div>
   );
 }
-

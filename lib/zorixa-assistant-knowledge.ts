@@ -126,8 +126,8 @@ UGC fallbacks include Hailuo 2.3 (id: hailuo-2-3).
 
 ## Billing notes
 - Yearly billing is not available yet — only monthly subscriptions on /pricing.
-- All paid packs unlock the same model catalog; higher packs simply include more monthly credits.
-- New signups receive a small starter credit balance (about 100 credits) to try the studio before buying a pack.
+- Paid packs (`is_premium`) unlock premium models (Kling, Veo, Hailuo, Seedance 2, Vidu Q3, etc.). Trial users can try cheaper catalog models only.
+- New signups receive 100 starter credits only after email verification (Google sign-in counts as verified). Trial grants are rate-limited per network.
 
 ## Account
 - Credits balance appears in the navbar and in the current user session when signed in.

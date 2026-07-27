@@ -178,7 +178,8 @@ export function LandingPage() {
               </Link>
             </motion.div>
             <motion.p variants={heroReveal} className="mt-3 text-sm text-white/40">
-              New accounts include starter credits to try the studio — no card required.
+              Verify your email for 100 starter credits — no card required. Premium models need a
+              plan.
             </motion.p>
 
             <motion.div variants={heroReveal} className="mt-8">

@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { requestIp } from "@/lib/content-moderation";
 import { loadUserProfile } from "@/lib/load-user-profile";
 import { PRICING_WELCOME_PATH } from "@/lib/post-signup-redirect";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { grantTrialCreditsIfEligible } from "@/lib/trial-credits";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -43,16 +45,22 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL("/reset-password", url.origin));
     }
 
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      await grantTrialCreditsIfEligible({
+        userId: user.id,
+        ip: requestIp(request)
+      });
+    }
+
     let destination = safePath;
-    if (isSignupFlow) {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { profile } = await loadUserProfile(supabase, user.id);
-        if ((profile?.credits_balance ?? 0) <= 0) {
-          destination = PRICING_WELCOME_PATH;
-        }
+    if (isSignupFlow && user) {
+      const { profile } = await loadUserProfile(supabase, user.id);
+      if ((profile?.credits_balance ?? 0) <= 0) {
+        destination = PRICING_WELCOME_PATH;
       }
     }
 

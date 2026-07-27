@@ -5,7 +5,8 @@ create table if not exists public.users_profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text,
   full_name text,
-  credits_balance integer not null default 100,
+  credits_balance integer not null default 0,
+  trial_credits_granted_at timestamptz,
   is_premium boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -166,7 +167,8 @@ begin
   end if;
 
   if new.credits_balance is distinct from old.credits_balance
-     or new.is_premium is distinct from old.is_premium then
+     or new.is_premium is distinct from old.is_premium
+     or new.trial_credits_granted_at is distinct from old.trial_credits_granted_at then
     raise exception 'billing columns are server-only'
       using errcode = '42501';
   end if;

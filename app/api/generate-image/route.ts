@@ -38,6 +38,7 @@ import {
   enforceMediaContentPolicy,
   requestIp
 } from "@/lib/content-moderation";
+import { assertPremiumModelAccess } from "@/lib/premium-model-access";
 import { rateLimitResponse } from "@/lib/rate-limit";
 import { captureException } from "@/lib/report-error";
 import { stripVideoComposerAssetTokens } from "@/lib/strip-video-composer-prompt";
@@ -660,6 +661,13 @@ async function handleGenerateImagePost(request: Request, body: ClientBody) {
   if (!actor) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const premiumBlock = await assertPremiumModelAccess({
+    userId: actor.userId,
+    composerModelId: imageModel,
+    kind: "image"
+  });
+  if (premiumBlock) return premiumBlock;
 
   const creditCost = creditsForImageModel(imageModel, numImages, { resolution, isEdit });
   const afford = await assertCanAfford(actor.userId, creditCost);
