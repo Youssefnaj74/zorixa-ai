@@ -19,7 +19,7 @@ async function snapshotCreditsBeforeCheckout(): Promise<void> {
 
 export async function startDodoCheckout(
   packId: DodoPackId,
-  billing: "monthly" | "yearly" = "monthly"
+  billing: "monthly" | "yearly" | "one_time" = "monthly"
 ): Promise<void> {
   trackEvent(AnalyticsEvents.CHECKOUT_STARTED, { pack_id: packId, billing });
   await snapshotCreditsBeforeCheckout();

@@ -7,9 +7,15 @@ import { Check, ChevronDown, Zap } from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { NAV_H } from "@/lib/nav-chrome";
+import {
+  dismissStarterPassGift,
+  StarterPassGiftModal,
+  wasStarterPassGiftDismissed
+} from "@/components/onboarding/StarterPassGiftModal";
 import { WelcomePricingBanner } from "@/components/onboarding/WelcomePricingBanner";
 import {
   CREDIT_PACKS,
+  STARTER_PASS,
   formatCredits,
   PRICING_CATALOG_SECTIONS,
   PRICING_CREDIT_VARIANCE_NOTE
@@ -71,6 +77,10 @@ export function PricingView() {
 
   const [openSection, setOpenSection] = useState<string>("image");
   const [userId, setUserId] = useState<string | null>(null);
+  const [starterPassAvailable, setStarterPassAvailable] = useState(false);
+  const [eligibilityReady, setEligibilityReady] = useState(false);
+  const [giftOpen, setGiftOpen] = useState(false);
+  const [giftDismissed, setGiftDismissed] = useState(false);
   const [checkoutBusy, setCheckoutBusy] = useState<DodoPackId | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
@@ -80,7 +90,44 @@ export function PricingView() {
       .then(({ data: { user } }) => setUserId(user?.id ?? null));
   }, []);
 
-  async function onSubscribe(packId: DodoPackId) {
+  useEffect(() => {
+    if (!userId) {
+      setStarterPassAvailable(false);
+      setEligibilityReady(true);
+      setGiftOpen(false);
+      setGiftDismissed(false);
+      return;
+    }
+    setEligibilityReady(false);
+    const dismissed = wasStarterPassGiftDismissed();
+    setGiftDismissed(dismissed);
+    void fetch("/api/credits", { credentials: "include", cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) {
+          setStarterPassAvailable(false);
+          return;
+        }
+        const body = (await res.json()) as {
+          starter_pass_available?: boolean;
+          is_premium?: boolean;
+          starter_pass_purchased_at?: string | null;
+        };
+        const available =
+          typeof body.starter_pass_available === "boolean"
+            ? body.starter_pass_available
+            : !body.is_premium && !body.starter_pass_purchased_at;
+        setStarterPassAvailable(available);
+        if (available && !dismissed) {
+          setGiftOpen(true);
+        }
+      })
+      .catch(() => {
+        setStarterPassAvailable(false);
+      })
+      .finally(() => setEligibilityReady(true));
+  }, [userId]);
+
+  async function onCheckout(packId: DodoPackId, billing: "monthly" | "one_time") {
     if (!userId) {
       window.location.href = "/login?redirect=/pricing";
       return;
@@ -88,16 +135,52 @@ export function PricingView() {
     setCheckoutError(null);
     setCheckoutBusy(packId);
     try {
-      await startDodoCheckout(packId, "monthly");
+      await startDodoCheckout(packId, billing);
     } catch (err) {
       setCheckoutError(err instanceof Error ? err.message : "Could not start checkout.");
       setCheckoutBusy(null);
     }
   }
 
+  function onDismissGift() {
+    dismissStarterPassGift();
+    setGiftDismissed(true);
+    setGiftOpen(false);
+  }
+
+  const showClaimChip =
+    Boolean(userId) && eligibilityReady && starterPassAvailable && giftDismissed && !giftOpen;
+
   return (
     <>
       <Navbar />
+      <StarterPassGiftModal
+        open={Boolean(userId) && eligibilityReady && starterPassAvailable && giftOpen}
+        busy={checkoutBusy === STARTER_PASS.id}
+        onClaim={() => void onCheckout(STARTER_PASS.id, "one_time")}
+        onDismiss={onDismissGift}
+      />
+      {showClaimChip ? (
+        <div className="fixed bottom-5 left-1/2 z-[70] w-[min(100%-1.5rem,22rem)] -translate-x-1/2 sm:left-auto sm:right-5 sm:translate-x-0">
+          <button
+            type="button"
+            disabled={checkoutBusy !== null}
+            onClick={() => void onCheckout(STARTER_PASS.id, "one_time")}
+            className="flex w-full flex-col items-center justify-center rounded-2xl border border-emerald-400/40 bg-emerald-500/95 px-5 py-3 text-black shadow-[0_12px_40px_rgba(16,185,129,0.35)] transition hover:brightness-105 disabled:cursor-wait disabled:opacity-70"
+          >
+            <span className="text-sm font-bold">
+              {checkoutBusy === STARTER_PASS.id
+                ? "Opening checkout…"
+                : `Unlock Starter Pass — $${STARTER_PASS.priceUsd.toFixed(2)}`}
+            </span>
+            {checkoutBusy !== STARTER_PASS.id ? (
+              <span className="mt-0.5 text-[10px] font-medium text-black/60">
+                One-time · New users only · No subscription
+              </span>
+            ) : null}
+          </button>
+        </div>
+      ) : null}
       <div className="min-h-dvh bg-[#080810] font-body text-white" style={{ paddingTop: NAV_H + 24 }}>
         <div className="mx-auto max-w-7xl px-6 pb-24">
           {showWelcome ? <WelcomePricingBanner /> : null}
@@ -108,9 +191,8 @@ export function PricingView() {
               Credits &amp; model pricing
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/45">
-              Monthly credit subscriptions — credits stack in your balance until you use them. Each
-              generation deducts credits from your balance — rates below are per run. Yearly billing
-              is not available yet.
+              New users can claim a one-time $0.99 Starter Pass, or subscribe monthly for more
+              credits. Credits stack until you use them. Yearly billing is not available yet.
             </p>
 
             {checkoutError ? (
@@ -118,25 +200,103 @@ export function PricingView() {
             ) : null}
           </div>
 
-          {/* Credit packs */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          {/* Starter Pass (left) + monthly packs */}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="relative flex flex-col rounded-2xl border border-emerald-400/70 bg-[#0f0f1e] p-5 shadow-[0_0_36px_rgba(52,211,153,0.18)] sm:col-span-2 xl:col-span-1">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-emerald-400/45 bg-[#0f0f1e]/80 px-4 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-emerald-300 shadow-[0_0_24px_rgba(52,211,153,0.22)] backdrop-blur-md">
+                Trial
+              </div>
+
+              <h2 className="text-base font-bold">{STARTER_PASS.name}</h2>
+
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="text-4xl font-extrabold">${formatPlanPrice(STARTER_PASS.priceUsd)}</span>
+                <span className="text-sm text-white/40">one-time</span>
+              </div>
+
+              <div className="mb-4 mt-3 border-b border-white/10 pb-4">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                  <Zap className="size-3.5 text-emerald-300" aria-hidden />
+                  <span className="font-semibold text-emerald-300">
+                    {formatInteger(STARTER_PASS.credits)} credits
+                  </span>
+                </div>
+                <p className="mt-1.5 text-xs font-medium text-white/50">No auto-renewal</p>
+              </div>
+
+              <p className="text-sm font-semibold text-white">For new users only</p>
+              <p className="mt-1 text-xs leading-relaxed text-white/45">
+                One-time purchase — unlocks premium models
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-white/40">{STARTER_PASS.tagline}</p>
+
+              <ul className="mb-6 mt-4 flex flex-col gap-2 border-b border-white/10 pb-6">
+                {STUDIO_WORKFLOWS.map((workflow) => (
+                  <li key={workflow} className="flex items-start gap-2 text-sm text-white/55">
+                    <Check className="mt-0.5 size-4 shrink-0 text-emerald-300" aria-hidden />
+                    {workflow}
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                type="button"
+                disabled={
+                  checkoutBusy !== null || (Boolean(userId) && !starterPassAvailable)
+                }
+                onClick={() => void onCheckout(STARTER_PASS.id, "one_time")}
+                className="mb-2 w-full rounded-full bg-emerald-400 py-3 text-sm font-bold text-black transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {!userId
+                  ? "Sign in to subscribe"
+                  : checkoutBusy === STARTER_PASS.id
+                    ? "Opening checkout…"
+                    : !starterPassAvailable
+                      ? "Not available"
+                      : `Unlock Starter Pass — $${STARTER_PASS.priceUsd.toFixed(2)}`}
+              </button>
+
+              <p className="mb-6 text-center text-[11px] leading-relaxed text-white/40">
+                One-time purchase · New users only · No subscription
+              </p>
+
+              <p className="mb-3 text-[11px] uppercase tracking-widest text-white/35">Includes</p>
+              <ul className="flex flex-1 flex-col gap-2.5">
+                {STARTER_PASS.highlights.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-white/55">
+                    <Check className="mt-0.5 size-4 shrink-0 text-emerald-300" aria-hidden />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
             {CREDIT_PACKS.map((pack) => {
               const displayPrice = pack.monthly;
               const displayCredits = pack.credits;
               const savingsPercent = perCreditSavingsPercent(displayCredits, displayPrice);
+              const isUltra = pack.id === "ultra";
+              const accentIcon = isUltra ? "text-orange-300" : "text-[#00e5ff]";
               return (
                 <div
                   key={pack.id}
                   className={cn(
                     "relative flex flex-col rounded-2xl p-5 transition-shadow",
-                    pack.popular
-                      ? "border border-[#00e5ff]/80 bg-[#0f0f1e] shadow-[0_0_36px_rgba(0,229,255,0.18)]"
-                      : "border border-white/10 bg-[#0f0f1e]"
+                    isUltra
+                      ? "border border-orange-400/70 bg-[#0f0f1e] shadow-[0_0_36px_rgba(251,146,60,0.18)]"
+                      : pack.popular
+                        ? "border border-[#00e5ff]/80 bg-[#0f0f1e] shadow-[0_0_36px_rgba(0,229,255,0.18)]"
+                        : "border border-white/10 bg-[#0f0f1e]"
                   )}
                 >
                   {pack.popular ? (
                     <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#00e5ff]/40 bg-[#0f0f1e]/80 px-4 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#00e5ff] shadow-[0_0_24px_rgba(0,229,255,0.22)] backdrop-blur-md">
                       POPULAR
+                    </div>
+                  ) : null}
+                  {isUltra ? (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-orange-400/45 bg-[#0f0f1e]/80 px-4 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-orange-300 shadow-[0_0_24px_rgba(251,146,60,0.22)] backdrop-blur-md">
+                      Ultra
                     </div>
                   ) : null}
                   {savingsPercent ? (
@@ -161,8 +321,8 @@ export function PricingView() {
 
                   <div className="mb-4 mt-3 border-b border-white/10 pb-4">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                      <Zap className="size-3.5 text-[#00e5ff]" aria-hidden />
-                      <span className="font-semibold text-[#00e5ff]">
+                      <Zap className={cn("size-3.5", accentIcon)} aria-hidden />
+                      <span className={cn("font-semibold", accentIcon)}>
                         {formatInteger(displayCredits)} credits
                       </span>
                     </div>
@@ -180,7 +340,7 @@ export function PricingView() {
                   <ul className="mb-6 mt-4 flex flex-col gap-2 border-b border-white/10 pb-6">
                     {STUDIO_WORKFLOWS.map((workflow) => (
                       <li key={workflow} className="flex items-start gap-2 text-sm text-white/55">
-                        <Check className="mt-0.5 size-4 shrink-0 text-[#00e5ff]" aria-hidden />
+                        <Check className={cn("mt-0.5 size-4 shrink-0", accentIcon)} aria-hidden />
                         {workflow}
                       </li>
                     ))}
@@ -189,12 +349,14 @@ export function PricingView() {
                   <button
                     type="button"
                     disabled={checkoutBusy !== null}
-                    onClick={() => void onSubscribe(pack.id)}
+                    onClick={() => void onCheckout(pack.id, "monthly")}
                     className={cn(
                       "mb-6 w-full rounded-full py-3 text-sm font-bold transition-all disabled:cursor-wait disabled:opacity-70",
-                      pack.popular
-                        ? "bg-[#00e5ff] text-black hover:brightness-110"
-                        : "border border-white/15 bg-white/[0.04] text-white hover:border-[#00e5ff]/40"
+                      isUltra
+                        ? "bg-orange-400 text-black hover:brightness-110"
+                        : pack.popular
+                          ? "bg-[#00e5ff] text-black hover:brightness-110"
+                          : "border border-white/15 bg-white/[0.04] text-white hover:border-[#00e5ff]/40"
                     )}
                   >
                     {!userId
@@ -208,7 +370,7 @@ export function PricingView() {
                   <ul className="flex flex-1 flex-col gap-2.5">
                     {pack.highlights.map((f) => (
                       <li key={f} className="flex items-start gap-2 text-sm text-white/55">
-                        <Check className="mt-0.5 size-4 shrink-0 text-[#00e5ff]" aria-hidden />
+                        <Check className={cn("mt-0.5 size-4 shrink-0", accentIcon)} aria-hidden />
                         {f}
                       </li>
                     ))}

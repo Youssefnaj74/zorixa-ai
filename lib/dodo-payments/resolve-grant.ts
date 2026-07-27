@@ -1,9 +1,15 @@
-import { creditsForDodoProductId } from "./config";
+import {
+  creditsForDodoProductId,
+  isDodoPackId,
+  packIdForDodoProductId,
+  type DodoPackId
+} from "./config";
 
 export type GrantInput = {
   userId: string;
   credits: number;
   orderRef: string;
+  packId?: DodoPackId | null;
 };
 
 export type ResolveGrantResult =
@@ -113,7 +119,12 @@ function baseGrantFromData(
     };
   }
 
-  return { status: "grant", grant: { userId, credits, orderRef } };
+  const packFromMeta = readMetadataString(metadata, "pack_id") ?? readMetadataString(metadata, "packId");
+  const packFromProduct = productId ? packIdForDodoProductId(productId) : null;
+  const packId: DodoPackId | null =
+    packFromProduct ?? (packFromMeta && isDodoPackId(packFromMeta) ? packFromMeta : null);
+
+  return { status: "grant", grant: { userId, credits, orderRef, packId } };
 }
 
 /** One-time payments (no subscription_id on payload). */

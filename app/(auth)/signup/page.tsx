@@ -98,7 +98,7 @@ export default function SignupPage() {
 
         <h1 className="mt-8 text-2xl font-semibold tracking-tight">Create your account</h1>
         <p className="mt-2 text-sm text-zinc-300">
-          Verify your email to unlock 100 starter credits. Premium models unlock with a paid plan.
+          Create an account, then claim the $0.99 Starter Pass (250 credits) or subscribe on Pricing.
         </p>
 
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6">
@@ -178,8 +178,8 @@ export default function SignupPage() {
 
             {confirmEmailSent ? (
               <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
-                Check your inbox to verify <span className="font-semibold">{email.trim()}</span>. Your
-                100 starter credits unlock after verification.
+                Check your inbox to verify <span className="font-semibold">{email.trim()}</span>. After
+                that, claim the Starter Pass or a monthly plan on Pricing.
               </div>
             ) : null}
 

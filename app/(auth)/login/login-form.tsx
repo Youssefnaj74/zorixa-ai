@@ -241,7 +241,7 @@ export function LoginForm() {
             </h1>
             <p className="mt-2 text-sm text-white/45">
               {isSignup
-                ? "Verify your email to unlock 100 starter credits. Premium models unlock with a paid plan."
+                ? "Create an account, then claim the $0.99 Starter Pass or subscribe on Pricing."
                 : "Sign in to your studio — credits, tools, and generations."}
             </p>
 
@@ -355,7 +355,7 @@ export function LoginForm() {
                   {confirmEmailSent ? (
                     <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-xs leading-snug text-emerald-100">
                       Check your inbox to verify <span className="font-semibold">{email.trim()}</span>.
-                      Your 100 starter credits unlock after verification.
+                      After that, claim the Starter Pass or a monthly plan on Pricing.
                     </div>
                   ) : null}
 

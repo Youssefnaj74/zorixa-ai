@@ -7,6 +7,7 @@ create table if not exists public.users_profiles (
   full_name text,
   credits_balance integer not null default 0,
   trial_credits_granted_at timestamptz,
+  starter_pass_purchased_at timestamptz,
   is_premium boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -168,7 +169,8 @@ begin
 
   if new.credits_balance is distinct from old.credits_balance
      or new.is_premium is distinct from old.is_premium
-     or new.trial_credits_granted_at is distinct from old.trial_credits_granted_at then
+     or new.trial_credits_granted_at is distinct from old.trial_credits_granted_at
+     or new.starter_pass_purchased_at is distinct from old.starter_pass_purchased_at then
     raise exception 'billing columns are server-only'
       using errcode = '42501';
   end if;

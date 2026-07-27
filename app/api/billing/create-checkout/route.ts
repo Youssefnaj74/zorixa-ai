@@ -6,9 +6,11 @@ import {
   getDodoApiKey,
   getDodoProductId,
   getDodoReturnUrl,
-  packForId
+  isStarterPassId,
+  offerForId
 } from "@/lib/dodo-payments/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 function checkoutFeatureFlags(existing?: Record<string, boolean>): Record<string, boolean> {
   return {
@@ -17,6 +19,47 @@ function checkoutFeatureFlags(existing?: Record<string, boolean>): Record<string
     allow_phone_number_collection: false,
     require_phone_number: false
   };
+}
+
+async function isEligibleForStarterPass(userId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { data: profile, error } = await supabaseAdmin
+    .from("users_profiles")
+    .select("is_premium, starter_pass_purchased_at")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[billing/create-checkout] profile read failed", error.message);
+    return { ok: false, error: "Could not verify eligibility. Try again shortly." };
+  }
+
+  if (profile?.starter_pass_purchased_at) {
+    return { ok: false, error: "Starter Pass is one-time only and already claimed on this account." };
+  }
+
+  if (profile?.is_premium) {
+    return { ok: false, error: "Starter Pass is for new users only. You already have a paid plan." };
+  }
+
+  const { count, error: txnErr } = await supabaseAdmin
+    .from("transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("type", "purchase");
+
+  if (txnErr) {
+    console.error("[billing/create-checkout] purchase lookup failed", txnErr.message);
+    return { ok: false, error: "Could not verify eligibility. Try again shortly." };
+  }
+
+  if ((count ?? 0) > 0) {
+    return {
+      ok: false,
+      error: "Starter Pass is for new users only. This account already has a purchase history."
+    };
+  }
+
+  return { ok: true };
 }
 
 export async function POST(request: Request) {
@@ -58,10 +101,24 @@ export async function POST(request: Request) {
     );
   }
 
-  const pack = packForId(packId);
+  const offer = offerForId(packId);
   const productId = getDodoProductId(packId);
-  if (!pack || !productId) {
-    return NextResponse.json({ error: "Unknown plan" }, { status: 400 });
+  if (!offer || !productId) {
+    return NextResponse.json(
+      {
+        error: isStarterPassId(packId)
+          ? "Starter Pass is not configured yet (missing DODO_PRODUCT_STARTER_PASS)."
+          : "Unknown plan"
+      },
+      { status: 400 }
+    );
+  }
+
+  if (isStarterPassId(packId)) {
+    const eligible = await isEligibleForStarterPass(user.id);
+    if (!eligible.ok) {
+      return NextResponse.json({ error: eligible.error }, { status: 403 });
+    }
   }
 
   const name =
@@ -83,8 +140,9 @@ export async function POST(request: Request) {
       },
       metadata: {
         user_id: user.id,
-        pack_id: pack.id,
-        credits: String(pack.credits)
+        pack_id: offer.id,
+        credits: String(offer.credits),
+        billing: offer.billing
       },
       return_url: getDodoReturnUrl(),
       minimal_address: true,

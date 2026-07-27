@@ -24,6 +24,7 @@ export function BillingSuccessCreditsPoller() {
   const [state, setState] = useState<PollState>("checking");
   const [balance, setBalance] = useState<number | null>(null);
   const baselineRef = useRef<number | null>(readBaselineFromSession());
+  const hadCheckoutBaseline = useRef(baselineRef.current !== null);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,11 +41,27 @@ export function BillingSuccessCreditsPoller() {
           if (!cancelled) setState("error");
           return;
         }
-        const body = (await res.json()) as { credits_balance?: number };
+        const body = (await res.json()) as {
+          credits_balance?: number;
+          is_premium?: boolean;
+          starter_pass_purchased_at?: string | null;
+        };
         const next = typeof body.credits_balance === "number" ? body.credits_balance : 0;
         if (cancelled) return;
 
         setBalance(next);
+
+        // Webhook often wins the race: credits already applied before this page loads.
+        // Without a pre-checkout snapshot, treat a paid/pass profile as confirmed.
+        if (!hadCheckoutBaseline.current) {
+          const alreadyFulfilled =
+            next > 0 &&
+            (body.is_premium === true || Boolean(body.starter_pass_purchased_at));
+          if (alreadyFulfilled) {
+            setState("granted");
+            return;
+          }
+        }
 
         if (baselineRef.current === null) {
           baselineRef.current = next;

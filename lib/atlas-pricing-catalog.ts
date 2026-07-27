@@ -488,11 +488,35 @@ export type CreditPack = {
   highlights: string[];
 };
 
+/** One-time Starter Pass — paid trial (replaces free email trial credits). */
+export type StarterPassOffer = {
+  id: "starter-pass";
+  name: string;
+  priceUsd: number;
+  credits: number;
+  tagline: string;
+  highlights: string[];
+};
+
+export const STARTER_PASS: StarterPassOffer = {
+  id: "starter-pass",
+  name: "Starter Pass",
+  priceUsd: 0.99,
+  credits: 250,
+  tagline: "For new users only · No auto-renewal",
+  highlights: [
+    "250 credits to try the studio",
+    "Unlocks premium models (Kling, Veo, Hailuo…)",
+    "One-time purchase — no subscription",
+    "Credits stay until you use them"
+  ]
+};
+
 function packCreditsForPrice(usd: number): number {
   return Math.round((usd / CREDIT_RETAIL_USD) * PACK_CREDIT_DISCOUNT);
 }
 
-/** Credit packs — price in USD, credits include pack discount. */
+/** Monthly credit subscriptions — price in USD, credits include pack discount. */
 export const CREDIT_PACKS: CreditPack[] = [
   {
     id: "starter",

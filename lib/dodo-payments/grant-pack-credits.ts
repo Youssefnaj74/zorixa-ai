@@ -53,7 +53,13 @@ async function grantPackCreditsFallback(
 
   const { error: updateErr } = await supabaseAdmin
     .from("users_profiles")
-    .update({ credits_balance: profile.credits_balance + credits, is_premium: true })
+    .update({
+      credits_balance: profile.credits_balance + credits,
+      is_premium: true,
+      ...(input.packId === "starter-pass"
+        ? { starter_pass_purchased_at: new Date().toISOString() }
+        : {})
+    })
     .eq("id", userId);
 
   if (updateErr) {
@@ -125,7 +131,7 @@ export async function grantPackCredits(
     return { duplicate: false, granted: false };
   }
 
-  const premiumUpdated = await markUserPremium(userId);
+  const premiumUpdated = await markUserPremium(userId, input.packId);
   await sendGrantConfirmationEmail(userId, credits, orderRef);
   void trackPaymentGrantAnalytics({
     userId,
@@ -136,11 +142,18 @@ export async function grantPackCredits(
   return { duplicate: false, granted: true };
 }
 
-async function markUserPremium(userId: string): Promise<boolean> {
-  const { error } = await supabaseAdmin
-    .from("users_profiles")
-    .update({ is_premium: true })
-    .eq("id", userId);
+async function markUserPremium(
+  userId: string,
+  packId?: GrantInput["packId"]
+): Promise<boolean> {
+  const patch: { is_premium: boolean; starter_pass_purchased_at?: string } = {
+    is_premium: true
+  };
+  if (packId === "starter-pass") {
+    patch.starter_pass_purchased_at = new Date().toISOString();
+  }
+
+  const { error } = await supabaseAdmin.from("users_profiles").update(patch).eq("id", userId);
   if (error) {
     console.warn("[grantPackCredits] is_premium update failed", { userId, error: error.message });
     return false;
